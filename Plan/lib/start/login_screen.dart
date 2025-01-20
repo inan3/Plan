@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../main/main_app_screen.dart';
 import 'welcome_screen.dart';
+import '../main/colors.dart'; // Asegúrate de importar AppColors
+import 'package:google_fonts/google_fonts.dart';
 
-const Color backgroundColor = Color.fromARGB(255, 64, 224, 208); // Azul turquesa
+const Color backgroundColor = AppColors.background; // Azul turquesa
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -95,141 +97,135 @@ class _LoginScreenState extends State<LoginScreen> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: const Color.fromARGB(255, 64, 224, 208), // Azul turquesa
-        appBar: AppBar(
-          centerTitle: true,
-          title: Text(
-            'PLAN',
-            style: TextStyle(
-              color: Colors.black, // Letra negra
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 135, 206, 235), // Azul claro
-                  Color.fromARGB(255, 64, 224, 208), // Turquesa
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          elevation: 0,
-        ),
-        body: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Inicia sesión',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black, // Letra negra
-                  ),
-                ),
-                SizedBox(height: 30),
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: 30),
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Fondo blanco para los campos de texto
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
+        backgroundColor: backgroundColor,
+        body: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo con altura ajustable
+                    SizedBox(
+                      height: 150,
+                      child: Image.asset(
+                        'assets/plan-sin-fondo.png',
+                        fit: BoxFit.contain,
                       ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'Correo electrónico',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 20),
                     ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: 30),
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Fondo blanco para los campos de texto
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
+                    const SizedBox(height: 80),
+                    // Campo de texto para Correo Electrónico
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      hintText: 'Contraseña',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                      child: TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          hintText: 'Correo electrónico',
+                          hintStyle: GoogleFonts.roboto(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                SizedBox(height: 30),
-                isLoading
-                    ? CircularProgressIndicator()
-                    : GestureDetector(
-                        onTap: login,
-                        child: Container(
-                          width: 200,
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Color.fromARGB(255, 70, 130, 180), // Azul más oscuro
-                                Color.fromARGB(255, 135, 206, 235), // Azul claro
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                    const SizedBox(height: 20),
+                    // Campo de texto para Contraseña
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: 'Contraseña',
+                          hintStyle: GoogleFonts.roboto(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    // Botón "Iniciar sesión"
+                    SizedBox(
+                      width: 200,
+                      child: ElevatedButton(
+                        onPressed: login,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: const Color.fromARGB(236, 0, 4, 227), // Fondo azul
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          child: Center(
-                            child: Text(
-                              'Iniciar sesión',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black, // Letra negra
-                              ),
-                            ),
+                          shadowColor: Colors.black.withOpacity(0.2), // Sombra
+                          elevation: 10, // Elevación
+                        ),
+                        child: Text(
+                          'Iniciar sesión',
+                          style: GoogleFonts.roboto(
+                            fontSize: 20,
+                            color: Colors.white, // Texto blanco
                           ),
                         ),
                       ),
-                SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Funcionalidad pendiente')),
-                    );
-                  },
-                  child: Text(
-                    '¿Olvidaste tu contraseña?',
-                    style: TextStyle(
-                      color: Colors.black, // Letra negra
-                      decoration: TextDecoration.underline,
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Funcionalidad pendiente')),
+                        );
+                      },
+                      child: const Text(
+                        '¿Olvidaste tu contraseña?',
+                        style: TextStyle(
+                          color: Colors.black, // Letra negra
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            Positioned(
+              top: 40,
+              left: 10,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                color: AppColors.blue, // Color azul definido
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
