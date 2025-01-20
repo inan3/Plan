@@ -7,7 +7,7 @@ class AppColors {
   static const Color primaryLight = Color.fromARGB(255, 56, 42, 255);
 
   // Colores secundarios
-  static const Color secondary = Color(0xFF03DAC6);
+  static const Color blue = Color.fromARGB(236, 0, 4, 227);
   static const Color secondaryDark = Color(0xFF018786);
 
   // Colores de fondo
@@ -24,4 +24,7 @@ class AppColors {
   // Colores personalizados
   static const Color createPlanButton = Color.fromARGB(255, 197, 38, 38);
   static const Color joinPlanButton = Color.fromARGB(255, 38, 61, 236);
+
+  // Color blanco (faltante)
+  static const Color white = Color(0xFFFFFFFF);
 }

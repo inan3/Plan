@@ -11,10 +11,8 @@ import 'plan_action_button.dart'; // Widget modularizado
 import 'filter_screen.dart';
 import '../plan_creation/new_plan_creation_screen.dart';
 import '../plan_joining/plan_join_request.dart';
-import 'users_grid.dart'; 
-
-// Importa tu Sidebar (fíjate en la ruta que tengas)
-import 'menu_side_bar_screen.dart'; 
+import 'users_grid.dart';
+import 'menu_side_bar_screen.dart'; // Menú lateral
 
 class ExploreScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
@@ -27,8 +25,6 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
-
-  // Cambiamos a MainSideBarScreenState para que coincida con la definición en menu_side_bar_screen.dart
   final GlobalKey<MainSideBarScreenState> _menuKey =
       GlobalKey<MainSideBarScreenState>();
 
@@ -37,7 +33,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   // Filtros
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
-  int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
+  int selectedSearchIndex = 0;
 
   @override
   void initState() {
@@ -70,7 +66,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
     );
 
-    // Maneja el resultado de FilterScreen
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         selectedAgeRange = result['ageRange'];
@@ -95,21 +90,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
             Column(
               children: [
                 const SizedBox(height: 40),
-
-                // Barra superior
                 ExploreAppBar(
                   onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
                   onFilterPressed: _onFilterPressed,
                   onSearchChanged: _onSearchChanged,
                 ),
-
                 const SizedBox(height: 10),
-
-                // Sección de usuarios populares
                 const PopularUsersSection(),
                 const SizedBox(height: 10),
-
-                // StreamBuilder para mostrar usuarios
                 Expanded(
                   child: StreamBuilder(
                     stream: FirebaseFirestore.instance
@@ -130,7 +118,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         );
                       }
 
-                      // Filtra para no incluirte a ti mismo
                       final validUsers = snapshot.data!.docs
                           .where((doc) => doc['uid'] != currentUser?.uid)
                           .toList();
@@ -141,8 +128,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 ),
               ],
             ),
-
-            // Menú lateral
             MainSideBarScreen(
               key: _menuKey,
               onMenuToggled: (bool open) {
@@ -154,38 +139,122 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
           ],
         ),
-
-        // Botones flotantes personalizados
         floatingActionButton: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Botón para UNIRSE A PLAN (lado izquierdo)
+            // Botón "Unirse a Plan"
             PlanActionButton(
               heroTag: 'joinPlan',
               label: 'Unirse a Plan',
               iconPath: 'assets/boton-union.png',
               onPressed: () {
-                // Muestra un diálogo para unirse a un plan
                 JoinPlanRequestScreen.showJoinPlanDialog(context);
               },
               margin: const EdgeInsets.only(left: 32, bottom: 70),
-              backgroundColor: const Color(0xFF2ECC71),
+              backgroundColor: Colors.white,
+              borderColor: const Color.fromARGB(236, 0, 4, 227), // Color azul
+              borderWidth: 1, // Grosor del borde ajustable
+              textColor: AppColors.blue,
+              iconColor: AppColors.blue,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
 
-            // Botón para CREAR PLAN (lado derecho)
+            // Botón "Crear Plan"
             PlanActionButton(
               heroTag: 'createPlan',
               label: 'Crear Plan',
               iconPath: 'assets/boton-editar.png',
               onPressed: () {
-                // Muestra un diálogo para crear un plan
                 NewPlanCreationScreen.showNewPlanDialog(context);
               },
               margin: const EdgeInsets.only(right: 8, bottom: 70),
-              backgroundColor: const Color(0xFF3498DB),
+              backgroundColor: AppColors.blue, // Fondo azul
+              borderColor: Colors.transparent, // Sin borde
+              borderWidth: 0,
+              textColor: Colors.white, // Texto blanco
+              iconColor: Colors.white, // Icono blanco
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class PlanActionButton extends StatelessWidget {
+  final String heroTag;
+  final String label;
+  final String iconPath;
+  final VoidCallback onPressed;
+  final EdgeInsetsGeometry? margin;
+  final Color backgroundColor;
+  final Color? borderColor; // Nuevo parámetro para el borde
+  final double borderWidth; // Nuevo parámetro para el grosor del borde
+  final Color? textColor; // Nuevo parámetro para el texto
+  final Color? iconColor; // Nuevo parámetro para el color del icono
+  final List<BoxShadow>? boxShadow;
+
+  const PlanActionButton({
+    Key? key,
+    required this.heroTag,
+    required this.label,
+    required this.iconPath,
+    required this.onPressed,
+    this.margin,
+    required this.backgroundColor,
+    this.borderColor,
+    this.borderWidth = 0, // Valor por defecto
+    this.textColor,
+    this.iconColor,
+    this.boxShadow,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: margin,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: borderColor ?? Colors.transparent, // Color del borde
+          width: borderWidth, // Grosor del borde
+        ),
+        boxShadow: boxShadow ?? [],
+      ),
+      child: FloatingActionButton.extended(
+        heroTag: heroTag,
+        onPressed: onPressed,
+        label: Row(
+          children: [
+            Image.asset(
+              iconPath,
+              height: 20,
+              width: 20,
+              color: iconColor ?? Colors.black, // Color del icono personalizado
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(color: textColor ?? Colors.black), // Texto personalizado
+            ),
+          ],
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
     );
   }

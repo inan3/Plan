@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/welcome_screen.dart'; // Importa la nueva pantalla inicial
+import 'start/welcome_screen.dart'; // Importa la nueva pantalla inicial
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

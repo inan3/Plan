@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import '../screens/login_screen.dart';
+import '../start/login_screen.dart';
 import '../user_data/user_info_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
