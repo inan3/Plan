@@ -25,17 +25,14 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
 
   static final LatLng _initialPosition = const LatLng(40.416775, -3.703790);
 
-  // API Key de Google Places
   final String googleAPIKey = Platform.isAndroid
       ? APIKeys.androidApiKey
       : APIKeys.iosApiKey;
 
-  /// Oculta el teclado al hacer tap en un área vacía
   void _hideKeyboard() {
     FocusScope.of(context).unfocus();
   }
 
-  /// Lógica para obtener predicciones de lugares
   Future<void> _fetchPredictions(String input) async {
     if (input.isEmpty) {
       setState(() {
@@ -66,7 +63,6 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
     }
   }
 
-  /// Obtiene los detalles de un lugar seleccionado
   Future<void> _fetchPlaceDetails(String placeId) async {
     final String url =
         'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$googleAPIKey';
@@ -79,13 +75,11 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
           final location = data['result']['geometry']['location'];
           setState(() {
             _selectedAddress = data['result']['formatted_address'];
-            _selectedLocation =
-                LatLng(location['lat'], location['lng']);
+            _selectedLocation = LatLng(location['lat'], location['lng']);
             _predictionList = [];
             _searchController.text = _selectedAddress!;
           });
 
-          // Mueve la cámara al lugar seleccionado
           _mapController?.animateCamera(
             CameraUpdate.newLatLng(_selectedLocation!),
           );
@@ -100,7 +94,6 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
     }
   }
 
-  /// Confirmación de ubicación elegida
   void _confirmLocation() {
     if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,7 +102,6 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
       return;
     }
 
-    // Aquí puedes continuar la lógica para guardar o usar la ubicación seleccionada
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -147,79 +139,133 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                   : {},
             ),
 
-            // Contenido principal
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Image.asset(
-                      'assets/plan-sin-fondo.png',
-                      height: 150,
-                      fit: BoxFit.contain,
+            // Contenedor superior con input y texto
+            Positioned(
+              top: 100,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Elige la ubicación del encuentro",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Campo de búsqueda
-                  TextField(
-                    controller: _searchController,
-                    focusNode: _focusNode,
-                    decoration: const InputDecoration(
-                      hintText: 'Introduce una dirección',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (value) {
-                      _fetchPredictions(value);
-                    },
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Lista de predicciones
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _predictionList.length,
-                      itemBuilder: (context, index) {
-                        final prediction = _predictionList[index];
-                        return ListTile(
-                          title: Text(prediction['description']),
-                          onTap: () {
-                            _fetchPlaceDetails(prediction['place_id']);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Dirección seleccionada
-                  if (_selectedAddress != null) ...[
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      "Dirección seleccionada: $_selectedAddress",
-                      style: const TextStyle(fontSize: 16),
+                      "Elige la ubicación del encuentro",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.blue,
+                      ),
                     ),
                     const SizedBox(height: 8),
+                    TextField(
+                      controller: _searchController,
+                      focusNode: _focusNode,
+                      decoration: const InputDecoration(
+                        hintText: 'Introduce una dirección',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        _fetchPredictions(value);
+                      },
+                    ),
                   ],
-                ],
+                ),
               ),
             ),
+
+            // Lista de predicciones
+            Positioned(
+              top: 120,
+              left: 16,
+              right: 16,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _predictionList.length,
+                itemBuilder: (context, index) {
+                  final prediction = _predictionList[index];
+                  return ListTile(
+                    title: Text(prediction['description']),
+                    onTap: () {
+                      _fetchPlaceDetails(prediction['place_id']);
+                    },
+                  );
+                },
+              ),
+            ),
+
+            // Contenedor con ubicación seleccionada
+            // Contenedor con ubicación seleccionada
+            if (_selectedAddress != null)
+              Positioned(
+                bottom: 80,
+                left: 16,
+                right: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Texto descriptivo
+                    Text(
+                      "Punto de encuentro seleccionado:",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Contenedor para la dirección seleccionada
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.place, color: Colors.blue, size: 24),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _selectedAddress!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.blue,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
 
             // Botón "X" para salir
             Positioned(
               top: 45,
-              left: 20,
+              left: 16,
               child: GestureDetector(
                 onTap: () {
                   Navigator.of(context).pushAndRemoveUntil(
