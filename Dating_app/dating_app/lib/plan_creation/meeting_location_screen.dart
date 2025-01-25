@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
 
 import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
+import '../../main/keys.dart'; // Asegúrate de tener tus claves aquí
 
 class MeetingLocationScreen extends StatefulWidget {
   const MeetingLocationScreen({Key? key}) : super(key: key);
@@ -13,84 +16,104 @@ class MeetingLocationScreen extends StatefulWidget {
 }
 
 class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
-  GoogleMapController? _mapController;
-  Marker? _selectedMarker;
   final TextEditingController _searchController = TextEditingController();
-  List<String> _suggestions = [];
+  final FocusNode _focusNode = FocusNode();
+  List<dynamic> _predictionList = [];
+  LatLng? _selectedLocation;
+  String? _selectedAddress;
+  GoogleMapController? _mapController;
 
-  // Coordenadas iniciales (ejemplo: Madrid)
-  static const LatLng _initialPosition = LatLng(40.416775, -3.703790);
+  static final LatLng _initialPosition = const LatLng(40.416775, -3.703790);
 
-  // Busca sugerencias de direcciones
-  Future<void> _updateSuggestions(String query) async {
-    if (query.isEmpty) {
+  // API Key de Google Places
+  final String googleAPIKey = Platform.isAndroid
+      ? APIKeys.androidApiKey
+      : APIKeys.iosApiKey;
+
+  /// Oculta el teclado al hacer tap en un área vacía
+  void _hideKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
+  /// Lógica para obtener predicciones de lugares
+  Future<void> _fetchPredictions(String input) async {
+    if (input.isEmpty) {
       setState(() {
-        _suggestions.clear();
+        _predictionList = [];
       });
       return;
     }
 
+    final String url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$googleAPIKey&language=es';
+
     try {
-      final locations = await locationFromAddress(query);
-      setState(() {
-        _suggestions = locations
-            .map((location) =>
-                "${location.latitude}, ${location.longitude}")
-            .toList();
-      });
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'OK') {
+          setState(() {
+            _predictionList = data['predictions'];
+          });
+        } else {
+          print('Error en la API de Google Places: ${data['status']}');
+        }
+      } else {
+        print('Error HTTP: ${response.statusCode}');
+      }
     } catch (e) {
-      setState(() {
-        _suggestions.clear();
-      });
+      print('Error al obtener predicciones: $e');
     }
   }
 
-  // Selecciona una dirección de las sugerencias
-  Future<void> _selectSuggestion(String suggestion) async {
-    try {
-      final coords = suggestion.split(', ');
-      final lat = double.parse(coords[0]);
-      final lng = double.parse(coords[1]);
-      final position = LatLng(lat, lng);
+  /// Obtiene los detalles de un lugar seleccionado
+  Future<void> _fetchPlaceDetails(String placeId) async {
+    final String url =
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$googleAPIKey';
 
-      setState(() {
-        _selectedMarker = Marker(
-          markerId: const MarkerId("selected"),
-          position: position,
-        );
-      });
-      _mapController?.animateCamera(CameraUpdate.newLatLng(position));
-      _suggestions.clear();
-      _searchController.clear();
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'OK') {
+          final location = data['result']['geometry']['location'];
+          setState(() {
+            _selectedAddress = data['result']['formatted_address'];
+            _selectedLocation =
+                LatLng(location['lat'], location['lng']);
+            _predictionList = [];
+            _searchController.text = _selectedAddress!;
+          });
+
+          // Mueve la cámara al lugar seleccionado
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLng(_selectedLocation!),
+          );
+        } else {
+          print('Error en la API de detalles: ${data['status']}');
+        }
+      } else {
+        print('Error HTTP: ${response.statusCode}');
+      }
     } catch (e) {
-      // Manejar errores
+      print('Error al obtener detalles del lugar: $e');
     }
   }
 
-  // Selecciona ubicación tocando el mapa
-  void _onMapTap(LatLng position) {
-    setState(() {
-      _selectedMarker = Marker(
-        markerId: const MarkerId("selected"),
-        position: position,
-      );
-    });
-  }
-
-  // Confirma la ubicación seleccionada
+  /// Confirmación de ubicación elegida
   void _confirmLocation() {
-    if (_selectedMarker == null) {
+    if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("No has seleccionado ninguna ubicación.")),
       );
       return;
     }
 
-    // Ejemplo: lógica al confirmar ubicación
+    // Aquí puedes continuar la lógica para guardar o usar la ubicación seleccionada
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          "Ubicación confirmada: ${_selectedMarker?.position.latitude}, ${_selectedMarker?.position.longitude}",
+          "Ubicación confirmada: $_selectedAddress",
         ),
       ),
     );
@@ -101,58 +124,99 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
+        onTap: _hideKeyboard,
         behavior: HitTestBehavior.translucent,
         child: Stack(
           children: [
-            // Mapa
+            // Mapa interactivo
             GoogleMap(
-              initialCameraPosition: const CameraPosition(
+              initialCameraPosition: CameraPosition(
                 target: _initialPosition,
-                zoom: 12,
+                zoom: 14.0,
               ),
-              markers: _selectedMarker != null ? {_selectedMarker!} : {},
-              onMapCreated: (controller) => _mapController = controller,
-              onTap: _onMapTap,
+              onMapCreated: (controller) {
+                _mapController = controller;
+              },
+              markers: _selectedLocation != null
+                  ? {
+                      Marker(
+                        markerId: const MarkerId('selectedLocation'),
+                        position: _selectedLocation!,
+                      ),
+                    }
+                  : {},
             ),
 
-            // Input de búsqueda
-            Positioned(
-              top: 40,
-              left: 16,
-              right: 16,
+            // Contenido principal
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Image.asset(
+                      'assets/plan-sin-fondo.png',
+                      height: 150,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Elige la ubicación del encuentro",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Campo de búsqueda
                   TextField(
                     controller: _searchController,
+                    focusNode: _focusNode,
                     decoration: const InputDecoration(
-                      hintText: "Buscar dirección...",
-                      filled: true,
-                      fillColor: Colors.white,
+                      hintText: 'Introduce una dirección',
                       border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.search),
                     ),
-                    onChanged: _updateSuggestions,
+                    onChanged: (value) {
+                      _fetchPredictions(value);
+                    },
                   ),
-                  // Lista de sugerencias
-                  if (_suggestions.isNotEmpty)
-                    Container(
-                      color: Colors.white,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _suggestions.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Text(_suggestions[index]),
-                            onTap: () => _selectSuggestion(_suggestions[index]),
-                          );
-                        },
-                      ),
+
+                  const SizedBox(height: 10),
+
+                  // Lista de predicciones
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _predictionList.length,
+                      itemBuilder: (context, index) {
+                        final prediction = _predictionList[index];
+                        return ListTile(
+                          title: Text(prediction['description']),
+                          onTap: () {
+                            _fetchPlaceDetails(prediction['place_id']);
+                          },
+                        );
+                      },
                     ),
+                  ),
+
+                  // Dirección seleccionada
+                  if (_selectedAddress != null) ...[
+                    Text(
+                      "Dirección seleccionada: $_selectedAddress",
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ],
               ),
             ),
 
-            // Botón "X" para salir a ExploreScreen
+            // Botón "X" para salir
             Positioned(
               top: 45,
               left: 20,
@@ -188,15 +252,12 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Flecha para volver atrás
             IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black, size: 32),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-
-            // Flecha para confirmar
             IconButton(
               icon: const Icon(Icons.arrow_forward, color: Colors.blue, size: 32),
               onPressed: _confirmLocation,
