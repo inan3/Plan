@@ -139,7 +139,7 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                   : {},
             ),
 
-            // Contenedor superior con input y texto
+            // Contenedor superior con input y lista de predicciones
             Positioned(
               top: 100,
               left: 16,
@@ -160,6 +160,7 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Título
                     Text(
                       "Elige la ubicación del encuentro",
                       style: TextStyle(
@@ -169,6 +170,8 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
+
+                    // Input de texto
                     TextField(
                       controller: _searchController,
                       focusNode: _focusNode,
@@ -181,32 +184,38 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                         _fetchPredictions(value);
                       },
                     ),
+
+                    // Lista de predicciones dentro del contenedor
+                    if (_predictionList.isNotEmpty)
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const ClampingScrollPhysics(),
+                        itemCount: _predictionList.length,
+                        itemBuilder: (context, index) {
+                          final prediction = _predictionList[index];
+                          return GestureDetector(
+                            onTap: () {
+                              _fetchPlaceDetails(prediction['place_id']);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 4, horizontal: 8),
+                              child: Text(
+                                prediction['description'],
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.blue,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
             ),
 
-            // Lista de predicciones
-            Positioned(
-              top: 120,
-              left: 16,
-              right: 16,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _predictionList.length,
-                itemBuilder: (context, index) {
-                  final prediction = _predictionList[index];
-                  return ListTile(
-                    title: Text(prediction['description']),
-                    onTap: () {
-                      _fetchPlaceDetails(prediction['place_id']);
-                    },
-                  );
-                },
-              ),
-            ),
-
-            // Contenedor con ubicación seleccionada
             // Contenedor con ubicación seleccionada
             if (_selectedAddress != null)
               Positioned(
@@ -242,7 +251,7 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.place, color: Colors.blue, size: 24),
+                          const Icon(Icons.place, color: AppColors.blue, size: 24),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -260,7 +269,6 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
                   ],
                 ),
               ),
-
 
             // Botón "X" para salir
             Positioned(
