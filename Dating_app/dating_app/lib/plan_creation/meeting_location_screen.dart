@@ -7,6 +7,7 @@ import 'dart:io';
 import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
 import '../../main/keys.dart'; // Asegúrate de tener tus claves aquí
+import 'date_time_screen.dart'; // Importa la pantalla de selección de fecha y hora
 
 class MeetingLocationScreen extends StatefulWidget {
   const MeetingLocationScreen({Key? key}) : super(key: key);
@@ -94,20 +95,17 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
     }
   }
 
-  void _confirmLocation() {
-    if (_selectedLocation == null) {
+  void _navigateToDateTimeScreen() {
+    if (_selectedLocation == null || _selectedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No has seleccionado ninguna ubicación.")),
+        const SnackBar(content: Text("Por favor, selecciona una ubicación antes de continuar.")),
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "Ubicación confirmada: $_selectedAddress",
-        ),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const DateTimeScreen()),
     );
   }
 
@@ -314,7 +312,7 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.arrow_forward, color: Colors.blue, size: 32),
-              onPressed: _confirmLocation,
+              onPressed: _navigateToDateTimeScreen,
             ),
           ],
         ),
