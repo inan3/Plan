@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "861608593316",
+    "project_id": "plan-social-app",
+    "storage_bucket": "plan-social-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861608593316:android:0180b7738065e14fe96331",
+        "android_client_info": {
+          "package_name": "com.company.plan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl7XQgtzNCNy5lYdVP2phPsnmhswXMNSg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
