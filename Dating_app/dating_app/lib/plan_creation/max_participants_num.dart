@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
-// Asegúrate de importar tu pantalla de MeetingLocationScreen
 import 'meeting_location_screen.dart';
+import '../models/plan_model.dart'; // Importa el modelo PlanModel
 
 class MaxParticipantsNumScreen extends StatefulWidget {
-  const MaxParticipantsNumScreen({Key? key}) : super(key: key);
+  final PlanModel plan;
+
+  const MaxParticipantsNumScreen({required this.plan, Key? key}) : super(key: key);
 
   @override
-  State<MaxParticipantsNumScreen> createState() =>
-      _MaxParticipantsNumScreenState();
+  State<MaxParticipantsNumScreen> createState() => _MaxParticipantsNumScreenState();
 }
 
 class _MaxParticipantsNumScreenState extends State<MaxParticipantsNumScreen> {
@@ -34,6 +35,35 @@ class _MaxParticipantsNumScreenState extends State<MaxParticipantsNumScreen> {
   /// Oculta el teclado si se hace tap fuera del campo de texto
   void _hideKeyboard() {
     FocusScope.of(context).unfocus();
+  }
+
+  void _navigateToNextScreen() {
+    if (_noMaxParticipants) {
+      widget.plan.maxParticipants = int.parse(_participantsController.text);
+    } else {
+      final text = _participantsController.text;
+      if (text.isNotEmpty && int.tryParse(text) != null && int.parse(text) >= 1) {
+        widget.plan.maxParticipants = _noMaxParticipants ? null : int.parse(text);
+      } else {
+        // Si hay un error, mostramos un SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Debes poner al menos 1 participante o marcar 'Sin límite'.",
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Navegamos a la pantalla de ubicación
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MeetingLocationScreen(plan: widget.plan),
+      ),
+    );
   }
 
   @override
@@ -191,32 +221,7 @@ class _MaxParticipantsNumScreenState extends State<MaxParticipantsNumScreen> {
             // Flecha para avanzar
             IconButton(
               icon: const Icon(Icons.arrow_forward, color: AppColors.blue, size: 32),
-              onPressed: () {
-                // Validamos: si NO está marcado "Sin límite" y la caja está vacía o < 1
-                if (!_noMaxParticipants) {
-                  final text = _participantsController.text;
-                  if (text.isEmpty ||
-                      int.tryParse(text) == null ||
-                      int.parse(text) < 1) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Debes poner al menos 1 participante o marcar 'Sin límite'.",
-                        ),
-                      ),
-                    );
-                    return;
-                  }
-                }
-
-                // Si pasa la validación, navegamos a MeetingLocationScreen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MeetingLocationScreen(),
-                  ),
-                );
-              },
+              onPressed: _navigateToNextScreen, // Guarda y navega
             ),
           ],
         ),

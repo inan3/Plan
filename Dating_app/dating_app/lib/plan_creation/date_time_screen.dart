@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
+import '../../models/plan_model.dart';
 
 class DateTimeScreen extends StatefulWidget {
-  const DateTimeScreen({Key? key}) : super(key: key);
+  final PlanModel plan;
+
+  const DateTimeScreen({Key? key, required this.plan}) : super(key: key);
 
   @override
   State<DateTimeScreen> createState() => _DateTimeScreenState();
@@ -36,6 +41,45 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       setState(() {
         _selectedTime = pickedTime;
       });
+    }
+  }
+
+  void _savePlanToFirestore() async {
+    try {
+      // Genera un ID único para el plan
+      widget.plan.id = Uuid().v4();
+
+      // Asigna la fecha seleccionada al plan
+      widget.plan.date = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      // Guarda el plan en Firebase
+      await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(widget.plan.id)
+          .set(widget.plan.toMap());
+
+      print('Plan guardado correctamente en Firestore.');
+    } catch (e) {
+      print('Error al guardar el plan en Firestore: $e');
+    }
+  }
+
+  void _finalizePlan() {
+    if (_selectedDate != null && _selectedTime != null) {
+      _savePlanToFirestore();
+      _showSuccessPopup();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, selecciona la fecha y hora para continuar.'),
+        ),
+      );
     }
   }
 
@@ -103,13 +147,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // Contenido principal
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo en el centro
                 Center(
                   child: Image.asset(
                     'assets/plan-sin-fondo.png',
@@ -118,8 +160,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Texto principal
                 const Text(
                   "Selecciona la fecha y hora del encuentro",
                   style: TextStyle(
@@ -130,8 +170,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-
-                // Selección de fecha
                 Center(
                   child: ElevatedButton(
                     onPressed: _selectDate,
@@ -151,10 +189,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
                       ),
                     ),
                   ),
-
                 const SizedBox(height: 20),
-
-                // Selección de hora
                 Center(
                   child: ElevatedButton(
                     onPressed: _selectTime,
@@ -177,8 +212,6 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
               ],
             ),
           ),
-
-          // Botón "X" para salir
           Positioned(
             top: 45,
             left: 16,
@@ -206,10 +239,8 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
           ),
         ],
       ),
-
-      // Barra inferior con flechas
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showSuccessPopup,
+        onPressed: _finalizePlan,
         backgroundColor: AppColors.blue,
         icon: const Icon(Icons.check, color: Colors.white),
         label: const Text(

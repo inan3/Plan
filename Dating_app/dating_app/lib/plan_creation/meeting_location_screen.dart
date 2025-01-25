@@ -8,9 +8,12 @@ import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
 import '../../main/keys.dart'; // Asegúrate de tener tus claves aquí
 import 'date_time_screen.dart'; // Importa la pantalla de selección de fecha y hora
+import '../models/plan_model.dart'; // Importa el modelo PlanModel
 
 class MeetingLocationScreen extends StatefulWidget {
-  const MeetingLocationScreen({Key? key}) : super(key: key);
+  final PlanModel plan;
+
+  const MeetingLocationScreen({required this.plan, Key? key}) : super(key: key);
 
   @override
   State<MeetingLocationScreen> createState() => _MeetingLocationScreenState();
@@ -103,9 +106,16 @@ class _MeetingLocationScreenState extends State<MeetingLocationScreen> {
       return;
     }
 
+    // Guardamos la ubicación en el modelo
+    widget.plan.location = _selectedAddress!;
+    widget.plan.latitude = _selectedLocation!.latitude;
+    widget.plan.longitude = _selectedLocation!.longitude;
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const DateTimeScreen()),
+      MaterialPageRoute(
+        builder: (context) => DateTimeScreen(plan: widget.plan),
+      ),
     );
   }
 

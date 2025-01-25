@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main/colors.dart';
 import 'plan_description_screen.dart';
+import '../models/plan_model.dart'; // Importa el modelo de Plan
 
 class NewPlanCreationScreen extends StatefulWidget {
   @override
@@ -123,10 +124,24 @@ class _NewPlanCreationScreenState extends State<NewPlanCreationScreen> {
                       icon: const Icon(Icons.arrow_forward, color: AppColors.blue, size: 32),
                       onPressed: _selectedPlan != null
                           ? () {
+                              // Guarda el plan seleccionado en un modelo
+                              final plan = PlanModel(
+                              id: '', // Generado más adelante
+                              type: _selectedPlan!,
+                              description: '',
+                              minAge: 0,
+                              maxAge: 0,
+                              location: '',
+                              date: DateTime.now(),
+                              createdBy: '', // Reemplaza con el ID del usuario actual
+                            );
+
+
+                              // Navega a la siguiente pantalla con el modelo
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => PlanDescriptionScreen(planType: _selectedPlan!),
+                                  builder: (context) => PlanDescriptionScreen(plan: plan),
                                 ),
                               );
                             }

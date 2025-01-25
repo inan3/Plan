@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dating_app/main/colors.dart';
 
 import 'menu_side_bar/profile_screen.dart';
@@ -89,7 +90,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
                       ),
-                      _buildMenuItem(
+                      _buildMenuItemWithBadge(
                         icon: Icons.event,
                         title: 'Mis Planes',
                         destination: const MyPlansScreen(),
@@ -186,6 +187,56 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
           color: textColor,
           fontSize: 14,
         ),
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => destination),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuItemWithBadge({
+    required IconData icon,
+    required String title,
+    required Widget destination,
+    required Color iconColor,
+    required Color textColor,
+  }) {
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, color: iconColor, size: 20),
+      title: Text(
+        title,
+        style: GoogleFonts.roboto(
+          color: textColor,
+          fontSize: 14,
+        ),
+      ),
+      trailing: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('plans').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const SizedBox(); // No muestra el badge si no hay planes
+          }
+
+          return Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.blue,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '${snapshot.data!.docs.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
       ),
       onTap: () {
         Navigator.push(

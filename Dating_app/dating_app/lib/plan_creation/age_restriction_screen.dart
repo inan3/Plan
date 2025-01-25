@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../main/colors.dart';
 import '../explore_screen/explore_screen.dart';
 import 'max_participants_num.dart';
+import '../models/plan_model.dart'; // Importa el modelo PlanModel
 
 class AgeRestrictionScreen extends StatefulWidget {
-  const AgeRestrictionScreen({Key? key}) : super(key: key);
+  final PlanModel plan;
+
+  const AgeRestrictionScreen({required this.plan, Key? key}) : super(key: key);
 
   @override
   _AgeRestrictionScreenState createState() => _AgeRestrictionScreenState();
@@ -13,10 +16,25 @@ class AgeRestrictionScreen extends StatefulWidget {
 class _AgeRestrictionScreenState extends State<AgeRestrictionScreen> {
   RangeValues _selectedAgeRange = const RangeValues(18, 45);
 
+  void _navigateToNextScreen() {
+    // Guardamos el rango de edades en el modelo PlanModel
+    widget.plan.minAge = _selectedAgeRange.start.toInt();
+    widget.plan.maxAge = _selectedAgeRange.end.toInt();
+
+
+    // Navegamos a la siguiente pantalla (Número máximo de participantes)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MaxParticipantsNumScreen(plan: widget.plan),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(), // Esconde el teclado
+      onTap: () => FocusScope.of(context).unfocus(), // Oculta el teclado
       child: Scaffold(
         body: Stack(
           children: [
@@ -137,15 +155,7 @@ class _AgeRestrictionScreenState extends State<AgeRestrictionScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_forward, color: AppColors.blue, size: 32),
-                onPressed: () {
-                  // Al pulsar la flecha, vamos a la pantalla de máximo de participantes
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MaxParticipantsNumScreen(),
-                    ),
-                  );
-                },
+                onPressed: _navigateToNextScreen, // Guarda y navega
               ),
             ],
           ),
