@@ -72,21 +72,52 @@ class JoinPlanRequestScreen {
     }
 
     try {
-      await FirebaseFirestore.instance
-          .collection('plans')
-          .doc(planId)
-          .collection('joinRequests')
-          .add({
+      // Obtenemos el documento del plan
+      final planDoc = await FirebaseFirestore.instance.collection('plans').doc(planId).get();
+      if (!planDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('El plan no existe.')),
+        );
+        return;
+      }
+
+      final planData = planDoc.data();
+      final String creatorId = planData?['createdBy'] ?? ''; // ID del creador del plan
+
+      if (creatorId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('El creador del plan no se encontró.')),
+        );
+        return;
+      }
+
+      // Enviamos la solicitud a la colección de solicitudes del plan
+      await FirebaseFirestore.instance.collection('plans').doc(planId).collection('joinRequests').add({
         'userId': currentUser.uid,
+        'userName': currentUser.displayName ?? 'Usuario desconocido',
+        'userProfilePic': currentUser.photoURL ?? '',
         'timestamp': FieldValue.serverTimestamp(),
       });
+
+      // Enviamos una notificación al creador del plan
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'type': 'join_request',
+        'receiverId': creatorId,
+        'senderId': currentUser.uid,
+        'planId': planId,
+        'requesterName': currentUser.displayName ?? 'Usuario desconocido',
+        'requesterProfilePic': currentUser.photoURL ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Solicitud enviada exitosamente.')),
       );
       Navigator.of(context).pop();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al enviar la solicitud.')),
+        SnackBar(content: Text('Error al enviar la solicitud: $e')),
       );
     }
   }

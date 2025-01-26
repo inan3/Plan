@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dating_app/main/colors.dart';
 
 import 'menu_side_bar/profile_screen.dart';
@@ -14,6 +15,7 @@ import 'menu_side_bar/favourites_screen.dart';
 import 'menu_side_bar/settings_screen.dart';
 import 'menu_side_bar/help_center_screen.dart';
 import 'menu_side_bar/close_session_screen.dart';
+import 'menu_side_bar/subscribed_plans_screen.dart';
 
 class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
@@ -31,6 +33,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   bool isOpen = false;
   final double menuWidth = 240;
   final double sidePadding = 10;
+  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   void toggleMenu() {
     setState(() {
@@ -101,6 +104,13 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         icon: Icons.search,
                         title: 'Explorar Planes',
                         destination: const ExplorePlansScreen(),
+                        iconColor: AppColors.blue,
+                        textColor: AppColors.black,
+                      ),
+                      _buildMenuItem(
+                        icon: Icons.image,
+                        title: 'Planes Suscritos',
+                        destination: SubscribedPlansScreen(userId: currentUserId!),
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
                       ),
@@ -215,7 +225,10 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
         ),
       ),
       trailing: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('plans').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('plans')
+            .where('createdBy', isEqualTo: currentUserId) // Filtra por el usuario actual
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const SizedBox(); // No muestra el badge si no hay planes
