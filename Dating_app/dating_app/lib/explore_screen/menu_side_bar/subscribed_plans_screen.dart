@@ -1,67 +1,204 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/plan_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SubscribedPlansScreen extends StatelessWidget {
-  final String userId; // ID del usuario actual para filtrar sus planes suscritos
+  final String userId; // ID del usuario para filtrar sus planes suscritos
 
   const SubscribedPlansScreen({Key? key, required this.userId}) : super(key: key);
+
+  /// Combina al creador + suscriptores de un plan
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
+    final List<Map<String, dynamic>> participants = [];
+
+    // 1) planDoc para saber createdBy
+    final planDoc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+    if (planDoc.exists) {
+      final planData = planDoc.data();
+      final creatorId = planData?['createdBy'];
+      if (creatorId != null) {
+        final creatorUserDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(creatorId)
+            .get();
+        if (creatorUserDoc.exists) {
+          final cdata = creatorUserDoc.data()!;
+          participants.add({
+            'name': cdata['name'] ?? 'Sin nombre',
+            'age': cdata['age']?.toString() ?? '',
+            'photoUrl': cdata['photoUrl'] ?? cdata['profilePic'] ?? '',
+            'isCreator': true,
+          });
+        }
+      }
+    }
+
+    // 2) suscripciones
+    final subsSnap = await FirebaseFirestore.instance
+        .collection('subscriptions')
+        .where('id', isEqualTo: plan.id)
+        .get();
+    for (var sDoc in subsSnap.docs) {
+      final sData = sDoc.data();
+      final uid = sData['userId'];
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      if (userDoc.exists) {
+        final uData = userDoc.data()!;
+        participants.add({
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'isCreator': false,
+        });
+      }
+    }
+
+    return participants;
+  }
 
   void _showPlanDetails(BuildContext context, PlanModel plan) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: Text("Detalles del Plan: ${plan.type}"),
-          content: FutureBuilder<QuerySnapshot>(
-            future: FirebaseFirestore.instance
-                .collection('subscriptions')
-                .where('planId', isEqualTo: plan.id)
-                .get(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          title: Text(
+            "Detalles del Plan: ${plan.type}",
+            style: const TextStyle(color: Colors.black),
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Container(
+              color: Colors.white,
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _fetchAllPlanParticipants(plan),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.black),
+                    );
+                  }
 
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Text('No hay participantes en este plan.');
-              }
+                  final all = snapshot.data ?? [];
 
-              final participants = snapshot.data!.docs;
+                  // 1) Creador
+                  final creator = all.firstWhere(
+                    (p) => p['isCreator'] == true,
+                    orElse: () => {},
+                  );
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Creado por: ${plan.creatorName}"),
-                  const SizedBox(height: 10),
-                  Text("Participantes:"),
-                  const SizedBox(height: 10),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: participants.length,
-                    itemBuilder: (context, index) {
-                      final participant = participants[index].data() as Map<String, dynamic>;
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(participant['profilePic'] ?? 'https://via.placeholder.com/150'),
-                        ),
-                        title: Text(participant['name'] ?? 'Usuario desconocido'),
-                        onTap: () => _viewUserProfile(context, participant['userId']),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
+                  // 2) Participantes (excluyendo creador)
+                  final participants = all.where((p) => p['isCreator'] == false).toList();
+                  // Orden alfabético por 'name'
+                  participants.sort((a, b) {
+                    final nameA = (a['name'] ?? '') as String;
+                    final nameB = (b['name'] ?? '') as String;
+                    return nameA.compareTo(nameB);
+                  });
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Descripción: ${plan.description}",
+                            style: const TextStyle(color: Colors.black)),
+                        Text("Restricción de Edad: ${plan.minAge} - ${plan.maxAge} años",
+                            style: const TextStyle(color: Colors.black)),
+                        Text("Máximo Participantes: ${plan.maxParticipants ?? 'Sin límite'}",
+                            style: const TextStyle(color: Colors.black)),
+                        Text("Ubicación: ${plan.location}",
+                            style: const TextStyle(color: Colors.black)),
+                        Text("Fecha del Evento: ${plan.formattedDate(plan.date)}",
+                            style: const TextStyle(color: Colors.black)),
+                        Text("Creado el: ${plan.formattedDate(plan.createdAt)}",
+                            style: const TextStyle(color: Colors.black)),
+                        const SizedBox(height: 10),
+
+                        // Creador
+                        if (creator is Map && creator.isNotEmpty)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Creador del Plan:",
+                                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              ListTile(
+                                leading: CircleAvatar(
+                                  backgroundImage: (creator['photoUrl'] as String).isNotEmpty
+                                      ? NetworkImage(creator['photoUrl'])
+                                      : null,
+                                  backgroundColor: Colors.purple[100],
+                                ),
+                                title: Text(
+                                  '${creator['name']}, ${creator['age']}',
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          ),
+
+                        // Participantes
+                        const Text("Participantes:",
+                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+
+                        if (participants.isEmpty)
+                          const Text(
+                            'No hay participantes en este plan.',
+                            style: TextStyle(color: Colors.black),
+                          )
+                        else
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: participants.length,
+                            itemBuilder: (context, index) {
+                              final part = participants[index];
+                              final pic = part['photoUrl'] ?? '';
+                              final name = part['name'] ?? 'Usuario';
+                              final age = part['age'] ?? '';
+
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundImage: pic.isNotEmpty
+                                      ? NetworkImage(pic)
+                                      : null,
+                                  backgroundColor: Colors.purple[100],
+                                ),
+                                title: Text(
+                                  '$name, $age',
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cerrar"),
+              child: const Text("Cerrar", style: TextStyle(color: Colors.blue)),
             ),
           ],
         );
@@ -89,19 +226,18 @@ class SubscribedPlansScreen extends StatelessWidget {
                 backgroundColor: Colors.red,
               ),
               onPressed: () async {
-                // Elimina la suscripción del usuario en la colección `subscriptions`
                 await FirebaseFirestore.instance
                     .collection('subscriptions')
                     .where('userId', isEqualTo: userId)
-                    .where('planId', isEqualTo: plan.id)
+                    .where('id', isEqualTo: plan.id)
                     .get()
                     .then((querySnapshot) {
                   for (var doc in querySnapshot.docs) {
-                    doc.reference.delete(); // Elimina el documento correspondiente
+                    doc.reference.delete();
                   }
                 });
 
-                Navigator.pop(context); // Cierra el diálogo
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Te has salido del plan ${plan.type}')),
                 );
@@ -131,8 +267,8 @@ class SubscribedPlansScreen extends StatelessWidget {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('subscriptions') // Colección donde guardamos las suscripciones
-            .where('userId', isEqualTo: userId) // Filtramos por el usuario actual
+            .collection('subscriptions')
+            .where('userId', isEqualTo: userId)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -156,7 +292,10 @@ class SubscribedPlansScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: ListTile(
-                  title: Text(plan.type, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  title: Text(
+                    plan.type,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -208,7 +347,7 @@ class UserProfileScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Image.network(
-                  userData['profilePic'] ?? 'https://via.placeholder.com/150',
+                  userData['photoUrl'] ?? userData['profilePic'] ?? 'https://via.placeholder.com/150',
                   fit: BoxFit.cover,
                   width: double.infinity,
                 ),
@@ -219,11 +358,11 @@ class UserProfileScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${userData['name']}, ${userData['age']} años',
+                      '${userData['name']}, ${userData['age']}',
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Text('Email: ${userData['email']}'),
+                    Text('Email: ${userData['email'] ?? 'Desconocido'}'),
                     const SizedBox(height: 8),
                     Text('Descripción: ${userData['description'] ?? 'Sin descripción'}'),
                   ],

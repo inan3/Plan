@@ -32,7 +32,6 @@ class ExploreScreenState extends State<ExploreScreen> {
   double selectedDistance = 50;
   int selectedSearchIndex = 0;
 
-  // Lista de páginas para cambiar entre ellas
   late List<Widget> _pages;
 
   @override
@@ -53,15 +52,15 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   void _initializePages() {
     _pages = [
-      _buildExplorePage(), // Página inicial
-      MatchesScreen(currentUserId: currentUser?.uid ?? ''), // Página Matches
-      const Center(child: Text('Mensajes')), // Placeholder para Mensajes
-      const Center(child: Text('Perfil')), // Placeholder para Perfil
+      _buildExplorePage(),
+      MatchesScreen(currentUserId: currentUser?.uid ?? ''),
+      const Center(child: Text('Mensajes')),  // Placeholder
+      const Center(child: Text('Perfil')),    // Placeholder
     ];
   }
 
   void _onSearchChanged(String value) {
-    // Implementa la lógica de búsqueda aquí
+    // tu lógica de búsqueda
   }
 
   void _onFilterPressed() async {
@@ -87,11 +86,12 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
+  /// Conteo de notificaciones únicamente para los tipos usados en MatchesScreen
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
         .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('type', isEqualTo: 'join_request')
+        .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -128,6 +128,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                     );
                   }
 
+                  // Filtra al usuario actual (no lo muestres)
                   final validUsers = snapshot.data!.docs
                       .where((doc) => doc['uid'] != currentUser?.uid)
                       .toList();
@@ -138,6 +139,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             ),
           ],
         ),
+        // Menú lateral
         MainSideBarScreen(
           key: _menuKey,
           onMenuToggled: (bool open) {
@@ -146,7 +148,8 @@ class ExploreScreenState extends State<ExploreScreen> {
             });
           },
         ),
-        // Botones flotantes visibles solo en ExploreScreen
+
+        // Botón "Unirse a Plan"
         if (_currentIndex == 0)
           Positioned(
             bottom: 80,
@@ -173,6 +176,8 @@ class ExploreScreenState extends State<ExploreScreen> {
               ],
             ),
           ),
+
+        // Botón "Crear Plan"
         if (_currentIndex == 0)
           Positioned(
             bottom: 80,
@@ -217,7 +222,8 @@ class ExploreScreenState extends State<ExploreScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: _pages[_currentIndex], // Cambia dinámicamente el contenido del body
+        body: _pages[_currentIndex],
+
         bottomNavigationBar: Container(
           width: double.infinity,
           height: 60,
@@ -241,6 +247,7 @@ class ExploreScreenState extends State<ExploreScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              // Botón Explore
               IconButton(
                 iconSize: _iconSize,
                 icon: Icon(
@@ -250,11 +257,11 @@ class ExploreScreenState extends State<ExploreScreen> {
                       : const Color.fromARGB(57, 44, 43, 43),
                 ),
                 onPressed: () {
-                  setState(() {
-                    _currentIndex = 0;
-                  });
+                  setState(() => _currentIndex = 0);
                 },
               ),
+
+              // Botón Notificaciones => MatchesScreen
               IconButton(
                 iconSize: _iconSize,
                 icon: Stack(
@@ -275,11 +282,10 @@ class ExploreScreenState extends State<ExploreScreen> {
                           if (!snapshot.hasData || snapshot.data == 0) {
                             return const SizedBox();
                           }
-
                           final count = snapshot.data!;
                           return Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: Colors.red,
                               shape: BoxShape.circle,
                             ),
@@ -298,11 +304,11 @@ class ExploreScreenState extends State<ExploreScreen> {
                   ],
                 ),
                 onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
+                  setState(() => _currentIndex = 1);
                 },
               ),
+
+              // Botón Mensajes (placeholder)
               IconButton(
                 iconSize: _iconSize,
                 icon: Icon(
@@ -312,11 +318,11 @@ class ExploreScreenState extends State<ExploreScreen> {
                       : const Color.fromARGB(57, 44, 43, 43),
                 ),
                 onPressed: () {
-                  setState(() {
-                    _currentIndex = 2;
-                  });
+                  setState(() => _currentIndex = 2);
                 },
               ),
+
+              // Botón Perfil (placeholder)
               IconButton(
                 iconSize: _iconSize,
                 icon: Icon(
@@ -326,9 +332,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                       : const Color.fromARGB(57, 44, 43, 43),
                 ),
                 onPressed: () {
-                  setState(() {
-                    _currentIndex = 3;
-                  });
+                  setState(() => _currentIndex = 3);
                 },
               ),
             ],

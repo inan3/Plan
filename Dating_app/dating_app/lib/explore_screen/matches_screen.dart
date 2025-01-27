@@ -1,302 +1,293 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/plan_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class MatchesScreen extends StatelessWidget {
-  final String currentUserId; // ID del usuario actual
+// Ajusta estas rutas a tu estructura:
+import '../plan_creation/new_plan_creation_screen.dart';
+import '../plan_joining/plan_join_request.dart';
+import '../explore_screen/menu_side_bar/subscribed_plans_screen.dart';
+
+class MatchesScreen extends StatefulWidget {
+  final String currentUserId;
 
   const MatchesScreen({Key? key, required this.currentUserId}) : super(key: key);
 
-  /// Manejo de la aceptación de la solicitud
-/// Manejo de la aceptación de la solicitud
-void _acceptRequest(BuildContext context, String notificationId, String planId, String requesterId) async {
-  try {
-    // Actualiza la notificación como aceptada
-    await FirebaseFirestore.instance.collection('notifications').doc(notificationId).update({
-      'status': 'accepted',
-    });
-
-    // Enviar notificación de aceptación al solicitante
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'type': 'request_accepted',
-      'receiverId': requesterId,
-      'planId': planId,
-      'message': 'Tu solicitud para unirte al plan ha sido aceptada.',
-      'createdAt': DateTime.now().toIso8601String(),
-    });
-
-    // Elimina la notificación de la pantalla (Firestore)
-    await FirebaseFirestore.instance.collection('notifications').doc(notificationId).delete();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Solicitud aceptada exitosamente.')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al aceptar la solicitud: $e')),
-    );
-  }
+  @override
+  MatchesScreenState createState() => MatchesScreenState();
 }
 
-/// Manejo del rechazo de la solicitud
-void _rejectRequest(BuildContext context, String notificationId) async {
-  try {
-    // Actualiza la notificación como rechazada
-    await FirebaseFirestore.instance.collection('notifications').doc(notificationId).update({
-      'status': 'rejected',
-    });
+class MatchesScreenState extends State<MatchesScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-    // Elimina la notificación de la pantalla (Firestore)
-    await FirebaseFirestore.instance.collection('notifications').doc(notificationId).delete();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Solicitud rechazada.')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al rechazar la solicitud: $e')),
-    );
-  }
-}
-
-
-  /// Mostrar el perfil del usuario
-  void _viewUserProfile(BuildContext context, String userId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UserProfileScreen(userId: userId),
-      ),
-    );
+  /// Notificaciones de 'join_request' (cuando alguien pide unirse a un plan creado por este usuario B)
+  Stream<QuerySnapshot> _joinRequestsStream() {
+    return _firestore
+        .collection('notifications')
+        .where('receiverId', isEqualTo: widget.currentUserId)
+        .where('type', isEqualTo: 'join_request')
+        .snapshots();
   }
 
+  /// Notificaciones de 'join_accepted' o 'join_rejected' (cuando a este usuario A le aceptan o rechazan en un plan)
+  Stream<QuerySnapshot> _responseNotificationsStream() {
+    return _firestore
+        .collection('notifications')
+        .where('receiverId', isEqualTo: widget.currentUserId)
+        .where('type', whereIn: ['join_accepted', 'join_rejected'])
+        .snapshots();
+  }
 
-  /// Construir la vista de notificaciones
-Widget _buildNotificationItem(BuildContext context, DocumentSnapshot notificationDoc) {
-  final data = notificationDoc.data() as Map<String, dynamic>;
+  /// Aceptar la solicitud (B acepta a A)
+  Future<void> _acceptRequest(DocumentSnapshot notificationDoc) async {
+    try {
+      final data = notificationDoc.data() as Map<String, dynamic>;
+      final planId = data['planId'];
+      final planName = data['planName'] ?? 'Plan';
+      final senderId = data['senderId']; // A (quien solicitó unirse)
 
-  return FutureBuilder<DocumentSnapshot>(
-    future: FirebaseFirestore.instance.collection('plans').doc(data['planId']).get(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
+      // 1) Eliminar la notificación de tipo 'join_request'
+      await notificationDoc.reference.delete();
+
+      // 2) Obtener el documento completo del plan para duplicar sus datos en 'subscriptions'
+      final planSnap = await _firestore.collection('plans').doc(planId).get();
+      if (!planSnap.exists) {
+        throw Exception('El plan con ID $planId ya no existe.');
+      }
+      final planData = planSnap.data() as Map<String, dynamic>;
+
+      // Convertir posibles Timestamps a String (para que PlanModel.fromMap no falle)
+      String? dateIso;
+      if (planData['date'] != null) {
+        // Puede ser String o Timestamp
+        if (planData['date'] is Timestamp) {
+          dateIso = (planData['date'] as Timestamp).toDate().toIso8601String();
+        } else if (planData['date'] is String) {
+          dateIso = planData['date'];
+        }
+      }
+      String? createdAtIso;
+      if (planData['createdAt'] != null) {
+        if (planData['createdAt'] is Timestamp) {
+          createdAtIso =
+              (planData['createdAt'] as Timestamp).toDate().toIso8601String();
+        } else if (planData['createdAt'] is String) {
+          createdAtIso = planData['createdAt'];
+        }
       }
 
-      if (!snapshot.hasData || !snapshot.data!.exists) {
-        return const SizedBox(); // El plan ya no existe
-      }
+      // 3) Crear documento en 'subscriptions' con todos los campos que PlanModel necesita
+      await _firestore.collection('subscriptions').add({
+        // Campos del plan (coinciden con PlanModel):
+        'id': planData['id'],                        // planId
+        'type': planData['type'],
+        'description': planData['description'],
+        'minAge': planData['minAge'],
+        'maxAge': planData['maxAge'],
+        'maxParticipants': planData['maxParticipants'],
+        'location': planData['location'],
+        'latitude': planData['latitude'],
+        'longitude': planData['longitude'],
+        'date': dateIso,                             // String
+        'createdBy': planData['createdBy'],
+        'creatorName': planData['creatorName'],
+        'creatorProfilePic': planData['creatorProfilePic'],
+        'createdAt': createdAtIso,                   // String
 
-      // Construimos el plan desde el documento de Firestore
-      final planData = snapshot.data!.data() as Map<String, dynamic>;
-      final PlanModel plan = PlanModel.fromMap(planData);
+        // Campos adicionales de la suscripción
+        'userId': senderId, // El usuario que se suscribe
+        'subscriptionCreatedAt': FieldValue.serverTimestamp(),
+      });
 
-      return FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('users').doc(data['senderId']).get(),
-        builder: (context, userSnapshot) {
-          if (userSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      // 4) Crear la notificación 'join_accepted' para el usuario A
+      await _firestore.collection('notifications').add({
+        'type': 'join_accepted',
+        'receiverId': senderId,                  // A recibe
+        'senderId': widget.currentUserId,        // B envía
+        'planId': planId,
+        'planName': planName,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-          if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-            return const ListTile(
-              title: Text('Usuario no encontrado'),
-              subtitle: Text('No se pudo obtener la información del usuario.'),
-            );
-          }
-
-          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          final requesterName = userData['name'] ?? 'Usuario desconocido';
-          final requesterProfilePic = userData['photoUrl'] ?? 'https://via.placeholder.com/150';
-
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: NetworkImage(requesterProfilePic),
-            ),
-            title: Text('$requesterName ha solicitado unirse a tu plan de ${plan.type}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.red),
-                  onPressed: () => _rejectRequest(context, notificationDoc.id),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.check, color: Colors.green),
-                  onPressed: () => _acceptRequest(context, notificationDoc.id, plan.id, data['senderId']),
-                ),
-              ],
-            ),
-            onTap: () => _viewUserProfile(context, data['senderId']),
-          );
-        },
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Has aceptado la solicitud para el plan "$planName"')),
       );
-    },
-  );
-}
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al aceptar la solicitud: $e')),
+      );
+    }
+  }
 
+  /// Rechazar la solicitud (B rechaza a A)
+  Future<void> _rejectRequest(DocumentSnapshot notificationDoc) async {
+    try {
+      final data = notificationDoc.data() as Map<String, dynamic>;
+      final planId = data['planId'];
+      final planName = data['planName'] ?? 'Plan';
+      final senderId = data['senderId']; // A
+
+      // 1) Eliminar la notificación de join_request
+      await notificationDoc.reference.delete();
+
+      // 2) Crear notificación 'join_rejected' para A
+      await _firestore.collection('notifications').add({
+        'type': 'join_rejected',
+        'receiverId': senderId,             // A recibe
+        'senderId': widget.currentUserId,   // B envía
+        'planId': planId,
+        'planName': planName,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Has rechazado la solicitud para el plan "$planName"')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al rechazar la solicitud: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Botón flotante con "X" para salir
-          Positioned(
-            top: 45,
-            left: 30,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pop(context); // Vuelve a la pantalla anterior
-              },
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.close, color: Colors.blue, size: 28),
-              ),
-            ),
+    // Usamos un TabController para separar:
+    // Tab 1: Solicitudes (join_request)
+    // Tab 2: Respuestas (join_accepted / join_rejected)
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Notificaciones'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Solicitudes'),         // B ve y acepta/rechaza
+              Tab(text: 'Mis Notificaciones'),  // A ve si fue aceptado/rechazado
+            ],
           ),
-          // Logo centrado en la parte superior
-          Positioned(
-            top: 45,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Image.asset(
-                'assets/plan-sin-fondo.png',
-                height: 40,
-              ),
-            ),
-          ),
-          // Contenido principal de las notificaciones
-          Positioned.fill(
-            top: 120, // Ajusta el espacio debajo del logo y botón
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('notifications')
-                  .where('receiverId', isEqualTo: currentUserId)
-                  .where('type', isEqualTo: 'join_request')
-                  .snapshots(),
+        ),
+        body: TabBarView(
+          children: [
+            // ================= TAB 1: JOIN REQUESTS =================
+            StreamBuilder<QuerySnapshot>(
+              stream: _joinRequestsStream(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error al cargar solicitudes'));
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No tienes notificaciones.'));
+                final docs = snapshot.data?.docs ?? [];
+                if (docs.isEmpty) {
+                  return const Center(child: Text('No hay solicitudes pendientes.'));
                 }
 
-                final notifications = snapshot.data!.docs;
-
                 return ListView.builder(
-                  itemCount: notifications.length,
+                  itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final notificationDoc = notifications[index];
-                    return _buildNotificationItem(context, notificationDoc);
+                    final doc = docs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final requesterName = data['requesterName'] ?? 'Desconocido';
+                    final requesterPic = data['requesterProfilePic'] ?? '';
+                    final planName = data['planName'] ?? '(Plan)';
+                    final planId = data['planId'] ?? '';
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: NetworkImage(
+                          requesterPic.isNotEmpty
+                              ? requesterPic
+                              : 'https://via.placeholder.com/150',
+                        ),
+                      ),
+                      title: Text('$requesterName quiere unirse al plan "$planName" (ID: $planId)'),
+                      subtitle: const Text('Pulsa Aceptar o Rechazar'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Rechazar',
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () => _rejectRequest(doc),
+                          ),
+                          IconButton(
+                            tooltip: 'Aceptar',
+                            icon: const Icon(Icons.check, color: Colors.green),
+                            onPressed: () => _acceptRequest(doc),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 );
               },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-class UserProfileScreen extends StatelessWidget {
-  final String userId;
+            // ================= TAB 2: JOIN ACCEPTED / JOIN REJECTED =================
+            StreamBuilder<QuerySnapshot>(
+              stream: _responseNotificationsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error al cargar notificaciones'));
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snapshot.data?.docs ?? [];
+                if (docs.isEmpty) {
+                  return const Center(child: Text('No tienes notificaciones nuevas.'));
+                }
 
-  const UserProfileScreen({Key? key, required this.userId}) : super(key: key);
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final type = data['type'] as String;
+                    final planName = data['planName'] ?? '(Plan)';
+                    final planId = data['planId'] ?? '';
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                    // Distintos textos para aceptado o rechazado
+                    String contentText;
+                    if (type == 'join_accepted') {
+                      contentText = '¡Te han aceptado en el plan "$planName" (ID: $planId)!';
+                    } else {
+                      contentText = 'Lo sentimos, te han rechazado en el plan "$planName" (ID: $planId).';
+                    }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('No se encontró información del usuario.'));
-          }
+                    return ListTile(
+                      title: Text(contentText),
+                      onTap: () async {
+                        // Eliminamos la notificación al pulsarla
+                        await doc.reference.delete();
 
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-
-          return Column(
-            children: [
-              // AppBar personalizada
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    Image.asset(
-                      'assets/plan-sin-fondo.png',
-                      height: 40,
-                    ),
-                    const SizedBox(width: 48),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Image.network(
-                        userData['profilePic'] ?? 'https://via.placeholder.com/150',
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${userData['name']}, ${userData['age']} años',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text('Email: ${userData['email']}'),
-                          const SizedBox(height: 8),
-                          Text('Descripción: ${userData['description'] ?? 'Sin descripción'}'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+                        if (type == 'join_accepted') {
+                          // Redirigimos a Planes Suscritos
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SubscribedPlansScreen(
+                                userId: widget.currentUserId,
+                              ),
+                            ),
+                          );
+                        } else {
+                          // Rechazado: simplemente avisamos
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Has sido rechazado para el plan "$planName" (ID: $planId)'),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

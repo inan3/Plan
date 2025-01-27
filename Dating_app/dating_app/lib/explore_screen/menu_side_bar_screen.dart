@@ -48,11 +48,13 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
 
     return Stack(
       children: [
+        // Cierra el menú si tocas fuera
         if (isOpen)
           GestureDetector(
             onTap: toggleMenu,
             child: Container(color: Colors.transparent),
           ),
+
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           left: isOpen ? sidePadding : -menuWidth,
@@ -69,6 +71,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Logo u otra cosa
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
                   child: Row(
@@ -82,6 +85,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     ],
                   ),
                 ),
+
+                // Lista de items
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.zero,
@@ -93,12 +98,17 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
                       ),
+                      // Mis Planes (con badge = # de planes creados)
                       _buildMenuItemWithBadge(
                         icon: Icons.event,
                         title: 'Mis Planes',
                         destination: const MyPlansScreen(),
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
+                        stream: FirebaseFirestore.instance
+                            .collection('plans')
+                            .where('createdBy', isEqualTo: currentUserId)
+                            .snapshots(),
                       ),
                       _buildMenuItem(
                         icon: Icons.search,
@@ -107,13 +117,21 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
                       ),
-                      _buildMenuItem(
+
+                      // Planes Suscritos (con badge = # de planes suscritos)
+                      _buildMenuItemWithBadge(
                         icon: Icons.image,
                         title: 'Planes Suscritos',
                         destination: SubscribedPlansScreen(userId: currentUserId!),
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
+                        // Contamos cuántos docs en 'subscriptions' hay para este user
+                        stream: FirebaseFirestore.instance
+                            .collection('subscriptions')
+                            .where('userId', isEqualTo: currentUserId)
+                            .snapshots(),
                       ),
+
                       _buildMenuItem(
                         icon: Icons.notifications,
                         title: 'Notificaciones',
@@ -181,6 +199,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
+  /// Item de menú sin badge
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
@@ -207,54 +226,56 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
+  /// Item de menú con badge, usando un `StreamBuilder`
   Widget _buildMenuItemWithBadge({
     required IconData icon,
     required String title,
     required Widget destination,
     required Color iconColor,
     required Color textColor,
+    required Stream<QuerySnapshot> stream,
   }) {
-    return ListTile(
-      dense: true,
-      leading: Icon(icon, color: iconColor, size: 20),
-      title: Text(
-        title,
-        style: GoogleFonts.roboto(
-          color: textColor,
-          fontSize: 14,
-        ),
-      ),
-      trailing: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('plans')
-            .where('createdBy', isEqualTo: currentUserId) // Filtra por el usuario actual
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const SizedBox(); // No muestra el badge si no hay planes
-          }
+    return StreamBuilder<QuerySnapshot>(
+      stream: stream,
+      builder: (context, snapshot) {
+        int count = 0;
+        if (snapshot.hasData) {
+          count = snapshot.data!.docs.length;
+        }
 
-          return Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.blue,
-              shape: BoxShape.circle,
+        return ListTile(
+          dense: true,
+          leading: Icon(icon, color: iconColor, size: 20),
+          title: Text(
+            title,
+            style: GoogleFonts.roboto(
+              color: textColor,
+              fontSize: 14,
             ),
-            child: Text(
-              '${snapshot.data!.docs.length}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-        },
-      ),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => destination),
+          ),
+          trailing: count > 0
+              ? Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              : const SizedBox(),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => destination),
+            );
+          },
         );
       },
     );

@@ -1,8 +1,9 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Importa FirebaseAuth para autenticación
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PlanModel {
+  // Campos principales
   String id;
   String type;
   String description;
@@ -12,12 +13,13 @@ class PlanModel {
   String location;
   double? latitude;
   double? longitude;
-  DateTime? date; // Fecha del evento
-  String createdBy; // ID del usuario que crea el plan
-  String? creatorName; // Nombre del creador del plan
+  DateTime? date;
+  String createdBy;          // UID del creador
+  String? creatorName;       // Nombre del creador
   String? creatorProfilePic; // Foto de perfil del creador
-  DateTime? createdAt; // Fecha y hora de creación del plan
+  DateTime? createdAt;       // Fecha/hora de creación
 
+  // Constructor
   PlanModel({
     required this.id,
     required this.type,
@@ -35,24 +37,25 @@ class PlanModel {
     this.createdAt,
   });
 
+  // Genera un ID único para el plan
   static Future<String> generateUniqueId() async {
     const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     final Random random = Random();
     String id;
-
     do {
       id = List.generate(12, (index) => chars[random.nextInt(chars.length)]).join();
     } while (await _idExistsInFirebase(id));
-
     return id;
   }
 
+  // Verifica si ya existe en Firestore el ID generado
   static Future<bool> _idExistsInFirebase(String id) async {
     final DocumentSnapshot snapshot =
         await FirebaseFirestore.instance.collection('plans').doc(id).get();
     return snapshot.exists;
   }
 
+  // Convierte este objeto a Map, para guardar en Firestore
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -72,30 +75,62 @@ class PlanModel {
     };
   }
 
-  String formattedDate(DateTime? date) {
-    if (date == null) return 'Sin fecha';
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
+  // Crea un objeto PlanModel a partir de un Map (documento Firestore)
   factory PlanModel.fromMap(Map<String, dynamic> map) {
     return PlanModel(
-      id: map['id'] as String,
-      type: map['type'] as String,
-      description: map['description'] as String,
-      minAge: map['minAge'] as int,
-      maxAge: map['maxAge'] as int,
-      maxParticipants: map['maxParticipants'] != null ? map['maxParticipants'] as int : null,
-      location: map['location'] as String,
-      latitude: map['latitude'] != null ? map['latitude'] as double : null,
-      longitude: map['longitude'] != null ? map['longitude'] as double : null,
-      date: map['date'] != null ? DateTime.parse(map['date'] as String) : null,
-      createdBy: map['createdBy'] as String,
+      id: map['id'] == null ? '' : map['id'] as String,
+      type: map['type'] == null ? '' : map['type'] as String,
+      description: map['description'] == null ? '' : map['description'] as String,
+      minAge: map['minAge'] == null ? 0 : map['minAge'] as int,
+      maxAge: map['maxAge'] == null ? 99 : map['maxAge'] as int,
+      maxParticipants: map['maxParticipants'] != null
+          ? map['maxParticipants'] as int
+          : null,
+      location: map['location'] == null ? '' : map['location'] as String,
+      latitude: _parseDouble(map['latitude']),
+      longitude: _parseDouble(map['longitude']),
+      date: _parseDate(map['date']),
+      createdBy: map['createdBy'] == null ? '' : map['createdBy'] as String,
       creatorName: map['creatorName'] as String?,
       creatorProfilePic: map['creatorProfilePic'] as String?,
-      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      createdAt: _parseDate(map['createdAt']),
     );
   }
 
+  // Ayudante para parsear doubles
+  static double? _parseDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    if (val is String) {
+      return double.tryParse(val);
+    }
+    return null;
+  }
+
+  // Ayudante para parsear fechas
+  static DateTime? _parseDate(dynamic val) {
+    if (val == null) return null;
+    if (val is Timestamp) {
+      return val.toDate();
+    }
+    if (val is String) {
+      return DateTime.tryParse(val); // null si no puede parsearse
+    }
+    return null;
+  }
+
+  // Formatea la fecha/hora en dd/MM/yyyy HH:mm
+  String formattedDate(DateTime? d) {
+    if (d == null) return 'Sin fecha';
+    return '${d.day.toString().padLeft(2, '0')}/'
+           '${d.month.toString().padLeft(2, '0')}/'
+           '${d.year} '
+           '${d.hour.toString().padLeft(2, '0')}:'
+           '${d.minute.toString().padLeft(2, '0')}';
+  }
+
+  // Crea y guarda un plan en Firestore
+  // (No se añade el creador a "subscriptions", para que no aparezca en "Planes Suscritos")
   static Future<PlanModel> createPlan({
     required String type,
     required String description,
@@ -107,18 +142,18 @@ class PlanModel {
     DateTime? date,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) {
       throw Exception("Usuario no autenticado");
     }
 
+    // Datos del usuario que crea el plan
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     final userData = userDoc.data();
-
     if (userData == null) {
       throw Exception("No se encontraron datos del usuario");
     }
 
+    // Construimos el plan
     final plan = PlanModel(
       id: await generateUniqueId(),
       type: type,
@@ -135,7 +170,12 @@ class PlanModel {
       createdAt: DateTime.now(),
     );
 
-    await FirebaseFirestore.instance.collection('plans').doc(plan.id).set(plan.toMap());
+    // Guardar en la colección 'plans'
+    await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .set(plan.toMap());
+
     return plan;
   }
 }

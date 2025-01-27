@@ -73,7 +73,11 @@ class JoinPlanRequestScreen {
 
     try {
       // Obtenemos el documento del plan
-      final planDoc = await FirebaseFirestore.instance.collection('plans').doc(planId).get();
+      final planDoc = await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(planId)
+          .get();
+
       if (!planDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('El plan no existe.')),
@@ -82,7 +86,9 @@ class JoinPlanRequestScreen {
       }
 
       final planData = planDoc.data();
-      final String creatorId = planData?['createdBy'] ?? ''; // ID del creador del plan
+      final String creatorId = planData?['createdBy'] ?? '';
+      // Supongamos que el campo "type" describe el plan (ej: 'Viaje a la playa')
+      final String planName = planData?['type'] ?? 'Plan sin nombre';
 
       if (creatorId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,25 +97,29 @@ class JoinPlanRequestScreen {
         return;
       }
 
-      // Enviamos la solicitud a la colección de solicitudes del plan
-      await FirebaseFirestore.instance.collection('plans').doc(planId).collection('joinRequests').add({
+      // Enviamos la solicitud a la subcolección 'joinRequests' (opcional, si quieres llevar un control)
+      await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(planId)
+          .collection('joinRequests')
+          .add({
         'userId': currentUser.uid,
         'userName': currentUser.displayName ?? 'Usuario desconocido',
         'userProfilePic': currentUser.photoURL ?? '',
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // Enviamos una notificación al creador del plan
+      // Creamos una notificación para el creador del plan
       await FirebaseFirestore.instance.collection('notifications').add({
         'type': 'join_request',
-        'receiverId': creatorId,
-        'senderId': currentUser.uid,
+        'receiverId': creatorId,               // B (el creador)
+        'senderId': currentUser.uid,           // A (quien solicita)
         'planId': planId,
+        'planName': planName,                  // Para mostrar info del plan en la notificación
         'requesterName': currentUser.displayName ?? 'Usuario desconocido',
         'requesterProfilePic': currentUser.photoURL ?? '',
         'timestamp': FieldValue.serverTimestamp(),
       });
-
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Solicitud enviada exitosamente.')),
