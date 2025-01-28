@@ -37,13 +37,13 @@ class PlanModel {
     this.createdAt,
   });
 
-  // Genera un ID único para el plan
+  // Genera un ID único para el plan de 10 caracteres alfanuméricos
   static Future<String> generateUniqueId() async {
     const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     final Random random = Random();
     String id;
     do {
-      id = List.generate(12, (index) => chars[random.nextInt(chars.length)]).join();
+      id = List.generate(10, (index) => chars[random.nextInt(chars.length)]).join();
     } while (await _idExistsInFirebase(id));
     return id;
   }
@@ -153,9 +153,12 @@ class PlanModel {
       throw Exception("No se encontraron datos del usuario");
     }
 
+    // Genera un ID único de 10 caracteres
+    final String uniqueId = await generateUniqueId();
+
     // Construimos el plan
     final plan = PlanModel(
-      id: await generateUniqueId(),
+      id: uniqueId,
       type: type,
       description: description,
       minAge: minAge,

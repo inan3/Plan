@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart'; // Para Clipboard
 import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
 import '../../models/plan_model.dart';
@@ -67,54 +68,54 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
     }
   }
 
-void _savePlanToFirestore() async {
-  try {
-    // Validación inicial
-    if (_selectedDate == null || _selectedTime == null) {
-      throw Exception("Fecha y hora no seleccionadas.");
+  void _savePlanToFirestore() async {
+    try {
+      // Validación inicial
+      if (_selectedDate == null || _selectedTime == null) {
+        throw Exception("Fecha y hora no seleccionadas.");
+      }
+
+      // Obtén el UID del usuario actual
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("Usuario no autenticado");
+
+      // Genera un ID único de 10 caracteres si aún no se ha generado
+      if (widget.plan.id.isEmpty) {
+        widget.plan.id = await PlanModel.generateUniqueId();
+      }
+
+      // Asigna el UID del usuario actual al campo createdBy
+      widget.plan.createdBy = user.uid;
+
+      // Obtén el nombre del creador
+      widget.plan.creatorName = await _getCreatorName();
+
+      // Asigna la fecha seleccionada al plan
+      widget.plan.date = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      // Guarda la fecha de creación actual
+      widget.plan.createdAt = DateTime.now();
+
+      // Guarda el plan en Firestore
+      await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(widget.plan.id)
+          .set(widget.plan.toMap());
+
+      print('Plan guardado correctamente en Firestore.');
+    } catch (e) {
+      print('Error al guardar el plan en Firestore: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
     }
-
-    // Obtén el UID del usuario actual
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception("Usuario no autenticado");
-
-    // Genera un ID único si aún no se ha generado
-    widget.plan.id = widget.plan.id.isEmpty ? Uuid().v4() : widget.plan.id;
-
-    // Asigna el UID del usuario actual al campo createdBy
-    widget.plan.createdBy = user.uid;
-
-    // Obtén el nombre del creador
-    widget.plan.creatorName = await _getCreatorName();
-
-    // Asigna la fecha seleccionada al plan
-    widget.plan.date = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
-    );
-
-    // Guarda la fecha de creación actual
-    widget.plan.createdAt = DateTime.now();
-
-    // Guarda el plan en Firestore
-    await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(widget.plan.id)
-        .set(widget.plan.toMap());
-
-    print('Plan guardado correctamente en Firestore.');
-  } catch (e) {
-    print('Error al guardar el plan en Firestore: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: ${e.toString()}')),
-    );
   }
-}
-
-
 
   void _finalizePlan() {
     if (_selectedDate != null && _selectedTime != null) {

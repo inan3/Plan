@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
+import 'package:flutter/services.dart'; // Importar para Clipboard
 
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({Key? key}) : super(key: key);
@@ -69,6 +70,13 @@ class MyPlansScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
+          // Ajusta el padding interno del diálogo para desplazarlo hacia abajo
+          insetPadding: EdgeInsets.only(
+            top: MediaQuery.of(context).size.height * 0.15, // 15% desde arriba
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -80,122 +88,154 @@ class MyPlansScreen extends StatelessWidget {
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.7,
-            child: Container(
-              color: Colors.white,
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _fetchAllPlanParticipants(plan),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return Text(
-                      'Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.black),
-                    );
-                  }
+            child: SingleChildScrollView( // Asegurar scroll si el contenido es largo
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Mostrar el ID del Plan con botón de copiar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "ID del Plan: ${plan.id}",
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.copy, color: Colors.blue),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: plan.id));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('ID copiado al portapapeles')),
+                          );
+                        },
+                        tooltip: 'Copiar ID',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text("Descripción: ${plan.description}",
+                      style: const TextStyle(color: Colors.black)),
+                  Text("Restricción de Edad: ${plan.minAge} - ${plan.maxAge} años",
+                      style: const TextStyle(color: Colors.black)),
+                  Text("Máximo Participantes: ${plan.maxParticipants ?? 'Sin límite'}",
+                      style: const TextStyle(color: Colors.black)),
+                  Text("Ubicación: ${plan.location}",
+                      style: const TextStyle(color: Colors.black)),
+                  Text("Fecha del Evento: ${plan.formattedDate(plan.date)}",
+                      style: const TextStyle(color: Colors.black)),
+                  Text("Creado el: ${plan.formattedDate(plan.createdAt)}",
+                      style: const TextStyle(color: Colors.black)),
+                  const SizedBox(height: 10),
 
-                  final all = snapshot.data ?? [];
-
-                  // 1) Buscar al creador
-                  final creator = all.firstWhere(
-                    (p) => p['isCreator'] == true,
-                    orElse: () => {},
-                  );
-
-                  // 2) Filtrar los participantes que no son el creador
-                  final participants = all.where((p) => p['isCreator'] == false).toList();
-
-                  // 3) Ordenar participantes por nombre (alfabético)
-                  participants.sort((a, b) {
-                    final nameA = (a['name'] ?? '') as String;
-                    final nameB = (b['name'] ?? '') as String;
-                    return nameA.compareTo(nameB);
-                  });
-
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Descripción: ${plan.description}",
-                            style: const TextStyle(color: Colors.black)),
-                        Text("Restricción de Edad: ${plan.minAge} - ${plan.maxAge} años",
-                            style: const TextStyle(color: Colors.black)),
-                        Text("Máximo Participantes: ${plan.maxParticipants ?? 'Sin límite'}",
-                            style: const TextStyle(color: Colors.black)),
-                        Text("Ubicación: ${plan.location}",
-                            style: const TextStyle(color: Colors.black)),
-                        Text("Fecha del Evento: ${plan.formattedDate(plan.date)}",
-                            style: const TextStyle(color: Colors.black)),
-                        Text("Creado el: ${plan.formattedDate(plan.createdAt)}",
-                            style: const TextStyle(color: Colors.black)),
-                        const SizedBox(height: 10),
-
-                        // Creador del plan
-                        if (creator is Map && creator.isNotEmpty)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text("Creador del Plan:",
-                                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: (creator['photoUrl'] as String).isNotEmpty
-                                      ? NetworkImage(creator['photoUrl'])
-                                      : null,
-                                  backgroundColor: Colors.purple[100],
-                                ),
-                                title: Text(
-                                  '${creator['name'] ?? 'Desconocido'}, ${creator['age']}',
-                                  style: const TextStyle(color: Colors.black),
-                                ),
+                  // Creador del plan
+                  if (plan.createdBy.isNotEmpty)
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('users').doc(plan.createdBy).get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return const SizedBox();
+                        }
+                        final creatorData = snapshot.data!.data() as Map<String, dynamic>;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("Creador del Plan:",
+                                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage: (creatorData['photoUrl'] as String).isNotEmpty
+                                    ? NetworkImage(creatorData['photoUrl'])
+                                    : null,
+                                backgroundColor: Colors.purple[100],
                               ),
-                              const SizedBox(height: 10),
-                            ],
-                          ),
-
-                        // Resto de participantes
-                        const Text("Participantes:",
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-
-                        if (participants.isEmpty)
-                          const Text(
-                            'No hay participantes en este plan.',
-                            style: TextStyle(color: Colors.black),
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: participants.length,
-                            itemBuilder: (context, index) {
-                              final part = participants[index];
-                              final pic = part['photoUrl'] ?? '';
-                              final name = part['name'] ?? 'Usuario';
-                              final age = part['age'] ?? '';
-
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: pic.isNotEmpty
-                                      ? NetworkImage(pic)
-                                      : null,
-                                  backgroundColor: Colors.purple[100],
-                                ),
-                                title: Text(
-                                  '$name, $age',
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                              );
-                            },
-                          ),
-                      ],
+                              title: Text(
+                                '${creatorData['name']}, ${creatorData['age']}',
+                                style: const TextStyle(color: Colors.black),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        );
+                      },
                     ),
-                  );
-                },
+
+                  // Participantes
+                  const Text("Participantes:",
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+
+                  // Mostrar el ID de plan como parte de los detalles
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _fetchAllPlanParticipants(plan),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Text(
+                          'Error: ${snapshot.error}',
+                          style: const TextStyle(color: Colors.black),
+                        );
+                      }
+
+                      final all = snapshot.data ?? [];
+
+                      // 1) Creador
+                      final creator = all.firstWhere(
+                        (p) => p['isCreator'] == true,
+                        orElse: () => {},
+                      );
+
+                      // 2) Participantes (excluyendo creador)
+                      final participants = all.where((p) => p['isCreator'] == false).toList();
+                      // Orden alfabético por 'name'
+                      participants.sort((a, b) {
+                        final nameA = (a['name'] ?? '') as String;
+                        final nameB = (b['name'] ?? '') as String;
+                        return nameA.compareTo(nameB);
+                      });
+
+                      return participants.isEmpty
+                          ? const Text(
+                              'No hay participantes en este plan.',
+                              style: TextStyle(color: Colors.black),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: participants.length,
+                              itemBuilder: (context, index) {
+                                final part = participants[index];
+                                final pic = part['photoUrl'] ?? '';
+                                final name = part['name'] ?? 'Usuario';
+                                final age = part['age'] ?? '';
+
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundImage: pic.isNotEmpty
+                                        ? NetworkImage(pic)
+                                        : null,
+                                    backgroundColor: Colors.purple[100],
+                                  ),
+                                  title: Text(
+                                    '$name, $age',
+                                    style: const TextStyle(color: Colors.black),
+                                  ),
+                                );
+                              },
+                            );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -246,6 +286,9 @@ class MyPlansScreen extends StatelessWidget {
                 }
 
                 Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Plan ${plan.type} eliminado correctamente.')),
+                );
               },
               child: const Text("Eliminar"),
             ),
@@ -307,6 +350,7 @@ class MyPlansScreen extends StatelessWidget {
                     children: [
                       Text("Fecha del Evento: ${plan.formattedDate(plan.date)}"),
                       Text("Creado el: ${plan.formattedDate(plan.createdAt)}"),
+                      Text("ID del Plan: ${plan.id}", style: TextStyle(fontSize: 12, color: Colors.grey[700])),
                     ],
                   ),
                   trailing: FloatingActionButton.small(

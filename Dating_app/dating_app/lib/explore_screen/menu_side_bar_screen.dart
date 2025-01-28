@@ -10,7 +10,6 @@ import 'menu_side_bar/explore_plans_screen.dart';
 import 'menu_side_bar/notifications_screen.dart';
 import 'menu_side_bar/chat_screen.dart';
 import 'menu_side_bar/valorations_screen.dart';
-import 'menu_side_bar/create_plan_screen.dart';
 import 'menu_side_bar/favourites_screen.dart';
 import 'menu_side_bar/settings_screen.dart';
 import 'menu_side_bar/help_center_screen.dart';
@@ -150,13 +149,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         icon: Icons.star,
                         title: 'Valoraciones',
                         destination: const ValorationsScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.add_circle_outline,
-                        title: 'Crear Plan',
-                        destination: const CreatePlanScreen(),
                         iconColor: AppColors.blue,
                         textColor: AppColors.black,
                       ),

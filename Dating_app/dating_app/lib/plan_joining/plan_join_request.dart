@@ -1,3 +1,4 @@
+// plan_joining_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -87,13 +88,18 @@ class JoinPlanRequestScreen {
 
       final planData = planDoc.data();
       final String creatorId = planData?['createdBy'] ?? '';
-      // Supongamos que el campo "type" describe el plan (ej: 'Viaje a la playa')
       final String planName = planData?['type'] ?? 'Plan sin nombre';
 
       if (creatorId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('El creador del plan no se encontró.')),
         );
+        return;
+      }
+
+      // **Verificación: Si el usuario es el creador del plan**
+      if (currentUser.uid == creatorId) {
+        _showCreatorJoinAttemptDialog(context);
         return;
       }
 
@@ -130,5 +136,47 @@ class JoinPlanRequestScreen {
         SnackBar(content: Text('Error al enviar la solicitud: $e')),
       );
     }
+  }
+
+  /// Muestra un pop-up cuando el creador intenta unirse a su propio plan
+  static void _showCreatorJoinAttemptDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 10),
+                    Text(
+                      "El plan al que intentas unirte ha sido creado por ti. Puedes consultarlo en Mis Planes.",
+                      style: const TextStyle(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+              // Ícono de "X" para cerrar el pop-up
+              Positioned(
+                right: 0,
+                child: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
