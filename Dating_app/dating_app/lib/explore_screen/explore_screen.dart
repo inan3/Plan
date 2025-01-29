@@ -162,18 +162,10 @@ class ExploreScreenState extends State<ExploreScreen> {
                 JoinPlanRequestScreen.showJoinPlanDialog(context);
               },
               margin: const EdgeInsets.only(left: 32, bottom: 70),
-              backgroundColor: Colors.white,
               borderColor: const Color.fromARGB(236, 0, 4, 227),
               borderWidth: 1,
               textColor: AppColors.blue,
               iconColor: AppColors.blue,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
           ),
 
@@ -196,17 +188,9 @@ class ExploreScreenState extends State<ExploreScreen> {
               },
               margin: const EdgeInsets.only(right: 8, bottom: 70),
               backgroundColor: AppColors.blue,
-              borderColor: Colors.transparent,
               borderWidth: 0,
               textColor: Colors.white,
               iconColor: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
           ),
       ],
@@ -236,13 +220,6 @@ class ExploreScreenState extends State<ExploreScreen> {
               color: AppColors.blue,
               width: 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,

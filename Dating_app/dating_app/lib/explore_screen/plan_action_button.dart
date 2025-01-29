@@ -29,32 +29,29 @@ class PlanActionButton extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        color: backgroundColor,
+    return FloatingActionButton.extended(
+      heroTag: heroTag,
+      backgroundColor: backgroundColor, // Usa el color de fondo directamente
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(30),
-        border: borderColor != null
-            ? Border.all(color: borderColor!, width: borderWidth)
-            : null,
-        boxShadow: boxShadow,
+        side: borderColor != null
+            ? BorderSide(color: borderColor!, width: borderWidth)
+            : BorderSide.none,
       ),
-      child: FloatingActionButton.extended(
-        heroTag: heroTag,
-        backgroundColor: Colors.transparent, // Fondo transparente
-        icon: Image.asset(
-          iconPath,
-          height: 24,
-          width: 24,
-          color: iconColor, // Aplica el color del icono
-        ),
-        label: Text(
-          label,
-          style: TextStyle(color: textColor ?? Colors.black), // Aplica el color del texto
-        ),
-        onPressed: onPressed,
+      icon: Image.asset(
+        iconPath,
+        height: 24,
+        width: 24,
+        color: iconColor, 
       ),
+      label: Text(
+        label,
+        style: TextStyle(color: textColor ?? Colors.black),
+      ),
+      onPressed: onPressed,
     );
   }
+
 }
