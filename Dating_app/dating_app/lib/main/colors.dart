@@ -11,7 +11,7 @@ class AppColors {
   static const Color secondaryDark = Color(0xFF018786);
 
   // Colores de fondo
-  static const Color background = Color.fromARGB(255, 255, 255, 255);
+  static const Color background =Color(0xFFFEF7FF);
   static const Color black = Color.fromARGB(255, 0, 0, 0);
 
   // Colores de texto
@@ -27,4 +27,6 @@ class AppColors {
 
   // Color blanco (faltante)
   static const Color white = Color(0xFFFFFFFF);
+  static const Color popularBackground = Color(0xFFF3F4F6); // Gris claro para populares
+  static const Color nearbyBackground = Color(0xFFFFFFFF); // Blanco para cercanos
 }

@@ -92,54 +92,63 @@ class _NewPlanCreationScreenState extends State<NewPlanCreationScreen> {
     });
   }
 
-  OverlayEntry _createOverlayEntry() {
-    return OverlayEntry(
-      builder: (context) => Positioned(
-        left: 20, // Modifica este valor para ajustar la posición horizontal
-        top: 300, // Modifica este valor para ajustar la posición vertical
-        width: 340, // Modifica este valor para ajustar el ancho
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 400, // Modifica este valor para ajustar la altura
-            decoration: BoxDecoration(
+OverlayEntry _createOverlayEntry() {
+  return OverlayEntry(
+    builder: (context) => GestureDetector( // Agrega este GestureDetector
+      behavior: HitTestBehavior.opaque, // Captura toques fuera del menú
+      onTap: _closeDropdown, // Cierra el dropdown al tocar fuera
+      child: Stack(
+        children: [
+          Positioned(
+            left: 20, 
+            top: 300, 
+            width: 340, 
+            child: Material(
+              elevation: 4,
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-            ),
-            child: ListView.builder(
-              itemCount: _plans.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  leading: Icon(
-                    _plans[index]['icon'],
-                    color: AppColors.blue,
-                  ),
-                  title: Text(
-                    _plans[index]['name'],
-                    style: TextStyle(color: Colors.black, fontFamily: 'Roboto'),
-                  ),
-                  onTap: () {
-                    if (_plans[index]['name'] == 'Otro (Especificar)') {
-                      _closeDropdown();
-                      _showCustomPlanDialog();
-                    } else {
-                      setState(() {
-                        _selectedPlan = _plans[index]['name'];
-                        _selectedIcon = _plans[index]['icon'];
-                        _customPlan = null;
-                      });
-                      _closeDropdown();
-                    }
+              child: Container(
+                height: 400,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                ),
+                child: ListView.builder(
+                  itemCount: _plans.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: Icon(
+                        _plans[index]['icon'],
+                        color: AppColors.blue,
+                      ),
+                      title: Text(
+                        _plans[index]['name'],
+                        style: TextStyle(color: Colors.black, fontFamily: 'Roboto'),
+                      ),
+                      onTap: () {
+                        if (_plans[index]['name'] == 'Otro (Especificar)') {
+                          _closeDropdown();
+                          _showCustomPlanDialog();
+                        } else {
+                          setState(() {
+                            _selectedPlan = _plans[index]['name'];
+                            _selectedIcon = _plans[index]['icon'];
+                            _customPlan = null;
+                          });
+                          _closeDropdown();
+                        }
+                      },
+                    );
                   },
-                );
-              },
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   void _showCustomPlanDialog() {
     showDialog(

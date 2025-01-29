@@ -54,13 +54,13 @@ class ExploreScreenState extends State<ExploreScreen> {
     _pages = [
       _buildExplorePage(),
       MatchesScreen(currentUserId: currentUser?.uid ?? ''),
-      const Center(child: Text('Mensajes')),  // Placeholder
-      const Center(child: Text('Perfil')),    // Placeholder
+      const Center(child: Text('Mensajes')),
+      const Center(child: Text('Perfil')),
     ];
   }
 
   void _onSearchChanged(String value) {
-    // tu lógica de búsqueda
+    // Lógica de búsqueda
   }
 
   void _onFilterPressed() async {
@@ -86,12 +86,20 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  /// Conteo de notificaciones únicamente para los tipos usados en MatchesScreen
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
         .where('receiverId', isEqualTo: currentUser?.uid)
         .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> _unreadMessagesCountStream() {
+    return FirebaseFirestore.instance
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('isRead', isEqualTo: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -108,38 +116,90 @@ class ExploreScreenState extends State<ExploreScreen> {
               onSearchChanged: _onSearchChanged,
             ),
             const SizedBox(height: 10),
-            const PopularUsersSection(),
-            const SizedBox(height: 10),
             Expanded(
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance.collection('users').snapshots(),
-                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: Colors.black),
-                    );
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No hay usuarios disponibles.',
-                        style: TextStyle(fontSize: 18, color: Colors.black),
+              child: Column(
+                children: [
+                  // Sección de usuarios populares
+                  Expanded(
+                    flex: 2,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 15),
+                        decoration: BoxDecoration(
+                          color: AppColors.popularBackground,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        child: const Column(
+                          children: [
+                            Expanded(child: PopularUsersSection()),
+                          ],
+                        ),
                       ),
-                    );
-                  }
+                    ),
+                  ),
+                  
+                  // Sección de usuarios cercanos
+                  Expanded(
+                    flex: 3,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 15),
+                        decoration: BoxDecoration(
+                          color: AppColors.nearbyBackground,
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
+                              child: Text(
+                                'Cercanos',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: StreamBuilder(
+                                stream: FirebaseFirestore.instance.collection('users').snapshots(),
+                                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(color: Colors.black),
+                                    );
+                                  }
+                                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                    return const Center(
+                                      child: Text(
+                                        'No hay usuarios cercanos.',
+                                        style: TextStyle(fontSize: 18, color: Colors.black),
+                                      ),
+                                    );
+                                  }
 
-                  // Filtra al usuario actual (no lo muestres)
-                  final validUsers = snapshot.data!.docs
-                      .where((doc) => doc['uid'] != currentUser?.uid)
-                      .toList();
+                                  final validUsers = snapshot.data!.docs
+                                      .where((doc) => doc['uid'] != currentUser?.uid)
+                                      .toList();
 
-                  return UsersGrid(users: validUsers);
-                },
+                                  return UsersGrid(users: validUsers);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        // Menú lateral
         MainSideBarScreen(
           key: _menuKey,
           onMenuToggled: (bool open) {
@@ -148,8 +208,6 @@ class ExploreScreenState extends State<ExploreScreen> {
             });
           },
         ),
-
-        // Botón "Unirse a Plan"
         if (_currentIndex == 0)
           Positioned(
             bottom: 80,
@@ -157,7 +215,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             child: PlanActionButton(
               heroTag: 'joinPlan',
               label: 'Unirse a Plan',
-              iconPath: 'assets/boton-union.png',
+              iconPath: 'assets/union.png',
               onPressed: () {
                 JoinPlanRequestScreen.showJoinPlanDialog(context);
               },
@@ -168,8 +226,6 @@ class ExploreScreenState extends State<ExploreScreen> {
               iconColor: AppColors.blue,
             ),
           ),
-
-        // Botón "Crear Plan"
         if (_currentIndex == 0)
           Positioned(
             bottom: 80,
@@ -177,7 +233,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             child: PlanActionButton(
               heroTag: 'createPlan',
               label: 'Crear Plan',
-              iconPath: 'assets/boton-editar.png',
+              iconPath: 'assets/anadir.png',
               onPressed: () {
                 Navigator.push(
                   context,
@@ -205,115 +261,128 @@ class ExploreScreenState extends State<ExploreScreen> {
         statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: _pages[_currentIndex],
-
-        bottomNavigationBar: Container(
-          width: double.infinity,
-          height: 60,
-          margin: const EdgeInsets.only(bottom: 20),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: AppColors.blue,
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Botón Explore
-              IconButton(
-                iconSize: _iconSize,
-                icon: Icon(
-                  Icons.location_on,
-                  color: _currentIndex == 0
-                      ? AppColors.blue
-                      : const Color.fromARGB(57, 44, 43, 43),
+        backgroundColor: AppColors.background,
+        body: Column(
+          children: [
+            Expanded(child: _pages[_currentIndex]),
+            const SizedBox(height: 10),
+            Center(
+              child: Container(
+                width: 250,
+                height: 60,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: AppColors.blue,
+                    width: 1,
+                  ),
                 ),
-                onPressed: () {
-                  setState(() => _currentIndex = 0);
-                },
-              ),
-
-              // Botón Notificaciones => MatchesScreen
-              IconButton(
-                iconSize: _iconSize,
-                icon: Stack(
-                  clipBehavior: Clip.none,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Icon(
-                      Icons.favorite,
-                      color: _currentIndex == 1
-                          ? AppColors.blue
-                          : const Color.fromARGB(57, 44, 43, 43),
-                    ),
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: StreamBuilder<int>(
-                        stream: _notificationCountStream(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData || snapshot.data == 0) {
-                            return const SizedBox();
-                          }
-                          final count = snapshot.data!;
-                          return Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              count > 9 ? '9+' : '$count',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        },
+                    IconButton(
+                      iconSize: _iconSize,
+                      icon: Image.asset(
+                        'assets/casa.png',
+                        color: _currentIndex == 0 ? AppColors.blue : Colors.black,
+                        width: 32,
+                        height: 32,
                       ),
+                      onPressed: () => setState(() => _currentIndex = 0),
+                    ),
+                    IconButton(
+                      iconSize: _iconSize,
+                      icon: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Image.asset(
+                            'assets/corazon.png',
+                            color: _currentIndex == 1 ? AppColors.blue : Colors.black,
+                            width: 32,
+                            height: 32,
+                          ),
+                          Positioned(
+                            right: -6,
+                            top: -6,
+                            child: StreamBuilder<int>(
+                              stream: _notificationCountStream(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData || snapshot.data == 0) return const SizedBox();
+                                final count = snapshot.data!;
+                                return Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    count > 9 ? '9+' : '$count',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      onPressed: () => setState(() => _currentIndex = 1),
+                    ),
+                    IconButton(
+                      iconSize: _iconSize,
+                      icon: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Image.asset(
+                            'assets/mensaje.png',
+                            color: _currentIndex == 2 ? AppColors.blue : Colors.black,
+                            width: 32,
+                            height: 32,
+                          ),
+                          StreamBuilder<int>(
+                            stream: _unreadMessagesCountStream(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData && snapshot.data! > 0) {
+                                return Positioned(
+                                  right: -2,
+                                  top: -2,
+                                  child: Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ],
+                      ),
+                      onPressed: () => setState(() => _currentIndex = 2),
+                    ),
+                    IconButton(
+                      iconSize: _iconSize,
+                      icon: Image.asset(
+                        'assets/usuario.png',
+                        color: _currentIndex == 3 ? AppColors.blue : Colors.black,
+                        width: 32,
+                        height: 32,
+                      ),
+                      onPressed: () => setState(() => _currentIndex = 3),
                     ),
                   ],
                 ),
-                onPressed: () {
-                  setState(() => _currentIndex = 1);
-                },
               ),
-
-              // Botón Mensajes (placeholder)
-              IconButton(
-                iconSize: _iconSize,
-                icon: Icon(
-                  Icons.message,
-                  color: _currentIndex == 2
-                      ? AppColors.blue
-                      : const Color.fromARGB(57, 44, 43, 43),
-                ),
-                onPressed: () {
-                  setState(() => _currentIndex = 2);
-                },
-              ),
-
-              // Botón Perfil (placeholder)
-              IconButton(
-                iconSize: _iconSize,
-                icon: Icon(
-                  Icons.person,
-                  color: _currentIndex == 3
-                      ? AppColors.blue
-                      : const Color.fromARGB(57, 44, 43, 43),
-                ),
-                onPressed: () {
-                  setState(() => _currentIndex = 3);
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
