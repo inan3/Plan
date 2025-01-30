@@ -1,11 +1,60 @@
+// welcome_screen.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Paquete para fuentes de Google
+import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importa FirebaseAuth
 import 'login_screen.dart';
 import 'register_screen.dart';
+import '../explore_screen/explore_screen.dart'; // Asegúrate de tener esta pantalla creada
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
+  @override
+  _WelcomeScreenState createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  // Variable para almacenar el estado de autenticación
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  // Función para verificar el estado de autenticación
+  void _checkLoginStatus() async {
+    // Obtiene el usuario actual
+    User? user = FirebaseAuth.instance.currentUser;
+
+    // Espera un breve momento para simular una carga o realizar operaciones asíncronas
+    await Future.delayed(Duration(seconds: 1));
+
+    if (user != null) {
+      // Si el usuario está autenticado, navega a ExploreScreen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => ExploreScreen()),
+      );
+    } else {
+      // Si no está autenticado, permanece en WelcomeScreen
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Muestra un indicador de carga mientras verifica el estado de autenticación
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Si no está autenticado, muestra la pantalla de bienvenida
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -52,7 +101,7 @@ class WelcomeScreen extends StatelessWidget {
               // Botones
               Column(
                 children: [
-                  // Botón "Inicia sesión"
+                  // Botón "Iniciar sesión"
                   SizedBox(
                     width: 200, // Tamaño fijo para ambos botones
                     child: ElevatedButton(
@@ -84,7 +133,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20),
-                  // Botón "Regístrate ahora"
+                  // Botón "Registrarse"
                   SizedBox(
                     width: 200, // Tamaño fijo para ambos botones
                     child: OutlinedButton(

@@ -41,7 +41,7 @@ class ExploreAppBar extends StatelessWidget {
 
         // Logo "PLAN" centrado
         Image.asset(
-          'assets/plan.png',
+          'assets/plan-sin-fondo.png',
           height: 80, // Ajusta la altura según sea necesario
         ),
 

@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dating_app/main/colors.dart';
+import 'dart:ui';
 
+// Importaciones de pantallas
 import 'menu_side_bar/profile_screen.dart';
 import 'menu_side_bar/my_plans_screen.dart';
 import 'menu_side_bar/explore_plans_screen.dart';
@@ -30,8 +32,6 @@ class MainSideBarScreen extends StatefulWidget {
 
 class MainSideBarScreenState extends State<MainSideBarScreen> {
   bool isOpen = false;
-  final double menuWidth = 240;
-  final double sidePadding = 10;
   final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   void toggleMenu() {
@@ -43,144 +43,170 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double menuHeight = MediaQuery.of(context).size.height / 2;
+    final Size screenSize = MediaQuery.of(context).size;
 
     return Stack(
       children: [
-        // Cierra el menú si tocas fuera
         if (isOpen)
           GestureDetector(
             onTap: toggleMenu,
-            child: Container(color: Colors.transparent),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                color: Colors.black.withOpacity(0.2),
+              ),
+            ),
           ),
 
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
-          left: isOpen ? sidePadding : -menuWidth,
-          top: MediaQuery.of(context).padding.top + 10,
-          height: menuHeight,
-          width: menuWidth,
+          left: isOpen ? 0 : -screenSize.width,
+          top: 0,
+          width: screenSize.width,
+          height: screenSize.height,
           child: Material(
-            elevation: 6,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-              side: BorderSide(color: AppColors.blue, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            color: Colors.transparent,
+            child: Stack(
               children: [
-                // Logo u otra cosa
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-                  child: Row(
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Image.asset(
-                        'assets/plan-sin-fondo.png',
-                        height: 60,
-                        width: 60,
-                        fit: BoxFit.contain,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16.0, top: 40.0, bottom: 16.0),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              'assets/plan-sin-fondo.png',
+                              height: 60,
+                              width: 60,
+                              fit: BoxFit.contain,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          children: [
+                            _buildMenuItem(
+                              icon: Icons.person,
+                              title: 'Perfil',
+                              destination: const ProfileScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItemWithBadge(
+                              icon: Icons.event,
+                              title: 'Mis Planes',
+                              destination: const MyPlansScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                              stream: FirebaseFirestore.instance
+                                  .collection('plans')
+                                  .where('createdBy', isEqualTo: currentUserId)
+                                  .snapshots(),
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.search,
+                              title: 'Explorar Planes',
+                              destination: const ExplorePlansScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItemWithBadge(
+                              icon: Icons.image,
+                              title: 'Planes Suscritos',
+                              destination: SubscribedPlansScreen(userId: currentUserId!),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                              stream: FirebaseFirestore.instance
+                                  .collection('subscriptions')
+                                  .where('userId', isEqualTo: currentUserId)
+                                  .snapshots(),
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.notifications,
+                              title: 'Notificaciones',
+                              destination: const NotificationsScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.chat,
+                              title: 'Chat',
+                              destination: const ChatScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.star,
+                              title: 'Valoraciones',
+                              destination: const ValorationsScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.favorite,
+                              title: 'Favoritos',
+                              destination: const FavouritesScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.settings,
+                              title: 'Ajustes',
+                              destination: const SettingsScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.help_outline,
+                              title: 'Centro de Ayuda',
+                              destination: const HelpCenterScreen(),
+                              iconColor: AppColors.blue,
+                              textColor: AppColors.black,
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.logout,
+                              title: 'Cerrar Sesión',
+                              destination: const CloseSessionScreen(),
+                              iconColor: Colors.red,
+                              textColor: Colors.red,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                // Lista de items
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _buildMenuItem(
-                        icon: Icons.person,
-                        title: 'Perfil',
-                        destination: const ProfileScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
+                Positioned(
+                  top: 40,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: toggleMenu,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      // Mis Planes (con badge = # de planes creados)
-                      _buildMenuItemWithBadge(
-                        icon: Icons.event,
-                        title: 'Mis Planes',
-                        destination: const MyPlansScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                        stream: FirebaseFirestore.instance
-                            .collection('plans')
-                            .where('createdBy', isEqualTo: currentUserId)
-                            .snapshots(),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.blue,
+                        size: 24,
                       ),
-                      _buildMenuItem(
-                        icon: Icons.search,
-                        title: 'Explorar Planes',
-                        destination: const ExplorePlansScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-
-                      // Planes Suscritos (con badge = # de planes suscritos)
-                      _buildMenuItemWithBadge(
-                        icon: Icons.image,
-                        title: 'Planes Suscritos',
-                        destination: SubscribedPlansScreen(userId: currentUserId!),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                        // Contamos cuántos docs en 'subscriptions' hay para este user
-                        stream: FirebaseFirestore.instance
-                            .collection('subscriptions')
-                            .where('userId', isEqualTo: currentUserId)
-                            .snapshots(),
-                      ),
-
-                      _buildMenuItem(
-                        icon: Icons.notifications,
-                        title: 'Notificaciones',
-                        destination: const NotificationsScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.chat,
-                        title: 'Chat',
-                        destination: const ChatScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.star,
-                        title: 'Valoraciones',
-                        destination: const ValorationsScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.favorite,
-                        title: 'Favoritos',
-                        destination: const FavouritesScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.settings,
-                        title: 'Ajustes',
-                        destination: const SettingsScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.help_outline,
-                        title: 'Centro de Ayuda',
-                        destination: const HelpCenterScreen(),
-                        iconColor: AppColors.blue,
-                        textColor: AppColors.black,
-                      ),
-                      _buildMenuItem(
-                        icon: Icons.logout,
-                        title: 'Cerrar Sesión',
-                        destination: const CloseSessionScreen(),
-                        iconColor: Colors.red,
-                        textColor: Colors.red,
-                      ),
-                    ],
+                      padding: const EdgeInsets.all(8),
+                    ),
                   ),
                 ),
               ],
@@ -191,7 +217,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
-  /// Item de menú sin badge
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
@@ -201,15 +226,16 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   }) {
     return ListTile(
       dense: true,
-      leading: Icon(icon, color: iconColor, size: 20),
+      leading: Icon(icon, color: iconColor, size: 24),
       title: Text(
         title,
         style: GoogleFonts.roboto(
           color: textColor,
-          fontSize: 14,
+          fontSize: 16,
         ),
       ),
       onTap: () {
+        toggleMenu();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => destination),
@@ -218,7 +244,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
-  /// Item de menú con badge, usando un `StreamBuilder`
   Widget _buildMenuItemWithBadge({
     required IconData icon,
     required String title,
@@ -237,18 +262,18 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
 
         return ListTile(
           dense: true,
-          leading: Icon(icon, color: iconColor, size: 20),
+          leading: Icon(icon, color: iconColor, size: 24),
           title: Text(
             title,
             style: GoogleFonts.roboto(
               color: textColor,
-              fontSize: 14,
+              fontSize: 16,
             ),
           ),
           trailing: count > 0
               ? Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.blue,
                     shape: BoxShape.circle,
                   ),
@@ -263,6 +288,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                 )
               : const SizedBox(),
           onTap: () {
+            toggleMenu();
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => destination),

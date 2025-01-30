@@ -28,12 +28,13 @@ class PlanActionButton extends StatelessWidget {
     this.boxShadow,
   }) : super(key: key);
 
-  @override
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
+@override
+Widget build(BuildContext context) {
+  return Container(
+    margin: margin,
+    child: FloatingActionButton.extended(
       heroTag: heroTag,
-      backgroundColor: backgroundColor, // Usa el color de fondo directamente
+      backgroundColor: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(30),
         side: borderColor != null
@@ -44,14 +45,18 @@ class PlanActionButton extends StatelessWidget {
         iconPath,
         height: 24,
         width: 24,
-        color: iconColor, 
+        color: iconColor,
       ),
       label: Text(
         label,
-        style: TextStyle(color: textColor ?? Colors.black),
+        style: TextStyle(
+          color: textColor ?? Colors.black,
+          fontSize: 14, // Añadido tamaño de fuente
+        ),
       ),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduce espacio interno
       onPressed: onPressed,
-    );
-  }
-
+    ),
+  );
+}
 }
