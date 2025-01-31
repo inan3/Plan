@@ -27,7 +27,7 @@ class PopularUsersSection extends StatelessWidget {
                 const Text(
                   'Populares',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -56,7 +56,7 @@ class PopularUsersSection extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Container(
-                    width: 140,
+                    width: 100,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),

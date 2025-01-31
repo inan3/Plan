@@ -143,42 +143,42 @@ class ExploreScreenState extends State<ExploreScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: const SizedBox(
-          height: 150,
+          height: 180, // Cambiado de 150 a 180
           child: PopularUsersSection(),
         ),
       ),
     );
   }
 
-  Widget _buildNearbySection() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 15),
-        decoration: BoxDecoration(
-          color: AppColors.nearbyBackground,
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
-              child: Text(
-                'Cercanos',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+Widget _buildNearbySection() {
+  return ClipRRect(
+    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+    child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15),
+      decoration: BoxDecoration(
+        color: AppColors.nearbyBackground,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
+            child: Text(
+              'Cercanos',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            SizedBox(
-              height: 300,
-              child: StreamBuilder(
-                stream: FirebaseFirestore.instance.collection('users').snapshots(),
-                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.55, // Altura dinámica
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('users').snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: CircularProgressIndicator(color: Colors.black),
@@ -197,15 +197,18 @@ class ExploreScreenState extends State<ExploreScreen> {
                       .where((doc) => doc['uid'] != currentUser?.uid)
                       .toList();
 
-                  return UsersGrid(users: validUsers);
-                },
-              ),
+                  return Padding(
+                  padding: const EdgeInsets.only(bottom: 2), // Margen inferior
+                  child: UsersGrid(users: validUsers),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildBottomDock() {
     return Center(
@@ -353,7 +356,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                   label: 'Unirse a Plan',
                   iconPath: 'assets/union.png',
                   onPressed: () => JoinPlanRequestScreen.showJoinPlanDialog(context),
-                  margin: const EdgeInsets.only(left: 32, bottom: 70),
+                  margin: const EdgeInsets.only(left: 0, bottom: 0),
                   borderColor: const Color.fromARGB(236, 0, 4, 227),
                   borderWidth: 1,
                   textColor: AppColors.blue,
@@ -375,7 +378,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                       builder: (context) => NewPlanCreationScreen(),
                     ),
                   ),
-                  margin: const EdgeInsets.only(right: 8, bottom: 70),
+                  margin: const EdgeInsets.only(right: 0, bottom: 0),
                   backgroundColor: AppColors.blue,
                   borderWidth: 0,
                   textColor: Colors.white,

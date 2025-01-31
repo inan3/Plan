@@ -1,4 +1,3 @@
-// plan_joining_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -36,9 +35,7 @@ class JoinPlanRequestScreen {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.pop(context),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -48,14 +45,14 @@ class JoinPlanRequestScreen {
                   _sendJoinRequest(context, planId);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El ID del plan no puede estar vacío.')),
+                    const SnackBar(content: Text('ID del plan requerido')),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 86, 98, 204),
               ),
-              child: const Text('Enviar Solicitud'),
+              child: const Text('Enviar'),
             ),
           ],
         );
@@ -63,17 +60,17 @@ class JoinPlanRequestScreen {
     );
   }
 
-  static void _sendJoinRequest(BuildContext context, String planId) async {
+  static Future<void> _sendJoinRequest(BuildContext context, String planId) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesión para unirte a un plan.')),
+        const SnackBar(content: Text('Usuario no autenticado')),
       );
       return;
     }
 
     try {
-      // Obtenemos el documento del plan
+      // Paso 1: Obtener datos del plan
       final planDoc = await FirebaseFirestore.instance
           .collection('plans')
           .doc(planId)
@@ -81,102 +78,74 @@ class JoinPlanRequestScreen {
 
       if (!planDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El plan no existe.')),
+          const SnackBar(content: Text('Plan no encontrado')),
         );
         return;
       }
 
-      final planData = planDoc.data();
-      final String creatorId = planData?['createdBy'] ?? '';
-      final String planName = planData?['type'] ?? 'Plan sin nombre';
+      final planData = planDoc.data() as Map<String, dynamic>;
+      final creatorId = planData['createdBy'] as String? ?? '';
+      final planName = planData['type'] as String? ?? 'Plan';
 
-      if (creatorId.isEmpty) {
+      // Paso 2: Verificar si el usuario es el creador del plan
+      if (creatorId == currentUser.uid) {
+        _showCreatorDialog(context);
+        return;
+      }
+
+      // Paso 3: Obtener datos del usuario solicitante
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El creador del plan no se encontró.')),
+          const SnackBar(content: Text('Perfil de usuario no existe')),
         );
         return;
       }
 
-      // **Verificación: Si el usuario es el creador del plan**
-      if (currentUser.uid == creatorId) {
-        _showCreatorJoinAttemptDialog(context);
-        return;
-      }
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final userName = userData['name'] as String? ?? 'Usuario';
+      final userPhoto = userData['photoUrl'] as String? ?? '';
 
-      // Enviamos la solicitud a la subcolección 'joinRequests' (opcional, si quieres llevar un control)
-      await FirebaseFirestore.instance
-          .collection('plans')
-          .doc(planId)
-          .collection('joinRequests')
-          .add({
-        'userId': currentUser.uid,
-        'userName': currentUser.displayName ?? 'Usuario desconocido',
-        'userProfilePic': currentUser.photoURL ?? '',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // Creamos una notificación para el creador del plan
+      // Paso 4: Crear notificación para el creador del plan
       await FirebaseFirestore.instance.collection('notifications').add({
         'type': 'join_request',
-        'receiverId': creatorId,               // B (el creador)
-        'senderId': currentUser.uid,           // A (quien solicita)
+        'receiverId': creatorId,
+        'senderId': currentUser.uid,
         'planId': planId,
-        'planName': planName,                  // Para mostrar info del plan en la notificación
-        'requesterName': currentUser.displayName ?? 'Usuario desconocido',
-        'requesterProfilePic': currentUser.photoURL ?? '',
+        'planName': planName,
+        'requesterName': userName,
+        'requesterProfilePic': userPhoto,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Solicitud enviada exitosamente.')),
+        const SnackBar(content: Text('Solicitud enviada con éxito')),
       );
-      Navigator.of(context).pop();
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al enviar la solicitud: $e')),
+        SnackBar(content: Text('Error crítico: ${e.toString()}')),
       );
     }
   }
 
-  /// Muestra un pop-up cuando el creador intenta unirse a su propio plan
-  static void _showCreatorJoinAttemptDialog(BuildContext context) {
+  static void _showCreatorDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      "El plan al que intentas unirte ha sido creado por ti. Puedes consultarlo en Mis Planes.",
-                      style: const TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-              // Ícono de "X" para cerrar el pop-up
-              Positioned(
-                right: 0,
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Acción no permitida'),
+        content: const Text('¡No puedes unirte a tu propio plan!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido'),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
