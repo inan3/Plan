@@ -1,13 +1,16 @@
+import 'dart:ui'; // para BackdropFilter
 import 'package:dating_app/main/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UsersGrid extends StatelessWidget {
+  final void Function(QueryDocumentSnapshot userDoc)? onUserTap;
   final List<QueryDocumentSnapshot> users;
 
   const UsersGrid({
     Key? key,
     required this.users,
+    this.onUserTap,
   }) : super(key: key);
 
   @override
@@ -22,8 +25,13 @@ class UsersGrid extends StatelessWidget {
       ),
       itemCount: users.length,
       itemBuilder: (context, index) {
-        final userData = users[index].data() as Map<String, dynamic>;
-        return _buildUserCard(userData);
+        final userDoc = users[index];
+        final userData = userDoc.data() as Map<String, dynamic>;
+
+        return GestureDetector(
+          onTap: () => onUserTap?.call(userDoc),
+          child: _buildUserCard(userData),
+        );
       },
     );
   }
@@ -35,46 +43,25 @@ class UsersGrid extends StatelessWidget {
     final distance = userData['distance']?.toStringAsFixed(1) ?? '0.0';
     final stars = userData['stars']?.toString() ?? '0';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
         children: [
-          // Sección de imagen
-          Container(
-            height: 100,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _buildProfileImage(photoUrl),
-                  _buildImageOverlay(),
-                ],
-              ),
-            ),
+          // Imagen de fondo
+          Positioned.fill(
+            child: _buildProfileImage(photoUrl),
           ),
-          
-          // Sección de información
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildUserInfo(name, age),
-                const SizedBox(height: 4),
-                _buildAdditionalInfo(distance, stars),
-              ],
+
+          // Banda inferior con los datos y el efecto “cristal”
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildFrostedInfo(
+              name: name,
+              age: age,
+              distance: distance,
+              stars: stars,
             ),
           ),
         ],
@@ -83,23 +70,26 @@ class UsersGrid extends StatelessWidget {
   }
 
   Widget _buildProfileImage(String? photoUrl) {
-    return photoUrl != null && photoUrl.isNotEmpty
-        ? Image.network(
-            photoUrl,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-          )
-        : _buildPlaceholder();
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return Image.network(
+        photoUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    } else {
+      return _buildPlaceholder();
+    }
   }
 
   Widget _buildPlaceholder() {
@@ -111,75 +101,89 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildImageOverlay() {
-    return ShaderMask(
-      shaderCallback: (rect) {
-        return LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
-          stops: const [0.6, 1],
-        ).createShader(rect);
-      },
-      blendMode: BlendMode.darken,
-      child: Container(color: Colors.transparent),
-    );
-  }
+  /// Construye la franja inferior con desenfoque y datos
+  Widget _buildFrostedInfo({
+    required String name,
+    required String age,
+    required String distance,
+    required String stars,
+  }) {
+    return ClipRRect(
+      // Redondea la parte de arriba (el borde superior de la franja)
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(12),
+        topRight: Radius.circular(12),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          height: 50,
+          color: Colors.white.withOpacity(0.2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Fila de nombre + edad
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[200]?.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$age años',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
 
-  Widget _buildUserInfo(String name, String age) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-              color: Colors.black87,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+              // Fila de ubicación + estrellas
+              Row(
+                children: [
+                  _buildInfoItem(Icons.location_on, '$distance km'),
+                  const SizedBox(width: 8),
+                  _buildInfoItem(Icons.star, stars),
+                ],
+              ),
+            ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            '$age años',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.blue[800],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAdditionalInfo(String distance, String stars) {
-    return Row(
-      children: [
-        _buildInfoItem(Icons.location_on, '$distance km'),
-        const SizedBox(width: 12),
-        _buildInfoItem(Icons.star, stars),
-      ],
+      ),
     );
   }
 
   Widget _buildInfoItem(IconData icon, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: AppColors.blue),
-        const SizedBox(width: 4),
+        Icon(icon, size: 12, color: Colors.white),
+        const SizedBox(width: 3),
         Text(
           text,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[700],
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.white,
             fontWeight: FontWeight.w500,
           ),
         ),

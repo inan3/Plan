@@ -28,7 +28,7 @@ class JoinPlanRequestScreen {
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'ID del Plan',
-                  hintText: 'Ejemplo: 12345',
+                  hintText: 'Ejemplo: FxR9XMQ3xP',
                 ),
               ),
             ],
@@ -70,7 +70,7 @@ class JoinPlanRequestScreen {
     }
 
     try {
-      // Paso 1: Obtener datos del plan
+      // 1) Verificar que el plan exista
       final planDoc = await FirebaseFirestore.instance
           .collection('plans')
           .doc(planId)
@@ -83,52 +83,67 @@ class JoinPlanRequestScreen {
         return;
       }
 
+      // Extraer datos del plan
       final planData = planDoc.data() as Map<String, dynamic>;
-      final creatorId = planData['createdBy'] as String? ?? '';
-      final planName = planData['type'] as String? ?? 'Plan';
+      final String creatorId = planData['createdBy'] ?? '';
+      final String planName = planData['type'] ?? 'Plan';
 
-      // Paso 2: Verificar si el usuario es el creador del plan
+      // 2) Verificar si el usuario es el creador
       if (creatorId == currentUser.uid) {
         _showCreatorDialog(context);
         return;
       }
 
-      // Paso 3: Obtener datos del usuario solicitante
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
+      // 3) Construir un ID único para la suscripción
+      //    Documento en la colección "subscriptions" => "planId_userId"
+      final String subscriptionDocId = '${planId}_${currentUser.uid}';
 
-      if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil de usuario no existe')),
-        );
+      // 4) Verificar si ya existe ese documento (lo que indicaría suscripción previa)
+      final subscriptionRef = FirebaseFirestore.instance
+          .collection('subscriptions')
+          .doc(subscriptionDocId);
+
+      final subscriptionDoc = await subscriptionRef.get();
+
+      if (subscriptionDoc.exists) {
+        // Si el documento ya existe, significa que el usuario YA está suscrito
+        _showAlreadySubscribedDialog(context, planName);
         return;
       }
 
-      final userData = userDoc.data() as Map<String, dynamic>;
-      final userName = userData['name'] as String? ?? 'Usuario';
-      final userPhoto = userData['photoUrl'] as String? ?? '';
+      // 5) Crear la suscripción o solicitud en la colección "subscriptions"
+      //    (ajusta los campos según tu modelo de datos)
+      await subscriptionRef.set({
+        'planId': planId,
+        'userId': currentUser.uid,
+        'planName': planName,
+        'createdBy': creatorId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-      // Paso 4: Crear notificación para el creador del plan
+      // 6) (Opcional) Crear también la notificación para el creador del plan
+      //    si deseas que se entere de que alguien se quiere unir
+      //    OJO: Si tu flujo maneja "solicitud" vs. "aprobación", quizás quieras
+      //    guardar el "estado" de la solicitud (pending/approved/rejected).
       await FirebaseFirestore.instance.collection('notifications').add({
         'type': 'join_request',
         'receiverId': creatorId,
         'senderId': currentUser.uid,
         'planId': planId,
         'planName': planName,
-        'requesterName': userName,
-        'requesterProfilePic': userPhoto,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Solicitud enviada con éxito')),
       );
+
+      // Cerrar el diálogo
       Navigator.pop(context);
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error crítico: ${e.toString()}')),
+        SnackBar(content: Text('Error crítico: $e')),
       );
     }
   }
@@ -139,6 +154,25 @@ class JoinPlanRequestScreen {
       builder: (context) => AlertDialog(
         title: const Text('Acción no permitida'),
         content: const Text('¡No puedes unirte a tu propio plan!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _showAlreadySubscribedDialog(BuildContext context, String planName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Plan ya suscrito'),
+        content: Text(
+          'Ya formas parte del plan $planName. '
+          'Echa un vistazo a tus Planes Suscritos.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
