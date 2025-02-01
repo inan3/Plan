@@ -254,49 +254,60 @@ class SubscribedPlansScreen extends StatelessWidget {
 
   } // <-- Asegúrate de cerrar la función _showPlanDetails correctamente
 
-  void _confirmLeavePlan(BuildContext context, PlanModel plan) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+void _confirmLeavePlan(BuildContext context, PlanModel plan) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text("¿Salir del plan?"),
+        content: Text("¿Estás seguro de que deseas salir del plan ${plan.type}?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
           ),
-          title: const Text("¿Salir del plan?"),
-          content: Text("¿Estás seguro de que deseas salir del plan ${plan.type}?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              onPressed: () async {
-                await FirebaseFirestore.instance
-                    .collection('subscriptions')
-                    .where('userId', isEqualTo: userId)
-                    .where('id', isEqualTo: plan.id)
-                    .get()
-                    .then((querySnapshot) {
-                  for (var doc in querySnapshot.docs) {
-                    doc.reference.delete();
-                  }
-                });
+            onPressed: () async {
+              // 1) Eliminar al usuario del array 'participants' en el documento del plan
+              await FirebaseFirestore.instance
+                  .collection('plans')
+                  .doc(plan.id)
+                  .update({
+                'participants': FieldValue.arrayRemove([userId]),
+              });
 
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Te has salido del plan ${plan.type}')),
-                );
-              },
-              child: const Text("Salir del Plan"),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              // 2) (Opcional) Eliminar también el documento de la colección 'subscriptions'
+              //    si sigues manteniendo esta colección como control de suscripciones:
+              final subsQuery = await FirebaseFirestore.instance
+                  .collection('subscriptions')
+                  .where('userId', isEqualTo: userId)
+                  .where('id', isEqualTo: plan.id)
+                  .get();
+
+              for (var doc in subsQuery.docs) {
+                await doc.reference.delete();
+              }
+
+              Navigator.pop(context); // Cierra el AlertDialog
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Te has salido del plan ${plan.type}')),
+              );
+            },
+            child: const Text("Salir del Plan"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   void _viewUserProfile(BuildContext context, String userId) {
     Navigator.push(

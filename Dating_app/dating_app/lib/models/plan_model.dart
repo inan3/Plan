@@ -14,10 +14,13 @@ class PlanModel {
   double? latitude;
   double? longitude;
   DateTime? date;
-  String createdBy;          // UID del creador
-  String? creatorName;       // Nombre del creador
-  String? creatorProfilePic; // Foto de perfil del creador
-  DateTime? createdAt;       // Fecha/hora de creación
+  String createdBy;          
+  String? creatorName;       
+  String? creatorProfilePic;
+  DateTime? createdAt;       
+
+  // *** AÑADE ESTA LÍNEA: Lista de participantes ***
+  List<String>? participants; 
 
   // Constructor
   PlanModel({
@@ -35,6 +38,9 @@ class PlanModel {
     this.creatorName,
     this.creatorProfilePic,
     this.createdAt,
+
+    // *** AÑADE ESTA LÍNEA: inicialización en el constructor ***
+    this.participants,
   });
 
   // Genera un ID único para el plan de 10 caracteres alfanuméricos
@@ -48,7 +54,6 @@ class PlanModel {
     return id;
   }
 
-  // Verifica si ya existe en Firestore el ID generado
   static Future<bool> _idExistsInFirebase(String id) async {
     final DocumentSnapshot snapshot =
         await FirebaseFirestore.instance.collection('plans').doc(id).get();
@@ -72,6 +77,8 @@ class PlanModel {
       'creatorName': creatorName,
       'creatorProfilePic': creatorProfilePic,
       'createdAt': createdAt?.toIso8601String(),
+      // *** AÑADE ESTA LÍNEA: incluye la lista de participantes ***
+      'participants': participants ?? [],
     };
   }
 
@@ -94,10 +101,13 @@ class PlanModel {
       creatorName: map['creatorName'] as String?,
       creatorProfilePic: map['creatorProfilePic'] as String?,
       createdAt: _parseDate(map['createdAt']),
+      // *** AÑADE ESTA LÍNEA: recupera la lista de Firestore ***
+      participants: map['participants'] != null
+          ? List<String>.from(map['participants'] as List)
+          : <String>[],
     );
   }
 
-  // Ayudante para parsear doubles
   static double? _parseDouble(dynamic val) {
     if (val == null) return null;
     if (val is num) return val.toDouble();
@@ -107,14 +117,13 @@ class PlanModel {
     return null;
   }
 
-  // Ayudante para parsear fechas
   static DateTime? _parseDate(dynamic val) {
     if (val == null) return null;
     if (val is Timestamp) {
       return val.toDate();
     }
     if (val is String) {
-      return DateTime.tryParse(val); // null si no puede parsearse
+      return DateTime.tryParse(val); 
     }
     return null;
   }
@@ -130,7 +139,6 @@ class PlanModel {
   }
 
   // Crea y guarda un plan en Firestore
-  // (No se añade el creador a "subscriptions", para que no aparezca en "Planes Suscritos")
   static Future<PlanModel> createPlan({
     required String type,
     required String description,
@@ -171,6 +179,8 @@ class PlanModel {
       creatorName: userData['name'],
       creatorProfilePic: userData['profilePic'],
       createdAt: DateTime.now(),
+      // *** AÑADE ESTA LÍNEA: inicializa el array vacío por defecto ***
+      participants: [],
     );
 
     // Guardar en la colección 'plans'

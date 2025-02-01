@@ -102,6 +102,11 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       // Guarda la fecha de creación actual
       widget.plan.createdAt = DateTime.now();
 
+      // **Inicializa participants si está nulo**
+      if (widget.plan.participants == null) {
+        widget.plan.participants = [];
+      }
+
       // Guarda el plan en Firestore
       await FirebaseFirestore.instance
           .collection('plans')

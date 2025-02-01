@@ -94,48 +94,52 @@ class JoinPlanRequestScreen {
         return;
       }
 
-      // 3) Construir un ID único para la suscripción
-      //    Documento en la colección "subscriptions" => "planId_userId"
-      final String subscriptionDocId = '${planId}_${currentUser.uid}';
-
-      // 4) Verificar si ya existe ese documento (lo que indicaría suscripción previa)
-      final subscriptionRef = FirebaseFirestore.instance
-          .collection('subscriptions')
-          .doc(subscriptionDocId);
-
-      final subscriptionDoc = await subscriptionRef.get();
-
-      if (subscriptionDoc.exists) {
-        // Si el documento ya existe, significa que el usuario YA está suscrito
+      // 3) (Opcional) Verificar si el usuario ya estaba en el plan (por si acaso)
+      final List<dynamic> participants = planData['participants'] ?? [];
+      if (participants.contains(currentUser.uid)) {
         _showAlreadySubscribedDialog(context, planName);
         return;
       }
 
-      // 5) Crear la suscripción o solicitud en la colección "subscriptions"
-      //    (ajusta los campos según tu modelo de datos)
-      await subscriptionRef.set({
-        'planId': planId,
-        'userId': currentUser.uid,
-        'planName': planName,
-        'createdBy': creatorId,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      // 4) (Opcional) Checar límite de participantes
+      final int maxParticipants = planData['maxParticipants'] ?? 99999;
+      if (participants.length >= maxParticipants) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('El plan "$planName" ya está completo.'),
+          ),
+        );
+        return;
+      }
 
-      // 6) (Opcional) Crear también la notificación para el creador del plan
-      //    si deseas que se entere de que alguien se quiere unir
-      //    OJO: Si tu flujo maneja "solicitud" vs. "aprobación", quizás quieras
-      //    guardar el "estado" de la solicitud (pending/approved/rejected).
+      // NOTA:
+      // Aquí *NO* agregamos el uid a 'participants' todavía.
+      // Eso se hará solo cuando el creador acepte la solicitud en MatchesScreen.
+
+      // -- Obtenemos datos del solicitante para ponerlos en la notificación --
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      final userData = userDoc.data() ?? {};
+      final String requesterName = userData['name'] ?? 'Sin nombre';
+      final String requesterProfilePic = userData['photoUrl'] ?? '';
+
+      // 5) Crear la notificación "join_request"
       await FirebaseFirestore.instance.collection('notifications').add({
         'type': 'join_request',
-        'receiverId': creatorId,
-        'senderId': currentUser.uid,
+        'receiverId': creatorId,       // A quién se le notifica (creador)
+        'senderId': currentUser.uid,   // Quién envía la solicitud
         'planId': planId,
         'planName': planName,
+        'requesterName': requesterName,
+        'requesterProfilePic': requesterProfilePic,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Solicitud enviada con éxito')),
+        const SnackBar(content: Text('Solicitud enviada al creador')),
       );
 
       // Cerrar el diálogo
@@ -170,8 +174,7 @@ class JoinPlanRequestScreen {
       builder: (context) => AlertDialog(
         title: const Text('Plan ya suscrito'),
         content: Text(
-          'Ya formas parte del plan $planName. '
-          'Echa un vistazo a tus Planes Suscritos.',
+          'Ya formas parte del plan "$planName".',
         ),
         actions: [
           TextButton(

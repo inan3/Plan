@@ -14,38 +14,48 @@ class MatchesScreen extends StatefulWidget {
 class _MatchesScreenState extends State<MatchesScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // STREAM: Solicitudes entrantes (join_request)
   Stream<QuerySnapshot> _getJoinRequests() => _firestore
       .collection('notifications')
       .where('receiverId', isEqualTo: widget.currentUserId)
       .where('type', isEqualTo: 'join_request')
       .snapshots();
 
+  // STREAM: Respuestas (join_accepted / join_rejected)
   Stream<QuerySnapshot> _getResponses() => _firestore
       .collection('notifications')
       .where('receiverId', isEqualTo: widget.currentUserId)
       .where('type', whereIn: ['join_accepted', 'join_rejected'])
       .snapshots();
 
+  // El creador ACEPTA la solicitud
   Future<void> _handleAccept(DocumentSnapshot doc) async {
     try {
       final data = doc.data() as Map<String, dynamic>;
       final planId = data['planId'] as String;
       final senderId = data['senderId'] as String;
 
-      // Eliminar la solicitud una vez gestionada
+      // Elimina la notificación de solicitud original
       await doc.reference.delete();
 
-      // Obtener datos del plan para crear una suscripción
-      final planDoc = await _firestore.collection('plans').doc(planId).get();
+      // Obtén el plan para actualizarlo
+      final planRef = _firestore.collection('plans').doc(planId);
+      final planDoc = await planRef.get();
       if (!planDoc.exists) return;
 
+      // Agrega al solicitante al array 'participants'
+      await planRef.update({
+        'participants': FieldValue.arrayUnion([senderId]),
+      });
+
+      // (Opcional) Crea un registro en 'subscriptions'
       await _firestore.collection('subscriptions').add({
         ...planDoc.data()! as Map<String, dynamic>,
         'userId': senderId,
         'subscriptionDate': FieldValue.serverTimestamp(),
       });
 
-      // Obtener la foto de perfil del creador (usuario actual)
+      // Obtener la foto de perfil del creador
       final creatorDoc = await _firestore
           .collection('users')
           .doc(widget.currentUserId)
@@ -56,11 +66,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
         creatorPhoto = creatorData['photoUrl'] as String? ?? '';
       }
 
-      // Notificar al solicitante que ha sido aceptado, incluyendo la foto del creador
+      // Notificar al solicitante que se le ha aceptado, con la foto del creador
       await _firestore.collection('notifications').add({
         'type': 'join_accepted',
-        'receiverId': senderId,
-        'senderId': widget.currentUserId,
+        'receiverId': senderId,    // solicitante
+        'senderId': widget.currentUserId, // creador
         'planId': planId,
         'planName': data['planName'],
         'senderProfilePic': creatorPhoto,
@@ -73,19 +83,35 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
+  // El creador RECHAZA la solicitud
   Future<void> _handleReject(DocumentSnapshot doc) async {
     try {
       final data = doc.data() as Map<String, dynamic>;
       final senderId = data['senderId'] as String;
+
+      // Eliminar la solicitud original
       await doc.reference.delete();
 
+      // Obtener la foto de perfil del creador
+      final creatorDoc = await _firestore
+          .collection('users')
+          .doc(widget.currentUserId)
+          .get();
+      String creatorPhoto = '';
+      if (creatorDoc.exists) {
+        final creatorData = creatorDoc.data() as Map<String, dynamic>;
+        creatorPhoto = creatorData['photoUrl'] as String? ?? '';
+      }
+
       // Notificar al solicitante que ha sido rechazado
+      // Incluimos 'senderProfilePic' para mostrar la foto del creador
       await _firestore.collection('notifications').add({
         'type': 'join_rejected',
         'receiverId': senderId,
         'senderId': widget.currentUserId,
         'planId': data['planId'],
         'planName': data['planName'],
+        'senderProfilePic': creatorPhoto,
         'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -119,6 +145,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
     );
   }
 
+  // Construye la lista de Solicitudes
   Widget _buildRequestsList() {
     return StreamBuilder<QuerySnapshot>(
       stream: _getJoinRequests(),
@@ -173,21 +200,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
     );
   }
 
-  Widget _buildUserAvatar(Map<String, dynamic> data) {
-    final String? photoUrl = data['requesterProfilePic'] as String?;
-    return CircleAvatar(
-      radius: 25,
-      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-          ? NetworkImage(photoUrl)
-          : const NetworkImage(
-              'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
-      onBackgroundImageError: (_, __) {},
-      child: (photoUrl == null || photoUrl.isEmpty)
-          ? const Icon(Icons.person, size: 30)
-          : null,
-    );
-  }
-
+  // Construye la lista de Respuestas
   Widget _buildResponsesList() {
     return StreamBuilder<QuerySnapshot>(
       stream: _getResponses(),
@@ -227,23 +240,44 @@ class _MatchesScreenState extends State<MatchesScreen> {
     );
   }
 
+  // Construye el avatar del solicitante en la lista de Solicitudes
+  Widget _buildUserAvatar(Map<String, dynamic> data) {
+    final String? photoUrl = data['requesterProfilePic'] as String?;
+    return CircleAvatar(
+      radius: 25,
+      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+          ? NetworkImage(photoUrl)
+          : const NetworkImage(
+              'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+            ),
+      onBackgroundImageError: (_, __) {},
+      child: (photoUrl == null || photoUrl.isEmpty)
+          ? const Icon(Icons.person, size: 30)
+          : null,
+    );
+  }
+
+  // Construye el avatar de las notificaciones de aceptación/rechazo
   Widget _buildResponseAvatar(Map<String, dynamic> data) {
-    if (data['type'] == 'join_accepted') {
-      final String? photoUrl = data['senderProfilePic'] as String?;
-      return CircleAvatar(
-        radius: 25,
-        backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-            ? NetworkImage(photoUrl)
-            : const NetworkImage(
-                'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
-        onBackgroundImageError: (_, __) {},
-      );
-    } else {
-      return const CircleAvatar(
-        radius: 25,
-        child: Icon(Icons.cancel, color: Colors.red),
-      );
-    }
+    final String? photoUrl = data['senderProfilePic'] as String?;
+    final bool isAccepted = data['type'] == 'join_accepted';
+    final bool isRejected = data['type'] == 'join_rejected';
+
+    // Si es aceptado o rechazado, mostramos la foto del creador (senderProfilePic).
+    // Puedes añadir un ícono de “cancel” superpuesto si quieres diferenciarlo.
+    return CircleAvatar(
+      radius: 25,
+      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+          ? NetworkImage(photoUrl)
+          : const NetworkImage(
+              'https://cdn-icons-png.flaticon.com/512/847/847969.png',
+            ),
+      onBackgroundImageError: (_, __) {},
+      // Ejemplo: icono superpuesto solo si es rechazado
+      //child: isRejected
+      //    ? const Icon(Icons.cancel, color: Colors.red)
+      //    : null,
+    );
   }
 
   Widget _buildLoading() => const Center(
