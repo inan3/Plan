@@ -1,18 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Para formatear la hora
+import 'package:intl/intl.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
   final String? chatPartnerPhoto;
+  final Timestamp? deletedAt; // Si el usuario eliminó el chat, se almacenará el timestamp
 
   const ChatScreen({
     Key? key,
     required this.chatPartnerId,
     required this.chatPartnerName,
     this.chatPartnerPhoto,
+    this.deletedAt,
   }) : super(key: key);
 
   @override
@@ -63,7 +65,7 @@ class _ChatScreenState extends State<ChatScreen> {
       stream: FirebaseFirestore.instance
           .collection('messages')
           .where('participants', arrayContains: currentUserId)
-          .orderBy('timestamp', descending: false) // Orden cronológico
+          .orderBy('timestamp', descending: false)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -78,21 +80,28 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }
 
-        // **Filtrar mensajes para que sean solo entre los dos usuarios**
+        // **Filtrar mensajes para mostrar solo los recientes tras `deletedAt`**
         var messages = snapshot.data!.docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
-          return (data['senderId'] == currentUserId && data['receiverId'] == widget.chatPartnerId) ||
-                 (data['senderId'] == widget.chatPartnerId && data['receiverId'] == currentUserId);
-        }).toList();
 
-        if (messages.isEmpty) {
-          return const Center(
-            child: Text(
-              "No hay mensajes aún.",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-          );
-        }
+          // Verificar que 'timestamp' exista y sea de tipo Timestamp
+          if (!(data['timestamp'] is Timestamp)) {
+            return false;
+          }
+          Timestamp timestamp = data['timestamp'] as Timestamp;
+          DateTime messageTime = timestamp.toDate();
+
+          // Si se ha eliminado el chat, ocultar mensajes previos a 'deletedAt'
+          if (widget.deletedAt != null &&
+              messageTime.isBefore(widget.deletedAt!.toDate())) {
+            return false;
+          }
+
+          return (data['senderId'] == currentUserId &&
+                  data['receiverId'] == widget.chatPartnerId) ||
+              (data['senderId'] == widget.chatPartnerId &&
+                  data['receiverId'] == currentUserId);
+        }).toList();
 
         return ListView.builder(
           controller: _scrollController,
@@ -100,27 +109,34 @@ class _ChatScreenState extends State<ChatScreen> {
           itemBuilder: (context, index) {
             var data = messages[index].data() as Map<String, dynamic>;
             bool isMe = data['senderId'] == currentUserId;
-            DateTime messageTime = (data['timestamp'] != null)
-                ? (data['timestamp'] as Timestamp).toDate()
-                : DateTime.now();
+
+            // Se verifica que 'timestamp' sea de tipo Timestamp antes de usarlo.
+            DateTime messageTime;
+            if (data['timestamp'] is Timestamp) {
+              messageTime = (data['timestamp'] as Timestamp).toDate();
+            } else {
+              messageTime = DateTime.now();
+            }
 
             return Align(
               alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                margin:
+                    const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isMe ? Colors.blue[400] : Colors.grey[300],
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
-                    bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
-                    bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
+                    bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+                    bottomRight: isMe ? Radius.zero : const Radius.circular(16),
                   ),
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
                     Text(
                       data['text'] ?? '',

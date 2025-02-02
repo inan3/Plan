@@ -13,23 +13,29 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  /// **Ocultar un chat para el usuario actual**
-  Future<void> _hideChat(String otherUserId) async {
+  /// Elimina un chat guardando el timestamp de eliminación para el usuario actual.
+  Future<void> _deleteChat(String otherUserId) async {
     try {
-      DocumentReference userDoc =
-          FirebaseFirestore.instance.collection('users').doc(currentUserId);
-
-      await userDoc.set(
-        {'hiddenChats': FieldValue.arrayUnion([otherUserId])},
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .set(
+        {'deletedChats': {otherUserId: FieldValue.serverTimestamp()}},
         SetOptions(merge: true),
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Chat eliminado de tu bandeja.")),
+        const SnackBar(content: Text("Chat eliminado.")),
       );
     } catch (e) {
-      print("❌ Error al ocultar chat: $e");
+      print("❌ Error al eliminar chat: $e");
     }
+  }
+
+  /// Convierte un Timestamp en una hora legible.
+  String _formatTimestamp(Timestamp? timestamp) {
+    DateTime date = timestamp?.toDate() ?? DateTime.now();
+    return "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -42,17 +48,19 @@ class _ChatsScreenState extends State<ChatsScreen> {
         elevation: 0.5,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(currentUserId).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .snapshots(),
         builder: (context, userSnapshot) {
           if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // **Verificar si el campo 'hiddenChats' existe antes de acceder a él**
-          List<dynamic> hiddenChats = [];
-          if (userSnapshot.data!.data() != null) {
-            hiddenChats = (userSnapshot.data!.data() as Map<String, dynamic>)['hiddenChats'] ?? [];
-          }
+          // Se obtienen los chats eliminados y sus timestamps.
+          Map<String, dynamic> deletedChats =
+              (userSnapshot.data!.data() as Map<String, dynamic>)['deletedChats'] ??
+                  {};
 
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -63,7 +71,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(
                   child: Text(
@@ -73,41 +80,70 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 );
               }
 
+              // Map para almacenar el último mensaje por cada conversación (con otro usuario).
               Map<String, Map<String, dynamic>> lastMessages = {};
+
               for (var doc in snapshot.data!.docs) {
                 var data = doc.data() as Map<String, dynamic>;
+
+                // Determinar el otro usuario según senderId y receiverId.
                 String otherUserId = (data['senderId'] == currentUserId)
                     ? data['receiverId']
                     : data['senderId'];
 
-                if (hiddenChats.contains(otherUserId)) continue;
+                // Verificar que 'timestamp' sea un Timestamp válido.
+                if (!(data['timestamp'] is Timestamp)) continue;
+                Timestamp messageTimestamp = data['timestamp'] as Timestamp;
 
-                if (!lastMessages.containsKey(otherUserId) ||
-                    (data['timestamp'] != null &&
-                        data['timestamp'].toDate().isAfter(
-                            lastMessages[otherUserId]?['timestamp']?.toDate() ?? DateTime(0)))) {
+                // Si existe un 'deletedAt' para este chat, solo se toman mensajes posteriores a esa fecha.
+                Timestamp? deletedAt = deletedChats[otherUserId] is Timestamp
+                    ? deletedChats[otherUserId] as Timestamp
+                    : null;
+                if (deletedAt != null &&
+                    messageTimestamp.toDate().isBefore(deletedAt.toDate())) {
+                  continue;
+                }
+
+                // Si ya existe un mensaje para este chat, se compara el timestamp.
+                if (lastMessages.containsKey(otherUserId)) {
+                  Timestamp existingTimestamp =
+                      lastMessages[otherUserId]!['timestamp'] as Timestamp;
+                  if (messageTimestamp.toDate().isAfter(existingTimestamp.toDate())) {
+                    lastMessages[otherUserId] = data;
+                  }
+                } else {
                   lastMessages[otherUserId] = data;
                 }
               }
 
+              // Convertir el mapa a una lista de entradas y ordenarlas por timestamp descendente.
+              List<MapEntry<String, Map<String, dynamic>>> sortedEntries =
+                  lastMessages.entries.toList();
+              sortedEntries.sort((a, b) {
+                Timestamp aTimestamp = a.value['timestamp'] as Timestamp;
+                Timestamp bTimestamp = b.value['timestamp'] as Timestamp;
+                return bTimestamp.toDate().compareTo(aTimestamp.toDate());
+              });
+
               return ListView.builder(
-                itemCount: lastMessages.length,
+                itemCount: sortedEntries.length,
                 itemBuilder: (context, index) {
-                  String otherUserId = lastMessages.keys.elementAt(index);
-                  var lastMessage = lastMessages[otherUserId]!;
+                  String otherUserId = sortedEntries[index].key;
+                  var lastMessage = sortedEntries[index].value;
 
                   return FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(otherUserId)
+                        .get(),
                     builder: (context, userSnapshot) {
                       if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
                         return const SizedBox.shrink();
                       }
 
-                      var userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-
-                      if (userData == null) {
-                        return const SizedBox.shrink();
-                      }
+                      var userData =
+                          userSnapshot.data!.data() as Map<String, dynamic>?;
+                      if (userData == null) return const SizedBox.shrink();
 
                       return Dismissible(
                         key: Key(otherUserId),
@@ -119,7 +155,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           child: const Icon(Icons.delete, color: Colors.white, size: 32),
                         ),
                         onDismissed: (direction) {
-                          _hideChat(otherUserId);
+                          _deleteChat(otherUserId);
                         },
                         child: ListTile(
                           leading: CircleAvatar(
@@ -131,9 +167,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           title: Text(userData['name'] ?? 'Usuario'),
                           subtitle: Text(lastMessage['text'] ?? ''),
                           trailing: Text(
-                            lastMessage['timestamp'] != null
-                                ? _formatTimestamp(lastMessage['timestamp'])
-                                : '',
+                            _formatTimestamp(lastMessage['timestamp'] is Timestamp
+                                ? lastMessage['timestamp'] as Timestamp
+                                : null),
                             style: const TextStyle(color: Colors.grey),
                           ),
                           onTap: () {
@@ -144,6 +180,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
                                   chatPartnerId: otherUserId,
                                   chatPartnerName: userData['name'] ?? 'Usuario',
                                   chatPartnerPhoto: userData['photoUrl'] ?? '',
+                                  deletedAt: deletedChats[otherUserId] is Timestamp
+                                      ? deletedChats[otherUserId] as Timestamp
+                                      : null,
                                 ),
                               ),
                             );
@@ -159,12 +198,5 @@ class _ChatsScreenState extends State<ChatsScreen> {
         },
       ),
     );
-  }
-
-  /// Convierte un `Timestamp` de Firestore en una hora legible.
-  String _formatTimestamp(Timestamp? timestamp) {
-    if (timestamp == null) return '';
-    DateTime date = timestamp.toDate();
-    return "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
   }
 }
