@@ -1,4 +1,5 @@
-import 'dart:ui'; // Para BackdropFilter, ImageFilter
+// explore_screen.dart
+import 'dart:ui'; // Para BackdropFilter, ImageFilter, etc.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,7 @@ import '../plan_joining/plan_join_request.dart';
 import 'users_grid.dart';
 import 'menu_side_bar_screen.dart';
 import 'matches_screen.dart';
+import 'chats/chats_screen.dart'; // Se importa la pantalla de mensajes actualizada
 import 'users_managing/user_info_check.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -27,8 +29,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   final double _iconSize = 30.0;
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final GlobalKey<MainSideBarScreenState> _menuKey =
-      GlobalKey<MainSideBarScreenState>();
+  final GlobalKey<MainSideBarScreenState> _menuKey = GlobalKey<MainSideBarScreenState>();
 
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
@@ -57,12 +58,14 @@ class ExploreScreenState extends State<ExploreScreen> {
     _pages = [
       _buildExplorePage(),
       MatchesScreen(currentUserId: currentUser?.uid ?? ''),
-      const Center(child: Text('Mensajes')),
+      const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
       const Center(child: Text('Perfil')),
     ];
   }
 
-  void _onSearchChanged(String value) {}
+  void _onSearchChanged(String value) {
+    // Implementa la búsqueda si es necesario
+  }
 
   void _onFilterPressed() async {
     final result = await Navigator.push(
@@ -154,13 +157,11 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildNearbySection() {
-    // Retiramos el fondo para que use el mismo color del Scaffold
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 15),
         decoration: const BoxDecoration(
-          // color: AppColors.nearbyBackground, // Eliminado
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: Column(
@@ -238,7 +239,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             Column(
               children: [
                 Expanded(child: _pages[_currentIndex]),
-                // Barra inferior con efecto frosted SOLO en su contenedor
+                // Barra inferior con efecto frosted en su contenedor
                 DockSection(
                   currentIndex: _currentIndex,
                   onTapIcon: (index) => setState(() => _currentIndex = index),
@@ -247,8 +248,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               ],
             ),
-
-            // Botones flotantes SOLO si estamos en index=0 (Explore)
+            // Botones flotantes solo en el index 0 (Explore)
             if (_currentIndex == 0)
               Positioned(
                 bottom: 100,
@@ -257,8 +257,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                   heroTag: 'joinPlan',
                   label: 'Unirse a Plan',
                   iconPath: 'assets/union.png',
-                  onPressed: () =>
-                      JoinPlanRequestScreen.showJoinPlanDialog(context),
+                  onPressed: () => JoinPlanRequestScreen.showJoinPlanDialog(context),
                   margin: const EdgeInsets.only(left: 0, bottom: 0),
                   borderColor: const Color.fromARGB(236, 0, 4, 227),
                   borderWidth: 1,
@@ -285,7 +284,6 @@ class ExploreScreenState extends State<ExploreScreen> {
                   iconColor: Colors.white,
                 ),
               ),
-
             // Menú lateral
             MainSideBarScreen(
               key: _menuKey,
@@ -299,8 +297,6 @@ class ExploreScreenState extends State<ExploreScreen> {
 }
 
 /// Barra inferior con efecto frosted en un contenedor fijo de 90px de alto.
-/// No se utiliza forma ondulada ni `Positioned.fill`. Solo el contenedor
-/// donde están los íconos para que el desenfoque afecte exclusivamente esa zona.
 class DockSection extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapIcon;
@@ -322,17 +318,14 @@ class DockSection extends StatelessWidget {
     return Container(
       height: 90,
       width: double.infinity,
-      // Apilamos el BackdropFilter + fondo semitransparente + fila de íconos
       child: Stack(
         children: [
-          // El BackdropFilter solo ocupa el contenedor de la barra
+          // BackdropFilter para el efecto frosted en la barra
           ClipRRect(
-            // Ajusta el radio si quieres esquinas redondeadas en la barra
             borderRadius: BorderRadius.zero,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Container(
-                // Fondo semitransparente para resaltar el efecto
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -346,7 +339,6 @@ class DockSection extends StatelessWidget {
               ),
             ),
           ),
-
           // Fila de íconos
           Center(
             child: Row(
@@ -396,7 +388,28 @@ class DockSection extends StatelessWidget {
           ),
           onPressed: () => onTapIcon(index),
         ),
-        if (streamCount != null)
+        if (streamCount != null && index == 2) // Para el ícono de chat
+          Positioned(
+            right: -6,
+            top: -6,
+            child: StreamBuilder<int>(
+              stream: streamCount,
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                if (count == 0) return const SizedBox();
+                // Mostrar un pequeño puntito azul sin número
+                return Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: AppColors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                );
+              },
+            ),
+          )
+        else if (streamCount != null)
           Positioned(
             right: -6,
             top: -6,

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
 import 'package:flutter/services.dart'; // Importar para Clipboard
 
+
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({Key? key}) : super(key: key);
 

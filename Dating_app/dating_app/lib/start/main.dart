@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import '../start/login_screen.dart';
 import '../start/welcome_screen.dart';
-import '../main/main_app_screen.dart'; // Ajusta la ruta si está en otro directorio
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
