@@ -34,9 +34,9 @@ class ExploreScreenState extends State<ExploreScreen> {
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
-  int selectedSearchIndex = 0;
+  int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
-  // Solo almacenamos las páginas que no dependen de filtros, o las construimos al instante.
+  // Páginas que no dependen de filtros
   late List<Widget> _otherPages;
 
   @override
@@ -48,6 +48,7 @@ class ExploreScreenState extends State<ExploreScreen> {
       const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
       const Center(child: Text('Perfil')),
     ];
+    _loadUserInterest();
   }
 
   void _setStatusBarDark() {
@@ -61,6 +62,37 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   void _onSearchChanged(String value) {
     // Implementa la búsqueda si es necesario
+  }
+
+  // Carga la preferencia de "interest" del usuario actual para definir el filtro por defecto
+  void _loadUserInterest() async {
+    if (currentUser != null) {
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser!.uid)
+            .get();
+
+        if (userDoc.exists) {
+          // Se asume que el campo 'interest' tiene valores "Hombres", "Mujeres" o "Todo el mundo"
+          final String interest = userDoc['interest'].toString();
+
+          int defaultIndex;
+          if (interest == 'Hombres') {
+            defaultIndex = 0;
+          } else if (interest == 'Mujeres') {
+            defaultIndex = 1;
+          } else {
+            defaultIndex = 2;
+          }
+          setState(() {
+            selectedSearchIndex = defaultIndex;
+          });
+        }
+      } catch (e) {
+        print('Error al cargar la preferencia del usuario: $e');
+      }
+    }
   }
 
   void _onFilterPressed() async {
@@ -154,95 +186,95 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildNearbySection() {
-  return ClipRRect(
-    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-    child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 15),
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
-            child: Text(
-              'Cercanos',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 15),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
+              child: Text(
+                'Cercanos',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
             ),
-          ),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.55,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.black),
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No hay usuarios cercanos.',
-                      style: TextStyle(fontSize: 18, color: Colors.black),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.55,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('users').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.black),
+                    );
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No hay usuarios cercanos.',
+                        style: TextStyle(fontSize: 18, color: Colors.black),
+                      ),
+                    );
+                  }
+
+                  // Excluir al usuario actual
+                  final validUsers = snapshot.data!.docs
+                      .where((doc) => doc['uid'] != currentUser?.uid)
+                      .toList();
+
+                  // Filtrar por género según selectedSearchIndex:
+                  List<QueryDocumentSnapshot> filteredUsers = validUsers;
+                  if (selectedSearchIndex == 0) { // Mostrar solo hombres
+                    filteredUsers = validUsers
+                        .where((doc) => doc['gender'] == 'Hombre')
+                        .toList();
+                  } else if (selectedSearchIndex == 1) { // Mostrar solo mujeres
+                    filteredUsers = validUsers
+                        .where((doc) => doc['gender'] == 'Mujer')
+                        .toList();
+                  }
+                  // Si selectedSearchIndex == 2 se muestran todos, sin filtrar por género.
+
+                  // Aplicar filtro por edad
+                  filteredUsers = filteredUsers.where((doc) {
+                    final int userAge = int.tryParse(doc['age'].toString()) ?? 0;
+                    return userAge >= selectedAgeRange.start.round() &&
+                        userAge <= selectedAgeRange.end.round();
+                  }).toList();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: UsersGrid(
+                      users: filteredUsers,
+                      onUserTap: (userDoc) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                UserInfoCheck(userId: userDoc.id),
+                          ),
+                        );
+                      },
                     ),
                   );
-                }
-                
-                // Excluir al usuario actual
-                final validUsers = snapshot.data!.docs
-                    .where((doc) => doc['uid'] != currentUser?.uid)
-                    .toList();
-                
-                // Aplicar filtro por género
-                List<QueryDocumentSnapshot> filteredUsers = validUsers;
-                if (selectedSearchIndex == 0) { // Mostrar solo hombres
-                  filteredUsers = validUsers
-                      .where((doc) => doc['gender'] == 'Hombre')
-                      .toList();
-                } else if (selectedSearchIndex == 1) { // Mostrar solo mujeres
-                  filteredUsers = validUsers
-                      .where((doc) => doc['gender'] == 'Mujer')
-                      .toList();
-                }
-                
-                // Aplicar filtro por edad
-                filteredUsers = filteredUsers.where((doc) {
-                  // Convertir el campo 'age' a entero. Se asume que viene como String.
-                  final int userAge = int.tryParse(doc['age'].toString()) ?? 0;
-                  return userAge >= selectedAgeRange.start.round() &&
-                      userAge <= selectedAgeRange.end.round();
-                }).toList();
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: UsersGrid(
-                    users: filteredUsers,
-                    onUserTap: (userDoc) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserInfoCheck(userId: userDoc.id),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,9 +289,13 @@ class ExploreScreenState extends State<ExploreScreen> {
           children: [
             Column(
               children: [
-                // Si _currentIndex es 0 se reconstruye la pantalla de exploración, de lo contrario se usa la otra página.
-                Expanded(child: _currentIndex == 0 ? _buildExplorePage() : _otherPages[_currentIndex - 1]),
-                // Barra inferior con efecto frosted en su contenedor
+                // Si _currentIndex es 0 se reconstruye la pantalla de exploración, de lo contrario se muestra la página correspondiente
+                Expanded(
+                  child: _currentIndex == 0
+                      ? _buildExplorePage()
+                      : _otherPages[_currentIndex - 1],
+                ),
+                // Barra inferior con efecto frosted
                 DockSection(
                   currentIndex: _currentIndex,
                   onTapIcon: (index) => setState(() => _currentIndex = index),
@@ -268,7 +304,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               ],
             ),
-            // Botones flotantes solo en el index 0 (Explore)
+            // Botones flotantes solo en la pestaña Explore
             if (_currentIndex == 0)
               Positioned(
                 bottom: 100,
@@ -277,7 +313,8 @@ class ExploreScreenState extends State<ExploreScreen> {
                   heroTag: 'joinPlan',
                   label: 'Unirse a Plan',
                   iconPath: 'assets/union.png',
-                  onPressed: () => JoinPlanRequestScreen.showJoinPlanDialog(context),
+                  onPressed: () =>
+                      JoinPlanRequestScreen.showJoinPlanDialog(context),
                   margin: const EdgeInsets.only(left: 0, bottom: 0),
                   borderColor: const Color.fromARGB(236, 0, 4, 227),
                   borderWidth: 1,
@@ -295,7 +332,8 @@ class ExploreScreenState extends State<ExploreScreen> {
                   iconPath: 'assets/anadir.png',
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => NewPlanCreationScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => NewPlanCreationScreen()),
                   ),
                   margin: const EdgeInsets.only(right: 0, bottom: 0),
                   backgroundColor: AppColors.blue,
@@ -340,7 +378,7 @@ class DockSection extends StatelessWidget {
       width: double.infinity,
       child: Stack(
         children: [
-          // BackdropFilter para el efecto frosted en la barra
+          // BackdropFilter para el efecto frosted
           ClipRRect(
             borderRadius: BorderRadius.zero,
             child: BackdropFilter(
@@ -408,7 +446,7 @@ class DockSection extends StatelessWidget {
           ),
           onPressed: () => onTapIcon(index),
         ),
-        if (streamCount != null && index == 2) // Para el ícono de chat
+        if (streamCount != null && index == 2)
           Positioned(
             right: -6,
             top: -6,
@@ -417,7 +455,6 @@ class DockSection extends StatelessWidget {
               builder: (context, snapshot) {
                 final count = snapshot.data ?? 0;
                 if (count == 0) return const SizedBox();
-                // Mostrar un pequeño puntito azul sin número
                 return Container(
                   width: 10,
                   height: 10,
