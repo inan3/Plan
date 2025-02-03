@@ -1,5 +1,6 @@
 import 'dart:ui'; // para BackdropFilter
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PopularUsersSection extends StatelessWidget {
   const PopularUsersSection({Key? key}) : super(key: key);
@@ -71,8 +72,7 @@ class PopularUsersSection extends StatelessWidget {
 
   /// Construye una tarjeta con imagen de fondo y la banda inferior "frosted"
   Widget _buildPopularUserCard(String name, int stars) {
-    // Podrías usar la foto real del usuario si la tuvieras
-    // Aquí mostramos una imagen de ejemplo
+    // Usamos una imagen de ejemplo optimizada
     const exampleImage =
         'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress';
 
@@ -83,12 +83,17 @@ class PopularUsersSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Imagen de fondo
+            // Imagen de fondo con CachedNetworkImage
             Positioned.fill(
-              child: Image.network(
-                exampleImage,
+              child: CachedNetworkImage(
+                imageUrl: exampleImage,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.grey),
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[300],
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) =>
+                    Container(color: Colors.grey),
               ),
             ),
             // Solamente la banda inferior con efecto "cristal"
@@ -134,7 +139,6 @@ class PopularUsersSection extends StatelessWidget {
                   ),
                 ),
               ),
-
               // Estrellas
               Row(
                 children: [

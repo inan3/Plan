@@ -36,13 +36,18 @@ class ExploreScreenState extends State<ExploreScreen> {
   double selectedDistance = 50;
   int selectedSearchIndex = 0;
 
-  late List<Widget> _pages;
+  // Solo almacenamos las páginas que no dependen de filtros, o las construimos al instante.
+  late List<Widget> _otherPages;
 
   @override
   void initState() {
     super.initState();
     _setStatusBarDark();
-    _initializePages();
+    _otherPages = [
+      MatchesScreen(currentUserId: currentUser?.uid ?? ''),
+      const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
+      const Center(child: Text('Perfil')),
+    ];
   }
 
   void _setStatusBarDark() {
@@ -52,15 +57,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         statusBarIconBrightness: Brightness.dark,
       ),
     );
-  }
-
-  void _initializePages() {
-    _pages = [
-      _buildExplorePage(),
-      MatchesScreen(currentUserId: currentUser?.uid ?? ''),
-      const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
-      const Center(child: Text('Perfil')),
-    ];
   }
 
   void _onSearchChanged(String value) {
@@ -109,6 +105,7 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
+  /// Construye la página de exploración en tiempo de ejecución
   Widget _buildExplorePage() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -157,73 +154,95 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildNearbySection() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 15),
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
-              child: Text(
-                'Cercanos',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+  return ClipRRect(
+    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+    child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 20, top: 15, bottom: 10),
+            child: Text(
+              'Cercanos',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.55,
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('users').snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: Colors.black),
-                    );
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No hay usuarios cercanos.',
-                        style: TextStyle(fontSize: 18, color: Colors.black),
-                      ),
-                    );
-                  }
-
-                  final validUsers = snapshot.data!.docs
-                      .where((doc) => doc['uid'] != currentUser?.uid)
-                      .toList();
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: UsersGrid(
-                      users: validUsers,
-                      onUserTap: (userDoc) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => UserInfoCheck(userId: userDoc.id),
-                          ),
-                        );
-                      },
+          ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.55,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('users').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.black),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No hay usuarios cercanos.',
+                      style: TextStyle(fontSize: 18, color: Colors.black),
                     ),
                   );
-                },
-              ),
+                }
+                
+                // Excluir al usuario actual
+                final validUsers = snapshot.data!.docs
+                    .where((doc) => doc['uid'] != currentUser?.uid)
+                    .toList();
+                
+                // Aplicar filtro por género
+                List<QueryDocumentSnapshot> filteredUsers = validUsers;
+                if (selectedSearchIndex == 0) { // Mostrar solo hombres
+                  filteredUsers = validUsers
+                      .where((doc) => doc['gender'] == 'Hombre')
+                      .toList();
+                } else if (selectedSearchIndex == 1) { // Mostrar solo mujeres
+                  filteredUsers = validUsers
+                      .where((doc) => doc['gender'] == 'Mujer')
+                      .toList();
+                }
+                
+                // Aplicar filtro por edad
+                filteredUsers = filteredUsers.where((doc) {
+                  // Convertir el campo 'age' a entero. Se asume que viene como String.
+                  final int userAge = int.tryParse(doc['age'].toString()) ?? 0;
+                  return userAge >= selectedAgeRange.start.round() &&
+                      userAge <= selectedAgeRange.end.round();
+                }).toList();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: UsersGrid(
+                    users: filteredUsers,
+                    onUserTap: (userDoc) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserInfoCheck(userId: userDoc.id),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +257,8 @@ class ExploreScreenState extends State<ExploreScreen> {
           children: [
             Column(
               children: [
-                Expanded(child: _pages[_currentIndex]),
+                // Si _currentIndex es 0 se reconstruye la pantalla de exploración, de lo contrario se usa la otra página.
+                Expanded(child: _currentIndex == 0 ? _buildExplorePage() : _otherPages[_currentIndex - 1]),
                 // Barra inferior con efecto frosted en su contenedor
                 DockSection(
                   currentIndex: _currentIndex,

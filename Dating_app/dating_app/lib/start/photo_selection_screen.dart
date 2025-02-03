@@ -1,3 +1,4 @@
+// photo_selection_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -92,7 +93,6 @@ class _PhotoSelectionScreenState extends State<PhotoSelectionScreen> {
           .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
 
       await ref.putFile(image);
-
       return await ref.getDownloadURL();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,33 +142,42 @@ class _PhotoSelectionScreenState extends State<PhotoSelectionScreen> {
 
   Future<void> _saveUserToFirestore(Position position) async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
-      setState(() {
-        _isLoading = true;
-      });
+      try {
+        setState(() {
+          _isLoading = true;
+        });
 
-      final photoUrl = _selectedImage != null
-          ? await _uploadImageToStorage(_selectedImage!)
-          : null;
+        // Si se ha seleccionado una imagen, se sube; de lo contrario se deja null o se puede asignar una foto por defecto.
+        String? photoUrl;
+        if (_selectedImage != null) {
+          photoUrl = await _uploadImageToStorage(_selectedImage!);
+        } else {
+          photoUrl = null; // O asigna una URL de imagen por defecto.
+        }
 
-      final userData = {
-        'uid': user.uid,
-        'name': widget.username,
-        'gender': widget.gender,
-        'interest': widget.interest,
-        'height': widget.height,
-        'age': widget.age, // Guarda la edad en Firestore
-        'photoUrl': photoUrl,
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-      };
+        final userData = {
+          'uid': user.uid,
+          'name': widget.username,
+          'gender': widget.gender,
+          'interest': widget.interest,
+          'height': widget.height,
+          'age': widget.age, // Guarda la edad en Firestore
+          'photoUrl': photoUrl,
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        };
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(userData);
-
-      setState(() {
-        _isLoading = false;
-      });
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set(userData);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al guardar los datos del usuario: $e')),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -218,18 +227,16 @@ class _PhotoSelectionScreenState extends State<PhotoSelectionScreen> {
                       ),
                     ),
                     SizedBox(height: 30),
+                    // Botón "Continuar" siempre habilitado para poder avanzar sin foto
                     ElevatedButton(
-                      onPressed: _selectedImage != null
-                          ? () async {
-                              setState(() {
-                                _isLoading = true;
-                              });
-                              await _requestLocationPermission();
-                            }
-                          : null,
+                      onPressed: () async {
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        await _requestLocationPermission();
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _selectedImage != null ? Colors.purple : Colors.grey,
+                        backgroundColor: Colors.purple,
                         padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                       ),
                       child: Text(

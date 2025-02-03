@@ -126,73 +126,119 @@ class _ChatsScreenState extends State<ChatsScreen> {
               });
 
               return ListView.builder(
-                itemCount: sortedEntries.length,
-                itemBuilder: (context, index) {
-                  String otherUserId = sortedEntries[index].key;
-                  var lastMessage = sortedEntries[index].value;
+              itemCount: sortedEntries.length,
+              itemBuilder: (context, index) {
+                String otherUserId = sortedEntries[index].key;
+                var lastMessage = sortedEntries[index].value;
 
-                  return FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(otherUserId)
-                        .get(),
-                    builder: (context, userSnapshot) {
-                      if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                        return const SizedBox.shrink();
-                      }
+                return FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
+                  builder: (context, userSnapshot) {
+                    if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                      return const SizedBox.shrink();
+                    }
+                    var userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+                    if (userData == null) return const SizedBox.shrink();
 
-                      var userData =
-                          userSnapshot.data!.data() as Map<String, dynamic>?;
-                      if (userData == null) return const SizedBox.shrink();
-
-                      return Dismissible(
-                        key: Key(otherUserId),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: const Icon(Icons.delete, color: Colors.white, size: 32),
-                        ),
-                        onDismissed: (direction) {
-                          _deleteChat(otherUserId);
+                    return Dismissible(
+                      key: Key(otherUserId),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: const Icon(Icons.delete, color: Colors.white, size: 32),
+                      ),
+                      onDismissed: (direction) {
+                        _deleteChat(otherUserId);
+                      },
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(
+                                chatPartnerId: otherUserId,
+                                chatPartnerName: userData['name'] ?? 'Usuario',
+                                chatPartnerPhoto: userData['photoUrl'] ?? '',
+                                deletedAt: deletedChats[otherUserId] is Timestamp
+                                    ? deletedChats[otherUserId] as Timestamp
+                                    : null,
+                              ),
+                            ),
+                          );
                         },
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: userData['photoUrl'] != null
-                                ? NetworkImage(userData['photoUrl'])
-                                : null,
-                            backgroundColor: Colors.grey[300],
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.3),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          title: Text(userData['name'] ?? 'Usuario'),
-                          subtitle: Text(lastMessage['text'] ?? ''),
-                          trailing: Text(
-                            _formatTimestamp(lastMessage['timestamp'] is Timestamp
-                                ? lastMessage['timestamp'] as Timestamp
-                                : null),
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChatScreen(
-                                  chatPartnerId: otherUserId,
-                                  chatPartnerName: userData['name'] ?? 'Usuario',
-                                  chatPartnerPhoto: userData['photoUrl'] ?? '',
-                                  deletedAt: deletedChats[otherUserId] is Timestamp
-                                      ? deletedChats[otherUserId] as Timestamp
-                                      : null,
+                          child: Row(
+                            children: [
+                              // Foto de perfil (Contenedor 1)
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundImage: (userData['photoUrl'] != null &&
+                                        userData['photoUrl'].toString().isNotEmpty)
+                                    ? NetworkImage(userData['photoUrl'])
+                                    : null,
+                                backgroundColor: Colors.grey[300],
+                              ),
+                              const SizedBox(width: 12),
+                              // Nombre y último mensaje (Contenedor 2)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      userData['name'] ?? 'Usuario',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      lastMessage['text'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
+                              // Hora del último mensaje.
+                              Text(
+                                _formatTimestamp(
+                                  lastMessage['timestamp'] is Timestamp
+                                      ? lastMessage['timestamp'] as Timestamp
+                                      : null,
+                                ),
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                    },
-                  );
-                },
-              );
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+
+
             },
           );
         },
