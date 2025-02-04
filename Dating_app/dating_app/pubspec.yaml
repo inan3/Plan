@@ -46,7 +46,6 @@ flutter:
   assets:
     - assets/launcher_icon.png
     - assets/boton-editar.png
-    - assets/boton-union.png
     - assets/icono-ubicacion.png
     - assets/plan.png
     - assets/plan-sin-fondo.png
@@ -56,3 +55,4 @@ flutter:
     - assets/mensaje.png
     - assets/union.png
     - assets/usuario.png
+    - assets/lupa.png

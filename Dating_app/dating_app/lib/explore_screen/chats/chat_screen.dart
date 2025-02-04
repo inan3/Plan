@@ -35,6 +35,32 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _scrollToBottom();
+    _markMessagesAsRead();
+  }
+
+  /// Marca como leídos todos los mensajes recibidos en este chat.
+  Future<void> _markMessagesAsRead() async {
+    try {
+      // Se obtienen los mensajes enviados por el chatPartner que no han sido leídos
+      QuerySnapshot unreadMessages = await FirebaseFirestore.instance
+          .collection('messages')
+          .where('senderId', isEqualTo: widget.chatPartnerId)
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+
+      for (var doc in unreadMessages.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+
+      await batch.commit();
+      // Si lo deseas, puedes agregar un log o alguna acción tras marcar como leídos.
+      print("Mensajes marcados como leídos.");
+    } catch (e) {
+      print("❌ Error al marcar mensajes como leídos: $e");
+    }
   }
 
   @override
@@ -83,8 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   // Contenedor de información del chat (foto y nombre) con sombra y ancho limitado.
                   Container(
                     width: MediaQuery.of(context).size.width * 0.55,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
@@ -183,150 +208,123 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   /// **Lista de mensajes**
-  /// **Lista de mensajes**
-Widget _buildMessagesList() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance
-        .collection('messages')
-        .where('participants', arrayContains: currentUserId)
-        .orderBy('timestamp', descending: false)
-        .snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return const Center(
-          child: Text(
-            "No hay mensajes aún.",
-            style: TextStyle(color: Colors.grey, fontSize: 16),
-          ),
-        );
-      }
-
-      // Filtrar mensajes para mostrar solo los recientes tras `deletedAt`.
-      var messages = snapshot.data!.docs.where((doc) {
-        var data = doc.data() as Map<String, dynamic>;
-
-        // Verificar que 'timestamp' exista y sea de tipo Timestamp.
-        if (!(data['timestamp'] is Timestamp)) {
-          return false;
+  Widget _buildMessagesList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('messages')
+          .where('participants', arrayContains: currentUserId)
+          .orderBy('timestamp', descending: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
         }
-        Timestamp timestamp = data['timestamp'] as Timestamp;
-        DateTime messageTime = timestamp.toDate();
-
-        // Si se ha eliminado el chat, ocultar mensajes previos a 'deletedAt'.
-        if (widget.deletedAt != null &&
-            messageTime.isBefore(widget.deletedAt!.toDate())) {
-          return false;
-        }
-
-        return (data['senderId'] == currentUserId &&
-                data['receiverId'] == widget.chatPartnerId) ||
-            (data['senderId'] == widget.chatPartnerId &&
-                data['receiverId'] == currentUserId);
-      }).toList();
-
-      return ListView.builder(
-        controller: _scrollController,
-        // Agregamos padding para evitar que el primer y último mensaje queden tapados.
-        padding: EdgeInsets.only(
-          top: _headerHeight + 16,  // espacio para el header
-          bottom: 70,               // espacio para el área de entrada
-        ),
-        itemCount: messages.length,
-        itemBuilder: (context, index) {
-          var data = messages[index].data() as Map<String, dynamic>;
-          bool isMe = data['senderId'] == currentUserId;
-
-          // Asegurarse de que 'timestamp' sea de tipo Timestamp.
-          DateTime messageTime;
-          if (data['timestamp'] is Timestamp) {
-            messageTime = (data['timestamp'] as Timestamp).toDate();
-          } else {
-            messageTime = DateTime.now();
-          }
-
-          return Align(
-            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isMe ? Colors.blue[400] : Colors.grey[300],
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-                  bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data['text'] ?? '',
-                    style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('HH:mm').format(messageTime),
-                    style: TextStyle(
-                      color: isMe ? Colors.white70 : Colors.black54,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              "No hay mensajes aún.",
+              style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
           );
-        },
-      );
-    },
-  );
-}
+        }
 
+        // Filtrar mensajes para mostrar solo los recientes tras `deletedAt`.
+        var messages = snapshot.data!.docs.where((doc) {
+          var data = doc.data() as Map<String, dynamic>;
+
+          // Verificar que 'timestamp' exista y sea de tipo Timestamp.
+          if (!(data['timestamp'] is Timestamp)) {
+            return false;
+          }
+          Timestamp timestamp = data['timestamp'] as Timestamp;
+          DateTime messageTime = timestamp.toDate();
+
+          // Si se ha eliminado el chat, ocultar mensajes previos a 'deletedAt'.
+          if (widget.deletedAt != null &&
+              messageTime.isBefore(widget.deletedAt!.toDate())) {
+            return false;
+          }
+
+          return (data['senderId'] == currentUserId &&
+                  data['receiverId'] == widget.chatPartnerId) ||
+              (data['senderId'] == widget.chatPartnerId &&
+                  data['receiverId'] == currentUserId);
+        }).toList();
+
+        return ListView.builder(
+          controller: _scrollController,
+          // Agregamos padding para evitar que el primer y último mensaje queden tapados.
+          padding: EdgeInsets.only(
+            top: _headerHeight + 16, // espacio para el header
+            bottom: 70, // espacio para el área de entrada
+          ),
+          itemCount: messages.length,
+          itemBuilder: (context, index) {
+            var data = messages[index].data() as Map<String, dynamic>;
+            bool isMe = data['senderId'] == currentUserId;
+
+            // Asegurarse de que 'timestamp' sea de tipo Timestamp.
+            DateTime messageTime;
+            if (data['timestamp'] is Timestamp) {
+              messageTime = (data['timestamp'] as Timestamp).toDate();
+            } else {
+              messageTime = DateTime.now();
+            }
+
+            return Align(
+              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isMe ? Colors.blue[400] : Colors.grey[300],
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+                    bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment:
+                      isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data['text'] ?? '',
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('HH:mm').format(messageTime),
+                      style: TextStyle(
+                        color: isMe ? Colors.white70 : Colors.black54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   /// **Área de entrada de mensaje con efecto frosted glass y botones flotantes**
-Widget _buildMessageInput() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-    child: Row(
-      children: [
-        // Botón flotante con ícono de "+" a la izquierda.
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.add, color: AppColors.blue),
-            onPressed: () {
-              // Acción vacía por el momento.
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            height: 48, // Establece un alto fijo para que coincida con los botones.
-            alignment: Alignment.center, // Centra el contenido verticalmente.
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+  Widget _buildMessageInput() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Botón flotante con ícono de "+" a la izquierda.
+          Container(
             decoration: BoxDecoration(
-              color: Colors.white, // Fondo blanco.
-              borderRadius: BorderRadius.circular(30),
+              color: Colors.white,
+              shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.5),
@@ -336,42 +334,65 @@ Widget _buildMessageInput() {
                 ),
               ],
             ),
-            child: TextField(
-              controller: _messageController,
-              decoration: const InputDecoration(
-                hintText: "Escribe un mensaje...",
-                border: InputBorder.none,
-                isCollapsed: true, // Reduce el padding interno.
+            child: IconButton(
+              icon: const Icon(Icons.add, color: AppColors.blue),
+              onPressed: () {
+                // Acción vacía por el momento.
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 48, // Establece un alto fijo para que coincida con los botones.
+              alignment: Alignment.center, // Centra el contenido verticalmente.
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white, // Fondo blanco.
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _messageController,
+                decoration: const InputDecoration(
+                  hintText: "Escribe un mensaje...",
+                  border: InputBorder.none,
+                  isCollapsed: true, // Reduce el padding interno.
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        // Botón de envío flotante a la derecha.
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 3),
-              ),
-            ],
+          const SizedBox(width: 8),
+          // Botón de envío flotante a la derecha.
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.5),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.send, color: AppColors.blue),
+              onPressed: _sendMessage,
+            ),
           ),
-          child: IconButton(
-            icon: const Icon(Icons.send, color: AppColors.blue),
-            onPressed: _sendMessage,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
+        ],
+      ),
+    );
+  }
 
   /// **Enviar mensaje**
   void _sendMessage() async {

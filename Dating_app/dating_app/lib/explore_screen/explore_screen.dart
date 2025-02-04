@@ -17,6 +17,8 @@ import 'menu_side_bar_screen.dart';
 import 'matches_screen.dart';
 import 'chats/chats_screen.dart'; // Se importa la pantalla de mensajes actualizada
 import 'users_managing/user_info_check.dart';
+import 'search_screen.dart'; // Nuevo fichero para la pantalla de búsqueda
+import 'profile_screen.dart'; // Importamos el fichero de gestión del perfil
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -29,14 +31,21 @@ class ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   final double _iconSize = 30.0;
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final GlobalKey<MainSideBarScreenState> _menuKey = GlobalKey<MainSideBarScreenState>();
+  final GlobalKey<MainSideBarScreenState> _menuKey =
+      GlobalKey<MainSideBarScreenState>();
 
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
   int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
-  // Páginas que no dependen de filtros
+  // Páginas que no dependen de filtros (para _currentIndex > 0)
+  // El mapeo es:
+  //   0 -> ExplorePage (casita)
+  //   1 -> SearchScreen (lupa)
+  //   2 -> MatchesScreen (corazón)
+  //   3 -> ChatsScreen (mensaje)
+  //   4 -> ProfileScreen (usuario)
   late List<Widget> _otherPages;
 
   @override
@@ -44,9 +53,10 @@ class ExploreScreenState extends State<ExploreScreen> {
     super.initState();
     _setStatusBarDark();
     _otherPages = [
+      const SearchScreen(), // Nuevo: pantalla de búsqueda
       MatchesScreen(currentUserId: currentUser?.uid ?? ''),
       const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
-      const Center(child: Text('Perfil')),
+      ProfileScreen(),       // Conectamos la gestión del perfil
     ];
     _loadUserInterest();
   }
@@ -227,27 +237,31 @@ class ExploreScreenState extends State<ExploreScreen> {
                     );
                   }
 
-                  // Excluir al usuario actual
-                  final validUsers = snapshot.data!.docs
-                      .where((doc) => doc['uid'] != currentUser?.uid)
-                      .toList();
+                  // Excluir al usuario actual verificando el campo 'uid'
+                  final validUsers = snapshot.data!.docs.where((doc) {
+                    final uid = doc.data() is Map<String, dynamic>
+                        ? (doc.data() as Map<String, dynamic>)['uid']
+                        : null;
+                    return uid != null && uid != currentUser?.uid;
+                  }).toList();
 
                   // Filtrar por género según selectedSearchIndex:
                   List<QueryDocumentSnapshot> filteredUsers = validUsers;
                   if (selectedSearchIndex == 0) { // Mostrar solo hombres
                     filteredUsers = validUsers
-                        .where((doc) => doc['gender'] == 'Hombre')
+                        .where((doc) => (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
                         .toList();
                   } else if (selectedSearchIndex == 1) { // Mostrar solo mujeres
                     filteredUsers = validUsers
-                        .where((doc) => doc['gender'] == 'Mujer')
+                        .where((doc) => (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
                         .toList();
                   }
                   // Si selectedSearchIndex == 2 se muestran todos, sin filtrar por género.
 
                   // Aplicar filtro por edad
                   filteredUsers = filteredUsers.where((doc) {
-                    final int userAge = int.tryParse(doc['age'].toString()) ?? 0;
+                    final data = doc.data() as Map<String, dynamic>;
+                    final int userAge = int.tryParse(data['age'].toString()) ?? 0;
                     return userAge >= selectedAgeRange.start.round() &&
                         userAge <= selectedAgeRange.end.round();
                   }).toList();
@@ -289,7 +303,8 @@ class ExploreScreenState extends State<ExploreScreen> {
           children: [
             Column(
               children: [
-                // Si _currentIndex es 0 se reconstruye la pantalla de exploración, de lo contrario se muestra la página correspondiente
+                // Si _currentIndex es 0 se reconstruye la pantalla de exploración,
+                // de lo contrario se muestra la página correspondiente
                 Expanded(
                   child: _currentIndex == 0
                       ? _buildExplorePage()
@@ -408,16 +423,20 @@ class DockSection extends StatelessWidget {
                 ),
                 _buildIconButton(
                   index: 1,
+                  asset: 'assets/lupa.png',
+                ),
+                _buildIconButton(
+                  index: 2,
                   asset: 'assets/corazon.png',
                   streamCount: notificationCountStream,
                 ),
                 _buildIconButton(
-                  index: 2,
+                  index: 3,
                   asset: 'assets/mensaje.png',
                   streamCount: unreadMessagesCountStream,
                 ),
                 _buildIconButton(
-                  index: 3,
+                  index: 4,
                   asset: 'assets/usuario.png',
                 ),
               ],
@@ -446,7 +465,7 @@ class DockSection extends StatelessWidget {
           ),
           onPressed: () => onTapIcon(index),
         ),
-        if (streamCount != null && index == 2)
+        if (streamCount != null && index == 3)
           Positioned(
             right: -6,
             top: -6,
