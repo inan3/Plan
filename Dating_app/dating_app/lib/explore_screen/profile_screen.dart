@@ -582,13 +582,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // Se usa la foto de perfil (o placeholder) como fondo
-      body: Stack(
-        children: [
-          // Fondo: imagen de perfil ocupando todo el fondo
-          Container(
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    // Extiende el body detrás de la app bar y de la barra inferior
+    extendBody: true,
+    extendBodyBehindAppBar: true,
+    backgroundColor: Colors.transparent,
+    body: Stack(
+      children: [
+        // Imagen de fondo ocupando toda la pantalla
+        Positioned.fill(
+          child: Container(
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage(profileImageUrl ?? placeholderImageUrl),
@@ -596,88 +601,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          // Capa oscura para mejorar la legibilidad del contenido
-          Container(
+        ),
+        // Capa oscura sobre la imagen de fondo
+        Positioned.fill(
+          child: Container(
             color: Colors.black.withOpacity(0.3),
           ),
-          // Contenido principal con animación de opacidad
-          AnimatedOpacity(
-            opacity: _opacity,
-            duration: Duration(milliseconds: 500),
-            child: SingleChildScrollView(
-              child: SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Cabecera: foto de perfil pequeña en la esquina superior izquierda, nombre e ID
-                    _buildHeader(),
-                    SizedBox(height: 20),
-                    // Tarjeta frosted glass con datos del usuario y estadísticas
-                    _buildFrostedProfileCard(),
-                    SizedBox(height: 20),
-                    // Sección de fotos adicionales
-                    _buildAdditionalPhotosSection(),
-                    SizedBox(height: 20),
-                    // Opción de "Tu información"
-                    ListTile(
-                      leading: Icon(Icons.info, color: Colors.white),
-                      title: Text(
-                        'Tu información',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        // Contenido principal que se extiende hasta el final
+        Positioned.fill(
+          child: Column(
+            children: [
+              Expanded(
+                child: AnimatedOpacity(
+                  opacity: _opacity,
+                  duration: Duration(milliseconds: 500),
+                  child: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      // Forzamos que el contenido tenga al menos la altura de la pantalla
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height,
                       ),
-                      trailing:
-                          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white),
-                      onTap: () async {
-                        final isUpdated = await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => UserInfoScreen()),
-                        );
-                        if (isUpdated == true) {
-                          setState(() {
-                            _fetchProfileImage();
-                          });
-                        }
-                      },
-                    ),
-                    SizedBox(height: 20),
-                    // Botón de cerrar sesión
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: GestureDetector(
-                        onTap: () async {
-                          await FirebaseAuth.instance.signOut();
-                          if (!mounted) return;
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => LoginScreen()),
-                          );
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Text(
-                            'Cerrar sesión',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      child: SafeArea(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(),
+                            SizedBox(height: 20),
+                            _buildFrostedProfileCard(),
+                            SizedBox(height: 20),
+                            _buildAdditionalPhotosSection(),
+                            SizedBox(height: 20),
+                            ListTile(
+                              leading: Icon(Icons.info, color: Colors.white),
+                              title: Text(
+                                'Tu información',
+                                style: TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              trailing: Icon(Icons.arrow_forward_ios,
+                                  size: 16, color: Colors.white),
+                              onTap: () async {
+                                final isUpdated = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => UserInfoScreen()),
+                                );
+                                if (isUpdated == true) {
+                                  setState(() {
+                                    _fetchProfileImage();
+                                  });
+                                }
+                              },
                             ),
-                          ),
+                            SizedBox(height: 20),
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await FirebaseAuth.instance.signOut();
+                                  if (!mounted) return;
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => LoginScreen()),
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.7),
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Text(
+                                    'Cerrar sesión',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 20),
+                          ],
                         ),
                       ),
                     ),
-                    SizedBox(height: 20),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 }

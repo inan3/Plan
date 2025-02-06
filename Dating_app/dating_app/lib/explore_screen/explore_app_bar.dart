@@ -14,8 +14,11 @@ class ExploreAppBar extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
+  @override
+Widget build(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.only(top: 20.0), // Ajusta el valor según necesites
+    child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         // Botón de Menú con su propio Container
@@ -34,7 +37,7 @@ class ExploreAppBar extends StatelessWidget {
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.menu, color: Color.fromARGB(255, 58, 46, 239)),
+            icon: const Icon(Icons.menu, color: AppColors.blue),
             onPressed: onMenuPressed,
           ),
         ),
@@ -61,11 +64,13 @@ class ExploreAppBar extends StatelessWidget {
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.tune, color: Color.fromARGB(255, 58, 46, 239)),
+            icon: const Icon(Icons.tune, color: AppColors.blue),
             onPressed: onFilterPressed,
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
+
 }

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UsersGrid extends StatelessWidget {
-  final void Function(QueryDocumentSnapshot userDoc)? onUserTap;
-  final List<QueryDocumentSnapshot> users;
+  final void Function(dynamic userDoc)? onUserTap;
+  final List<dynamic> users;
 
   const UsersGrid({
     Key? key,
@@ -26,7 +26,10 @@ class UsersGrid extends StatelessWidget {
       itemCount: users.length,
       itemBuilder: (context, index) {
         final userDoc = users[index];
-        final userData = userDoc.data() as Map<String, dynamic>;
+        // Verifica si el elemento es un QueryDocumentSnapshot o un Map (dummy)
+        final Map<String, dynamic> userData = userDoc is QueryDocumentSnapshot
+            ? (userDoc.data() as Map<String, dynamic>)
+            : userDoc as Map<String, dynamic>;
 
         return GestureDetector(
           onTap: () => onUserTap?.call(userDoc),
@@ -40,7 +43,10 @@ class UsersGrid extends StatelessWidget {
     final name = userData['name']?.toString().trim() ?? 'Usuario';
     final age = userData['age']?.toString() ?? '--';
     final photoUrl = userData['photoUrl']?.toString();
-    final distance = userData['distance']?.toStringAsFixed(1) ?? '0.0';
+    // Usamos tryParse en caso de que distance no sea numérico
+    final distance = userData['distance'] is num
+        ? (userData['distance'] as num).toStringAsFixed(1)
+        : '0.0';
     final stars = userData['stars']?.toString() ?? '0';
 
     return ClipRRect(
@@ -51,7 +57,6 @@ class UsersGrid extends StatelessWidget {
           Positioned.fill(
             child: _buildProfileImage(photoUrl),
           ),
-
           // Banda inferior con los datos y el efecto “cristal”
           Positioned(
             left: 0,
@@ -142,7 +147,7 @@ class UsersGrid extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.blue[200]?.withOpacity(0.3),
+                      color: AppColors.blue?.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -157,7 +162,6 @@ class UsersGrid extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-
               // Fila de ubicación + estrellas
               Row(
                 children: [

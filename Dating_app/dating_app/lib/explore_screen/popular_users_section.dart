@@ -1,3 +1,4 @@
+// popular_users_section.dart
 import 'dart:ui'; // para BackdropFilter
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,12 +19,12 @@ class PopularUsersSection extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 180,
+      height: 100, // Altura general de la sección de populares
       child: Column(
         children: [
-          // Encabezado (Populares + VerTodos)
+          // Encabezado (Populares + Ver Todos) con margen horizontal de 15
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -50,7 +51,6 @@ class PopularUsersSection extends StatelessWidget {
               ],
             ),
           ),
-
           // Lista horizontal de usuarios
           Expanded(
             child: ListView.builder(
@@ -60,7 +60,6 @@ class PopularUsersSection extends StatelessWidget {
                 final user = users[index];
                 final String name = user['name'] as String;
                 final int stars = user['stars'] as int;
-
                 return _buildPopularUserCard(name, stars);
               },
             ),
@@ -70,92 +69,37 @@ class PopularUsersSection extends StatelessWidget {
     );
   }
 
-  /// Construye una tarjeta con imagen de fondo y la banda inferior "frosted"
+  /// Construye una tarjeta con un círculo perfecto para el perfil y la información de estrellas debajo.
   Widget _buildPopularUserCard(String name, int stars) {
-    // Usamos una imagen de ejemplo optimizada
+    // Imagen de ejemplo para el perfil.
     const exampleImage =
         'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress';
 
     return Container(
-      width: 120,
       margin: const EdgeInsets.symmetric(horizontal: 10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            // Imagen de fondo con CachedNetworkImage
-            Positioned.fill(
-              child: CachedNetworkImage(
-                imageUrl: exampleImage,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[300],
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) =>
-                    Container(color: Colors.grey),
-              ),
-            ),
-            // Solamente la banda inferior con efecto "cristal"
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildFrostedInfo(name, stars),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// El recuadro inferior translúcido y desenfocado
-  Widget _buildFrostedInfo(String name, int stars) {
-    return ClipRRect(
-      // Ajustamos el borde inferior, si deseas más redondeo
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(20),
-        topRight: Radius.circular(20),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          height: 50, // Altura fija para la franja de info
-          color: Colors.white.withOpacity(0.2),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Círculo perfecto con la imagen de perfil
+          CircleAvatar(
+            radius: 30, // Diámetro de 60
+            backgroundImage: CachedNetworkImageProvider(exampleImage),
+            backgroundColor: Colors.grey[300],
+          ),
+          const SizedBox(height: 4),
+          // Información de estrellas (los iconos mantienen su tamaño)
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Nombre
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              // Estrellas
-              Row(
-                children: [
-                  const Icon(Icons.star, size: 16, color: Colors.amber),
-                  const SizedBox(width: 3),
-                  Text(
-                    '$stars',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+              const Icon(Icons.star, size: 16, color: Colors.amber),
+              const SizedBox(width: 3),
+              Text(
+                '$stars',
+                style: const TextStyle(fontSize: 14, color: Colors.black),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

@@ -201,7 +201,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             top: 40,
             right: 10,
             child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              icon: const Icon(Icons.close, color: AppColors.blue, size: 40),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
