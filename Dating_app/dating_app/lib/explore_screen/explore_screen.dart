@@ -14,11 +14,11 @@ import '../plan_creation/new_plan_creation_screen.dart';
 import '../plan_joining/plan_join_request.dart';
 import 'users_grid.dart';
 import 'menu_side_bar_screen.dart';
-import 'matches_screen.dart';
 import 'chats/chats_screen.dart'; // Se importa la pantalla de mensajes actualizada
 import 'users_managing/user_info_check.dart';
 import 'search_screen.dart'; // Nuevo fichero para la pantalla de búsqueda
 import 'profile_screen.dart'; // Importamos el fichero de gestión del perfil
+import 'notification_screen.dart'; // Importa la nueva pantalla de notificaciones
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -47,7 +47,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     _setStatusBarDark();
     _otherPages = [
       const SearchScreen(), // Nuevo: pantalla de búsqueda
-      MatchesScreen(currentUserId: currentUser?.uid ?? ''),
       const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
       ProfileScreen(),       // Gestión del perfil
     ];
@@ -65,6 +64,18 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   void _onSearchChanged(String value) {
     // Implementa la búsqueda si es necesario
+  }
+
+  // Ahora, al pulsar el botón de notificaciones en el AppBar se navega a NotificationScreen.
+  void _onFilterPressed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationScreen(
+          currentUserId: currentUser?.uid ?? '',
+        ),
+      ),
+    );
   }
 
   // Carga la preferencia de "interest" del usuario actual para definir el filtro por defecto
@@ -98,29 +109,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  void _onFilterPressed() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FilterScreen(
-          initialAgeRange: selectedAgeRange,
-          initialDistance: selectedDistance,
-          initialSelection: selectedSearchIndex,
-        ),
-      ),
-    );
-
-    if (!mounted) return;
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() {
-        selectedAgeRange = result['ageRange'];
-        selectedDistance = result['distance'];
-        selectedSearchIndex = result['selection'];
-      });
-      _setStatusBarDark();
-    }
-  }
-
   // Streams de notificaciones y mensajes
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
@@ -149,7 +137,7 @@ class ExploreScreenState extends State<ExploreScreen> {
           const SizedBox(height: 10),
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
-            onFilterPressed: _onFilterPressed,
+            onFilterPressed: _onFilterPressed, // Al pulsar el botón de notificaciones
             onSearchChanged: _onSearchChanged,
           ),
           // Sección de usuarios populares
@@ -172,15 +160,14 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  /// Se elimina el uso de SizedBox con altura fija y se utiliza Flexible para la grilla de usuarios
+  /// Se usa Expanded para la grilla de usuarios, ocupando todo el espacio disponible.
   Widget _buildNearbySection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          Flexible(
+          Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('users').snapshots(),
               builder: (context, snapshot) {
@@ -288,23 +275,27 @@ class ExploreScreenState extends State<ExploreScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
+            // Contenido principal en Column (las páginas de Explore u otras)
             Column(
               children: [
-                // Si _currentIndex es 0 se muestra la página de exploración;
-                // de lo contrario, se muestra la correspondiente de _otherPages
                 Expanded(
                   child: _currentIndex == 0
                       ? _buildExplorePage()
                       : _otherPages[_currentIndex - 1],
                 ),
-                // La DockSection se coloca dentro de la Column para estar siempre visible
-                DockSection(
+              ],
+            ),
+            // La DockSection se superpone, se centra en la parte inferior y maneja sus propios callbacks.
+            Positioned(
+              bottom: 20,
+              child: Center(
+                child: DockSection(
                   currentIndex: _currentIndex,
                   onTapIcon: (index) => setState(() => _currentIndex = index),
                   notificationCountStream: _notificationCountStream(),
                   unreadMessagesCountStream: _unreadMessagesCountStream(),
                 ),
-              ],
+              ),
             ),
             // Botones flotantes solo en la pestaña Explore
             if (_currentIndex == 0)
@@ -356,7 +347,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-/// Barra inferior con efecto frosted (80px de alto) y 5 iconos de navegación.
+/// Barra inferior con efecto frosted (70px de alto) y 5 iconos de navegación.
 class DockSection extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapIcon;
@@ -375,37 +366,40 @@ class DockSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(20), // Bordes redondeados como en la captura
-        topRight: Radius.circular(20),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          height: 80,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2), // Más translúcido
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+    return Padding(
+      padding: const EdgeInsets.only(left: 55, right: 16, bottom: 20, top: 0),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.all(Radius.circular(90)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Container(
+            height: 70,
+            width: 300, // Ancho fijo que puedes ajustar manualmente
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 133, 118, 118).withOpacity(0.25),
+              borderRadius: const BorderRadius.all(Radius.circular(90)),
             ),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3), // Bordes más suaves
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildIconButton(index: 0, asset: 'assets/casa.png'),
-                _buildIconButton(index: 1, asset: 'assets/lupa.png'),
-                _buildIconButton(index: 2, asset: 'assets/corazon.png', streamCount: notificationCountStream),
-                _buildIconButton(index: 3, asset: 'assets/mensaje.png', streamCount: unreadMessagesCountStream),
-                _buildIconButton(index: 4, asset: 'assets/usuario.png'),
-              ],
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildIconButton(index: 0, asset: 'assets/casa.png'),
+                  const SizedBox(width: 10),
+                  _buildIconButton(index: 1, asset: 'assets/lupa.png'),
+                  const SizedBox(width: 10),
+                  _buildIconButton(
+                      index: 2,
+                      asset: 'assets/anadir.png',
+                      streamCount: notificationCountStream),
+                  const SizedBox(width: 10),
+                  _buildIconButton(
+                      index: 3,
+                      asset: 'assets/mensaje.png',
+                      streamCount: unreadMessagesCountStream),
+                  const SizedBox(width: 10),
+                  _buildIconButton(index: 4, asset: 'assets/usuario.png'),
+                ],
+              ),
             ),
           ),
         ),
@@ -426,8 +420,8 @@ class DockSection extends StatelessWidget {
           icon: Image.asset(
             asset,
             color: currentIndex == index ? AppColors.blue : Colors.black,
-            width: 32,
-            height: 32,
+            width: 26,
+            height: 26,
           ),
           onPressed: () => onTapIcon(index),
         ),
@@ -472,4 +466,3 @@ class DockSection extends StatelessWidget {
     );
   }
 }
-
