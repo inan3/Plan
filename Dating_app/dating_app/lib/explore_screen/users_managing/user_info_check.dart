@@ -18,9 +18,9 @@ class UserInfoCheck extends StatefulWidget {
   final String userId;
 
   const UserInfoCheck({
-    Key? key,
+    super.key,
     required this.userId,
-  }) : super(key: key);
+  });
 
   @override
   State<UserInfoCheck> createState() => _UserInfoCheckState();
@@ -485,10 +485,10 @@ class _FrostedPlanDialog extends StatefulWidget {
   final Future<List<Map<String, dynamic>>> Function(PlanModel plan) fetchParticipants;
 
   const _FrostedPlanDialog({
-    Key? key,
+    super.key,
     required this.plan,
     required this.fetchParticipants,
-  }) : super(key: key);
+  });
 
   @override
   State<_FrostedPlanDialog> createState() => _FrostedPlanDialogState();

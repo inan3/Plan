@@ -6,7 +6,7 @@ import 'package:flutter/services.dart'; // Importar para Clipboard
 
 
 class MyPlansScreen extends StatelessWidget {
-  const MyPlansScreen({Key? key}) : super(key: key);
+  const MyPlansScreen({super.key});
 
   /// Obtiene el creador y todos los suscriptores de un plan
   /// Retorna una lista con Map que tiene {name, age, photoUrl, isCreator}

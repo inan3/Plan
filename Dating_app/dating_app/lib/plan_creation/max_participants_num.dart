@@ -8,7 +8,7 @@ import '../models/plan_model.dart'; // Importa el modelo PlanModel
 class MaxParticipantsNumScreen extends StatefulWidget {
   final PlanModel plan;
 
-  const MaxParticipantsNumScreen({required this.plan, Key? key}) : super(key: key);
+  const MaxParticipantsNumScreen({required this.plan, super.key});
 
   @override
   State<MaxParticipantsNumScreen> createState() => _MaxParticipantsNumScreenState();

@@ -22,9 +22,9 @@ class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
 
   const MainSideBarScreen({
-    Key? key,
+    super.key,
     this.onMenuToggled,
-  }) : super(key: key);
+  });
 
   @override
   MainSideBarScreenState createState() => MainSideBarScreenState();
@@ -200,12 +200,12 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                           ),
                         ],
                       ),
+                      padding: const EdgeInsets.all(8),
                       child: const Icon(
                         Icons.arrow_back,
                         color: AppColors.blue,
                         size: 24,
                       ),
-                      padding: const EdgeInsets.all(8),
                     ),
                   ),
                 ),

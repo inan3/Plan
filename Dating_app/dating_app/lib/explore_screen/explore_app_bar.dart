@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../main/colors.dart';
 
@@ -7,37 +8,54 @@ class ExploreAppBar extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
 
   const ExploreAppBar({
-    Key? key,
+    super.key,
     required this.onMenuPressed,
     required this.onFilterPressed,
     required this.onSearchChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 20.0), // Ajusta el valor según necesites
+      padding: const EdgeInsets.only(top: 20.0), // Ajusta según sea necesario
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Botón de Menú con su propio Container
+          // Botón de Menú con efecto frosted glass
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 30),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 255, 255, 255),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30), // Bordes redondeados
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2), // Fondo con efecto frosted
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 92, 92, 92).withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(5, 5),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero, // Elimina padding interno
+                    constraints: const BoxConstraints(), // Quita constraints por defecto
+                    icon: Image.asset(
+                      'assets/menu.png',
+                      color: AppColors.blue,
+                      width: 18,
+                      height: 18,
+                    ),
+                    onPressed: onMenuPressed,
+                  ),
+
                 ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.menu, color: AppColors.blue),
-              onPressed: onMenuPressed,
+              ),
             ),
           ),
 
@@ -47,29 +65,40 @@ class ExploreAppBar extends StatelessWidget {
             height: 80, // Ajusta la altura según sea necesario
           ),
 
-          // Botón de Filtro (ahora notificación) con su propio Container
+          // Botón de notificación con efecto frosted glass
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 30),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 255, 255, 255),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30), // Bordes redondeados
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2), // Fondo con efecto frosted
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 92, 92, 92).withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(5, 5),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero, // Elimina padding interno
+                    constraints: const BoxConstraints(), // Quita constraints por defecto
+                    icon: Image.asset(
+                      'assets/notificacion.png',
+                      color: AppColors.blue,
+                      width: 20,
+                      height: 20,
+                    ),
+                    onPressed: onFilterPressed,
+                  ),
                 ),
-              ],
-            ),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/notificacion.png',
-                color: AppColors.blue,
-                width: 24, // Tamaño igual al del ícono de menú
-                height: 24,
               ),
-              onPressed: onFilterPressed,
             ),
           ),
         ],

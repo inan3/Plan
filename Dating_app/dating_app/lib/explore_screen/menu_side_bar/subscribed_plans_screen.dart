@@ -8,7 +8,7 @@ import 'package:flutter/services.dart'; // Importar para Clipboard
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId; // ID del usuario para filtrar sus planes suscritos
 
-  const SubscribedPlansScreen({Key? key, required this.userId}) : super(key: key);
+  const SubscribedPlansScreen({super.key, required this.userId});
 
   /// Combina al creador + suscriptores de un plan
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
@@ -418,7 +418,7 @@ void _confirmLeavePlan(BuildContext context, PlanModel plan) {
 class UserProfileScreen extends StatelessWidget {
   final String userId;
 
-  const UserProfileScreen({Key? key, required this.userId}) : super(key: key);
+  const UserProfileScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {

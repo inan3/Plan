@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../start/welcome_screen.dart'; // Asegúrate de importar la pantalla de bienvenida
 
 class CloseSessionScreen extends StatelessWidget {
-  const CloseSessionScreen({Key? key}) : super(key: key);
+  const CloseSessionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

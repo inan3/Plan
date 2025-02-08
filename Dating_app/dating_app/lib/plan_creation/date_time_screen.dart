@@ -10,7 +10,7 @@ import '../../models/plan_model.dart';
 class DateTimeScreen extends StatefulWidget {
   final PlanModel plan;
 
-  const DateTimeScreen({Key? key, required this.plan}) : super(key: key);
+  const DateTimeScreen({super.key, required this.plan});
 
   @override
   State<DateTimeScreen> createState() => _DateTimeScreenState();
@@ -103,9 +103,7 @@ class _DateTimeScreenState extends State<DateTimeScreen> {
       widget.plan.createdAt = DateTime.now();
 
       // **Inicializa participants si está nulo**
-      if (widget.plan.participants == null) {
-        widget.plan.participants = [];
-      }
+      widget.plan.participants ??= [];
 
       // Guarda el plan en Firestore
       await FirebaseFirestore.instance

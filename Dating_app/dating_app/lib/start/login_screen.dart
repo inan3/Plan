@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 const Color backgroundColor = AppColors.background; // Azul turquesa
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }

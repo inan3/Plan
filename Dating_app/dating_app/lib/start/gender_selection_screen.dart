@@ -6,7 +6,7 @@ const Color backgroundColor = Colors.purple; // Fondo morado
 class GenderSelectionScreen extends StatefulWidget {
   final String username;
 
-  GenderSelectionScreen({required this.username});
+  const GenderSelectionScreen({super.key, required this.username});
 
   @override
   _GenderSelectionScreenState createState() => _GenderSelectionScreenState();

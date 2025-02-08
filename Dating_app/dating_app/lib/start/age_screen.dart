@@ -8,7 +8,7 @@ class AgeScreen extends StatefulWidget {
   final String gender;
   final String interest;
 
-  AgeScreen({
+  const AgeScreen({super.key, 
     required this.username,
     required this.gender,
     required this.interest,

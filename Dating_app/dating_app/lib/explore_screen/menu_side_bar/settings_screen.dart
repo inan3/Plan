@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:tu_app/theme/app_colors.dart'; // si corresponde
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

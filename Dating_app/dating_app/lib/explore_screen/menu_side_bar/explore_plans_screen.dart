@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:tu_app/theme/app_colors.dart'; // si corresponde
 
 class ExplorePlansScreen extends StatelessWidget {
-  const ExplorePlansScreen({Key? key}) : super(key: key);
+  const ExplorePlansScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

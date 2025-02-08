@@ -8,12 +8,12 @@ class FilterScreen extends StatefulWidget {
   final double initialDistance;
   final int initialSelection;
 
-  FilterScreen({
-    Key? key,
+  const FilterScreen({
+    super.key,
     required this.initialAgeRange,
     required this.initialDistance,
     required this.initialSelection,
-  }) : super(key: key);
+  });
 
   @override
   _FilterScreenState createState() => _FilterScreenState();
@@ -94,7 +94,7 @@ class _FilterScreenState extends State<FilterScreen> {
                     ? {
                         Marker(
                           markerId: MarkerId('selected'),
-                          position: selectedPosition!,
+                          position: selectedPosition,
                           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue), // Marcador azul
                         ),
                       }
@@ -202,6 +202,14 @@ class _FilterScreenState extends State<FilterScreen> {
             const Text('Busco', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             ToggleButtons(
+              isSelected: isSelected,
+              onPressed: (int index) {
+                setState(() {
+                  for (int i = 0; i < isSelected.length; i++) {
+                    isSelected[i] = i == index;
+                  }
+                });
+              },
               children: const [
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
@@ -216,14 +224,6 @@ class _FilterScreenState extends State<FilterScreen> {
                   child: Text('Todo el mundo'),
                 ),
               ],
-              isSelected: isSelected,
-              onPressed: (int index) {
-                setState(() {
-                  for (int i = 0; i < isSelected.length; i++) {
-                    isSelected[i] = i == index;
-                  }
-                });
-              },
             ),
             const SizedBox(height: 20),
 

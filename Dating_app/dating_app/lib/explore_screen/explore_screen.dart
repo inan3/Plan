@@ -1,7 +1,7 @@
-// explore_screen.dart
 import 'dart:ui'; // Para BackdropFilter, ImageFilter, etc.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dating_app/main/colors.dart';
@@ -9,19 +9,19 @@ import 'package:dating_app/main/colors.dart';
 import 'explore_app_bar.dart';
 import 'popular_users_section.dart';
 import 'plan_action_button.dart';
-import 'filter_screen.dart';
 import '../plan_creation/new_plan_creation_screen.dart';
 import '../plan_joining/plan_join_request.dart';
 import 'users_grid.dart';
 import 'menu_side_bar_screen.dart';
-import 'chats/chats_screen.dart'; // Se importa la pantalla de mensajes actualizada
+import 'chats/chats_screen.dart'; // Pantalla de mensajes
 import 'users_managing/user_info_check.dart';
-import 'search_screen.dart'; // Nuevo fichero para la pantalla de búsqueda
-import 'profile_screen.dart'; // Importamos el fichero de gestión del perfil
-import 'notification_screen.dart'; // Importa la nueva pantalla de notificaciones
+import 'search_screen.dart'; // Pantalla de búsqueda
+import 'profile_screen.dart'; // Gestión del perfil
+import 'notification_screen.dart'; // Pantalla de notificaciones
+import 'add_plan_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({Key? key}) : super(key: key);
+  const ExploreScreen({super.key});
 
   @override
   ExploreScreenState createState() => ExploreScreenState();
@@ -46,9 +46,10 @@ class ExploreScreenState extends State<ExploreScreen> {
     super.initState();
     _setStatusBarDark();
     _otherPages = [
-      const SearchScreen(), // Nuevo: pantalla de búsqueda
-      const ChatsScreen(), // Ahora no requiere 'chatPartnerId'
-      ProfileScreen(),       // Gestión del perfil
+      const SearchScreen(),
+      const AddPlanScreen(),
+      const ChatsScreen(),
+      ProfileScreen(),
     ];
     _loadUserInterest();
   }
@@ -66,7 +67,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     // Implementa la búsqueda si es necesario
   }
 
-  // Ahora, al pulsar el botón de notificaciones en el AppBar se navega a NotificationScreen.
   void _onFilterPressed() {
     Navigator.push(
       context,
@@ -78,7 +78,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Carga la preferencia de "interest" del usuario actual para definir el filtro por defecto
+  // Carga la preferencia de "interest" (Hombres/Mujeres/Todo el mundo).
   void _loadUserInterest() async {
     if (currentUser != null) {
       try {
@@ -88,9 +88,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             .get();
 
         if (userDoc.exists) {
-          // Se asume que el campo 'interest' tiene valores "Hombres", "Mujeres" o "Todo el mundo"
           final String interest = userDoc['interest'].toString();
-
           int defaultIndex;
           if (interest == 'Hombres') {
             defaultIndex = 0;
@@ -109,7 +107,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  // Streams de notificaciones y mensajes
+  // Streams de recuento de notificaciones y mensajes no leídos.
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
@@ -128,7 +126,7 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Construye la página de exploración usando una Column con Expanded
+  /// Construye la página principal de Explore (con usuarios populares y cercanos).
   Widget _buildExplorePage() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 0),
@@ -137,19 +135,17 @@ class ExploreScreenState extends State<ExploreScreen> {
           const SizedBox(height: 10),
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
-            onFilterPressed: _onFilterPressed, // Al pulsar el botón de notificaciones
+            onFilterPressed: _onFilterPressed, // Notificaciones
             onSearchChanged: _onSearchChanged,
           ),
-          // Sección de usuarios populares
           _buildPopularSection(),
-          // Sección "Cercanos" se expande para ocupar el espacio restante
           Expanded(child: _buildNearbySection()),
         ],
       ),
     );
   }
 
-  /// Se envuelve PopularUsersSection en un Padding para aplicar el mismo margen lateral que "Cercanos"
+  /// Sección de usuarios populares.
   Widget _buildPopularSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -160,7 +156,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  /// Se usa Expanded para la grilla de usuarios, ocupando todo el espacio disponible.
+  /// Sección de usuarios cercanos (grilla).
   Widget _buildNearbySection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -185,7 +181,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                   );
                 }
 
-                // Excluir al usuario actual verificando el campo 'uid'
+                // Excluir al usuario actual.
                 final validUsers = snapshot.data!.docs.where((doc) {
                   final uid = doc.data() is Map<String, dynamic>
                       ? (doc.data() as Map<String, dynamic>)['uid']
@@ -193,24 +189,24 @@ class ExploreScreenState extends State<ExploreScreen> {
                   return uid != null && uid != currentUser?.uid;
                 }).toList();
 
-                // Filtrar por género según selectedSearchIndex:
+                // Filtrar por género según selectedSearchIndex.
                 List<QueryDocumentSnapshot> filteredUsers = validUsers;
-                if (selectedSearchIndex == 0) { // Mostrar solo hombres
+                if (selectedSearchIndex == 0) {
+                  // Solo hombres
                   filteredUsers = validUsers
                       .where((doc) =>
-                          (doc.data() as Map<String, dynamic>)['gender'] ==
-                          'Hombre')
+                          (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
                       .toList();
-                } else if (selectedSearchIndex == 1) { // Mostrar solo mujeres
+                } else if (selectedSearchIndex == 1) {
+                  // Solo mujeres
                   filteredUsers = validUsers
                       .where((doc) =>
-                          (doc.data() as Map<String, dynamic>)['gender'] ==
-                          'Mujer')
+                          (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
                       .toList();
                 }
-                // Si selectedSearchIndex == 2 se muestran todos, sin filtrar por género.
+                // Si selectedSearchIndex == 2, no filtramos por género.
 
-                // Aplicar filtro por edad
+                // Filtrar por rango de edad.
                 filteredUsers = filteredUsers.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final int userAge = int.tryParse(data['age'].toString()) ?? 0;
@@ -218,10 +214,10 @@ class ExploreScreenState extends State<ExploreScreen> {
                       userAge <= selectedAgeRange.end.round();
                 }).toList();
 
-                // Convertir la lista de usuarios reales a una lista dinámica
+                // Convertimos a lista para añadir usuarios "dummy".
                 List<dynamic> allUsers = List.from(filteredUsers);
 
-                // Crear 20 usuarios dummy
+                // Generamos 20 usuarios dummy.
                 List<Map<String, dynamic>> dummyUsers = List.generate(20, (index) {
                   return {
                     'uid': 'dummy_$index',
@@ -231,18 +227,18 @@ class ExploreScreenState extends State<ExploreScreen> {
                   };
                 });
 
-                // Añadir los usuarios dummy a la lista total
+                // Añadimos los dummy a la lista final.
                 allUsers.addAll(dummyUsers);
 
                 return UsersGrid(
                   users: allUsers,
                   onUserTap: (userDoc) {
-                    // Extraer datos comprobando si se trata de un QueryDocumentSnapshot o de un Map (dummy)
+                    // Verificamos si es un QueryDocumentSnapshot real o un Map dummy.
                     final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
                         ? (userDoc.data() as Map<String, dynamic>)
                         : userDoc as Map<String, dynamic>;
                     if (data['uid'].toString().startsWith('dummy_')) {
-                      // Acción para usuario dummy: por ejemplo, mostrar un mensaje
+                      // Acción para usuario dummy
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Usuario dummy: ${data['name']}")),
                       );
@@ -275,7 +271,7 @@ class ExploreScreenState extends State<ExploreScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            // Contenido principal en Column (las páginas de Explore u otras)
+            // Contenido principal (Explore u otras páginas)
             Column(
               children: [
                 Expanded(
@@ -285,7 +281,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               ],
             ),
-            // La DockSection se superpone, se centra en la parte inferior y maneja sus propios callbacks.
+            // Barra inferior con efecto frosted
             Positioned(
               bottom: 20,
               child: Center(
@@ -297,44 +293,8 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               ),
             ),
-            // Botones flotantes solo en la pestaña Explore
-            if (_currentIndex == 0)
-              Positioned(
-                bottom: 100,
-                left: 20,
-                child: PlanActionButton(
-                  heroTag: 'joinPlan',
-                  label: 'Unirse a Plan',
-                  iconPath: 'assets/union.png',
-                  onPressed: () =>
-                      JoinPlanRequestScreen.showJoinPlanDialog(context),
-                  margin: const EdgeInsets.only(left: 0, bottom: 0),
-                  borderColor: const Color.fromARGB(236, 0, 4, 227),
-                  borderWidth: 1,
-                  textColor: AppColors.blue,
-                  iconColor: AppColors.blue,
-                ),
-              ),
-            if (_currentIndex == 0)
-              Positioned(
-                bottom: 100,
-                right: 20,
-                child: PlanActionButton(
-                  heroTag: 'createPlan',
-                  label: 'Crear Plan',
-                  iconPath: 'assets/anadir.png',
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => NewPlanCreationScreen()),
-                  ),
-                  margin: const EdgeInsets.only(right: 0, bottom: 0),
-                  backgroundColor: AppColors.blue,
-                  borderWidth: 0,
-                  textColor: Colors.white,
-                  iconColor: Colors.white,
-                ),
-              ),
+            // Se han eliminado los botones flotantes de "Crear Plan" y "Unirse a Plan"
+            // Estos botones ahora aparecerán únicamente en add_plan_screen.dart
             // Menú lateral
             MainSideBarScreen(
               key: _menuKey,
@@ -347,59 +307,86 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-/// Barra inferior con efecto frosted (70px de alto) y 5 iconos de navegación.
+// Asegúrate de que solo exista UNA definición de DockSection en tu proyecto.
+// Aquí se muestra una versión de DockSection para referencia.
+
 class DockSection extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapIcon;
+
+  /// Tamaño por defecto de los iconos.
   final double iconSize;
+
+  /// Tamaño del círculo de fondo que se muestra cuando el botón está seleccionado.
+  final double selectedBackgroundSize;
+
+  /// Espacio horizontal entre iconos.
+  final double iconSpacing;
+
+  /// Alineación de los iconos en el Row.
+  final MainAxisAlignment mainAxisAlignment;
+
+  /// Padding exterior del DockSection.
+  final EdgeInsetsGeometry padding;
+
   final Stream<int>? notificationCountStream;
   final Stream<int>? unreadMessagesCountStream;
 
+  /// Ancho del contenedor.
+  final double containerWidth;
+
   const DockSection({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTapIcon,
-    this.iconSize = 30.0,
+    this.iconSize = 23.0,
+    this.selectedBackgroundSize = 60.0,
+    this.iconSpacing = 4.0,
+    this.mainAxisAlignment = MainAxisAlignment.start,
+    this.padding = const EdgeInsets.only(left: 40, right: 40, bottom: 20, top: 0),
+    this.containerWidth = 328.0,
     this.notificationCountStream,
     this.unreadMessagesCountStream,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 55, right: 16, bottom: 20, top: 0),
+      padding: padding,
       child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(90)),
+        borderRadius: const BorderRadius.all(Radius.circular(50)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
           child: Container(
             height: 70,
-            width: 300, // Ancho fijo que puedes ajustar manualmente
+            width: containerWidth,
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 133, 118, 118).withOpacity(0.25),
-              borderRadius: const BorderRadius.all(Radius.circular(90)),
+              color: Colors.black26,
+              borderRadius: const BorderRadius.all(Radius.circular(60)),
             ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildIconButton(index: 0, asset: 'assets/casa.png'),
-                  const SizedBox(width: 10),
-                  _buildIconButton(index: 1, asset: 'assets/lupa.png'),
-                  const SizedBox(width: 10),
-                  _buildIconButton(
-                      index: 2,
-                      asset: 'assets/anadir.png',
-                      streamCount: notificationCountStream),
-                  const SizedBox(width: 10),
-                  _buildIconButton(
-                      index: 3,
-                      asset: 'assets/mensaje.png',
-                      streamCount: unreadMessagesCountStream),
-                  const SizedBox(width: 10),
-                  _buildIconButton(index: 4, asset: 'assets/usuario.png'),
-                ],
-              ),
+            child: Row(
+              mainAxisAlignment: mainAxisAlignment,
+              children: [
+                // Icono de casa con Padding para moverlo ligeramente.
+                Padding(
+                  padding: const EdgeInsets.only(left: 6.0),
+                  child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
+                ),
+                SizedBox(width: iconSpacing),
+                _buildIconButton(index: 1, asset: 'assets/lupa.svg'),
+                SizedBox(width: iconSpacing),
+                // Para el icono anadir.svg, sobreescribimos el tamaño del icono
+                _buildIconButton(
+                  index: 2,
+                  asset: 'assets/anadir.svg',
+                  notificationCountStream: notificationCountStream,
+                  overrideIconSize: 70.0,
+                ),
+                SizedBox(width: iconSpacing),
+                _buildIconButton(index: 3, asset: 'assets/mensaje.svg', unreadMessagesCountStream: unreadMessagesCountStream),
+                SizedBox(width: iconSpacing),
+                _buildIconButton(index: 4, asset: 'assets/usuario.svg'),
+              ],
             ),
           ),
         ),
@@ -407,30 +394,77 @@ class DockSection extends StatelessWidget {
     );
   }
 
+  /// Parámetro opcional overrideIconSize para personalizar el tamaño del icono.
   Widget _buildIconButton({
     required int index,
     required String asset,
-    Stream<int>? streamCount,
+    Stream<int>? notificationCountStream,
+    Stream<int>? unreadMessagesCountStream,
+    double? overrideIconSize,
   }) {
+    final double effectiveIconSize = overrideIconSize ?? iconSize;
+    final bool isSelected = currentIndex == index;
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        IconButton(
-          iconSize: iconSize,
-          icon: Image.asset(
-            asset,
-            color: currentIndex == index ? AppColors.blue : Colors.black,
-            width: 26,
-            height: 26,
+        InkWell(
+          onTap: () => onTapIcon(index),
+          borderRadius: BorderRadius.circular(selectedBackgroundSize / 2),
+          child: Container(
+            width: selectedBackgroundSize,
+            height: selectedBackgroundSize,
+            alignment: Alignment.center,
+            child: isSelected
+                ? Container(
+                    width: selectedBackgroundSize,
+                    height: selectedBackgroundSize,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: asset.endsWith('.svg')
+                          ? SvgPicture.asset(
+                              asset,
+                              color: AppColors.blue,
+                              width: effectiveIconSize,
+                              height: effectiveIconSize,
+                            )
+                          : Image.asset(
+                              asset,
+                              color: AppColors.blue,
+                              width: effectiveIconSize,
+                              height: effectiveIconSize,
+                            ),
+                    ),
+                  )
+                : Container(
+                    width: selectedBackgroundSize,
+                    height: selectedBackgroundSize,
+                    child: Center(
+                      child: asset.endsWith('.svg')
+                          ? SvgPicture.asset(
+                              asset,
+                              color: Colors.white,
+                              width: effectiveIconSize,
+                              height: effectiveIconSize,
+                            )
+                          : Image.asset(
+                              asset,
+                              color: Colors.white,
+                              width: effectiveIconSize,
+                              height: effectiveIconSize,
+                            ),
+                    ),
+                  ),
           ),
-          onPressed: () => onTapIcon(index),
         ),
-        if (streamCount != null)
+        if (notificationCountStream != null)
           Positioned(
-            right: -6,
-            top: -6,
+            right: 2,
+            top: 2,
             child: StreamBuilder<int>(
-              stream: streamCount,
+              stream: notificationCountStream,
               builder: (context, snapshot) {
                 final count = snapshot.data ?? 0;
                 if (count == 0) return const SizedBox();

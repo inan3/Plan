@@ -7,7 +7,7 @@ class OrientationSelectionScreen extends StatefulWidget {
   final String username;
   final String gender;
 
-  OrientationSelectionScreen({required this.username, required this.gender});
+  const OrientationSelectionScreen({super.key, required this.username, required this.gender});
 
   @override
   _OrientationSelectionScreenState createState() =>

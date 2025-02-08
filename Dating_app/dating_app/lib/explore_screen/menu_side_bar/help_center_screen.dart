@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:tu_app/theme/app_colors.dart'; // si corresponde
 
 class HelpCenterScreen extends StatelessWidget {
-  const HelpCenterScreen({Key? key}) : super(key: key);
+  const HelpCenterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -4,6 +4,8 @@ import 'plan_description_screen.dart';
 import '../models/plan_model.dart';
 
 class NewPlanCreationScreen extends StatefulWidget {
+  const NewPlanCreationScreen({super.key});
+
   @override
   _NewPlanCreationScreenState createState() => _NewPlanCreationScreenState();
 }
@@ -78,7 +80,7 @@ class _NewPlanCreationScreenState extends State<NewPlanCreationScreen> {
 
   void _openDropdown() {
     _overlayEntry = _createOverlayEntry();
-    Overlay.of(context)?.insert(_overlayEntry!);
+    Overlay.of(context).insert(_overlayEntry!);
     setState(() {
       _isDropdownOpen = true;
     });

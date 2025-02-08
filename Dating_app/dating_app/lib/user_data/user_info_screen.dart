@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserInfoScreen extends StatefulWidget {
+  const UserInfoScreen({super.key});
+
   @override
   _UserInfoScreenState createState() => _UserInfoScreenState();
 }

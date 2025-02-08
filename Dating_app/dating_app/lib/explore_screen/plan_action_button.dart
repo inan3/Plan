@@ -14,7 +14,7 @@ class PlanActionButton extends StatelessWidget {
   final List<BoxShadow>? boxShadow; // Sombra personalizada
 
   const PlanActionButton({
-    Key? key,
+    super.key,
     required this.heroTag,
     required this.label,
     required this.iconPath,
@@ -26,7 +26,7 @@ class PlanActionButton extends StatelessWidget {
     this.textColor,
     this.iconColor,
     this.boxShadow,
-  }) : super(key: key);
+  });
 
 @override
 Widget build(BuildContext context) {

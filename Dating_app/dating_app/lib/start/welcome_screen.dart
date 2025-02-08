@@ -7,6 +7,8 @@ import 'register_screen.dart';
 import '../explore_screen/explore_screen.dart'; // Asegúrate de tener esta pantalla creada
 
 class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key});
+
   @override
   _WelcomeScreenState createState() => _WelcomeScreenState();
 }

@@ -1,10 +1,11 @@
 // search_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Asegúrate de importar flutter_svg
 import 'package:dating_app/main/colors.dart';
 import 'filter_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+  const SearchScreen({super.key});
 
   @override
   _SearchScreenState createState() => _SearchScreenState();
@@ -53,8 +54,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       hintText: 'Buscar...',
                       prefixIcon: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        child: Image.asset(
-                          'assets/lupa.png',
+                        child: SvgPicture.asset(
+                          'assets/lupa.svg',
                           width: 24,
                           height: 24,
                           color: AppColors.blue,

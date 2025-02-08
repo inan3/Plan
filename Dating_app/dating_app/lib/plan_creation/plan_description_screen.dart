@@ -7,7 +7,7 @@ import '../models/plan_model.dart'; // Importa el modelo PlanModel
 class PlanDescriptionScreen extends StatefulWidget {
   final PlanModel plan;
 
-  const PlanDescriptionScreen({required this.plan, Key? key}) : super(key: key);
+  const PlanDescriptionScreen({required this.plan, super.key});
 
   @override
   State<PlanDescriptionScreen> createState() => _PlanDescriptionScreenState();

@@ -7,7 +7,7 @@ class InterestSelectionScreen extends StatefulWidget {
   final String username;
   final String gender;
 
-  InterestSelectionScreen({required this.username, required this.gender});
+  const InterestSelectionScreen({super.key, required this.username, required this.gender});
 
   @override
   _InterestSelectionScreenState createState() =>

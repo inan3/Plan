@@ -12,12 +12,12 @@ class ChatScreen extends StatefulWidget {
   final Timestamp? deletedAt; // Si el usuario eliminó el chat, se almacenará el timestamp
 
   const ChatScreen({
-    Key? key,
+    super.key,
     required this.chatPartnerId,
     required this.chatPartnerName,
     this.chatPartnerPhoto,
     this.deletedAt,
-  }) : super(key: key);
+  });
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -233,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
           var data = doc.data() as Map<String, dynamic>;
 
           // Verificar que 'timestamp' exista y sea de tipo Timestamp.
-          if (!(data['timestamp'] is Timestamp)) {
+          if (data['timestamp'] is! Timestamp) {
             return false;
           }
           Timestamp timestamp = data['timestamp'] as Timestamp;

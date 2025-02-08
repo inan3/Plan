@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;
 
-  const NotificationScreen({Key? key, required this.currentUserId}) : super(key: key);
+  const NotificationScreen({super.key, required this.currentUserId});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -50,7 +50,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
       // (Opcional) Crea un registro en 'subscriptions'
       await _firestore.collection('subscriptions').add({
-        ...planDoc.data()! as Map<String, dynamic>,
+        ...planDoc.data()!,
         'userId': senderId,
         'subscriptionDate': FieldValue.serverTimestamp(),
       });

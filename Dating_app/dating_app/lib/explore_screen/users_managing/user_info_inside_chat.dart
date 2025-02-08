@@ -11,8 +11,7 @@ class UserInfoInsideChat extends StatefulWidget {
   /// Este id debe ser el id EXACTO del documento en la colección 'users'.
   final String chatPartnerId;
 
-  const UserInfoInsideChat({Key? key, required this.chatPartnerId})
-      : super(key: key);
+  const UserInfoInsideChat({super.key, required this.chatPartnerId});
 
   @override
   _UserInfoInsideChatState createState() => _UserInfoInsideChatState();

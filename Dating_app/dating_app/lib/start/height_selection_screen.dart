@@ -7,7 +7,7 @@ class HeightSelectionScreen extends StatefulWidget {
   final String interest;
   final String age; // Agregado para manejar la edad.
 
-  HeightSelectionScreen({
+  const HeightSelectionScreen({super.key, 
     required this.username,
     required this.gender,
     required this.interest,

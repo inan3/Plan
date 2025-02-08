@@ -8,10 +8,10 @@ class UsersGrid extends StatelessWidget {
   final List<dynamic> users;
 
   const UsersGrid({
-    Key? key,
+    super.key,
     required this.users,
     this.onUserTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +147,7 @@ class UsersGrid extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.blue?.withOpacity(0.3),
+                      color: AppColors.blue.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

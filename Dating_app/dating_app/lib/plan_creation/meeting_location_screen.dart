@@ -13,7 +13,7 @@ import '../models/plan_model.dart'; // Importa el modelo PlanModel
 class MeetingLocationScreen extends StatefulWidget {
   final PlanModel plan;
 
-  const MeetingLocationScreen({required this.plan, Key? key}) : super(key: key);
+  const MeetingLocationScreen({required this.plan, super.key});
 
   @override
   State<MeetingLocationScreen> createState() => _MeetingLocationScreenState();

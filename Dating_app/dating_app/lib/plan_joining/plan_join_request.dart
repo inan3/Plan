@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class JoinPlanRequestScreen {
   static void showJoinPlanDialog(BuildContext context) {
-    final TextEditingController _planIdController = TextEditingController();
+    final TextEditingController planIdController = TextEditingController();
 
     showDialog(
       context: context,
@@ -24,7 +24,7 @@ class JoinPlanRequestScreen {
               ),
               const SizedBox(height: 10),
               TextField(
-                controller: _planIdController,
+                controller: planIdController,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'ID del Plan',
@@ -40,7 +40,7 @@ class JoinPlanRequestScreen {
             ),
             ElevatedButton(
               onPressed: () {
-                final planId = _planIdController.text.trim();
+                final planId = planIdController.text.trim();
                 if (planId.isNotEmpty) {
                   _sendJoinRequest(context, planId);
                 } else {

@@ -4,6 +4,8 @@ import 'gender_selection_screen.dart'; // Importa la pantalla de selección de g
 const Color backgroundColor = Colors.purple; // Fondo morado
 
 class UsernameScreen extends StatefulWidget {
+  const UsernameScreen({super.key});
+
   @override
   _UsernameScreenState createState() => _UsernameScreenState();
 }

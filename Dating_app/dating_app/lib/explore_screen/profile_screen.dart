@@ -10,6 +10,8 @@ import '../start/login_screen.dart';
 import '../user_data/user_info_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
 }
@@ -490,7 +492,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),

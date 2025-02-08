@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class PopularUsersSection extends StatelessWidget {
-  const PopularUsersSection({Key? key}) : super(key: key);
+  const PopularUsersSection({super.key});
 
   @override
   Widget build(BuildContext context) {

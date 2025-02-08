@@ -17,7 +17,7 @@ class PhotoSelectionScreen extends StatefulWidget {
   final String height;
   final String age; // Añadido
 
-  PhotoSelectionScreen({
+  const PhotoSelectionScreen({super.key, 
     required this.username,
     required this.gender,
     required this.interest,

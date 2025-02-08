@@ -5,6 +5,8 @@ import 'username_screen.dart';
 const Color backgroundColor = Colors.purple;
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }

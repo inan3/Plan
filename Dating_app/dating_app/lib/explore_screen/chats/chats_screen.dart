@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
-  const ChatsScreen({Key? key}) : super(key: key);
+  const ChatsScreen({super.key});
 
   @override
   _ChatsScreenState createState() => _ChatsScreenState();
@@ -92,7 +92,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     : data['senderId'];
 
                 // Verificar que 'timestamp' sea un Timestamp válido.
-                if (!(data['timestamp'] is Timestamp)) continue;
+                if (data['timestamp'] is! Timestamp) continue;
                 Timestamp messageTimestamp = data['timestamp'] as Timestamp;
 
                 // Si existe un 'deletedAt' para este chat, solo se toman mensajes posteriores a esa fecha.

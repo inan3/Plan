@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:tu_app/theme/app_colors.dart'; // si corresponde
 
 class ValorationsScreen extends StatelessWidget {
-  const ValorationsScreen({Key? key}) : super(key: key);
+  const ValorationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -67,7 +67,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: "${plan.type}",
+                                  text: plan.type,
                                   style: TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
@@ -95,7 +95,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                         ),
                                       ),
                                       TextSpan(
-                                        text: "${plan.id}",
+                                        text: plan.id,
                                         style: TextStyle(
                                           color: AppColors.blue,
                                           fontWeight: FontWeight.bold,
@@ -128,7 +128,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                   
                                 ),
                                 TextSpan(
-                                  text: "${plan.description}",
+                                  text: plan.description,
                                   style: TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
@@ -179,7 +179,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: "${plan.location}",
+                                  text: plan.location,
                                   style: TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
@@ -196,7 +196,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: "${plan.formattedDate(plan.date)}",
+                                  text: plan.formattedDate(plan.date),
                                   style: TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
@@ -213,7 +213,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: "${plan.formattedDate(plan.createdAt)}",
+                                  text: plan.formattedDate(plan.createdAt),
                                   style: TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
@@ -281,7 +281,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                       ),
                                     )
                                   else
-                                    ...participants.map(_buildParticipantTile).toList(),
+                                    ...participants.map(_buildParticipantTile),
                                 ],
                               );
                             },

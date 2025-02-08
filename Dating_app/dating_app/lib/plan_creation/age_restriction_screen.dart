@@ -7,7 +7,7 @@ import '../models/plan_model.dart'; // Importa el modelo PlanModel
 class AgeRestrictionScreen extends StatefulWidget {
   final PlanModel plan;
 
-  const AgeRestrictionScreen({required this.plan, Key? key}) : super(key: key);
+  const AgeRestrictionScreen({required this.plan, super.key});
 
   @override
   _AgeRestrictionScreenState createState() => _AgeRestrictionScreenState();
