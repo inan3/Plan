@@ -19,38 +19,10 @@ class PopularUsersSection extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 100, // Altura general de la sección de populares
+      height: 120, // Altura general de la sección de populares
       child: Column(
         children: [
-          // Encabezado (Populares + Ver Todos) con margen horizontal de 15
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Populares',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // Acción "Ver Todos"
-                  },
-                  child: const Text(
-                    'Ver Todos',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 20), // Espacio para bajar la sección
           // Lista horizontal de usuarios
           Expanded(
             child: ListView.builder(
