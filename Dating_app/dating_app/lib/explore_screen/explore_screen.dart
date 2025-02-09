@@ -39,6 +39,10 @@ class ExploreScreenState extends State<ExploreScreen> {
   double selectedDistance = 50;
   int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
+  // Variables para controlar el espacio entre secciones
+  double _spacingPopularToNearby = 10; // Puedes ajustar este valor si lo deseas
+  double _popularTopSpacing = 5; // Espacio superior de la sección de populares
+
   late List<Widget> _otherPages;
 
   @override
@@ -64,7 +68,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onSearchChanged(String value) {
-    // Implementa la búsqueda si es necesario
+    // Implementa la búsqueda si es necesario.
   }
 
   void _onFilterPressed() {
@@ -126,137 +130,125 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Construye la página principal de Explore (con usuarios populares y cercanos).
+  /// Construye la pantalla Explore con el AppBar y la sección de usuarios populares fijos,
+  /// y la sección de usuarios cercanos desplazable.
   Widget _buildExplorePage() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 0),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          // AppBar de Explore (fijo)
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
-            onFilterPressed: _onFilterPressed, // Notificaciones
+            onFilterPressed: _onFilterPressed,
             onSearchChanged: _onSearchChanged,
           ),
-          _buildPopularSection(),
+          // Sección de usuarios populares (fija)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: PopularUsersSection(
+              topSpacing: _popularTopSpacing,
+            ),
+          ),
+          SizedBox(height: _spacingPopularToNearby),
+          // Sección de usuarios cercanos: esta parte será desplazable.
           Expanded(child: _buildNearbySection()),
         ],
       ),
     );
   }
 
-  /// Sección de usuarios populares.
-  Widget _buildPopularSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: const SizedBox(
-        height: 140,
-        child: PopularUsersSection(),
-      ),
-    );
-  }
-
-  /// Sección de usuarios cercanos (grilla).
+  /// Sección de usuarios cercanos.
   Widget _buildNearbySection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.black),
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No hay usuarios cercanos.',
-                      style: TextStyle(fontSize: 18, color: Colors.black),
-                    ),
-                  );
-                }
-
-                // Excluir al usuario actual.
-                final validUsers = snapshot.data!.docs.where((doc) {
-                  final uid = doc.data() is Map<String, dynamic>
-                      ? (doc.data() as Map<String, dynamic>)['uid']
-                      : null;
-                  return uid != null && uid != currentUser?.uid;
-                }).toList();
-
-                // Filtrar por género según selectedSearchIndex.
-                List<QueryDocumentSnapshot> filteredUsers = validUsers;
-                if (selectedSearchIndex == 0) {
-                  // Solo hombres
-                  filteredUsers = validUsers
-                      .where((doc) =>
-                          (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
-                      .toList();
-                } else if (selectedSearchIndex == 1) {
-                  // Solo mujeres
-                  filteredUsers = validUsers
-                      .where((doc) =>
-                          (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
-                      .toList();
-                }
-                // Si selectedSearchIndex == 2, no filtramos por género.
-
-                // Filtrar por rango de edad.
-                filteredUsers = filteredUsers.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final int userAge = int.tryParse(data['age'].toString()) ?? 0;
-                  return userAge >= selectedAgeRange.start.round() &&
-                      userAge <= selectedAgeRange.end.round();
-                }).toList();
-
-                // Convertimos a lista para añadir usuarios "dummy".
-                List<dynamic> allUsers = List.from(filteredUsers);
-
-                // Generamos 20 usuarios dummy.
-                List<Map<String, dynamic>> dummyUsers = List.generate(20, (index) {
-                  return {
-                    'uid': 'dummy_$index',
-                    'gender': index % 2 == 0 ? 'Hombre' : 'Mujer',
-                    'age': ((selectedAgeRange.start + selectedAgeRange.end) / 2).round(),
-                    'name': 'Usuario Dummy $index',
-                  };
-                });
-
-                // Añadimos los dummy a la lista final.
-                allUsers.addAll(dummyUsers);
-
-                return UsersGrid(
-                  users: allUsers,
-                  onUserTap: (userDoc) {
-                    // Verificamos si es un QueryDocumentSnapshot real o un Map dummy.
-                    final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
-                        ? (userDoc.data() as Map<String, dynamic>)
-                        : userDoc as Map<String, dynamic>;
-                    if (data['uid'].toString().startsWith('dummy_')) {
-                      // Acción para usuario dummy
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Usuario dummy: ${data['name']}")),
-                      );
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserInfoCheck(userId: userDoc.id),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.black),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              'No hay usuarios cercanos.',
+              style: TextStyle(fontSize: 18, color: Colors.black),
             ),
-          ),
-        ],
-      ),
+          );
+        }
+
+        // Excluir al usuario actual.
+        final validUsers = snapshot.data!.docs.where((doc) {
+          final uid = doc.data() is Map<String, dynamic>
+              ? (doc.data() as Map<String, dynamic>)['uid']
+              : null;
+          return uid != null && uid != currentUser?.uid;
+        }).toList();
+
+        // Filtrar por género según selectedSearchIndex.
+        List<QueryDocumentSnapshot> filteredUsers = validUsers;
+        if (selectedSearchIndex == 0) {
+          // Solo hombres.
+          filteredUsers = validUsers
+              .where((doc) =>
+                  (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
+              .toList();
+        } else if (selectedSearchIndex == 1) {
+          // Solo mujeres.
+          filteredUsers = validUsers
+              .where((doc) =>
+                  (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
+              .toList();
+        }
+        // Si selectedSearchIndex == 2, no filtramos por género.
+
+        // Filtrar por rango de edad.
+        filteredUsers = filteredUsers.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final int userAge = int.tryParse(data['age'].toString()) ?? 0;
+          return userAge >= selectedAgeRange.start.round() &&
+              userAge <= selectedAgeRange.end.round();
+        }).toList();
+
+        // Convertimos a lista para añadir usuarios "dummy".
+        List<dynamic> allUsers = List.from(filteredUsers);
+
+        // Generamos 20 usuarios dummy.
+        List<Map<String, dynamic>> dummyUsers = List.generate(20, (index) {
+          return {
+            'uid': 'dummy_$index',
+            'gender': index % 2 == 0 ? 'Hombre' : 'Mujer',
+            'age': ((selectedAgeRange.start + selectedAgeRange.end) / 2).round(),
+            'name': 'Usuario Dummy $index',
+          };
+        });
+
+        // Añadimos los dummy a la lista final.
+        allUsers.addAll(dummyUsers);
+
+        return UsersGrid(
+          users: allUsers,
+          onUserTap: (userDoc) {
+            // Verificamos si es un QueryDocumentSnapshot real o un Map dummy.
+            final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
+                ? (userDoc.data() as Map<String, dynamic>)
+                : userDoc as Map<String, dynamic>;
+            if (data['uid'].toString().startsWith('dummy_')) {
+              // Acción para usuario dummy.
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Usuario dummy: ${data['name']}")),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserInfoCheck(userId: userDoc.id),
+                ),
+              );
+            }
+          },
+        );
+      },
     );
   }
 
@@ -271,19 +263,15 @@ class ExploreScreenState extends State<ExploreScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            // Contenido principal (Explore u otras páginas)
-            Column(
-              children: [
-                Expanded(
-                  child: _currentIndex == 0
-                      ? _buildExplorePage()
-                      : _otherPages[_currentIndex - 1],
-                ),
-              ],
-            ),
-            // Barra inferior con efecto frosted
+            // Si _currentIndex es 0 se muestra Explore; de lo contrario, se muestra otra página.
+            _currentIndex == 0
+                ? _buildExplorePage()
+                : _otherPages[_currentIndex - 1],
+            // Barra inferior fija con efecto frosted.
             Positioned(
               bottom: 20,
+              left: 0,
+              right: 0,
               child: Center(
                 child: DockSection(
                   currentIndex: _currentIndex,
@@ -293,9 +281,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               ),
             ),
-            // Se han eliminado los botones flotantes de "Crear Plan" y "Unirse a Plan"
-            // Estos botones ahora aparecerán únicamente en add_plan_screen.dart
-            // Menú lateral
+            // Menú lateral.
             MainSideBarScreen(
               key: _menuKey,
               onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
@@ -308,8 +294,6 @@ class ExploreScreenState extends State<ExploreScreen> {
 }
 
 // Asegúrate de que solo exista UNA definición de DockSection en tu proyecto.
-// Aquí se muestra una versión de DockSection para referencia.
-
 class DockSection extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapIcon;
@@ -367,7 +351,7 @@ class DockSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: mainAxisAlignment,
               children: [
-                // Icono de casa con Padding para moverlo ligeramente.
+                // Icono de casa.
                 Padding(
                   padding: const EdgeInsets.only(left: 6.0),
                   child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
@@ -375,7 +359,7 @@ class DockSection extends StatelessWidget {
                 SizedBox(width: iconSpacing),
                 _buildIconButton(index: 1, asset: 'assets/lupa.svg'),
                 SizedBox(width: iconSpacing),
-                // Para el icono anadir.svg, sobreescribimos el tamaño del icono
+                // Icono para "añadir".
                 _buildIconButton(
                   index: 2,
                   asset: 'assets/anadir.svg',
@@ -383,7 +367,11 @@ class DockSection extends StatelessWidget {
                   overrideIconSize: 70.0,
                 ),
                 SizedBox(width: iconSpacing),
-                _buildIconButton(index: 3, asset: 'assets/mensaje.svg', unreadMessagesCountStream: unreadMessagesCountStream),
+                _buildIconButton(
+                  index: 3,
+                  asset: 'assets/mensaje.svg',
+                  unreadMessagesCountStream: unreadMessagesCountStream,
+                ),
                 SizedBox(width: iconSpacing),
                 _buildIconButton(index: 4, asset: 'assets/usuario.svg'),
               ],
@@ -438,7 +426,7 @@ class DockSection extends StatelessWidget {
                             ),
                     ),
                   )
-                : Container(
+                : SizedBox(
                     width: selectedBackgroundSize,
                     height: selectedBackgroundSize,
                     child: Center(

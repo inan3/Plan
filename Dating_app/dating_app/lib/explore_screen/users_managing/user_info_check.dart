@@ -1,15 +1,16 @@
 // user_info_check.dart
+
 import 'dart:ui'; // Para BackdropFilter, ImageFilter, etc.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para copiar ID, etc.
+import 'package:flutter_svg/flutter_svg.dart'; // Para manejar .svg
 import '../../main/colors.dart'; // Por ejemplo, para AppColors.blue
 import '../../models/plan_model.dart'; // Importa la versión unificada de PlanModel
 import 'user_info_inside_chat.dart';
 
 // Agrega la directiva para incluir el estado del diálogo en otro fichero.
 part 'frosted_plan_dialog_state.dart';
-
 
 /// -----------------------------------------------------------------------------
 /// PANTALLA PRINCIPAL: UserInfoCheck
@@ -85,7 +86,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   // 2.2) Obtener participantes
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+    PlanModel plan,
+  ) async {
     final List<Map<String, dynamic>> participants = [];
 
     final planDoc = await FirebaseFirestore.instance
@@ -180,7 +183,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               }
               if (!snapshot.hasData || !snapshot.data!.exists) {
                 return const Center(
-                  child: Text('No se encontró el usuario', style: TextStyle(color: Colors.white)),
+                  child: Text(
+                    'No se encontró el usuario',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 );
               }
               final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
@@ -269,7 +275,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         }
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return const Center(
-            child: Text('No se encontró info de usuario', style: TextStyle(color: Colors.white)),
+            child: Text(
+              'No se encontró info de usuario',
+              style: TextStyle(color: Colors.white),
+            ),
           );
         }
         final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
@@ -283,27 +292,41 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$name, $age',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  )),
+              Text(
+                '$name, $age',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
               // Ciudad placeholder
               Row(
                 children: const [
                   Icon(Icons.location_on, color: Colors.white),
                   SizedBox(width: 4),
-                  Text('Ciudad desconocida', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  Text(
+                    'Ciudad desconocida',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Interés: $interest', style: const TextStyle(color: Colors.white, fontSize: 16)),
+              Text(
+                'Interés: $interest',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
               const SizedBox(height: 4),
-              Text('Género: $gender', style: const TextStyle(color: Colors.white, fontSize: 16)),
+              Text(
+                'Género: $gender',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
               const SizedBox(height: 4),
-              Text('Altura: $height', style: const TextStyle(color: Colors.white, fontSize: 16)),
+              Text(
+                'Altura: $height',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
               const SizedBox(height: 20),
             ],
           ),
@@ -327,14 +350,20 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             if (snapshot.hasError) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white70)),
+                child: Text(
+                  'Error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
               );
             }
             final plans = snapshot.data ?? [];
             if (plans.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text('No hay planes activos.', style: TextStyle(color: Colors.white70)),
+                child: Text(
+                  'No hay planes activos.',
+                  style: TextStyle(color: Colors.white70),
+                ),
               );
             }
             return ListView.builder(
@@ -347,8 +376,17 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   color: Colors.white.withOpacity(0.1),
                   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                   child: ListTile(
-                    title: Text(plan.type, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text('ID: ${plan.id}\nFecha: ${plan.formattedDate(plan.date)}', style: const TextStyle(color: Colors.white70)),
+                    title: Text(
+                      plan.type,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'ID: ${plan.id}\nFecha: ${plan.formattedDate(plan.date)}',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                     onTap: () => _showPlanDetailsFrosted(context, plan),
                   ),
                 );
@@ -364,7 +402,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           margin: const EdgeInsets.symmetric(horizontal: 20),
           color: Colors.white.withOpacity(0.1),
           child: const Center(
-            child: Text('Aquí la lista de planes creados... (ejemplo placeholder)', style: TextStyle(color: Colors.white70)),
+            child: Text(
+              'Aquí la lista de planes creados... (ejemplo placeholder)',
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -375,7 +416,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             const SizedBox(width: 20),
             const Icon(Icons.star, color: Colors.amber, size: 28),
             const SizedBox(width: 6),
-            const Text('0 votos', style: TextStyle(color: Colors.white, fontSize: 16)),
+            const Text(
+              '0 votos',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -385,7 +429,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           height: 100,
           margin: const EdgeInsets.symmetric(horizontal: 20),
           color: Colors.white.withOpacity(0.1),
-          child: const Center(child: Text('Fotos/Vídeos de eventos...', style: TextStyle(color: Colors.white70))),
+          child: const Center(
+            child: Text(
+              'Fotos/Vídeos de eventos...',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
         ),
         const SizedBox(height: 20),
         // Imágenes de perfil
@@ -394,7 +443,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           height: 100,
           margin: const EdgeInsets.symmetric(horizontal: 20),
           color: Colors.white.withOpacity(0.1),
-          child: const Center(child: Text('Mostrar las imágenes de su galería...', style: TextStyle(color: Colors.white70))),
+          child: const Center(
+            child: Text(
+              'Mostrar las imágenes de su galería...',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
         ),
         const SizedBox(height: 40),
       ],
@@ -404,40 +458,48 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 20, bottom: 8),
-      child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
   // NUEVA FUNCIÓN: Construir la fila de botones de acción en el draggable
   Widget _buildActionButtons() {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      _buildActionButton(
-        iconPath: 'assets/corazon.png',
-        label: 'Invítale a un Plan',
-        onTap: () {
-          // Aquí puedes definir la acción para invitar a un plan
-        },
-      ),
-      const SizedBox(width: 16),
-      _buildActionButton(
-        iconPath: 'assets/mensaje.png',
-        label: null, // Sin etiqueta
-        onTap: () {
-          showGeneralDialog(
-            context: context,
-            barrierDismissible: true,
-            barrierLabel: 'Cerrar',
-            barrierColor: Colors.transparent, // No oscurecer el fondo
-            transitionDuration: const Duration(milliseconds: 300),
-            pageBuilder: (_, __, ___) => UserInfoInsideChat(chatPartnerId: widget.userId),
-          );
-        },
-      ),
-    ],
-  );
-}
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildActionButton(
+          iconPath: 'assets/agregar-usuario.svg',
+          label: 'Invítale a un Plan',
+          onTap: () {
+            // Aquí puedes definir la acción para invitar a un plan
+          },
+        ),
+        const SizedBox(width: 16),
+        _buildActionButton(
+          iconPath: 'assets/mensaje.svg',
+          label: null, // Sin etiqueta
+          onTap: () {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: 'Cerrar',
+              barrierColor: Colors.transparent, // No oscurecer el fondo
+              transitionDuration: const Duration(milliseconds: 300),
+              pageBuilder: (_, __, ___) =>
+                  UserInfoInsideChat(chatPartnerId: widget.userId),
+            );
+          },
+        ),
+      ],
+    );
+  }
 
   // Método auxiliar para construir cada botón de acción
   Widget _buildActionButton({
@@ -456,7 +518,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
+            // Ahora, en lugar de Image.asset, usamos SvgPicture
+            SvgPicture.asset(
               iconPath,
               width: 24,
               height: 24,
@@ -466,7 +529,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ],

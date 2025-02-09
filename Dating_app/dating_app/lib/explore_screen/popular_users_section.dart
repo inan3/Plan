@@ -1,75 +1,87 @@
-// popular_users_section.dart
+import 'dart:math';
 import 'dart:ui'; // para BackdropFilter
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class PopularUsersSection extends StatelessWidget {
-  const PopularUsersSection({super.key});
+  final double topSpacing; // Espacio superior configurable
+
+  const PopularUsersSection({Key? key, this.topSpacing = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Lista dummy para determinar la cantidad de elementos.
     final users = [
-      {'name': 'Usuario 1', 'stars': 20},
-      {'name': 'Usuario 2', 'stars': 15},
-      {'name': 'Usuario 3', 'stars': 12},
-      {'name': 'Usuario 4', 'stars': 10},
-      {'name': 'Usuario 5', 'stars': 8},
-      {'name': 'Usuario 6', 'stars': 7},
-      {'name': 'Usuario 7', 'stars': 5},
+      {'name': 'Usuario 1'},
+      {'name': 'Usuario 2'},
+      {'name': 'Usuario 3'},
+      {'name': 'Usuario 4'},
+      {'name': 'Usuario 5'},
+      {'name': 'Usuario 6'},
+      {'name': 'Usuario 7'},
     ];
 
-    return SizedBox(
-      height: 120, // Altura general de la sección de populares
-      child: Column(
-        children: [
-          const SizedBox(height: 20), // Espacio para bajar la sección
-          // Lista horizontal de usuarios
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                final user = users[index];
-                final String name = user['name'] as String;
-                final int stars = user['stars'] as int;
-                return _buildPopularUserCard(name, stars);
-              },
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Espacio superior (si es necesario).
+        SizedBox(height: topSpacing),
+        // Lista horizontal de usuarios (altura ajustada a 90 para dar espacio al nombre).
+        SizedBox(
+          height: 90,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              return _buildPopularUserCard();
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  /// Construye una tarjeta con un círculo perfecto para el perfil y la información de estrellas debajo.
-  Widget _buildPopularUserCard(String name, int stars) {
-    // Imagen de ejemplo para el perfil.
+  /// Construye una tarjeta con un avatar y un nombre debajo.
+  Widget _buildPopularUserCard() {
     const exampleImage =
         'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress';
+
+    // Lista de nombres aleatorios.
+    const randomNames = [
+      "Juan",
+      "Pedro",
+      "María",
+      "Ana",
+      "Luis",
+      "Sofía",
+      "Carlos",
+      "Elena",
+      "Miguel",
+      "Lucía"
+    ];
+
+    final random = Random();
+    final randomName = randomNames[random.nextInt(randomNames.length)];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Círculo perfecto con la imagen de perfil
+          // Avatar con radio reducido para liberar espacio.
           CircleAvatar(
-            radius: 30, // Diámetro de 60
+            radius: 30, // Diámetro de 50.
             backgroundImage: CachedNetworkImageProvider(exampleImage),
             backgroundColor: Colors.grey[300],
           ),
           const SizedBox(height: 4),
-          // Información de estrellas (los iconos mantienen su tamaño)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.star, size: 16, color: Colors.amber),
-              const SizedBox(width: 3),
-              Text(
-                '$stars',
-                style: const TextStyle(fontSize: 14, color: Colors.black),
-              ),
-            ],
+          // Nombre debajo; se usa Flexible para evitar overflow.
+          Flexible(
+            child: Text(
+              randomName,
+              style: const TextStyle(fontSize: 12, color: Colors.black),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

@@ -60,6 +60,7 @@ flutter:
     - assets/notificacion.png
     - assets/filter.png
     - assets/menu.png
+    - assets/agregar-usuario.svg
 
 
   
