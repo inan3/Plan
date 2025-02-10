@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui'; // Para BackdropFilter, ImageFilter, etc.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,11 +7,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dating_app/main/colors.dart';
 
+// Importa el diálogo de filtros
+import 'explore_screen_filter.dart';
+
 import 'explore_app_bar.dart';
 import 'popular_users_section.dart';
-import 'plan_action_button.dart';
-import '../plan_creation/new_plan_creation_screen.dart';
-import '../plan_joining/plan_join_request.dart';
 import 'users_grid.dart';
 import 'menu_side_bar_screen.dart';
 import 'chats/chats_screen.dart'; // Pantalla de mensajes
@@ -39,9 +40,16 @@ class ExploreScreenState extends State<ExploreScreen> {
   double selectedDistance = 50;
   int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
+  // Suponemos que conocemos la ubicación actual del usuario (por ejemplo, a través de geolocalización)
+  // Aquí se usa un valor fijo de ejemplo (lat, lng) que en este ejemplo es Barcelona.
+  final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
+
+  // Este mapa se actualizará cuando se apliquen los filtros desde el diálogo.
+  Map<String, dynamic> appliedFilters = {};
+
   // Variables para controlar el espacio entre secciones
-  double _spacingPopularToNearby = 10; // Puedes ajustar este valor si lo deseas
-  double _popularTopSpacing = 5; // Espacio superior de la sección de populares
+  double _spacingPopularToNearby = 10;
+  double _popularTopSpacing = 5;
 
   late List<Widget> _otherPages;
 
@@ -71,15 +79,14 @@ class ExploreScreenState extends State<ExploreScreen> {
     // Implementa la búsqueda si es necesario.
   }
 
-  void _onFilterPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NotificationScreen(
-          currentUserId: currentUser?.uid ?? '',
-        ),
-      ),
-    );
+  void _onFilterPressed() async {
+    // Abre el diálogo de filtros y actualiza los filtros aplicados
+    final result = await showExploreFilterDialog(context);
+    if (result != null) {
+      setState(() {
+        appliedFilters = result;
+      });
+    }
   }
 
   // Carga la preferencia de "interest" (Hombres/Mujeres/Todo el mundo).
@@ -111,23 +118,22 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  // Streams de recuento de notificaciones y mensajes no leídos.
-  Stream<int> _notificationCountStream() {
-    return FirebaseFirestore.instance
-        .collection('notifications')
-        .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+  // Función para calcular la distancia entre dos puntos (Haversine)
+  double computeDistance(double lat1, double lng1, double lat2, double lng2) {
+    const earthRadius = 6371; // en km
+    double dLat = _deg2rad(lat2 - lat1);
+    double dLng = _deg2rad(lng2 - lng1);
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_deg2rad(lat1)) *
+            math.cos(_deg2rad(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
   }
 
-  Stream<int> _unreadMessagesCountStream() {
-    return FirebaseFirestore.instance
-        .collection('messages')
-        .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('isRead', isEqualTo: false)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+  double _deg2rad(double deg) {
+    return deg * (math.pi / 180);
   }
 
   /// Construye la pantalla Explore con el AppBar y la sección de usuarios populares fijos,
@@ -151,7 +157,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             ),
           ),
           SizedBox(height: _spacingPopularToNearby),
-          // Sección de usuarios cercanos: esta parte será desplazable.
+          // Sección de usuarios cercanos: desplazable.
           Expanded(child: _buildNearbySection()),
         ],
       ),
@@ -188,19 +194,16 @@ class ExploreScreenState extends State<ExploreScreen> {
         // Filtrar por género según selectedSearchIndex.
         List<QueryDocumentSnapshot> filteredUsers = validUsers;
         if (selectedSearchIndex == 0) {
-          // Solo hombres.
           filteredUsers = validUsers
               .where((doc) =>
                   (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
               .toList();
         } else if (selectedSearchIndex == 1) {
-          // Solo mujeres.
           filteredUsers = validUsers
               .where((doc) =>
                   (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
               .toList();
         }
-        // Si selectedSearchIndex == 2, no filtramos por género.
 
         // Filtrar por rango de edad.
         filteredUsers = filteredUsers.where((doc) {
@@ -210,10 +213,39 @@ class ExploreScreenState extends State<ExploreScreen> {
               userAge <= selectedAgeRange.end.round();
         }).toList();
 
-        // Convertimos a lista para añadir usuarios "dummy".
+        // Filtrar por región si se aplicó el filtro
+        if (appliedFilters.containsKey('regionBusqueda') &&
+            (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
+          final String regionFilter =
+              (appliedFilters['regionBusqueda'] as String).toLowerCase();
+          filteredUsers = filteredUsers.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Se asume que el documento tiene un campo "city" o "country"
+            final String city = (data['city'] ?? '').toString().toLowerCase();
+            final String country = (data['country'] ?? '').toString().toLowerCase();
+            return city.contains(regionFilter) || country.contains(regionFilter);
+          }).toList();
+        }
+
+        // Ordenar por distancia respecto a la ubicación actual
+        filteredUsers.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+          final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
+          final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
+          final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
+          final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
+          final distanceA =
+              computeDistance(currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
+          final distanceB =
+              computeDistance(currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
+          return distanceA.compareTo(distanceB);
+        });
+
+        // Convertir a lista para añadir usuarios dummy (si fuera necesario)
         List<dynamic> allUsers = List.from(filteredUsers);
 
-        // Generamos 20 usuarios dummy.
+        // Ejemplo: Generamos 20 usuarios dummy.
         List<Map<String, dynamic>> dummyUsers = List.generate(20, (index) {
           return {
             'uid': 'dummy_$index',
@@ -222,19 +254,15 @@ class ExploreScreenState extends State<ExploreScreen> {
             'name': 'Usuario Dummy $index',
           };
         });
-
-        // Añadimos los dummy a la lista final.
         allUsers.addAll(dummyUsers);
 
         return UsersGrid(
           users: allUsers,
           onUserTap: (userDoc) {
-            // Verificamos si es un QueryDocumentSnapshot real o un Map dummy.
             final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
                 ? (userDoc.data() as Map<String, dynamic>)
                 : userDoc as Map<String, dynamic>;
             if (data['uid'].toString().startsWith('dummy_')) {
-              // Acción para usuario dummy.
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("Usuario dummy: ${data['name']}")),
               );
@@ -263,7 +291,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            // Si _currentIndex es 0 se muestra Explore; de lo contrario, se muestra otra página.
             _currentIndex == 0
                 ? _buildExplorePage()
                 : _otherPages[_currentIndex - 1],
@@ -291,32 +318,37 @@ class ExploreScreenState extends State<ExploreScreen> {
       ),
     );
   }
+
+  Stream<int> _notificationCountStream() {
+    return FirebaseFirestore.instance
+        .collection('notifications')
+        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> _unreadMessagesCountStream() {
+    return FirebaseFirestore.instance
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
 }
 
 // Asegúrate de que solo exista UNA definición de DockSection en tu proyecto.
 class DockSection extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapIcon;
-
-  /// Tamaño por defecto de los iconos.
   final double iconSize;
-
-  /// Tamaño del círculo de fondo que se muestra cuando el botón está seleccionado.
   final double selectedBackgroundSize;
-
-  /// Espacio horizontal entre iconos.
   final double iconSpacing;
-
-  /// Alineación de los iconos en el Row.
   final MainAxisAlignment mainAxisAlignment;
-
-  /// Padding exterior del DockSection.
   final EdgeInsetsGeometry padding;
-
   final Stream<int>? notificationCountStream;
   final Stream<int>? unreadMessagesCountStream;
-
-  /// Ancho del contenedor.
   final double containerWidth;
 
   const DockSection({
@@ -351,7 +383,6 @@ class DockSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: mainAxisAlignment,
               children: [
-                // Icono de casa.
                 Padding(
                   padding: const EdgeInsets.only(left: 6.0),
                   child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
@@ -359,7 +390,6 @@ class DockSection extends StatelessWidget {
                 SizedBox(width: iconSpacing),
                 _buildIconButton(index: 1, asset: 'assets/lupa.svg'),
                 SizedBox(width: iconSpacing),
-                // Icono para "añadir".
                 _buildIconButton(
                   index: 2,
                   asset: 'assets/anadir.svg',
@@ -382,7 +412,6 @@ class DockSection extends StatelessWidget {
     );
   }
 
-  /// Parámetro opcional overrideIconSize para personalizar el tamaño del icono.
   Widget _buildIconButton({
     required int index,
     required String asset,

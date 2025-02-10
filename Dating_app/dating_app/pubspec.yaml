@@ -28,6 +28,7 @@ dependencies:
   shared_preferences: ^2.1.1
   flutter_datetime_picker: ^1.5.1
   cached_network_image: ^3.2.3
+  permission_handler: ^10.2.0
 
 
 dev_dependencies:
@@ -61,6 +62,7 @@ flutter:
     - assets/filter.png
     - assets/menu.png
     - assets/agregar-usuario.svg
+    - assets/users.svg
 
 
   
