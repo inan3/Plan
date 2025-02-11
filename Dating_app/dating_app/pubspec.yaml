@@ -63,6 +63,7 @@ flutter:
     - assets/menu.png
     - assets/agregar-usuario.svg
     - assets/users.svg
+    - assets/sin-plan.svg
 
 
   

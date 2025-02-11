@@ -166,119 +166,102 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   /// Sección de usuarios cercanos.
   Widget _buildNearbySection() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.black),
-          );
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text(
-              'No hay usuarios cercanos.',
-              style: TextStyle(fontSize: 18, color: Colors.black),
-            ),
-          );
-        }
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance.collection('users').snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.black),
+        );
+      }
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return const Center(
+          child: Text(
+            'No hay usuarios cercanos.',
+            style: TextStyle(fontSize: 18, color: Colors.black),
+          ),
+        );
+      }
 
-        // Excluir al usuario actual.
-        final validUsers = snapshot.data!.docs.where((doc) {
-          final uid = doc.data() is Map<String, dynamic>
-              ? (doc.data() as Map<String, dynamic>)['uid']
-              : null;
-          return uid != null && uid != currentUser?.uid;
-        }).toList();
+      // Excluir al usuario actual.
+      final validUsers = snapshot.data!.docs.where((doc) {
+        final uid = doc.data() is Map<String, dynamic>
+            ? (doc.data() as Map<String, dynamic>)['uid']
+            : null;
+        return uid != null && uid != currentUser?.uid;
+      }).toList();
 
-        // Filtrar por género según selectedSearchIndex.
-        List<QueryDocumentSnapshot> filteredUsers = validUsers;
-        if (selectedSearchIndex == 0) {
-          filteredUsers = validUsers
-              .where((doc) =>
-                  (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
-              .toList();
-        } else if (selectedSearchIndex == 1) {
-          filteredUsers = validUsers
-              .where((doc) =>
-                  (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
-              .toList();
-        }
+      // Filtrar por género según selectedSearchIndex.
+      List<QueryDocumentSnapshot> filteredUsers = validUsers;
+      if (selectedSearchIndex == 0) {
+        filteredUsers = validUsers
+            .where((doc) =>
+                (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
+            .toList();
+      } else if (selectedSearchIndex == 1) {
+        filteredUsers = validUsers
+            .where((doc) =>
+                (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
+            .toList();
+      }
 
-        // Filtrar por rango de edad.
+      // Filtrar por rango de edad.
+      filteredUsers = filteredUsers.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final int userAge = int.tryParse(data['age'].toString()) ?? 0;
+        return userAge >= selectedAgeRange.start.round() &&
+            userAge <= selectedAgeRange.end.round();
+      }).toList();
+
+      // Filtrar por región si se aplicó el filtro.
+      if (appliedFilters.containsKey('regionBusqueda') &&
+          (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
+        final String regionFilter =
+            (appliedFilters['regionBusqueda'] as String).toLowerCase();
         filteredUsers = filteredUsers.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          final int userAge = int.tryParse(data['age'].toString()) ?? 0;
-          return userAge >= selectedAgeRange.start.round() &&
-              userAge <= selectedAgeRange.end.round();
+          // Se asume que el documento tiene un campo "city" o "country"
+          final String city = (data['city'] ?? '').toString().toLowerCase();
+          final String country = (data['country'] ?? '').toString().toLowerCase();
+          return city.contains(regionFilter) || country.contains(regionFilter);
         }).toList();
+      }
 
-        // Filtrar por región si se aplicó el filtro
-        if (appliedFilters.containsKey('regionBusqueda') &&
-            (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
-          final String regionFilter =
-              (appliedFilters['regionBusqueda'] as String).toLowerCase();
-          filteredUsers = filteredUsers.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            // Se asume que el documento tiene un campo "city" o "country"
-            final String city = (data['city'] ?? '').toString().toLowerCase();
-            final String country = (data['country'] ?? '').toString().toLowerCase();
-            return city.contains(regionFilter) || country.contains(regionFilter);
-          }).toList();
-        }
+      // Ordenar por distancia respecto a la ubicación actual.
+      filteredUsers.sort((a, b) {
+        final dataA = a.data() as Map<String, dynamic>;
+        final dataB = b.data() as Map<String, dynamic>;
+        final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
+        final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
+        final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
+        final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
+        final distanceA =
+            computeDistance(currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
+        final distanceB =
+            computeDistance(currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
+        return distanceA.compareTo(distanceB);
+      });
 
-        // Ordenar por distancia respecto a la ubicación actual
-        filteredUsers.sort((a, b) {
-          final dataA = a.data() as Map<String, dynamic>;
-          final dataB = b.data() as Map<String, dynamic>;
-          final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
-          final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
-          final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
-          final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-          final distanceA =
-              computeDistance(currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
-          final distanceB =
-              computeDistance(currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
-          return distanceA.compareTo(distanceB);
-        });
+      // Usamos directamente la lista de usuarios filtrados sin agregar usuarios dummy.
+      final allUsers = filteredUsers;
 
-        // Convertir a lista para añadir usuarios dummy (si fuera necesario)
-        List<dynamic> allUsers = List.from(filteredUsers);
-
-        // Ejemplo: Generamos 20 usuarios dummy.
-        List<Map<String, dynamic>> dummyUsers = List.generate(20, (index) {
-          return {
-            'uid': 'dummy_$index',
-            'gender': index % 2 == 0 ? 'Hombre' : 'Mujer',
-            'age': ((selectedAgeRange.start + selectedAgeRange.end) / 2).round(),
-            'name': 'Usuario Dummy $index',
-          };
-        });
-        allUsers.addAll(dummyUsers);
-
-        return UsersGrid(
-          users: allUsers,
-          onUserTap: (userDoc) {
-            final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
-                ? (userDoc.data() as Map<String, dynamic>)
-                : userDoc as Map<String, dynamic>;
-            if (data['uid'].toString().startsWith('dummy_')) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Usuario dummy: ${data['name']}")),
-              );
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserInfoCheck(userId: userDoc.id),
-                ),
-              );
-            }
-          },
-        );
-      },
-    );
-  }
+      return UsersGrid(
+        users: allUsers,
+        onUserTap: (userDoc) {
+          final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
+              ? (userDoc.data() as Map<String, dynamic>)
+              : userDoc as Map<String, dynamic>;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UserInfoCheck(userId: userDoc.id),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {

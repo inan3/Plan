@@ -1,16 +1,19 @@
-// user_info_check.dart
+// lib/explore_screen/users_managing/user_info_check.dart
 
+library user_info_check; // Opcional, pero ayuda a dejar claro el 'part of'
+
+// Imports globales
 import 'dart:ui'; // Para BackdropFilter, ImageFilter, etc.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para copiar ID, etc.
 import 'package:flutter_svg/flutter_svg.dart'; // Para manejar .svg
-import '../../main/colors.dart'; // Por ejemplo, para AppColors.blue
-import '../../models/plan_model.dart'; // Importa la versión unificada de PlanModel
-import 'user_info_inside_chat.dart';
 
-// Agrega la directiva para incluir el estado del diálogo en otro fichero.
-part 'frosted_plan_dialog_state.dart';
+import '../../main/colors.dart';        // Para AppColors.blue
+import '../../models/plan_model.dart';  // Tu modelo unificado
+import 'user_info_inside_chat.dart';    // Para abrir chat
+
+part 'frosted_plan_dialog_state.dart';  // <-- Incluimos el archivo PART
 
 /// -----------------------------------------------------------------------------
 /// PANTALLA PRINCIPAL: UserInfoCheck
@@ -19,9 +22,9 @@ class UserInfoCheck extends StatefulWidget {
   final String userId;
 
   const UserInfoCheck({
-    super.key,
+    Key? key,
     required this.userId,
-  });
+  }) : super(key: key);
 
   @override
   State<UserInfoCheck> createState() => _UserInfoCheckState();
@@ -79,7 +82,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       }
     }
 
-    // Ordenar por fecha de creación (si createdAt es nulo se usa DateTime.now())
+    // Ordenar por fecha de creación
     activePlans.sort((a, b) =>
         (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()));
     return activePlans;
@@ -143,7 +146,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return participants;
   }
 
-  // 2.3) Muestra pop‑up “frosted glass” usando el diálogo personalizado
+  // 2.3) Muestra pop‑up “frosted glass” usando nuestro diálogo
   void _showPlanDetailsFrosted(BuildContext context, PlanModel plan) {
     showGeneralDialog(
       context: context,
@@ -155,7 +158,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       transitionBuilder: (ctx, anim1, anim2, child) {
         return FadeTransition(
           opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-          child: _FrostedPlanDialog(
+          child: FrostedPlanDialog(
             plan: plan,
             fetchParticipants: _fetchAllPlanParticipants,
           ),
@@ -171,7 +174,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Fondo con imagen del usuario
+          // Fondo con la imagen del usuario
           FutureBuilder<DocumentSnapshot>(
             future: FirebaseFirestore.instance
                 .collection('users')
@@ -196,7 +199,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     ? Image.network(
                         photoUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: Colors.grey),
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: Colors.grey),
                       )
                     : Container(color: Colors.grey),
               );
@@ -211,7 +215,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          // Draggable Sheet con la info del usuario
+          // Draggable Scrollable con info del usuario
           DraggableScrollableSheet(
             initialChildSize: 0.25,
             minChildSize: 0.25,
@@ -234,7 +238,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                           const SizedBox(height: 8),
                           _buildDragHandle(),
                           const SizedBox(height: 16),
-                          // NUEVA SECCIÓN: Fila de botones de acción
+                          // Botones de acción (Invitar / Mensaje)
                           _buildActionButtons(),
                           const SizedBox(height: 16),
                           _buildUserInfo(),
@@ -283,10 +287,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         }
         final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
         final String name = data['name'] ?? 'Sin nombre';
-        final String age = data['age'] ?? '0';
+        final String age = data['age']?.toString() ?? '0';
         final String gender = data['gender'] ?? 'No especificado';
         final String interest = data['interest'] ?? 'N/A';
-        final String height = data['height'] ?? 'N/A';
+        final String height = data['height']?.toString() ?? 'N/A';
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -301,7 +306,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Ciudad placeholder
               Row(
                 children: const [
                   Icon(Icons.location_on, color: Colors.white),
@@ -374,7 +378,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 final plan = plans[index];
                 return Card(
                   color: Colors.white.withOpacity(0.1),
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                   child: ListTile(
                     title: Text(
                       plan.type,
@@ -469,7 +474,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  // NUEVA FUNCIÓN: Construir la fila de botones de acción en el draggable
+  // Fila de botones de acción en el draggable
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -478,7 +483,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           iconPath: 'assets/agregar-usuario.svg',
           label: 'Invítale a un Plan',
           onTap: () {
-            // Aquí puedes definir la acción para invitar a un plan
+            // Acción para invitar a un plan
           },
         ),
         const SizedBox(width: 16),
@@ -490,10 +495,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               context: context,
               barrierDismissible: true,
               barrierLabel: 'Cerrar',
-              barrierColor: Colors.transparent, // No oscurecer el fondo
+              barrierColor: Colors.transparent,
               transitionDuration: const Duration(milliseconds: 300),
-              pageBuilder: (_, __, ___) =>
-                  UserInfoInsideChat(chatPartnerId: widget.userId),
+              pageBuilder: (_, __, ___) => UserInfoInsideChat(
+                chatPartnerId: widget.userId,
+              ),
             );
           },
         ),
@@ -501,7 +507,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  // Método auxiliar para construir cada botón de acción
   Widget _buildActionButton({
     required String iconPath,
     String? label,
@@ -512,13 +517,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4), // Fondo ligeramente oscuro
+          color: Colors.black.withOpacity(0.4),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Ahora, en lugar de Image.asset, usamos SvgPicture
             SvgPicture.asset(
               iconPath,
               width: 24,
@@ -540,22 +544,4 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       ),
     );
   }
-}
-
-/// -----------------------------------------------------------------------------
-/// DIÁLOGO PERSONALIZADO CON EFECTO FROSTED (Widget)
-/// La clase _FrostedPlanDialogState está en un fichero aparte.
-/// -----------------------------------------------------------------------------
-class _FrostedPlanDialog extends StatefulWidget {
-  final PlanModel plan;
-  final Future<List<Map<String, dynamic>>> Function(PlanModel plan) fetchParticipants;
-
-  const _FrostedPlanDialog({
-    super.key,
-    required this.plan,
-    required this.fetchParticipants,
-  });
-
-  @override
-  State<_FrostedPlanDialog> createState() => _FrostedPlanDialogState();
 }

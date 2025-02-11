@@ -1,22 +1,28 @@
-import 'dart:ui'; // para BackdropFilter
-import 'package:dating_app/main/colors.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'users_managing/user_info_check.dart';
+// lib/explore_screen/users_grid.dart
 
-// Importa tu fichero de opciones
-import 'options_for_plans.dart';
+import 'dart:ui'; // Para BackdropFilter, ImageFilter
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../main/colors.dart';
+import '../../models/plan_model.dart';
+
+// Ajusta según tu proyecto
+import 'users_managing/user_info_inside_chat.dart'; 
+import 'users_managing/user_info_check.dart'; // Contiene FrostedPlanDialog, etc.
+
+import 'options_for_plans.dart'; // Para el menú de 3 puntos (si lo usas)
 
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
   final List<dynamic> users;
 
   const UsersGrid({
-    super.key,
+    Key? key,
     required this.users,
     this.onUserTap,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,16 +42,74 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
+  /// Comprueba en Firestore si el usuario tiene al menos un plan creado
+  Future<bool> _hasUserPlan(String userId) async {
+    final QuerySnapshot snap = await FirebaseFirestore.instance
+        .collection('plans')
+        .where('createdBy', isEqualTo: userId)
+        .limit(1)
+        .get();
+    return snap.docs.isNotEmpty;
+  }
+
   Widget _buildUserCard(Map<String, dynamic> userData, BuildContext context) {
-    final name = userData['name']?.toString().trim() ?? 'Usuario';
-    final age = userData['age']?.toString() ?? '--';
-    final photoUrl = userData['photoUrl']?.toString();
-    final userHandle = userData['handle']?.toString() ?? '@usuario';
-    final caption =
-        userData['caption']?.toString() ?? 'Descripción breve o #hashtags';
-    final likesCount = '1245';
-    final commentsCount = '173';
-    final sharesCount = '227';
+    final String? uid = userData['uid']?.toString();
+
+    if (uid == null) {
+      return const SizedBox(
+        height: 60,
+        child: Center(
+          child: Text(
+            'Usuario inválido',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
+
+    return FutureBuilder<bool>(
+      future: _hasUserPlan(uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            height: 330,
+            child: Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: 330,
+            child: Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          );
+        }
+
+        final bool hasPlan = snapshot.data ?? false;
+        if (!hasPlan) {
+          // NO tiene plan
+          return _buildNoPlanLayout(context, userData);
+        } else {
+          // SÍ tiene plan
+          return _buildPlanLayout(context, userData);
+        }
+      },
+    );
+  }
+
+  // -----------------------------------------------------------------------
+  // Layout cuando NO tiene plan
+  // -----------------------------------------------------------------------
+  Widget _buildNoPlanLayout(BuildContext context, Map<String, dynamic> userData) {
+    final String name = userData['name']?.toString().trim() ?? 'Usuario';
+    final String userHandle = userData['handle']?.toString() ?? '@usuario';
+    final String? uid = userData['uid']?.toString();
+    final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
 
     return Center(
       child: Container(
@@ -54,12 +118,12 @@ class UsersGrid extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 15),
         child: Stack(
           children: [
-            // Imagen de fondo (sin interacción).
+            // Fondo con la foto de perfil (o placeholder)
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
-              child: (photoUrl != null && photoUrl.isNotEmpty)
+              child: (fallbackPhotoUrl != null && fallbackPhotoUrl.isNotEmpty)
                   ? Image.network(
-                      photoUrl,
+                      fallbackPhotoUrl,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
@@ -67,15 +131,12 @@ class UsersGrid extends StatelessWidget {
                     )
                   : _buildPlaceholder(),
             ),
-            // -----------------------------------------
-            // 1) Avatar + nombre (tap -> UserInfoCheck)
-            // -----------------------------------------
+            // Avatar + nombre (tap -> abre perfil)
             Positioned(
               top: 10,
               left: 10,
               child: GestureDetector(
                 onTap: () {
-                  final String? uid = userData['uid']?.toString();
                   if (uid != null) {
                     Navigator.push(
                       context,
@@ -93,13 +154,11 @@ class UsersGrid extends StatelessWidget {
                       color: const Color.fromARGB(255, 14, 14, 14)
                           .withOpacity(0.2),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
+                          horizontal: 8, vertical: 6),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildProfileAvatar(photoUrl),
+                          _buildProfileAvatar(fallbackPhotoUrl),
                           const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,19 +202,209 @@ class UsersGrid extends StatelessWidget {
                 ),
               ),
             ),
+            // Texto + icono + botones
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: Container(
+                  margin: const EdgeInsets.only(top: 100),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Texto con fondo frosted
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            color: const Color.fromARGB(255, 84, 78, 78)
+                                .withOpacity(0.3),
+                            child: const Text(
+                              'Este usuario no ha creado planes aún...',
+                              style: TextStyle(color: Colors.white),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SvgPicture.asset(
+                        'assets/sin-plan.svg',
+                        width: 80,
+                        height: 80,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 20),
+                      // Botones: Invitar y Mensaje
+                      _buildActionButtons(context, uid),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // -----------------------------------------
-            // 2) Menú (3 puntos) con GlobalKey
-            // -----------------------------------------
+  // -----------------------------------------------------------------------
+  // Layout cuando SÍ tiene plan
+  // -----------------------------------------------------------------------
+  Widget _buildPlanLayout(BuildContext context, Map<String, dynamic> userData) {
+    final String name = userData['name']?.toString().trim() ?? 'Usuario';
+    final String userHandle = userData['handle']?.toString() ?? '@usuario';
+    final String? uid = userData['uid']?.toString();
+    final String? planBackground = userData['planBackground']?.toString();
+    final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
+    final String? backgroundImage =
+        (planBackground != null && planBackground.isNotEmpty)
+            ? planBackground
+            : fallbackPhotoUrl;
+
+    final String caption =
+        userData['caption']?.toString() ?? 'Descripción breve o #hashtags';
+    // Ejemplo de contadores
+    final String likesCount = '1245';
+    final String commentsCount = '173';
+    final String sharesCount = '227';
+
+    return Center(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95,
+        height: 330,
+        margin: const EdgeInsets.only(bottom: 15),
+        child: Stack(
+          children: [
+            // Imagen de fondo (tap -> pop-up plan)
+            GestureDetector(
+              onTap: () {
+                final plan = PlanModel.fromMap({
+                  'id': userData['planId'] ?? (uid ?? ''),
+                  'type': userData['planType'] ?? 'Plan',
+                  'description': userData['caption'] ?? '',
+                  'date': userData['planDate'] ?? DateTime.now(),
+                  'createdAt': userData['planCreatedAt'] ?? DateTime.now(),
+                  'minAge': userData['planMinAge'] ?? 18,
+                  'maxAge': userData['planMaxAge'] ?? 99,
+                  'maxParticipants': userData['planMaxParticipants'],
+                  'location': userData['planLocation'] ?? '',
+                });
+
+                showGeneralDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  barrierLabel: 'Cerrar',
+                  barrierColor: Colors.black.withOpacity(0.4),
+                  transitionDuration: const Duration(milliseconds: 300),
+                  pageBuilder: (_, __, ___) => const SizedBox(),
+                  transitionBuilder: (ctx, anim1, anim2, child) {
+                    return FadeTransition(
+                      opacity: CurvedAnimation(
+                        parent: anim1,
+                        curve: Curves.easeOut,
+                      ),
+                      child: FrostedPlanDialog(
+                        plan: plan,
+                        fetchParticipants: (PlanModel p) async => [],
+                      ),
+                    );
+                  },
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: (backgroundImage != null && backgroundImage.isNotEmpty)
+                    ? Image.network(
+                        backgroundImage,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
+            ),
+            // Avatar + nombre (tap -> perfil)
+            Positioned(
+              top: 10,
+              left: 10,
+              child: GestureDetector(
+                onTap: () {
+                  if (uid != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserInfoCheck(userId: uid),
+                      ),
+                    );
+                  }
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(36),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      color: const Color.fromARGB(255, 14, 14, 14)
+                          .withOpacity(0.2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildProfileAvatar(fallbackPhotoUrl),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  SvgPicture.asset(
+                                    'assets/verificado.svg',
+                                    width: 14,
+                                    height: 14,
+                                    color: Colors.blueAccent,
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                userHandle,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Menú (3 puntos)
             Positioned(
               top: 16,
               right: 16,
               child: _buildThreeDotsMenu(userData),
             ),
 
-            // -----------------------------------------
-            // 3) Contadores + caption (parte inferior)
-            // -----------------------------------------
+            // Parte inferior: contadores + caption
             Positioned(
               bottom: 0,
               left: 0,
@@ -168,9 +417,9 @@ class UsersGrid extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      // Gradiente vertical: transparente arriba, oscuro (negro) abajo
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -187,8 +436,6 @@ class UsersGrid extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // FILA SUPERIOR: iconos de corazon, comentario, compartir
-                        // + contador de participantes en la esquina derecha.
                         Row(
                           children: [
                             _buildIconText(
@@ -205,15 +452,11 @@ class UsersGrid extends StatelessWidget {
                               icon: Icons.share,
                               label: sharesCount,
                             ),
-
-                            // Empujamos el contenido para la derecha
                             const Spacer(),
-
-                            // Contador de participantes y el icono "users.svg"
                             Row(
                               children: [
                                 Text(
-                                  '7/10', // Dato dummy
+                                  '7/10',
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Colors.white,
@@ -232,8 +475,6 @@ class UsersGrid extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
-
-                        // FILA INFERIOR: solo el texto de caption
                         Text(
                           caption,
                           style: const TextStyle(
@@ -246,48 +487,94 @@ class UsersGrid extends StatelessWidget {
                   ),
                 ),
               ),
-            )
+            ),
+
+            // *** Importante: NO hay action-buttons de Invitar/Chat en la parte de abajo
+            // cuando SÍ tiene plan. (Se retiran para cumplir con tu petición)
           ],
         ),
       ),
     );
   }
 
-  /// Construimos un widget aparte para manejar el 3-puntitos con GlobalKey.
-  Widget _buildThreeDotsMenu(Map<String, dynamic> userData) {
-    // Creamos el key en cada tarjeta para poder obtener la posición exacta
-    final GlobalKey iconKey = GlobalKey();
+  // -----------------------------------------------------------------------
+  // Botones de acción (Invitar / Chat) en la tarjeta de un usuario SIN plan
+  // -----------------------------------------------------------------------
+  Widget _buildActionButtons(BuildContext context, String? userId) {
+    final String safeUserId = userId ?? '';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildActionButton(
+          context: context,
+          iconPath: 'assets/agregar-usuario.svg',
+          label: 'Invítale a un Plan',
+          onTap: () {
+            // Acción futura
+          },
+        ),
+        const SizedBox(width: 16),
+        _buildActionButton(
+          context: context,
+          iconPath: 'assets/mensaje.svg',
+          label: null,
+          onTap: () {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: 'Cerrar',
+              barrierColor: Colors.transparent,
+              transitionDuration: const Duration(milliseconds: 300),
+              pageBuilder: (_, __, ___) => const SizedBox(),
+              transitionBuilder: (ctx, anim1, anim2, child) {
+                return FadeTransition(
+                  opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+                  child: UserInfoInsideChat(chatPartnerId: safeUserId),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
 
-    return InkWell(
-      key: iconKey,
-      onTap: () {
-        // Al pulsar, obtenemos la posición y tamaño global del icono
-        final renderBox = iconKey.currentContext?.findRenderObject() as RenderBox?;
-        if (renderBox == null) return;
-
-        final offset = renderBox.localToGlobal(Offset.zero);
-        final size = renderBox.size;
-
-        // Ahora llamamos a la función que muestra el menú,
-        // pasándole offset + size.
-        showPlanOptions(
-          iconKey.currentContext!, // El BuildContext
-          userData,                // Datos de la tarjeta/plan
-          offset,                  // Posición global
-          size,                    // Tamaño del botón
-        );
-      },
+  // Helper para el botón con blur
+  Widget _buildActionButton({
+    required BuildContext context,
+    required String iconPath,
+    String? label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
-            color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.1),
-            padding: const EdgeInsets.all(10),
-            child: const Icon(
-              Icons.more_vert,
-              color: Colors.white,
-              size: 20,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: const Color.fromARGB(255, 84, 78, 78).withOpacity(0.3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 32,
+                  height: 32,
+                  color: Colors.white,
+                ),
+                if (label != null) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
@@ -295,9 +582,9 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------
-  //  Avatares, placeholders e iconos repetitivos
-  // -----------------------------------------------
+  // -----------------------------------------------------------------------
+  // Helpers
+  // -----------------------------------------------------------------------
   Widget _buildProfileAvatar(String? photoUrl) {
     if (photoUrl != null && photoUrl.isNotEmpty) {
       return CircleAvatar(
@@ -322,6 +609,41 @@ class UsersGrid extends StatelessWidget {
         width: double.infinity,
         child: const Center(
           child: Icon(Icons.person, size: 40, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThreeDotsMenu(Map<String, dynamic> userData) {
+    final GlobalKey iconKey = GlobalKey();
+    return InkWell(
+      key: iconKey,
+      onTap: () {
+        final renderBox =
+            iconKey.currentContext?.findRenderObject() as RenderBox?;
+        if (renderBox == null) return;
+        final offset = renderBox.localToGlobal(Offset.zero);
+        final size = renderBox.size;
+        showPlanOptions(
+          iconKey.currentContext!,
+          userData,
+          offset,
+          size,
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.1),
+            padding: const EdgeInsets.all(10),
+            child: const Icon(
+              Icons.more_vert,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
         ),
       ),
     );

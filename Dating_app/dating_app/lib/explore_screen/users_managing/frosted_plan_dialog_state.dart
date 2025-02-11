@@ -1,7 +1,26 @@
-// frosted_plan_dialog_state.dart
+// lib/explore_screen/users_managing/frosted_plan_dialog_state.dart
+
 part of 'user_info_check.dart';
 
-class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
+/// -----------------------------------------------------------------------------
+/// DIÁLOGO PERSONALIZADO CON EFECTO FROSTED
+/// -----------------------------------------------------------------------------
+class FrostedPlanDialog extends StatefulWidget {
+  final PlanModel plan;
+  final Future<List<Map<String, dynamic>>> Function(PlanModel plan)
+      fetchParticipants;
+
+  const FrostedPlanDialog({
+    Key? key,
+    required this.plan,
+    required this.fetchParticipants,
+  }) : super(key: key);
+
+  @override
+  State<FrostedPlanDialog> createState() => _FrostedPlanDialogState();
+}
+
+class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   late Future<List<Map<String, dynamic>>> _futureParticipants;
 
   @override
@@ -32,7 +51,7 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: BackdropFilter(
-                // Aplica un blur adicional para el contenido de la tarjeta
+                // Blur adicional para el contenido de la tarjeta
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   width: screenSize.width * 0.85,
@@ -58,9 +77,9 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                           Text.rich(
                             TextSpan(
                               children: [
-                                TextSpan(
+                                const TextSpan(
                                   text: "Detalles del Plan de ",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
@@ -77,8 +96,8 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 10),
+
                           // Fila con el ID y botón para copiar
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,9 +106,9 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                 child: Text.rich(
                                   TextSpan(
                                     children: [
-                                      TextSpan(
+                                      const TextSpan(
                                         text: "ID del Plan: ",
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -106,12 +125,15 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.copy, color: AppColors.blue),
+                                icon: const Icon(Icons.copy,
+                                    color: AppColors.blue),
                                 onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: plan.id));
+                                  Clipboard.setData(
+                                      ClipboardData(text: plan.id));
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('ID copiado al portapapeles'),
+                                      content:
+                                          Text('ID copiado al portapapeles'),
                                     ),
                                   );
                                 },
@@ -119,13 +141,17 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          // Datos del plan
-                          Text.rich(TextSpan(children: [TextSpan(
+
+                          // Datos del plan (Descripción, Edades, etc.)
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
                                   text: "Descripción: ",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,),
-                                  
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 TextSpan(
                                   text: plan.description,
@@ -137,15 +163,19 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                               ],
                             ),
                           ),
-                          Text.rich(TextSpan(children: [TextSpan(
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
                                   text: "Restricción de Edad: ",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 TextSpan(
-                                  text: "${plan.minAge} - ${plan.maxAge} años",
+                                  text:
+                                      "${plan.minAge} - ${plan.maxAge} años",
                                   style: TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
@@ -154,9 +184,12 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                               ],
                             ),
                           ),
-                          Text.rich(TextSpan(children: [TextSpan(
-                                  text: "Máximo Participantes: ",
-                                  style: const TextStyle(
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: "Máx. Participantes: ",
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -171,9 +204,12 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                               ],
                             ),
                           ),
-                          Text.rich(TextSpan(children: [TextSpan(
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
                                   text: "Ubicación: ",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -188,9 +224,12 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                               ],
                             ),
                           ),
-                          Text.rich(TextSpan(children: [TextSpan(
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
                                   text: "Fecha del Evento: ",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -205,9 +244,12 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                               ],
                             ),
                           ),
-                          Text.rich(TextSpan(children: [TextSpan(
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
                                   text: "Creado el: ",
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -224,17 +266,22 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                           ),
 
                           const SizedBox(height: 10),
-                          // FutureBuilder para mostrar Creador y Participantes
+
+                          // Participantes
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _futureParticipants,
                             builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return const Center(child: CircularProgressIndicator());
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
                               }
                               if (snapshot.hasError) {
                                 return Text(
                                   'Error: ${snapshot.error}',
-                                  style: const TextStyle(color: Colors.black),
+                                  style:
+                                      const TextStyle(color: Colors.black),
                                 );
                               }
                               final all = snapshot.data ?? [];
@@ -248,8 +295,10 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                 (p) => p['isCreator'] == true,
                                 orElse: () => {},
                               );
-                              final participants =
-                                  all.where((p) => p['isCreator'] == false).toList();
+                              final participants = all
+                                  .where((p) => p['isCreator'] == false)
+                                  .toList();
+
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -274,10 +323,11 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                                   ),
                                   const SizedBox(height: 8),
                                   if (participants.isEmpty)
-                                    Text(
+                                    const Text(
                                       "No hay participantes en este plan.",
-                                      style: TextStyle(color: Colors.amber,
-                                      fontWeight: FontWeight.bold,
+                                      style: TextStyle(
+                                        color: Colors.amber,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     )
                                   else
@@ -287,14 +337,18 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
                             },
                           ),
                           const SizedBox(height: 16),
+
                           // Botón de cerrar
                           Align(
                             alignment: Alignment.bottomRight,
                             child: TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text("Cerrar", style: TextStyle(color: AppColors.blue,
-                                                                           fontWeight: FontWeight.bold,
-                                                                          )
+                              child: const Text(
+                                "Cerrar",
+                                style: TextStyle(
+                                  color: AppColors.blue,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -320,8 +374,13 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
         backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
         backgroundColor: Colors.purple[100],
       ),
-      title: Text('$name, $age', style: const TextStyle(color: AppColors.blue,
-                                                        fontWeight: FontWeight.bold,)),
+      title: Text(
+        '$name, $age',
+        style: const TextStyle(
+          color: AppColors.blue,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
@@ -334,8 +393,13 @@ class _FrostedPlanDialogState extends State<_FrostedPlanDialog> {
         backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
         backgroundColor: Colors.blueGrey[100],
       ),
-      title: Text('$name, $age', style: const TextStyle(color: AppColors.blue,
-                                                      fontWeight: FontWeight.bold,)),
+      title: Text(
+        '$name, $age',
+        style: const TextStyle(
+          color: AppColors.blue,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
