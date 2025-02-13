@@ -20,6 +20,8 @@ import 'search_screen.dart'; // Pantalla de búsqueda
 import 'profile_screen.dart'; // Gestión del perfil
 import 'notification_screen.dart'; // Pantalla de notificaciones
 import 'add_plan_screen.dart';
+import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
+import 'package:dating_app/plan_joining/plan_join_request.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -40,8 +42,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   double selectedDistance = 50;
   int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
-  // Suponemos que conocemos la ubicación actual del usuario (por ejemplo, a través de geolocalización)
-  // Aquí se usa un valor fijo de ejemplo (lat, lng) que en este ejemplo es Barcelona.
+  // Suponemos que conocemos la ubicación actual del usuario (ejemplo: Barcelona).
   final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
 
   // Este mapa se actualizará cuando se apliquen los filtros desde el diálogo.
@@ -136,8 +137,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     return deg * (math.pi / 180);
   }
 
-  /// Construye la pantalla Explore con el AppBar y la sección de usuarios populares fijos,
-  /// y la sección de usuarios cercanos desplazable.
+  /// Construye la pantalla Explore con el AppBar y las secciones correspondientes.
   Widget _buildExplorePage() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 0),
@@ -147,7 +147,19 @@ class ExploreScreenState extends State<ExploreScreen> {
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
             onFilterPressed: _onFilterPressed,
+            onNotificationPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NotificationScreen(
+                    currentUserId: currentUser?.uid ?? '',
+                  ),
+                ),
+              );
+            },
             onSearchChanged: _onSearchChanged,
+            // Se pasa el stream para mostrar el badge en el icono de notificación
+            notificationCountStream: _notificationCountStream(),
           ),
           // Sección de usuarios populares (fija)
           Padding(
@@ -166,102 +178,271 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   /// Sección de usuarios cercanos.
   Widget _buildNearbySection() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('users').snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.black),
-        );
-      }
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return const Center(
-          child: Text(
-            'No hay usuarios cercanos.',
-            style: TextStyle(fontSize: 18, color: Colors.black),
-          ),
-        );
-      }
-
-      // Excluir al usuario actual.
-      final validUsers = snapshot.data!.docs.where((doc) {
-        final uid = doc.data() is Map<String, dynamic>
-            ? (doc.data() as Map<String, dynamic>)['uid']
-            : null;
-        return uid != null && uid != currentUser?.uid;
-      }).toList();
-
-      // Filtrar por género según selectedSearchIndex.
-      List<QueryDocumentSnapshot> filteredUsers = validUsers;
-      if (selectedSearchIndex == 0) {
-        filteredUsers = validUsers
-            .where((doc) =>
-                (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
-            .toList();
-      } else if (selectedSearchIndex == 1) {
-        filteredUsers = validUsers
-            .where((doc) =>
-                (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
-            .toList();
-      }
-
-      // Filtrar por rango de edad.
-      filteredUsers = filteredUsers.where((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        final int userAge = int.tryParse(data['age'].toString()) ?? 0;
-        return userAge >= selectedAgeRange.start.round() &&
-            userAge <= selectedAgeRange.end.round();
-      }).toList();
-
-      // Filtrar por región si se aplicó el filtro.
-      if (appliedFilters.containsKey('regionBusqueda') &&
-          (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
-        final String regionFilter =
-            (appliedFilters['regionBusqueda'] as String).toLowerCase();
-        filteredUsers = filteredUsers.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          // Se asume que el documento tiene un campo "city" o "country"
-          final String city = (data['city'] ?? '').toString().toLowerCase();
-          final String country = (data['country'] ?? '').toString().toLowerCase();
-          return city.contains(regionFilter) || country.contains(regionFilter);
-        }).toList();
-      }
-
-      // Ordenar por distancia respecto a la ubicación actual.
-      filteredUsers.sort((a, b) {
-        final dataA = a.data() as Map<String, dynamic>;
-        final dataB = b.data() as Map<String, dynamic>;
-        final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
-        final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
-        final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
-        final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-        final distanceA =
-            computeDistance(currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
-        final distanceB =
-            computeDistance(currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
-        return distanceA.compareTo(distanceB);
-      });
-
-      // Usamos directamente la lista de usuarios filtrados sin agregar usuarios dummy.
-      final allUsers = filteredUsers;
-
-      return UsersGrid(
-        users: allUsers,
-        onUserTap: (userDoc) {
-          final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
-              ? (userDoc.data() as Map<String, dynamic>)
-              : userDoc as Map<String, dynamic>;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UserInfoCheck(userId: userDoc.id),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.black),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              'No hay usuarios cercanos.',
+              style: TextStyle(fontSize: 18, color: Colors.black),
             ),
           );
-        },
-      );
-    },
-  );
-}
+        }
+
+        // Excluir al usuario actual.
+        final validUsers = snapshot.data!.docs.where((doc) {
+          final uid = doc.data() is Map<String, dynamic>
+              ? (doc.data() as Map<String, dynamic>)['uid']
+              : null;
+          return uid != null && uid != currentUser?.uid;
+        }).toList();
+
+        // Filtrar por género según selectedSearchIndex.
+        List<QueryDocumentSnapshot> filteredUsers = validUsers;
+        if (selectedSearchIndex == 0) {
+          filteredUsers = validUsers
+              .where((doc) =>
+                  (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
+              .toList();
+        } else if (selectedSearchIndex == 1) {
+          filteredUsers = validUsers
+              .where((doc) =>
+                  (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
+              .toList();
+        }
+
+        // Filtrar por rango de edad.
+        filteredUsers = filteredUsers.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final int userAge = int.tryParse(data['age'].toString()) ?? 0;
+          return userAge >= selectedAgeRange.start.round() &&
+              userAge <= selectedAgeRange.end.round();
+        }).toList();
+
+        // Filtrar por región si se aplicó el filtro.
+        if (appliedFilters.containsKey('regionBusqueda') &&
+            (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
+          final String regionFilter =
+              (appliedFilters['regionBusqueda'] as String).toLowerCase();
+          filteredUsers = filteredUsers.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final String city = (data['city'] ?? '').toString().toLowerCase();
+            final String country =
+                (data['country'] ?? '').toString().toLowerCase();
+            return city.contains(regionFilter) || country.contains(regionFilter);
+          }).toList();
+        }
+
+        // Ordenar por distancia respecto a la ubicación actual.
+        filteredUsers.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+          final double latA =
+              double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
+          final double lngA =
+              double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
+          final double latB =
+              double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
+          final double lngB =
+              double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
+          final distanceA = computeDistance(
+              currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
+          final distanceB = computeDistance(
+              currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
+          return distanceA.compareTo(distanceB);
+        });
+
+        final allUsers = filteredUsers;
+
+        return UsersGrid(
+          users: allUsers,
+          onUserTap: (userDoc) {
+            final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
+                ? (userDoc.data() as Map<String, dynamic>)
+                : userDoc as Map<String, dynamic>;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserInfoCheck(userId: userDoc.id),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Se muestra el badge de notificaciones para el ExploreAppBar.
+  Stream<int> _notificationCountStream() {
+    return FirebaseFirestore.instance
+        .collection('notifications')
+        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('type',
+            whereIn: ['join_request', 'join_accepted', 'join_rejected'])
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> _unreadMessagesCountStream() {
+    return FirebaseFirestore.instance
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Método para mostrar el pop up con las opciones "Crear Plan" y "Unirse a Plan"
+  /// posicionado justo arriba del dock, compartiendo el mismo fondo.
+  void _showPlanOptionsPopup(BuildContext context) {
+    // Valores para posicionar el pop up: el dock se posiciona a 20 desde abajo y tiene altura 70.
+    const double dockBottomMargin = 50.0;
+    const double dockHeight = 70.0;
+
+    showGeneralDialog(
+      context: context,
+      barrierLabel: "Plan Options",
+      barrierDismissible: true,
+      barrierColor: Colors.transparent, // Sin oscurecer el fondo
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return Stack(
+          children: [
+            // El Positioned limita el tamaño al contenido del pop up.
+            Positioned(
+              bottom: dockBottomMargin + dockHeight,
+              left: 40,
+              right: 40,
+              child: Material(
+                color: Colors.transparent,
+                // Dentro de showGeneralDialog en _showPlanOptionsPopup...
+                // Dentro de showGeneralDialog en _showPlanOptionsPopup...
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black26, // Mismo fondo que el dock
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Sólo ocupa lo justo para sus hijos
+                    children: [
+                      // Botón "Crear Plan" con icono de assets/anadir.svg
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(context).pop(); // Cierra el pop up
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NewPlanCreationScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          alignment: Alignment.center,
+                          // Fijamos la altura del botón para que no cambie según el icono
+                          height: 60,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Icono en un SizedBox de tamaño fijo
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: SvgPicture.asset(
+                                  'assets/anadir.svg',
+                                  color: Colors.white,
+                                  // Puedes ajustar scale o BoxFit si es necesario
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Crear Plan",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Línea fina blanca separadora
+                      Container(
+                        height: 1,
+                        color: Colors.white,
+                      ),
+                      // Botón "Unirse a Plan" con icono de assets/union.svg
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          JoinPlanRequestScreen.showJoinPlanDialog(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          alignment: Alignment.center,
+                          height: 60,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: SvgPicture.asset(
+                                  'assets/union.svg',
+                                  color: Colors.white,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Unirse a Plan",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          ],
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: child,
+        );
+      },
+    );
+  }
+
+  // Nuevo callback para el Dock: si se pulsa el ícono de anadir (índice 2), se muestra el pop up.
+  void _onDockIconTap(int index) {
+    if (index == 2) {
+      _showPlanOptionsPopup(context);
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -285,8 +466,9 @@ class ExploreScreenState extends State<ExploreScreen> {
               child: Center(
                 child: DockSection(
                   currentIndex: _currentIndex,
-                  onTapIcon: (index) => setState(() => _currentIndex = index),
-                  notificationCountStream: _notificationCountStream(),
+                  onTapIcon: _onDockIconTap,
+                  // Se elimina el stream de notificaciones para evitar que aparezca en "anadir.svg"
+                  notificationCountStream: null,
                   unreadMessagesCountStream: _unreadMessagesCountStream(),
                 ),
               ),
@@ -300,24 +482,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         ),
       ),
     );
-  }
-
-  Stream<int> _notificationCountStream() {
-    return FirebaseFirestore.instance
-        .collection('notifications')
-        .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
-  }
-
-  Stream<int> _unreadMessagesCountStream() {
-    return FirebaseFirestore.instance
-        .collection('messages')
-        .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('isRead', isEqualTo: false)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
   }
 }
 

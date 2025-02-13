@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PlanActionButton extends StatelessWidget {
   final String heroTag;
@@ -28,35 +29,55 @@ class PlanActionButton extends StatelessWidget {
     this.boxShadow,
   });
 
-@override
-Widget build(BuildContext context) {
-  return Container(
-    margin: margin,
-    child: FloatingActionButton.extended(
-      heroTag: heroTag,
-      backgroundColor: backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30),
-        side: borderColor != null
-            ? BorderSide(color: borderColor!, width: borderWidth)
-            : BorderSide.none,
-      ),
-      icon: Image.asset(
+  // Método auxiliar para cargar el ícono según su extensión
+  Widget _buildIcon() {
+    if (iconPath.toLowerCase().endsWith('.svg')) {
+      return SvgPicture.asset(
         iconPath,
         height: 24,
         width: 24,
         color: iconColor,
-      ),
-      label: Text(
-        label,
-        style: TextStyle(
-          color: textColor ?? Colors.black,
-          fontSize: 14, // Añadido tamaño de fuente
+      );
+    } else {
+      return Image.asset(
+        iconPath,
+        height: 24,
+        width: 24,
+        color: iconColor,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: margin,
+      // Si necesitas agregar sombra personalizada, la puedes incluir aquí usando BoxDecoration
+      decoration: boxShadow != null
+          ? BoxDecoration(
+              boxShadow: boxShadow,
+            )
+          : null,
+      child: FloatingActionButton.extended(
+        heroTag: heroTag,
+        backgroundColor: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+          side: borderColor != null
+              ? BorderSide(color: borderColor!, width: borderWidth)
+              : BorderSide.none,
         ),
+        icon: _buildIcon(),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: textColor ?? Colors.black,
+            fontSize: 14, // Tamaño de fuente
+          ),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduce espacio interno
+        onPressed: onPressed,
       ),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduce espacio interno
-      onPressed: onPressed,
-    ),
-  );
-}
+    );
+  }
 }

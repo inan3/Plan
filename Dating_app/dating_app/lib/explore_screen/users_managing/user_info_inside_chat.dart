@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../main/colors.dart'; // Asegúrate de que AppColors esté definido correctamente
+import '../chats/chat_screen.dart'; // Importa la pantalla de chat completa
 
 class UserInfoInsideChat extends StatefulWidget {
   /// ID del usuario con el que se chatea (el receptor).
@@ -33,7 +34,6 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
       Navigator.pop(context);
       return;
     }
-    // Imprime el chatPartnerId (con trim para eliminar espacios extra)
     final partnerId = widget.chatPartnerId.trim();
     print("UserInfoInsideChat: chatPartnerId = $partnerId");
     _fetchChatPartnerData(partnerId);
@@ -90,25 +90,84 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     }
   }
 
-  /// Envía el mensaje incluyendo algunos datos del emisor
-  Future<void> _sendMessage() async {
-    final String messageText = _messageController.text.trim();
-    if (messageText.isEmpty || _currentUser == null || _chatPartnerData == null) return;
+  /// Función que verifica la conversación actual para saber si ya se envió un mensaje.
+  /// Si ya se envió un mensaje y el último es del usuario actual, muestra un pop up.
+  /// Si el último es del receptor (es decir, respondió) redirige a ChatScreen.
+  /// Si no hay mensajes, envía el primer mensaje.
+  Future<void> _checkAndSendMessage() async {
+    final String text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
-    final String receiverId = widget.chatPartnerId.trim();
     final String senderId = _currentUser!.uid;
+    final String receiverId = widget.chatPartnerId.trim();
+    final String conversationId = senderId.compareTo(receiverId) < 0
+        ? "${senderId}_$receiverId"
+        : "${receiverId}_$senderId";
+
+    print("ConversationId: $conversationId");
+
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('messages')
+          .where('conversationId', isEqualTo: conversationId)
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      print("Cantidad de mensajes en la conversación: ${snapshot.docs.length}");
+
+      if (snapshot.docs.isNotEmpty) {
+        // Existe al menos un mensaje
+        final lastMessage =
+            snapshot.docs.first.data() as Map<String, dynamic>;
+        print("Último mensaje: ${lastMessage['text']} enviado por ${lastMessage['senderId']}");
+        if (lastMessage['senderId'] == senderId) {
+          // Último mensaje enviado por el usuario actual: no se permite enviar otro
+          _mostrarPopUpEspera();
+          return;
+        } else {
+          // El receptor ya respondió, redirigimos al chat completo
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                chatPartnerId: receiverId,
+                chatPartnerName: _chatPartnerData?['name'] ?? 'Usuario',
+                chatPartnerPhoto: _chatPartnerData?['photoUrl'],
+                deletedAt: null,
+              ),
+            ),
+          );
+          return;
+        }
+      } else {
+        // No hay mensajes en la conversación, se permite enviar el primer mensaje
+        await _sendMessage(conversationId);
+      }
+    } catch (e) {
+      print("🔥 Error al consultar conversación: $e");
+    }
+  }
+
+  /// Envía el mensaje y lo asocia a la conversación
+  Future<void> _sendMessage(String conversationId) async {
+    final String messageText = _messageController.text.trim();
+    if (messageText.isEmpty) return;
+
+    final String senderId = _currentUser!.uid;
+    final String receiverId = widget.chatPartnerId.trim();
 
     try {
       print("📤 Enviando mensaje a Firestore...");
       await FirebaseFirestore.instance.collection('messages').add({
         'senderId': senderId,
         'receiverId': receiverId,
-        'participants': [senderId, receiverId], // 📌 IMPORTANTE: Para filtrar chats
+        'participants': [senderId, receiverId],
+        'conversationId': conversationId,
         'text': messageText,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
       });
-
       print("✅ Mensaje enviado con éxito.");
       _messageController.clear();
     } catch (e) {
@@ -116,7 +175,23 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     }
   }
 
-
+  /// Muestra un pop up indicando que se debe esperar a que el receptor responda.
+  void _mostrarPopUpEspera() {
+    final String receptor = _chatPartnerData?['name'] ?? "el usuario";
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Espera un momento"),
+        content: Text("Espera a que $receptor te responda."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Ok"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,13 +209,6 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
         onTap: () => Navigator.pop(context),
         child: Stack(
           children: [
-            // Fondo desenfocado: se aplica el blur sin oscurecer el contenido original
-            /*Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(color: Colors.transparent),
-              ),
-            ),*/
             // Pop-up central
             Positioned(
               left: MediaQuery.of(context).size.width * 0.1,
@@ -223,7 +291,8 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.grey,
-                backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                backgroundImage:
+                    photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -247,57 +316,69 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     );
   }
 
-  /// Área de mensajes: muestra los mensajes (por ahora, un placeholder).
+  /// Área de mensajes: ahora se filtra por conversationId para mostrar solo los mensajes de esta conversación.
   Widget _buildMessagesList() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance
-        .collection('messages')
-        .where('participants', arrayContains: _currentUser?.uid)
-        .orderBy('timestamp', descending: true)
-        .snapshots(),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData) {
-        return const Center(child: CircularProgressIndicator());
-      }
+    if (_currentUser == null) return const SizedBox.shrink();
 
-      final messages = snapshot.data!.docs;
-      if (messages.isEmpty) {
-        return const Center(
-          child: Text(
-            "Aún no hay mensajes.",
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-        );
-      }
+    final String senderId = _currentUser!.uid;
+    final String receiverId = widget.chatPartnerId.trim();
+    final String conversationId = senderId.compareTo(receiverId) < 0
+        ? "${senderId}_$receiverId"
+        : "${receiverId}_$senderId";
 
-      return ListView.builder(
-        reverse: true,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        itemCount: messages.length,
-        itemBuilder: (context, index) {
-          final message = messages[index].data() as Map<String, dynamic>;
-          final bool isMe = message['senderId'] == _currentUser?.uid;
-          return Align(
-            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              margin: const EdgeInsets.symmetric(vertical: 5),
-              decoration: BoxDecoration(
-                color: isMe ? Colors.blueAccent : Colors.grey[700],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                message['text'] ?? '',
-                style: TextStyle(color: isMe ? Colors.white : Colors.black87),
-              ),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('messages')
+          .where('conversationId', isEqualTo: conversationId)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final messages = snapshot.data!.docs;
+        if (messages.isEmpty) {
+          return const Center(
+            child: Text(
+              "Aún no hay mensajes.",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
           );
-        },
-      );
-    },
-  );
-}
-
+        }
+        return ListView.builder(
+          reverse: true,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          itemCount: messages.length,
+          itemBuilder: (context, index) {
+            final message = messages[index].data() as Map<String, dynamic>;
+            final bool isMe = message['senderId'] == senderId;
+            DateTime messageTime;
+            if (message['timestamp'] is Timestamp) {
+              messageTime = (message['timestamp'] as Timestamp).toDate();
+            } else {
+              messageTime = DateTime.now();
+            }
+            return Align(
+              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.symmetric(vertical: 5),
+                decoration: BoxDecoration(
+                  color: isMe ? Colors.blueAccent : Colors.grey[700],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  message['text'] ?? '',
+                  style: TextStyle(
+                      color: isMe ? Colors.white : Colors.black87),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   /// Área de entrada de mensaje: campo de texto y botón enviar.
   Widget _buildMessageInput() {
@@ -325,7 +406,7 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
           ),
           IconButton(
             icon: const Icon(Icons.send, color: AppColors.blue),
-            onPressed: _sendMessage,
+            onPressed: _checkAndSendMessage,
           ),
         ],
       ),

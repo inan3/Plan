@@ -1,5 +1,3 @@
-// lib/explore_screen/users_grid.dart
-
 import 'dart:ui'; // Para BackdropFilter, ImageFilter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +7,8 @@ import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 
 // Ajusta según tu proyecto
-import 'users_managing/user_info_inside_chat.dart'; 
+import 'users_managing/user_info_inside_chat.dart';
 import 'users_managing/user_info_check.dart'; // Contiene FrostedPlanDialog, etc.
-
 import 'options_for_plans.dart'; // Para el menú de 3 puntos (si lo usas)
 
 class UsersGrid extends StatelessWidget {
@@ -42,14 +39,102 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  /// Comprueba en Firestore si el usuario tiene al menos un plan creado
-  Future<bool> _hasUserPlan(String userId) async {
-    final QuerySnapshot snap = await FirebaseFirestore.instance
+  /// Obtiene todos los planes creados por [userId].
+  Future<List<PlanModel>> _fetchUserPlans(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: userId)
-        .limit(1)
         .get();
-    return snap.docs.isNotEmpty;
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return PlanModel.fromMap(data);
+    }).toList();
+  }
+
+  /// Devuelve la lista con SOLO el creador, en caso de que no haya participantes.
+  Future<List<Map<String, dynamic>>> _fetchCreatorOnly(String creatorUid) async {
+    if (creatorUid.isEmpty) return [];
+
+    final creatorDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(creatorUid)
+        .get();
+
+    if (!creatorDoc.exists) return [];
+
+    final userData = creatorDoc.data() as Map<String, dynamic>;
+    return [
+      {
+        'isCreator': true,
+        'photoUrl': userData['photoUrl'] ?? '',
+        'name': userData['name'] ?? 'Usuario',
+        'age': (userData['age'] ?? '').toString(),
+      }
+    ];
+  }
+
+  /// Busca el doc del plan y construye la lista: primero el creador, luego los participantes.
+  Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
+    final docSnap = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+
+    if (!docSnap.exists) return [];
+
+    final data = docSnap.data() as Map<String, dynamic>;
+
+    // Suponiendo que en Firestore guardas un array con los UIDs de participantes.
+    final rawParticipants = data['participants'];
+
+    // 1) Si NO existe el array o no es List, mostramos sólo al creador.
+    if (rawParticipants == null || rawParticipants is! List) {
+      return _fetchCreatorOnly(plan.createdBy ?? '');
+    }
+
+    // 2) Primero añadimos el creador (si existe) a la lista final
+    final List<Map<String, dynamic>> result = [];
+    final String? creatorUid = plan.createdBy;
+    if (creatorUid != null && creatorUid.isNotEmpty) {
+      final creatorDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(creatorUid)
+          .get();
+      if (creatorDoc.exists) {
+        final creatorData = creatorDoc.data() as Map<String, dynamic>;
+        result.add({
+          'isCreator': true,
+          'photoUrl': creatorData['photoUrl'] ?? '',
+          'name': creatorData['name'] ?? 'Usuario',
+          'age': (creatorData['age'] ?? '').toString(),
+        });
+      }
+    }
+
+    // 3) Ahora añadimos cada participante distinto del creador
+    for (final participantUid in rawParticipants) {
+      if (participantUid is! String) continue;
+      if (participantUid == creatorUid) continue;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(participantUid)
+          .get();
+
+      if (!userDoc.exists) continue;
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+
+      result.add({
+        'isCreator': false,
+        'photoUrl': userData['photoUrl'] ?? '',
+        'name': userData['name'] ?? 'Usuario',
+        'age': (userData['age'] ?? '').toString(),
+      });
+    }
+
+    return result;
   }
 
   Widget _buildUserCard(Map<String, dynamic> userData, BuildContext context) {
@@ -67,8 +152,9 @@ class UsersGrid extends StatelessWidget {
       );
     }
 
-    return FutureBuilder<bool>(
-      future: _hasUserPlan(uid),
+    // Aquí obtenemos TODOS los planes del usuario
+    return FutureBuilder<List<PlanModel>>(
+      future: _fetchUserPlans(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return SizedBox(
@@ -90,14 +176,19 @@ class UsersGrid extends StatelessWidget {
           );
         }
 
-        final bool hasPlan = snapshot.data ?? false;
-        if (!hasPlan) {
-          // NO tiene plan
+        final plans = snapshot.data ?? [];
+
+        // Si NO tiene planes → tarjeta "sin plan"
+        if (plans.isEmpty) {
           return _buildNoPlanLayout(context, userData);
-        } else {
-          // SÍ tiene plan
-          return _buildPlanLayout(context, userData);
         }
+
+        // Si SÍ tiene planes, mostramos una tarjeta POR CADA plan
+        return Column(
+          children: plans.map((plan) {
+            return _buildPlanLayout(context, userData, plan);
+          }).toList(),
+        );
       },
     );
   }
@@ -118,7 +209,7 @@ class UsersGrid extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 15),
         child: Stack(
           children: [
-            // Fondo con la foto de perfil (o placeholder)
+            // Fondo con la foto de perfil
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: (fallbackPhotoUrl != null && fallbackPhotoUrl.isNotEmpty)
@@ -252,20 +343,25 @@ class UsersGrid extends StatelessWidget {
   // -----------------------------------------------------------------------
   // Layout cuando SÍ tiene plan
   // -----------------------------------------------------------------------
-  Widget _buildPlanLayout(BuildContext context, Map<String, dynamic> userData) {
+  Widget _buildPlanLayout(
+    BuildContext context,
+    Map<String, dynamic> userData,
+    PlanModel plan,
+  ) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String userHandle = userData['handle']?.toString() ?? '@usuario';
     final String? uid = userData['uid']?.toString();
-    final String? planBackground = userData['planBackground']?.toString();
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
-    final String? backgroundImage =
-        (planBackground != null && planBackground.isNotEmpty)
-            ? planBackground
-            : fallbackPhotoUrl;
 
-    final String caption =
-        userData['caption']?.toString() ?? 'Descripción breve o #hashtags';
-    // Ejemplo de contadores
+    // Si tienes un campo "planBackground" en Firestore, lo usarías aquí:
+    final String? backgroundImage = null; // Ajusta según tu caso.
+
+    // Usamos la descripción del plan como "caption"
+    final String caption = plan.description.isNotEmpty
+        ? plan.description
+        : 'Descripción breve o #hashtags';
+
+    // Contadores de ejemplo (ficticios)
     final String likesCount = '1245';
     final String commentsCount = '173';
     final String sharesCount = '227';
@@ -277,21 +373,13 @@ class UsersGrid extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 15),
         child: Stack(
           children: [
-            // Imagen de fondo (tap -> pop-up plan)
+            // Imagen de fondo (planBackground o la del usuario)
             GestureDetector(
               onTap: () {
-                final plan = PlanModel.fromMap({
-                  'id': userData['planId'] ?? (uid ?? ''),
-                  'type': userData['planType'] ?? 'Plan',
-                  'description': userData['caption'] ?? '',
-                  'date': userData['planDate'] ?? DateTime.now(),
-                  'createdAt': userData['planCreatedAt'] ?? DateTime.now(),
-                  'minAge': userData['planMinAge'] ?? 18,
-                  'maxAge': userData['planMaxAge'] ?? 99,
-                  'maxParticipants': userData['planMaxParticipants'],
-                  'location': userData['planLocation'] ?? '',
-                });
-
+                // Definimos safeUserId a partir de uid
+                final String safeUserId = uid ?? '';
+                // Al tocar, abrimos el FrostedPlanDialog con ESTE plan,
+                // y pasamos la función que carga participantes
                 showGeneralDialog(
                   context: context,
                   barrierDismissible: true,
@@ -302,12 +390,27 @@ class UsersGrid extends StatelessWidget {
                   transitionBuilder: (ctx, anim1, anim2, child) {
                     return FadeTransition(
                       opacity: CurvedAnimation(
-                        parent: anim1,
-                        curve: Curves.easeOut,
-                      ),
-                      child: FrostedPlanDialog(
-                        plan: plan,
-                        fetchParticipants: (PlanModel p) async => [],
+                          parent: anim1, curve: Curves.easeOut),
+                      child: Center(
+                        child: Container(
+                          margin: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[900]!.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              // Se le asigna una key única basada en safeUserId
+                              child: UserInfoInsideChat(
+                                key: ValueKey(safeUserId),
+                                chatPartnerId: safeUserId,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -326,7 +429,7 @@ class UsersGrid extends StatelessWidget {
                     : _buildPlaceholder(),
               ),
             ),
-            // Avatar + nombre (tap -> perfil)
+            // Avatar + nombre (tap -> abre perfil)
             Positioned(
               top: 10,
               left: 10,
@@ -403,7 +506,6 @@ class UsersGrid extends StatelessWidget {
               right: 16,
               child: _buildThreeDotsMenu(userData),
             ),
-
             // Parte inferior: contadores + caption
             Positioned(
               bottom: 0,
@@ -488,9 +590,6 @@ class UsersGrid extends StatelessWidget {
                 ),
               ),
             ),
-
-            // *** Importante: NO hay action-buttons de Invitar/Chat en la parte de abajo
-            // cuando SÍ tiene plan. (Se retiran para cumplir con tu petición)
           ],
         ),
       ),
@@ -510,7 +609,7 @@ class UsersGrid extends StatelessWidget {
           iconPath: 'assets/agregar-usuario.svg',
           label: 'Invítale a un Plan',
           onTap: () {
-            // Acción futura
+            // Tu lógica para invitar
           },
         ),
         const SizedBox(width: 16),
@@ -519,6 +618,7 @@ class UsersGrid extends StatelessWidget {
           iconPath: 'assets/mensaje.svg',
           label: null,
           onTap: () {
+            // Al abrir el chat, se le asigna una key única
             showGeneralDialog(
               context: context,
               barrierDismissible: true,
@@ -529,7 +629,10 @@ class UsersGrid extends StatelessWidget {
               transitionBuilder: (ctx, anim1, anim2, child) {
                 return FadeTransition(
                   opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-                  child: UserInfoInsideChat(chatPartnerId: safeUserId),
+                  child: UserInfoInsideChat(
+                    key: ValueKey(safeUserId),
+                    chatPartnerId: safeUserId,
+                  ),
                 );
               },
             );
@@ -624,6 +727,7 @@ class UsersGrid extends StatelessWidget {
         if (renderBox == null) return;
         final offset = renderBox.localToGlobal(Offset.zero);
         final size = renderBox.size;
+
         showPlanOptions(
           iconKey.currentContext!,
           userData,

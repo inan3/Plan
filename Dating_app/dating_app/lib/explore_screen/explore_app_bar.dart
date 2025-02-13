@@ -2,17 +2,22 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../main/colors.dart';
 import 'explore_screen_filter.dart';
+import 'notification_screen.dart';
 
 class ExploreAppBar extends StatelessWidget {
   final VoidCallback onMenuPressed;
-  final VoidCallback onFilterPressed; // Este callback se usará para notificaciones.
+  final VoidCallback onFilterPressed;
+  final VoidCallback onNotificationPressed; // Callback para notificaciones
   final ValueChanged<String> onSearchChanged;
+  final Stream<int>? notificationCountStream; // Stream para contar notificaciones
 
   const ExploreAppBar({
     super.key,
     required this.onMenuPressed,
     required this.onFilterPressed,
+    required this.onNotificationPressed,
     required this.onSearchChanged,
+    this.notificationCountStream,
   });
 
   @override
@@ -23,7 +28,7 @@ class ExploreAppBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Botón de Menú en la izquierda
+          // Botón de Menú a la izquierda
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             child: ClipRRect(
@@ -63,7 +68,7 @@ class ExploreAppBar extends StatelessWidget {
 
           // Logo desplazado hacia la derecha
           Transform.translate(
-            offset: const Offset(34, 0), // Ajusta este valor para desplazar el logo a la derecha
+            offset: const Offset(34, 0),
             child: Image.asset(
               'assets/plan-sin-fondo.png',
               height: 80,
@@ -104,15 +109,13 @@ class ExploreAppBar extends StatelessWidget {
                           width: 20,
                           height: 20,
                         ),
-                        onPressed: () {
-                          showExploreFilterDialog(context);
-                        },
+                        onPressed: onFilterPressed,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
-                // Botón de notificación
+                // Botón de notificación con badge posicionado
                 ClipRRect(
                   borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(
@@ -132,16 +135,54 @@ class ExploreAppBar extends StatelessWidget {
                         ],
                         border: Border.all(color: Colors.white.withOpacity(0.3)),
                       ),
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset(
-                          'assets/notificacion.png',
-                          color: AppColors.blue,
-                          width: 20,
-                          height: 20,
-                        ),
-                        onPressed: onFilterPressed,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: Image.asset(
+                              'assets/notificacion.png',
+                              color: AppColors.blue,
+                              width: 20,
+                              height: 20,
+                            ),
+                            onPressed: onNotificationPressed,
+                          ),
+                          if (notificationCountStream != null)
+                            Positioned(
+                              right: 11,
+                              top: 10,
+                              child: StreamBuilder<int>(
+                                stream: notificationCountStream,
+                                builder: (context, snapshot) {
+                                  final count = snapshot.data ?? 0;
+                                  if (count == 0) return const SizedBox();
+                                  return Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 13,
+                                      minHeight: 13,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        count > 9 ? '9+' : '$count',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 8,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

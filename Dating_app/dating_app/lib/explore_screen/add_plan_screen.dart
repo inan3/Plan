@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:dating_app/main/colors.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
@@ -7,66 +8,94 @@ import 'plan_action_button.dart'; // Asegúrate de importar tu widget PlanAction
 class AddPlanScreen extends StatelessWidget {
   const AddPlanScreen({super.key});
 
+  // Widget auxiliar para aplicar efecto frosted glass sin sombra
+  Widget _buildFrostedButton({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text(
-          '¡Crea o Únete a un Plan!',
-          style: TextStyle(
-            fontFamily: 'Inter', // Asegúrate de tener la fuente Inter incluida en pubspec.yaml
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      // Utilizamos un Stack para colocar los botones flotantes sobre el contenido principal.
+      // Se elimina el AppBar para que todo esté sobre el mismo fondo
       body: Stack(
         children: [
-          // Contenido principal de la pantalla
-          const Center(
-            child: Text(
-              'Add Plan Screen',
-              style: TextStyle(fontSize: 18),
+          // Fondo degradado de azul oscuro a rojo oscuro.
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFC7A9E9),
+                  const Color.fromARGB(255, 195, 94, 94),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
-          // Botón flotante "Unirse a Plan"
-          Positioned(
-            bottom: 160,
-            left: 20,
-            child: PlanActionButton(
-              heroTag: 'joinPlan',
-              label: 'Unirse a Plan',
-              iconPath: 'assets/union.png', // Se usa Image.asset para PNG
-              onPressed: () => JoinPlanRequestScreen.showJoinPlanDialog(context),
-              margin: const EdgeInsets.only(left: 0, bottom: 0),
-              borderColor: const Color.fromARGB(236, 0, 4, 227),
-              borderWidth: 1,
-              textColor: AppColors.blue,
-              iconColor: AppColors.blue,
-            ),
-          ),
-          // Botón flotante "Crear Plan"
-          Positioned(
-            bottom: 160,
-            right: 20,
-            child: PlanActionButton(
-              heroTag: 'createPlan',
-              label: 'Crear Plan',
-              iconPath: 'assets/anadir.svg', // Se usa flutter_svg para SVG
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NewPlanCreationScreen(),
+          // Contenido principal y botones
+          SafeArea(
+            child: Stack(
+              children: [
+                // Botón "Unirse a Plan" en la esquina superior izquierda con efecto frosted glass
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: _buildFrostedButton(
+                    child: PlanActionButton(
+                      heroTag: 'joinPlan',
+                      label: 'Unirse a Plan',
+                      iconPath: 'assets/union.png',
+                      onPressed: () =>
+                          JoinPlanRequestScreen.showJoinPlanDialog(context),
+                      margin: const EdgeInsets.all(0),
+                      backgroundColor: Colors.transparent,
+                      borderColor: const Color.fromARGB(236, 0, 4, 227),
+                      borderWidth: 1,
+                      textColor: AppColors.blue,
+                      iconColor: AppColors.blue,
+                    ),
                   ),
-                );
-              },
-              margin: const EdgeInsets.only(right: 0, bottom: 0),
-              backgroundColor: AppColors.blue,
-              borderWidth: 0,
-              textColor: Colors.white,
-              iconColor: Colors.white,
+                ),
+                // Botón "Crear Plan" en la esquina superior derecha con efecto frosted glass
+                Positioned(
+                  top: 20,
+                  right: 20,
+                  child: _buildFrostedButton(
+                    child: PlanActionButton(
+                      heroTag: 'createPlan',
+                      label: 'Crear Plan',
+                      // Se actualiza el ícono para usar assets/anadir.svg
+                      iconPath: 'assets/anadir.svg',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NewPlanCreationScreen(),
+                          ),
+                        );
+                      },
+                      margin: const EdgeInsets.all(0),
+                      backgroundColor: Colors.transparent,
+                      borderWidth: 0,
+                      textColor: Colors.white,
+                      iconColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
