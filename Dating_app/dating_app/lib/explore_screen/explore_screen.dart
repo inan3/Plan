@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dating_app/main/colors.dart';
 
-// Importa el diálogo de filtros
+// Importa el diálogo de filtros (puede seguir usando el mismo si lo requieres)
 import 'explore_screen_filter.dart';
 
 import 'explore_app_bar.dart';
@@ -19,61 +19,66 @@ import 'users_managing/user_info_check.dart';
 import 'search_screen.dart'; // Pantalla de búsqueda
 import 'profile_screen.dart'; // Gestión del perfil
 import 'notification_screen.dart'; // Pantalla de notificaciones
-import 'add_plan_screen.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'package:dating_app/plan_joining/plan_join_request.dart';
 
 class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({super.key});
+  const ExploreScreen({Key? key}) : super(key: key);
 
   @override
   ExploreScreenState createState() => ExploreScreenState();
 }
 
 class ExploreScreenState extends State<ExploreScreen> {
+  // _currentIndex: pestaña activa (0: Explore, 1: Search, 2: Chats, 3: Perfil)
   int _currentIndex = 0;
+  // _selectedIconIndex: icono resaltado en el dock (índices 0..4; 2 es "añadir")
+  int _selectedIconIndex = 0;
+  // Variable para controlar si se muestra el pop up (no modal)
+  bool _showPopup = false;
+
   final double _iconSize = 30.0;
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final GlobalKey<MainSideBarScreenState> _menuKey =
-      GlobalKey<MainSideBarScreenState>();
+  final GlobalKey<MainSideBarScreenState> _menuKey = GlobalKey<MainSideBarScreenState>();
 
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
   int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
-  // Suponemos que conocemos la ubicación actual del usuario (ejemplo: Barcelona).
+  // Ubicación actual (ejemplo: Barcelona)
   final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
 
-  // Este mapa se actualizará cuando se apliquen los filtros desde el diálogo.
+  // Filtros aplicados desde el diálogo.
   Map<String, dynamic> appliedFilters = {};
 
-  // Variables para controlar el espacio entre secciones
+  // Espaciado entre secciones.
   double _spacingPopularToNearby = 10;
   double _popularTopSpacing = 5;
 
+  // Lista de páginas para las pestañas (excepto Explore que es 0)
   late List<Widget> _otherPages;
 
   @override
   void initState() {
     super.initState();
     _setStatusBarDark();
+    // Definición de páginas: 1 → Search, 2 → Chats, 3 → Perfil.
     _otherPages = [
       const SearchScreen(),
-      const AddPlanScreen(),
       const ChatsScreen(),
       ProfileScreen(),
     ];
     _loadUserInterest();
+    _currentIndex = 0;
+    _selectedIconIndex = 0;
   }
 
   void _setStatusBarDark() {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
   }
 
   void _onSearchChanged(String value) {
@@ -81,7 +86,6 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onFilterPressed() async {
-    // Abre el diálogo de filtros y actualiza los filtros aplicados
     final result = await showExploreFilterDialog(context);
     if (result != null) {
       setState(() {
@@ -90,7 +94,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  // Carga la preferencia de "interest" (Hombres/Mujeres/Todo el mundo).
   void _loadUserInterest() async {
     if (currentUser != null) {
       try {
@@ -98,7 +101,6 @@ class ExploreScreenState extends State<ExploreScreen> {
             .collection('users')
             .doc(currentUser!.uid)
             .get();
-
         if (userDoc.exists) {
           final String interest = userDoc['interest'].toString();
           int defaultIndex;
@@ -119,9 +121,9 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  // Función para calcular la distancia entre dos puntos (Haversine)
+  // Función para calcular la distancia (Haversine)
   double computeDistance(double lat1, double lng1, double lat2, double lng2) {
-    const earthRadius = 6371; // en km
+    const earthRadius = 6371; // km
     double dLat = _deg2rad(lat2 - lat1);
     double dLng = _deg2rad(lng2 - lng1);
     double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
@@ -133,17 +135,13 @@ class ExploreScreenState extends State<ExploreScreen> {
     return earthRadius * c;
   }
 
-  double _deg2rad(double deg) {
-    return deg * (math.pi / 180);
-  }
+  double _deg2rad(double deg) => deg * (math.pi / 180);
 
-  /// Construye la pantalla Explore con el AppBar y las secciones correspondientes.
   Widget _buildExplorePage() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 0),
       child: Column(
         children: [
-          // AppBar de Explore (fijo)
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
             onFilterPressed: _onFilterPressed,
@@ -158,33 +156,25 @@ class ExploreScreenState extends State<ExploreScreen> {
               );
             },
             onSearchChanged: _onSearchChanged,
-            // Se pasa el stream para mostrar el badge en el icono de notificación
             notificationCountStream: _notificationCountStream(),
           ),
-          // Sección de usuarios populares (fija)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: PopularUsersSection(
-              topSpacing: _popularTopSpacing,
-            ),
+            child: PopularUsersSection(topSpacing: _popularTopSpacing),
           ),
           SizedBox(height: _spacingPopularToNearby),
-          // Sección de usuarios cercanos: desplazable.
           Expanded(child: _buildNearbySection()),
         ],
       ),
     );
   }
 
-  /// Sección de usuarios cercanos.
   Widget _buildNearbySection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.black),
-          );
+          return const Center(child: CircularProgressIndicator(color: Colors.black));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
@@ -194,8 +184,6 @@ class ExploreScreenState extends State<ExploreScreen> {
             ),
           );
         }
-
-        // Excluir al usuario actual.
         final validUsers = snapshot.data!.docs.where((doc) {
           final uid = doc.data() is Map<String, dynamic>
               ? (doc.data() as Map<String, dynamic>)['uid']
@@ -203,21 +191,15 @@ class ExploreScreenState extends State<ExploreScreen> {
           return uid != null && uid != currentUser?.uid;
         }).toList();
 
-        // Filtrar por género según selectedSearchIndex.
         List<QueryDocumentSnapshot> filteredUsers = validUsers;
         if (selectedSearchIndex == 0) {
-          filteredUsers = validUsers
-              .where((doc) =>
-                  (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre')
-              .toList();
+          filteredUsers = validUsers.where((doc) =>
+              (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre').toList();
         } else if (selectedSearchIndex == 1) {
-          filteredUsers = validUsers
-              .where((doc) =>
-                  (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer')
-              .toList();
+          filteredUsers = validUsers.where((doc) =>
+              (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer').toList();
         }
 
-        // Filtrar por rango de edad.
         filteredUsers = filteredUsers.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final int userAge = int.tryParse(data['age'].toString()) ?? 0;
@@ -225,47 +207,32 @@ class ExploreScreenState extends State<ExploreScreen> {
               userAge <= selectedAgeRange.end.round();
         }).toList();
 
-        // Filtrar por región si se aplicó el filtro.
         if (appliedFilters.containsKey('regionBusqueda') &&
             (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
-          final String regionFilter =
-              (appliedFilters['regionBusqueda'] as String).toLowerCase();
+          final String regionFilter = (appliedFilters['regionBusqueda'] as String).toLowerCase();
           filteredUsers = filteredUsers.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             final String city = (data['city'] ?? '').toString().toLowerCase();
-            final String country =
-                (data['country'] ?? '').toString().toLowerCase();
+            final String country = (data['country'] ?? '').toString().toLowerCase();
             return city.contains(regionFilter) || country.contains(regionFilter);
           }).toList();
         }
 
-        // Ordenar por distancia respecto a la ubicación actual.
         filteredUsers.sort((a, b) {
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
-          final double latA =
-              double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
-          final double lngA =
-              double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
-          final double latB =
-              double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
-          final double lngB =
-              double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-          final distanceA = computeDistance(
-              currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
-          final distanceB = computeDistance(
-              currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
+          final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
+          final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
+          final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
+          final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
+          final distanceA = computeDistance(currentLocation['lat']!, currentLocation['lng']!, latA, lngA);
+          final distanceB = computeDistance(currentLocation['lat']!, currentLocation['lng']!, latB, lngB);
           return distanceA.compareTo(distanceB);
         });
 
-        final allUsers = filteredUsers;
-
         return UsersGrid(
-          users: allUsers,
+          users: filteredUsers,
           onUserTap: (userDoc) {
-            final Map<String, dynamic> data = userDoc is QueryDocumentSnapshot
-                ? (userDoc.data() as Map<String, dynamic>)
-                : userDoc as Map<String, dynamic>;
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -278,13 +245,11 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Se muestra el badge de notificaciones para el ExploreAppBar.
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
         .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('type',
-            whereIn: ['join_request', 'join_accepted', 'join_rejected'])
+        .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -298,148 +263,160 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Método para mostrar el pop up con las opciones "Crear Plan" y "Unirse a Plan"
-  /// posicionado justo arriba del dock, compartiendo el mismo fondo.
-  void _showPlanOptionsPopup(BuildContext context) {
-    // Valores para posicionar el pop up: el dock se posiciona a 20 desde abajo y tiene altura 70.
+  // Pop up no modal con las opciones "Crear Plan" y "Unirse a Plan"
+  Widget _buildPopup() {
     const double dockBottomMargin = 50.0;
     const double dockHeight = 70.0;
-
-    showGeneralDialog(
-      context: context,
-      barrierLabel: "Plan Options",
-      barrierDismissible: true,
-      barrierColor: Colors.transparent, // Sin oscurecer el fondo
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, anim1, anim2) {
-        return Stack(
-          children: [
-            // El Positioned limita el tamaño al contenido del pop up.
-            Positioned(
-              bottom: dockBottomMargin + dockHeight,
-              left: 40,
-              right: 40,
-              child: Material(
-                color: Colors.transparent,
-                // Dentro de showGeneralDialog en _showPlanOptionsPopup...
-                // Dentro de showGeneralDialog en _showPlanOptionsPopup...
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black26, // Mismo fondo que el dock
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min, // Sólo ocupa lo justo para sus hijos
-                    children: [
-                      // Botón "Crear Plan" con icono de assets/anadir.svg
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context).pop(); // Cierra el pop up
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NewPlanCreationScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          alignment: Alignment.center,
-                          // Fijamos la altura del botón para que no cambie según el icono
-                          height: 60,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Icono en un SizedBox de tamaño fijo
-                              SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: SvgPicture.asset(
-                                  'assets/anadir.svg',
-                                  color: Colors.white,
-                                  // Puedes ajustar scale o BoxFit si es necesario
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Crear Plan",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Línea fina blanca separadora
-                      Container(
-                        height: 1,
-                        color: Colors.white,
-                      ),
-                      // Botón "Unirse a Plan" con icono de assets/union.svg
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          JoinPlanRequestScreen.showJoinPlanDialog(context);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          alignment: Alignment.center,
-                          height: 60,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: SvgPicture.asset(
-                                  'assets/union.svg',
-                                  color: Colors.white,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Unirse a Plan",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+    return Positioned(
+      // Posicionar el pop up en la parte superior del dock
+      bottom: dockBottomMargin + dockHeight,
+      left: 40,
+      right: 40,
+      child: Material(
+        color: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 38, 37, 37).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
                 ),
               ),
-            )
-          ],
-        );
-      },
-      transitionBuilder: (context, anim1, anim2, child) {
-        return FadeTransition(
-          opacity: anim1,
-          child: child,
-        );
-      },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Botón "Crear Plan"
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _showPopup = false;
+                      });
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NewPlanCreationScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 60,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Transform.scale(
+                            scale: 1.5,
+                            child: SvgPicture.asset(
+                              'assets/anadir.svg',
+                              color: Colors.white,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Crear Plan",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Línea separadora
+                  Container(
+                    height: 1,
+                    color: Colors.white,
+                  ),
+                  // Botón "Unirse a Plan"
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _showPopup = false;
+                      });
+                      JoinPlanRequestScreen.showJoinPlanDialog(context);
+                    },
+                    child: Container(
+                      height: 60,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: SvgPicture.asset(
+                              'assets/union.svg',
+                              color: Colors.white,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Unirse a un Plan",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  // Nuevo callback para el Dock: si se pulsa el ícono de anadir (índice 2), se muestra el pop up.
-  void _onDockIconTap(int index) {
-    if (index == 2) {
-      _showPlanOptionsPopup(context);
-    } else {
+  // Mapea el índice del dock (0,1,3,4) a la página correspondiente.
+  int _mapDockIndexToPageIndex(int dockIndex) {
+    switch (dockIndex) {
+      case 0:
+        return 0; // Explore
+      case 1:
+        return 1; // Search
+      case 3:
+        return 2; // Chats
+      case 4:
+        return 3; // Perfil
+      default:
+        return _currentIndex;
+    }
+  }
+
+  // Callback para el tap en el dock.
+  void _onDockIconTap(int dockIndex) {
+    if (dockIndex == 2) {
+      // Pulsado "añadir": mostrar el pop up y resaltar el icono
       setState(() {
-        _currentIndex = index;
+        _selectedIconIndex = 2;
+        _showPopup = true;
+      });
+    } else {
+      // Si se pulsa otro icono, cerramos el pop up (si está abierto) y navegamos inmediatamente
+      if (_showPopup) {
+        setState(() {
+          _showPopup = false;
+        });
+      }
+      setState(() {
+        _currentIndex = _mapDockIndexToPageIndex(dockIndex);
+        _selectedIconIndex = dockIndex;
       });
     }
   }
@@ -452,42 +429,58 @@ class ExploreScreenState extends State<ExploreScreen> {
         statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Stack(
-          children: [
-            _currentIndex == 0
-                ? _buildExplorePage()
-                : _otherPages[_currentIndex - 1],
-            // Barra inferior fija con efecto frosted.
-            Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: DockSection(
-                  currentIndex: _currentIndex,
-                  onTapIcon: _onDockIconTap,
-                  // Se elimina el stream de notificaciones para evitar que aparezca en "anadir.svg"
-                  notificationCountStream: null,
-                  unreadMessagesCountStream: _unreadMessagesCountStream(),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromARGB(255, 217, 190, 244),
+                Color.fromARGB(255, 255, 255, 255),
+                Color.fromARGB(255, 190, 190, 236),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Página actual (Explore o la otra según _currentIndex)
+              _currentIndex == 0 ? _buildExplorePage() : _otherPages[_currentIndex - 1],
+              // Pop up no modal (visible si _showPopup es true)
+              if (_showPopup) _buildPopup(),
+              // Dock inferior (siempre encima del pop up)
+              Positioned(
+                bottom: 20,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: DockSection(
+                    currentIndex: _currentIndex,
+                    selectedIconIndex: _selectedIconIndex,
+                    onTapIcon: _onDockIconTap,
+                    notificationCountStream: null,
+                    unreadMessagesCountStream: _unreadMessagesCountStream(),
+                  ),
                 ),
               ),
-            ),
-            // Menú lateral.
-            MainSideBarScreen(
-              key: _menuKey,
-              onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
-            ),
-          ],
+              // Menú lateral
+              MainSideBarScreen(
+                key: _menuKey,
+                onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Asegúrate de que solo exista UNA definición de DockSection en tu proyecto.
+// ---------------------
+// DEFINICIÓN DEL DOCK
+// ---------------------
 class DockSection extends StatelessWidget {
-  final int currentIndex;
+  final int currentIndex; // Opcional, para lógica extra
+  final int selectedIconIndex; // Ícono resaltado (0..4)
   final Function(int) onTapIcon;
   final double iconSize;
   final double selectedBackgroundSize;
@@ -499,8 +492,9 @@ class DockSection extends StatelessWidget {
   final double containerWidth;
 
   const DockSection({
-    super.key,
+    Key? key,
     required this.currentIndex,
+    required this.selectedIconIndex,
     required this.onTapIcon,
     this.iconSize = 23.0,
     this.selectedBackgroundSize = 60.0,
@@ -510,7 +504,7 @@ class DockSection extends StatelessWidget {
     this.containerWidth = 328.0,
     this.notificationCountStream,
     this.unreadMessagesCountStream,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -567,7 +561,7 @@ class DockSection extends StatelessWidget {
     double? overrideIconSize,
   }) {
     final double effectiveIconSize = overrideIconSize ?? iconSize;
-    final bool isSelected = currentIndex == index;
+    final bool isSelected = selectedIconIndex == index;
     return Stack(
       clipBehavior: Clip.none,
       children: [

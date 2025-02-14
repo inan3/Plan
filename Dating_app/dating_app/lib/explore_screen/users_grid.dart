@@ -24,7 +24,7 @@ class UsersGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.only(bottom: 100), // Ajusta el valor según la altura del dock
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       itemCount: users.length,
@@ -33,7 +33,6 @@ class UsersGrid extends StatelessWidget {
         final Map<String, dynamic> userData = userDoc is QueryDocumentSnapshot
             ? (userDoc.data() as Map<String, dynamic>)
             : userDoc as Map<String, dynamic>;
-
         return _buildUserCard(userData, context);
       },
     );
@@ -374,61 +373,44 @@ class UsersGrid extends StatelessWidget {
         child: Stack(
           children: [
             // Imagen de fondo (planBackground o la del usuario)
-            GestureDetector(
-              onTap: () {
-                // Definimos safeUserId a partir de uid
-                final String safeUserId = uid ?? '';
-                // Al tocar, abrimos el FrostedPlanDialog con ESTE plan,
-                // y pasamos la función que carga participantes
-                showGeneralDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierLabel: 'Cerrar',
-                  barrierColor: Colors.black.withOpacity(0.4),
-                  transitionDuration: const Duration(milliseconds: 300),
-                  pageBuilder: (_, __, ___) => const SizedBox(),
-                  transitionBuilder: (ctx, anim1, anim2, child) {
-                    return FadeTransition(
-                      opacity: CurvedAnimation(
-                          parent: anim1, curve: Curves.easeOut),
-                      child: Center(
-                        child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[900]!.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              // Se le asigna una key única basada en safeUserId
-                              child: UserInfoInsideChat(
-                                key: ValueKey(safeUserId),
-                                chatPartnerId: safeUserId,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: (backgroundImage != null && backgroundImage.isNotEmpty)
-                    ? Image.network(
-                        backgroundImage,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
-              ),
-            ),
+            // Dentro de _buildPlanLayout, en el widget que envuelve el fondo del plan:
+GestureDetector(
+  onTap: () {
+    // Al pulsar, mostramos el pop up con los detalles del plan.
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      barrierColor: Colors.black.withOpacity(0.4),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return FrostedPlanDialog(
+          plan: plan,
+          fetchParticipants: _fetchPlanParticipants, // Función ya definida en UsersGrid
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: child,
+        );
+      },
+    );
+  },
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(30),
+    child: (backgroundImage != null && backgroundImage.isNotEmpty)
+        ? Image.network(
+            backgroundImage,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => _buildPlaceholder(),
+          )
+        : _buildPlaceholder(),
+  ),
+),
+
             // Avatar + nombre (tap -> abre perfil)
             Positioned(
               top: 10,
