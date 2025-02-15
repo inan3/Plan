@@ -295,12 +295,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                       setState(() {
                         _showPopup = false;
                       });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NewPlanCreationScreen(),
-                        ),
-                      );
+                      NewPlanCreationScreen.showPopup(context);
                     },
                     child: Container(
                       height: 60,
@@ -433,9 +428,8 @@ class ExploreScreenState extends State<ExploreScreen> {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color.fromARGB(255, 217, 190, 244),
-                Color.fromARGB(255, 255, 255, 255),
-                Color.fromARGB(255, 190, 190, 236),
+                Color.fromARGB(255, 239, 235, 243),
+                Color.fromARGB(255, 232, 223, 242),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
