@@ -29,6 +29,7 @@ dependencies:
   flutter_datetime_picker: ^1.5.1
   cached_network_image: ^3.2.3
   permission_handler: ^10.2.0
+  crop_your_image: ^2.0.0
 
 
 dev_dependencies:
@@ -65,6 +66,21 @@ flutter:
     - assets/users.svg
     - assets/sin-plan.svg
     - assets/anadir-imagen.svg
+    - assets/icono-deporte.svg
+    - assets/icono-cafe.svg
+    - assets/icono-cena.svg
+    - assets/icono-fiesta.svg
+    - assets/icono-cine.svg
+    - assets/icono-excursion.svg
+    - assets/icono-tour-cultural.svg
+    - assets/icono-yoga.svg
+    - assets/icono-baile.svg
+    - assets/icono-concierto-musica.svg
+    - assets/icono-juegos.svg
+    - assets/icono-sesion-estudio.svg
+    - assets/icono-viaje.svg
+    - assets/icono-charla-seminario.svg
+
 
 
   
