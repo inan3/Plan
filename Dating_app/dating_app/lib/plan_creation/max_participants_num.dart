@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../main/colors.dart';
 import '../../explore_screen/explore_screen.dart';
-import 'meeting_location_screen.dart';
+//import 'meeting_location_screen.dart';
 import '../models/plan_model.dart'; // Importa el modelo PlanModel
 
 class MaxParticipantsNumScreen extends StatefulWidget {
@@ -58,12 +58,12 @@ class _MaxParticipantsNumScreenState extends State<MaxParticipantsNumScreen> {
     }
 
     // Navegamos a la pantalla de ubicación
-    Navigator.push(
+    /*Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MeetingLocationScreen(plan: widget.plan),
       ),
-    );
+    );*/
   }
 
   @override

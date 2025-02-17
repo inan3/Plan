@@ -17,7 +17,7 @@ class _ImageCropperScreenState extends State<ImageCropperScreen> {
   Future<void> _performCrop() async {
     if (_isCropping) return;
     setState(() => _isCropping = true);
-    _cropController.crop();
+    _cropController.crop(); // O _cropController.cropCircle() si quieres recorte circular
   }
 
   @override
@@ -34,56 +34,39 @@ class _ImageCropperScreenState extends State<ImageCropperScreen> {
             child: Crop(
               controller: _cropController,
               image: widget.imageData,
-              aspectRatio: 4 / 3,
+              aspectRatio: 4 / 4,
+              // En la 2.0.0, para extraer los bytes recortados, usa 'croppedImage'
               onCropped: (CropResult result) {
                 setState(() => _isCropping = false);
-                // Usamos addPostFrameCallback para evitar llamar a Navigator.pop
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  // Verificamos el tipo del resultado mediante if/else
-                  if (result is CropSuccess) {
-                    // En caso de éxito, se obtiene la imagen recortada en result.image
-                    Navigator.pop(context, result.image);
-                  } else if (result is CropFailure) {
-                    // En caso de error, se puede manejar el error (aquí simplemente volvemos)
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.pop(context);
-                  }
-                });
+                if (result is CropSuccess) {
+                  // 'result.croppedImage' es Uint8List con la imagen recortada
+                  Navigator.pop(context, result.croppedImage);
+                } else {
+                  // CropFailure u otro caso
+                  Navigator.pop(context);
+                }
               },
-              initialRectBuilder: InitialRectBuilder.withBuilder((viewportRect, imageRect) {
-                return Rect.fromLTRB(
-                  viewportRect.left + 24,
-                  viewportRect.top + 32,
-                  viewportRect.right - 24,
-                  viewportRect.bottom - 32,
-                );
-              }),
+
+              // Fijamos el rectángulo inicial con un margen alrededor
+              initialRectBuilder: InitialRectBuilder.withBuilder(
+                (viewportRect, imageRect) {
+                  return Rect.fromLTRB(
+                    viewportRect.left + 24,
+                    viewportRect.top + 32,
+                    viewportRect.right - 24,
+                    viewportRect.bottom - 32,
+                  );
+                },
+              ),
               baseColor: Colors.blue.shade900,
               maskColor: Colors.white.withAlpha(100),
-              overlayBuilder: (context, rect) {
-                return CustomPaint(painter: MyPainter(rect));
-              },
-              progressIndicator: const CircularProgressIndicator(),
               radius: 20,
-              // La firma correcta para onMoved es: (Rect viewportRect, Rect imageRect)
-              onMoved: (viewportRect, imageRect) {
-                // Aquí puedes hacer algo con los rectángulos actuales
-              },
-              onImageMoved: (newImageRect) {
-                // Si lo necesitas, implementa algo aquí
-              },
-              onStatusChanged: (status) {
-                // Puedes reaccionar ante el cambio de estado si lo deseas
-              },
-              willUpdateScale: (newScale) {
-                // Si devolvemos false, se cancela el escalado
-                return newScale < 5;
-              },
-              cornerDotBuilder: (size, edgeAlignment) =>
-                  const DotControl(color: Colors.blue),
-              clipBehavior: Clip.none,
-              interactive: true,
+
+              // Usamos un widget personalizado para representar el punto en la esquina
+              cornerDotBuilder: (dotSize, edgeAlignment) => const _CustomDot(
+                size: 12.0,
+                color: Colors.blue,
+              ),
             ),
           ),
           Padding(
@@ -111,21 +94,26 @@ class _ImageCropperScreenState extends State<ImageCropperScreen> {
   }
 }
 
-class MyPainter extends CustomPainter {
-  final Rect rect;
-  MyPainter(this.rect);
+// Widget personalizado para dibujar puntos en las esquinas
+class _CustomDot extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _CustomDot({
+    Key? key,
+    this.size = 12.0,
+    this.color = Colors.white,
+  }) : super(key: key);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.red.withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    canvas.drawRect(rect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant MyPainter oldDelegate) {
-    return oldDelegate.rect != rect;
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
   }
 }

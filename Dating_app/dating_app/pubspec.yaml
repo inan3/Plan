@@ -80,10 +80,9 @@ flutter:
     - assets/icono-sesion-estudio.svg
     - assets/icono-viaje.svg
     - assets/icono-charla-seminario.svg
+    - assets/icono-calendario.svg
+    - assets/icono-ubicacion.svg
 
-
-
-  
   fonts:
     - family: Inter
       fonts:
