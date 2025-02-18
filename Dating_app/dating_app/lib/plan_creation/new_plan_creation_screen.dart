@@ -1,15 +1,35 @@
 import 'dart:typed_data';
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:crop_your_image/crop_your_image.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // <--- Import necesario
 import '../main/colors.dart';
 import 'plan_description_screen.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
 import 'meeting_location_screen.dart'; // Este fichero contiene MeetingLocationPopup
+
+/// Función auxiliar para convertir un SVG en BitmapDescriptor aplicando un color.
+Future<BitmapDescriptor> getCustomSvgMarker(
+  BuildContext context,
+  String assetPath,
+  Color color, {
+  double width = 48,
+  double height = 48,
+}) async {
+  String svgString = await DefaultAssetBundle.of(context).loadString(assetPath);
+  // Reemplaza el atributo fill del SVG por el color deseado.
+  final String coloredSvgString = svgString.replaceAll(
+    RegExp(r'fill="[^"]*"'),
+    'fill="#${color.value.toRadixString(16).padLeft(8, '0')}"',
+  );
+  final DrawableRoot svgDrawableRoot = await svg.fromSvgString(coloredSvgString, assetPath);
+  final ui.Picture picture = svgDrawableRoot.toPicture(size: Size(width, height));
+  final ui.Image image = await picture.toImage(width.toInt(), height.toInt());
+  final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+  return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+}
 
 class NewPlanCreationScreen {
   static void showPopup(BuildContext context) {
@@ -99,6 +119,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   Uint8List? _selectedImage;
   double headerHorizontalInset = 0;
   double fieldsHorizontalInset = 20;
+  
+  // Variable para el ícono del marcador
+  // Ahora usaremos un Future para poder reconstruir el GoogleMap cuando cambie
+  Future<BitmapDescriptor>? _markerIconFuture;
 
   final List<Map<String, dynamic>> _plans = [
     {'icon': 'assets/icono-baile.svg', 'name': 'Baile'},
@@ -117,11 +141,29 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     {'icon': 'assets/icono-yoga.svg', 'name': 'Yoga o Relajación'},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // Puedes cargar aquí un ícono por defecto si lo deseas; en este ejemplo no se carga hasta tener ubicación.
+  }
+
+  /// Función para asignar (o reasignar) el Future del marcador personalizado.
+  void _loadMarkerIcon() {
+    _markerIconFuture = getCustomSvgMarker(
+      context,
+      'assets/icono-ubicacion-interno.svg',
+      AppColors.blue,
+      width: 48,
+      height: 48,
+    );
+    setState(() {}); // Forzamos la reconstrucción para que el FutureBuilder capte el nuevo Future
+  }
+
   Widget _buildFrostedGlassContainer({required String text}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
@@ -178,7 +220,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                   child: Material(
                     elevation: 4,
                     borderRadius: BorderRadius.circular(12),
@@ -416,7 +458,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -704,6 +746,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   /// Función para abrir el popup de MeetingLocation y actualizar la ubicación
   void _navigateToMeetingLocation() {
+    // Se crea el plan con la última ubicación conocida.
     final plan = PlanModel(
       id: '',
       type: _customPlan ?? _selectedPlan ?? '',
@@ -711,21 +754,51 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       minAge: 0,
       maxAge: 0,
       location: _location ?? '',
+      latitude: _latitude ?? 0.0,
+      longitude: _longitude ?? 0.0,
       date: DateTime.now(),
       createdBy: '',
     );
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MeetingLocationPopup(plan: plan),
-      ),
-    ).then((updatedPlan) {
+    
+    showGeneralDialog(
+      context: context,
+      barrierLabel: "Ubicación",
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: MeetingLocationPopup(plan: plan),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: anim1,
+              curve: Curves.easeOutBack,
+            ),
+            child: child,
+          ),
+        );
+      },
+    ).then((updatedPlan) async {
       if (updatedPlan != null && updatedPlan is PlanModel) {
+        print("Plan actualizado recibido: ${updatedPlan.toString()}");
         setState(() {
           _location = updatedPlan.location;
           _latitude = updatedPlan.latitude;
           _longitude = updatedPlan.longitude;
         });
+        // Se carga el nuevo ícono para el marcador y se fuerza la reconstrucción del mapa.
+        _loadMarkerIcon();
+      } else {
+        print("No se recibió plan actualizado");
       }
     });
   }
@@ -749,31 +822,49 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           ),
         ),
         const SizedBox(height: 10),
+        // Todo el Stack se envuelve en un GestureDetector para detectar el toque
         GestureDetector(
-          onTap: _navigateToMeetingLocation,
+          onTap: _navigateToMeetingLocation, // Abre el popup para actualizar la ubicación
           child: _latitude != null && _longitude != null
               ? Stack(
                   children: [
-                    Container(
-                      height: 240,
-                      width: double.infinity,
-                      child: GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(_latitude!, _longitude!),
-                          zoom: 16,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        height: 240,
+                        width: double.infinity,
+                        child: FutureBuilder<BitmapDescriptor>(
+                          future: _markerIconFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            final icon = snapshot.hasData
+                                ? snapshot.data!
+                                : BitmapDescriptor.defaultMarker;
+                            return GoogleMap(
+                              initialCameraPosition: CameraPosition(
+                                target: LatLng(_latitude!, _longitude!),
+                                zoom: 16,
+                              ),
+                              markers: {
+                                Marker(
+                                  markerId: const MarkerId('selected'),
+                                  position: LatLng(_latitude!, _longitude!),
+                                  icon: icon,
+                                  anchor: const Offset(0.5, 0.5),
+                                )
+                              },
+                              zoomControlsEnabled: false,
+                              myLocationButtonEnabled: false,
+                              // Deshabilitamos el liteMode para descartar problemas de renderizado
+                              liteModeEnabled: false,
+                            );
+                          },
                         ),
-                        markers: {
-                          Marker(
-                            markerId: const MarkerId('selected'),
-                            position: LatLng(_latitude!, _longitude!),
-                          )
-                        },
-                        zoomControlsEnabled: false,
-                        myLocationButtonEnabled: false,
-                        liteModeEnabled: true, // Vista simplificada
-                        gestureRecognizers: {},
                       ),
                     ),
+                    // Superposición con la dirección (si se ha seleccionado)
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -784,7 +875,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           bottomRight: Radius.circular(30),
                         ),
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
                             color: Colors.black.withOpacity(0.3),
                             padding: const EdgeInsets.all(12),
@@ -800,12 +891,18 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                       ),
                     ),
+                    // Capa transparente para asegurar que se detecte el toque
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.transparent,
+                      ),
+                    ),
                   ],
                 )
               : ClipRRect(
                   borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                     child: Container(
                       height: 240,
                       width: double.infinity,
@@ -887,7 +984,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
               child: Container(
                 height: 240,
                 width: double.infinity,
@@ -928,7 +1025,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             height: _includeEndDate ? 120 : 100,
             width: double.infinity,
@@ -1031,7 +1128,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(30),
                             child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                               child: Container(
                                 width: 260,
                                 padding: const EdgeInsets.symmetric(
@@ -1083,7 +1180,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     ),
                                     const Icon(
                                       Icons.arrow_drop_down,
-                                      color: AppColors.blue,
+                                      color: Color.fromARGB(255, 151, 121, 215),
                                     ),
                                   ],
                                 ),

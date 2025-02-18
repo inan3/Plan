@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:crop_your_image/crop_your_image.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ImageCropperScreen extends StatefulWidget {
   final Uint8List imageData;
@@ -11,108 +13,81 @@ class ImageCropperScreen extends StatefulWidget {
 }
 
 class _ImageCropperScreenState extends State<ImageCropperScreen> {
-  final CropController _cropController = CropController();
-  bool _isCropping = false;
+  File? _tempImageFile;
 
-  Future<void> _performCrop() async {
-    if (_isCropping) return;
-    setState(() => _isCropping = true);
-    _cropController.crop(); // O _cropController.cropCircle() si quieres recorte circular
+  @override
+  void initState() {
+    super.initState();
+    _createTempFile();
+  }
+
+  /// Crea un archivo temporal a partir de los bytes recibidos.
+  Future<void> _createTempFile() async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/temp_image_${DateTime.now().millisecondsSinceEpoch}.png');
+    await file.writeAsBytes(widget.imageData);
+    setState(() {
+      _tempImageFile = file;
+    });
+  }
+
+  /// Invoca ImageCropper para recortar la imagen en formato cuadrado (1:1).
+  Future<void> _cropImage() async {
+    if (_tempImageFile == null) return;
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: _tempImageFile!.path,
+      // Fijamos el recorte en 1:1
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Recortar Imagen',
+          toolbarColor: Colors.deepOrange,
+          toolbarWidgetColor: Colors.white,
+          activeControlsWidgetColor: Colors.deepOrange,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Recortar Imagen',
+          aspectRatioLockEnabled: true,
+        ),
+        WebUiSettings(
+          context: context,
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      final croppedBytes = await File(croppedFile.path).readAsBytes();
+      Navigator.pop(context, croppedBytes);
+    } else {
+      // Si se cancela el recorte, regresa sin datos.
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_tempImageFile == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Recortar Imagen')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recortar imagen'),
-        backgroundColor: Colors.black87,
-      ),
-      backgroundColor: Colors.black,
-      body: Column(
-        children: [
-          Expanded(
-            child: Crop(
-              controller: _cropController,
-              image: widget.imageData,
-              aspectRatio: 4 / 4,
-              // En la 2.0.0, para extraer los bytes recortados, usa 'croppedImage'
-              onCropped: (CropResult result) {
-                setState(() => _isCropping = false);
-                if (result is CropSuccess) {
-                  // 'result.croppedImage' es Uint8List con la imagen recortada
-                  Navigator.pop(context, result.croppedImage);
-                } else {
-                  // CropFailure u otro caso
-                  Navigator.pop(context);
-                }
-              },
-
-              // Fijamos el rectángulo inicial con un margen alrededor
-              initialRectBuilder: InitialRectBuilder.withBuilder(
-                (viewportRect, imageRect) {
-                  return Rect.fromLTRB(
-                    viewportRect.left + 24,
-                    viewportRect.top + 32,
-                    viewportRect.right - 24,
-                    viewportRect.bottom - 32,
-                  );
-                },
-              ),
-              baseColor: Colors.blue.shade900,
-              maskColor: Colors.white.withAlpha(100),
-              radius: 20,
-
-              // Usamos un widget personalizado para representar el punto en la esquina
-              cornerDotBuilder: (dotSize, edgeAlignment) => const _CustomDot(
-                size: 12.0,
-                color: Colors.blue,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              onPressed: _isCropping ? null : _performCrop,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
-              ),
-              child: _isCropping
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      "Confirmar recorte",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-          ),
+        title: const Text('Recortar Imagen'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: _cropImage,
+          )
         ],
       ),
-    );
-  }
-}
-
-// Widget personalizado para dibujar puntos en las esquinas
-class _CustomDot extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _CustomDot({
-    Key? key,
-    this.size = 12.0,
-    this.color = Colors.white,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+      body: Center(
+        child: Image.file(_tempImageFile!),
       ),
     );
   }
