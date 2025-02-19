@@ -83,6 +83,10 @@ flutter:
     - assets/icono-calendario.svg
     - assets/icono-ubicacion.svg
     - assets/icono-ubicacion-interno.svg
+    - assets/icono-max-participantes.svg
+    - assets/icono-plan-publico.svg
+    - assets/icono-plan-privado.svg
+    - assets/icono-plan-seguidores.svg
 
   fonts:
     - family: Inter
