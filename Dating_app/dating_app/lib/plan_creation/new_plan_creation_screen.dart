@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:convert'; // Para convertir la imagen a base64
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // <--- Import necesario
 import '../main/colors.dart';
-import 'plan_description_screen.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
 import 'meeting_location_screen.dart'; // Este fichero contiene MeetingLocationPopup
@@ -66,7 +66,7 @@ class NewPlanCreationScreen {
                   ),
                 ],
               ),
-              child: Material( // <-- Material agregado aquí
+              child: Material(
                 type: MaterialType.transparency,
                 child: _NewPlanPopupContent(),
               ),
@@ -124,7 +124,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   Uint8List? _selectedImage;
 
   // Pasos 5, 6 y 7:
-  // Paso 5: Restricción de edad (utilizaremos un RangeSlider)
+  // Paso 5: Restricción de edad
   RangeValues _ageRange = const RangeValues(18, 60);
 
   // Paso 6: Máximo número de participantes
@@ -162,7 +162,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   @override
   void initState() {
     super.initState();
-    // Puedes cargar aquí un ícono por defecto si lo deseas; en este ejemplo no se carga hasta tener ubicación.
+    // Se puede cargar un ícono por defecto si se desea
   }
 
   /// Función para asignar (o reasignar) el Future del marcador personalizado.
@@ -1031,8 +1031,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   }
 
   // Paso 3: Área de selección de fecha y hora
-  // Dentro de __NewPlanPopupContentState
-
   TextSpan _buildFormattedDateTextSpan(DateTime date,
       {TimeOfDay? time, bool allDay = false, bool isEndDate = false}) {
     final String formattedDate =
@@ -1048,7 +1046,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     };
     final String weekday = weekdays[date.weekday] ?? "";
 
-    // Estilos base
     const TextStyle baseStyle = TextStyle(
         fontSize: 14,
         fontFamily: 'Inter-Regular',
@@ -1067,7 +1064,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       children.add(const TextSpan(text: "Hasta ", style: baseStyle));
     }
 
-    // Día de la semana y fecha en azul
     children.add(TextSpan(text: "$weekday, ", style: valueStyle));
     children.add(TextSpan(text: formattedDate, style: valueStyle));
 
@@ -1173,536 +1169,535 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   }
 
   @override
-  @override
-Widget build(BuildContext context) {
-  return Material(
-    // Se envuelve todo el contenido en un widget Material
-    type: MaterialType.transparency,
-    child: Stack(
-      children: [
-        // Se añade el padding inferior según el teclado
-        SingleChildScrollView(
-          padding: EdgeInsets.only(
-              right: 5, bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Encabezado (imagen, título, etc.)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: headerHorizontalInset),
-                child: Center(
-                  child: Image.asset(
-                    'assets/plan-sin-fondo.png',
-                    height: 80,
-                    fit: BoxFit.contain,
+  Widget build(BuildContext context) {
+    return Material(
+      // Se envuelve todo el contenido en un widget Material
+      type: MaterialType.transparency,
+      child: Stack(
+        children: [
+          // Se añade el padding inferior según el teclado
+          SingleChildScrollView(
+            padding: EdgeInsets.only(
+                right: 5, bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Encabezado (imagen, título, etc.)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: headerHorizontalInset),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/plan-sin-fondo.png',
+                      height: 80,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: fieldsHorizontalInset),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      "¡Hazle saber a la gente el plan que deseas compartir!",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: 'Inter-Regular',
-                        decoration: TextDecoration.none,
+                const SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: fieldsHorizontalInset),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        "¡Hazle saber a la gente el plan que deseas compartir!",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Inter-Regular',
+                          decoration: TextDecoration.none,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Paso 1: Dropdown para seleccionar el tipo de plan
-                    CompositedTransformTarget(
-                      link: _layerLink,
-                      child: GestureDetector(
-                        onTap: _toggleDropdown,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(30),
-                          child: BackdropFilter(
-                            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Container(
-                              width: 260,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 124, 120, 120)
-                                    .withOpacity(0.2),
-                                border: Border.all(
-                                  color: const Color.fromARGB(255, 151, 121, 215),
+                      const SizedBox(height: 20),
+                      // Paso 1: Dropdown para seleccionar el tipo de plan
+                      CompositedTransformTarget(
+                        link: _layerLink,
+                        child: GestureDetector(
+                          onTap: _toggleDropdown,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                width: 260,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                                borderRadius: BorderRadius.circular(30),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 124, 120, 120)
+                                      .withOpacity(0.2),
+                                  border: Border.all(
+                                    color: const Color.fromARGB(255, 151, 121, 215),
+                                  ),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          if (_selectedIconAsset != null)
+                                            SvgPicture.asset(
+                                              _selectedIconAsset!,
+                                              width: 28,
+                                              height: 28,
+                                              color: Colors.white,
+                                            ),
+                                          if (_selectedIconData != null)
+                                            Icon(
+                                              _selectedIconData,
+                                              color: Colors.white,
+                                            ),
+                                          if (_selectedIconAsset != null ||
+                                              _selectedIconData != null)
+                                            const SizedBox(width: 10),
+                                          Flexible(
+                                            child: Text(
+                                              _customPlan ??
+                                                  _selectedPlan ??
+                                                  "Elige un plan",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontFamily: 'Inter-Regular',
+                                                fontSize: 14,
+                                                decoration: TextDecoration.none,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.arrow_drop_down,
+                                      color:
+                                          ui.Color.fromARGB(255, 227, 225, 231),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Una vez elegido el plan (Pasos 1-4), se muestran los siguientes pasos
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: ((_selectedPlan != null) || (_customPlan != null))
+                            ? Column(
+                                key: const ValueKey(1),
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Expanded(
-                                    child: Row(
-                                      children: [
-                                        if (_selectedIconAsset != null)
+                                  // Paso 2: Selección de imagen
+                                  _buildImageSelectionArea(),
+                                  if (_selectedImage != null) ...[
+                                    const SizedBox(height: 20),
+                                    // Paso 3: Selección de fecha y hora
+                                    _buildDateSelectionArea(),
+                                  ],
+                                  if (_selectedDateTime != null) ...[
+                                    const SizedBox(height: 20),
+                                    // Paso 4: Selección de ubicación
+                                    _buildLocationSelectionArea(),
+                                  ],
+                                  if (_location != null && _location!.isNotEmpty) ...[
+                                    const SizedBox(height: 20),
+                                    // Paso 5: Restricción de edad
+                                    const Text(
+                                      "Restricción de edad para el plan",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Inter-Regular',
+                                        decoration: TextDecoration.none,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                                255, 124, 120, 120)
+                                            .withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          SliderTheme(
+                                            data: SliderTheme.of(context).copyWith(
+                                              activeTrackColor: AppColors.blue,
+                                              inactiveTrackColor: const ui.Color.fromARGB(
+                                                      235, 225, 225, 234)
+                                                  .withOpacity(0.3),
+                                              trackHeight: 1,
+                                              thumbColor: AppColors.blue,
+                                              overlayColor: AppColors.blue
+                                                  .withOpacity(0.2),
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                      enabledThumbRadius: 8),
+                                              overlayShape:
+                                                  const RoundSliderOverlayShape(
+                                                      overlayRadius: 24),
+                                            ),
+                                            child: RangeSlider(
+                                              values: _ageRange,
+                                              min: 0,
+                                              max: 100,
+                                              divisions: 100,
+                                              labels: RangeLabels(
+                                                "${_ageRange.start.round()}",
+                                                "${_ageRange.end.round()}",
+                                              ),
+                                              onChanged: (newRange) {
+                                                setState(() {
+                                                  _ageRange = newRange;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Text(
+                                            "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
+                                            style: const TextStyle(
+                                              color: ui.Color.fromARGB(
+                                                  255, 223, 199, 199),
+                                              fontSize: 14,
+                                              decoration: TextDecoration.none,
+                                              fontFamily: 'Inter-Regular',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Paso 6: Máximo número de participantes
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      "Máximo número de participantes",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Inter-Regular',
+                                        decoration: TextDecoration.none,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: Row(
+                                        children: [
                                           SvgPicture.asset(
-                                            _selectedIconAsset!,
+                                            'assets/icono-max-participantes.svg',
                                             width: 28,
                                             height: 28,
                                             color: Colors.white,
                                           ),
-                                        if (_selectedIconData != null)
-                                          Icon(
-                                            _selectedIconData,
-                                            color: Colors.white,
-                                          ),
-                                        if (_selectedIconAsset != null ||
-                                            _selectedIconData != null)
                                           const SizedBox(width: 10),
-                                        Flexible(
-                                          child: Text(
-                                            _customPlan ??
-                                                _selectedPlan ??
-                                                "Elige un plan",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: 'Inter-Regular',
-                                              fontSize: 14,
-                                              decoration: TextDecoration.none,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_drop_down,
-                                    color:
-                                        ui.Color.fromARGB(255, 227, 225, 231),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Una vez elegido el plan (Pasos 1-4), se muestran los siguientes pasos
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: ((_selectedPlan != null) || (_customPlan != null))
-                          ? Column(
-                              key: const ValueKey(1),
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Paso 2: Selección de imagen
-                                _buildImageSelectionArea(),
-                                if (_selectedImage != null) ...[
-                                  const SizedBox(height: 20),
-                                  // Paso 3: Selección de fecha y hora
-                                  _buildDateSelectionArea(),
-                                ],
-                                if (_selectedDateTime != null) ...[
-                                  const SizedBox(height: 20),
-                                  // Paso 4: Selección de ubicación
-                                  _buildLocationSelectionArea(),
-                                ],
-                                if (_location != null && _location!.isNotEmpty) ...[
-                                  const SizedBox(height: 20),
-                                  // Paso 5: Restricción de edad
-                                  const Text(
-                                    "Restricción de edad para el plan",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Inter-Regular',
-                                      decoration: TextDecoration.none,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(
-                                              255, 124, 120, 120)
-                                          .withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        SliderTheme(
-                                          data: SliderTheme.of(context).copyWith(
-                                            activeTrackColor: AppColors.blue,
-                                            inactiveTrackColor: const ui.Color.fromARGB(
-                                                    235, 225, 225, 234)
-                                                .withOpacity(0.3),
-                                            trackHeight: 1,
-                                            thumbColor: AppColors.blue,
-                                            overlayColor: AppColors.blue
-                                                .withOpacity(0.2),
-                                            thumbShape:
-                                                const RoundSliderThumbShape(
-                                                    enabledThumbRadius: 8),
-                                            overlayShape:
-                                                const RoundSliderOverlayShape(
-                                                    overlayRadius: 24),
-                                          ),
-                                          child: RangeSlider(
-                                            values: _ageRange,
-                                            min: 0,
-                                            max: 100,
-                                            divisions: 100,
-                                            labels: RangeLabels(
-                                              "${_ageRange.start.round()}",
-                                              "${_ageRange.end.round()}",
-                                            ),
-                                            onChanged: (newRange) {
-                                              setState(() {
-                                                _ageRange = newRange;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Text(
-                                          "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
-                                          style: const TextStyle(
-                                            color: ui.Color.fromARGB(
-                                                255, 223, 199, 199),
-                                            fontSize: 14,
-                                            decoration: TextDecoration.none,
-                                            fontFamily: 'Inter-Regular',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Paso 6: Máximo número de participantes
-                                  const SizedBox(height: 20),
-                                  const Text(
-                                    "Máximo número de participantes",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Inter-Regular',
-                                      decoration: TextDecoration.none,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        SvgPicture.asset(
-                                          'assets/icono-max-participantes.svg',
-                                          width: 28,
-                                          height: 28,
-                                          color: Colors.white,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: TextField(
-                                            keyboardType: TextInputType.number,
-                                            onChanged: (value) {
-                                              setState(() {
-                                                _maxParticipants = int.tryParse(value);
-                                              });
-                                            },
-                                            decoration: InputDecoration(
-                                              isDense: true,
-                                              contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-                                              hintText: "Ingresa un número...",
-                                              hintStyle: const TextStyle(
-                                                color: Colors.white70,
-                                                fontFamily: 'Inter-Regular',
-                                                decoration: TextDecoration.none,
+                                          Expanded(
+                                            child: TextField(
+                                              keyboardType: TextInputType.number,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  _maxParticipants = int.tryParse(value);
+                                                });
+                                              },
+                                              decoration: const InputDecoration(
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                                                hintText: "Ingresa un número...",
+                                                hintStyle: TextStyle(
+                                                  color: Colors.white70,
+                                                  fontFamily: 'Inter-Regular',
+                                                  decoration: TextDecoration.none,
+                                                ),
+                                                border: InputBorder.none,
                                               ),
-                                              border: InputBorder.none,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontFamily: 'Inter-Regular',
+                                              ),
                                             ),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: 'Inter-Regular',
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Paso 7: Breve descripción del plan
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      "Breve descripción del plan",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Inter-Regular',
+                                        decoration: TextDecoration.none,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                                255, 124, 120, 120)
+                                            .withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: TextField(
+                                        maxLines: 3,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _planDescription = value;
+                                          });
+                                        },
+                                        decoration: const InputDecoration(
+                                          hintText: "Describe brevemente tu plan...",
+                                          hintStyle: TextStyle(
+                                            color: Colors.white70,
+                                            fontFamily: 'Inter-Regular',
+                                            decoration: TextDecoration.none,
+                                          ),
+                                          border: InputBorder.none,
+                                        ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Inter-Regular',
+                                        ),
+                                      ),
+                                    ),
+                                    // Nuevo Paso 8: Visibilidad del plan
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      "Este plan es:",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Inter-Regular',
+                                        decoration: TextDecoration.none,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Column(
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedVisibility = "Publico";
+                                            });
+                                          },
+                                          child: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                            decoration: BoxDecoration(
+                                              color: _selectedVisibility == "Publico"
+                                                  ? AppColors.blue
+                                                  : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(30),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  'assets/icono-plan-publico.svg',
+                                                  width: 24,
+                                                  height: 24,
+                                                  color: Colors.white,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                const Text(
+                                                  "Público",
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontFamily: 'Inter-Regular',
+                                                    decoration: TextDecoration.none,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedVisibility = "Privado";
+                                            });
+                                          },
+                                          child: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                            decoration: BoxDecoration(
+                                              color: _selectedVisibility == "Privado"
+                                                  ? AppColors.blue
+                                                  : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(30),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  'assets/icono-plan-privado.svg',
+                                                  width: 24,
+                                                  height: 24,
+                                                  color: Colors.white,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                const Text(
+                                                  "Privado",
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontFamily: 'Inter-Regular',
+                                                    decoration: TextDecoration.none,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedVisibility = "Solo para mis seguidores";
+                                            });
+                                          },
+                                          child: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                            decoration: BoxDecoration(
+                                              color: _selectedVisibility == "Solo para mis seguidores"
+                                                  ? AppColors.blue
+                                                  : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(30),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  'assets/icono-plan-seguidores.svg',
+                                                  width: 24,
+                                                  height: 24,
+                                                  color: Colors.white,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                const Text(
+                                                  "Solo para mis seguidores",
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontFamily: 'Inter-Regular',
+                                                    decoration: TextDecoration.none,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-
-
-                                  // Paso 7: Breve descripción del plan
-                                  const SizedBox(height: 20),
-                                  const Text(
-                                    "Breve descripción del plan",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontFamily: 'Inter-Regular',
-                                      decoration: TextDecoration.none,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(
-                                              255, 124, 120, 120)
-                                          .withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: TextField(
-                                      maxLines: 3,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _planDescription = value;
-                                        });
-                                      },
-                                      decoration: const InputDecoration(
-                                        hintText: "Describe brevemente tu plan...",
-                                        hintStyle: TextStyle(
-                                          color: Colors.white70,
-                                          fontFamily: 'Inter-Regular',
-                                          decoration: TextDecoration.none,
-                                        ),
-                                        border: InputBorder.none,
-                                      ),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Inter-Regular',
-                                      ),
-                                    ),
-                                  ),
-                                  // Nuevo Paso 8: Visibilidad del plan
-                                  const SizedBox(height: 20),
-const Text(
-  "Este plan es:",
-  textAlign: TextAlign.center,
-  style: TextStyle(
-    color: Colors.white,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    decoration: TextDecoration.none,
-  ),
-),
-const SizedBox(height: 10),
-Column(
-  children: [
-    GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedVisibility = "Publico";
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: _selectedVisibility == "Publico"
-              ? AppColors.blue
-              : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              'assets/icono-plan-publico.svg',
-              width: 24,
-              height: 24,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "Público",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Inter-Regular',
-                decoration: TextDecoration.none,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-    const SizedBox(height: 10),
-    GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedVisibility = "Privado";
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: _selectedVisibility == "Privado"
-              ? AppColors.blue
-              : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              'assets/icono-plan-privado.svg',
-              width: 24,
-              height: 24,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "Privado",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Inter-Regular',
-                decoration: TextDecoration.none,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-    const SizedBox(height: 10),
-    GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedVisibility = "Solo para mis seguidores";
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: _selectedVisibility == "Solo para mis seguidores"
-              ? AppColors.blue
-              : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              'assets/icono-plan-seguidores.svg',
-              width: 24,
-              height: 24,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "Solo para mis seguidores",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Inter-Regular',
-                decoration: TextDecoration.none,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ],
-),
+                                  ],
                                 ],
-                              ],
                               )
-                          : const SizedBox.shrink(),
-                    ),
-                    const SizedBox(height: 20),
-                    // Botón de Finalizar Plan: Solo se muestra si se completaron los 8 pasos.
-                    if (_countCompletedSteps() == 8)
-                      ElevatedButton(
-                        onPressed: () {
-                          final plan = PlanModel(
-                            id: '',
-                            type: _customPlan ?? _selectedPlan!,
-                            description: _planDescription ?? '',
-                            minAge: _ageRange.start.round(),
-                            maxAge: _ageRange.end.round(),
-                            location: _location ?? '',
-                            date: DateTime.now(),
-                            createdBy: '',
-                          );
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PlanDescriptionScreen(plan: plan),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const ui.Color.fromARGB(235, 17, 19, 135),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          "Finalizar Plan",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            decoration: TextDecoration.none,
-                            fontFamily: 'Inter-Regular',
-                          ),
-                        ),
+                            : const SizedBox.shrink(),
                       ),
-                  ],
+                      const SizedBox(height: 20),
+                      // Botón de Finalizar Plan: Se envían los datos a Firebase y se cierra el popup.
+                      if (_countCompletedSteps() == 8)
+                        ElevatedButton(
+                          onPressed: () async {
+                            // Convertir la imagen a base64 si existe
+                            final String? backgroundImageString = _selectedImage != null
+                                ? base64Encode(_selectedImage!)
+                                : null;
+                            // Crear el plan utilizando el método actualizado (incluyendo los nuevos campos)
+                            await PlanModel.createPlan(
+                              type: _customPlan ?? _selectedPlan!,
+                              description: _planDescription ?? '',
+                              minAge: _ageRange.start.round(),
+                              maxAge: _ageRange.end.round(),
+                              maxParticipants: _maxParticipants,
+                              location: _location ?? '',
+                              latitude: _latitude,
+                              longitude: _longitude,
+                              date: _selectedDateTime,
+                              backgroundImage: backgroundImageString,
+                              visibility: _selectedVisibility,
+                            );
+                            // Se cierra el popup de creación de plan
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const ui.Color.fromARGB(235, 17, 19, 135),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text(
+                            "Finalizar Plan",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              decoration: TextDecoration.none,
+                              fontFamily: 'Inter-Regular',
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Botón de cerrar popup
+          Positioned(
+            top: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                margin: const EdgeInsets.all(0),
+                width: 35,
+                height: 35,
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: AppColors.blue,
                 ),
               ),
-            ],
-          ),
-        ),
-        // Botón de cerrar popup
-        Positioned(
-          top: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              margin: const EdgeInsets.all(0),
-              width: 35,
-              height: 35,
-              decoration: const BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                color: AppColors.blue,
-              ),
             ),
           ),
-        ),
-        // Barra de progreso vertical a la derecha
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 0,
-          child: Container(
-            width: 2,
-            alignment: Alignment.center,
-            child: _buildVerticalProgressBar(),
+          // Barra de progreso vertical a la derecha
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: 2,
+              alignment: Alignment.center,
+              child: _buildVerticalProgressBar(),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }

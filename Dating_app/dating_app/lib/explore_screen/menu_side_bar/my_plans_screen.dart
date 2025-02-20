@@ -1,19 +1,21 @@
+import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
-import 'package:flutter/services.dart'; // Importar para Clipboard
-
+import 'package:flutter/services.dart'; // Para Clipboard
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({super.key});
 
-  /// Obtiene el creador y todos los suscriptores de un plan
+  /// Obtiene el creador y todos los suscriptores de un plan.
   /// Retorna una lista con Map que tiene {name, age, photoUrl, isCreator}
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
     final List<Map<String, dynamic>> participants = [];
 
-    // 1) Buscar el planDoc para extraer createdBy
+    // 1) Buscar el planDoc para extraer createdBy.
     final planDoc = await FirebaseFirestore.instance
         .collection('plans')
         .doc(plan.id)
@@ -39,7 +41,7 @@ class MyPlansScreen extends StatelessWidget {
       }
     }
 
-    // 3) Obtener suscripciones
+    // 3) Obtener suscripciones.
     final subsSnap = await FirebaseFirestore.instance
         .collection('subscriptions')
         .where('id', isEqualTo: plan.id)
@@ -66,14 +68,103 @@ class MyPlansScreen extends StatelessWidget {
     return participants;
   }
 
+  /// Widget que muestra la imagen de fondo, en caso de existir.
+  Widget _buildBackgroundImage(PlanModel plan) {
+    if (plan.backgroundImage == null || plan.backgroundImage!.isEmpty) return const SizedBox();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.memory(
+          base64Decode(plan.backgroundImage!),
+          fit: BoxFit.cover,
+          height: 200,
+          width: double.infinity,
+        ),
+      ),
+    );
+  }
+
+  /// Widget que muestra la ubicación en un mapa de solo lectura:
+  /// Muestra un mapa con un marcador azul y, sobre él, un contenedor frosted glass con la dirección.
+  Widget _buildReadOnlyLocationMap(PlanModel plan) {
+    if (plan.latitude == null || plan.longitude == null) {
+      return const SizedBox();
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: Stack(
+        children: [
+          Container(
+            height: 240,
+            width: double.infinity,
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: LatLng(plan.latitude!, plan.longitude!),
+                zoom: 16,
+              ),
+              markers: {
+                Marker(
+                  markerId: const MarkerId('plan_location'),
+                  position: LatLng(plan.latitude!, plan.longitude!),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+                  anchor: const Offset(0.5, 0.5),
+                )
+              },
+              zoomControlsEnabled: false,
+              myLocationButtonEnabled: false,
+              liteModeEnabled: true,
+              onMapCreated: (controller) {},
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    plan.location,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Widget que muestra el campo de visibilidad del plan.
+  Widget _buildVisibilityField(PlanModel plan) {
+    if (plan.visibility == null || plan.visibility!.isEmpty) return const SizedBox();
+    return Text(
+      "Visibilidad: ${plan.visibility}",
+      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+    );
+  }
+
   void _showPlanDetails(BuildContext context, PlanModel plan) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          // Ajusta el padding interno del diálogo para desplazarlo hacia abajo
+          // Ajusta el padding interno del diálogo para desplazarlo hacia abajo.
           insetPadding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.15, // 15% desde arriba
+            top: MediaQuery.of(context).size.height * 0.15, // 15% desde arriba.
             left: 20,
             right: 20,
             bottom: 20,
@@ -89,11 +180,11 @@ class MyPlansScreen extends StatelessWidget {
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.7,
-            child: SingleChildScrollView( // Asegurar scroll si el contenido es largo
+            child: SingleChildScrollView( // Permite scroll en contenido extenso.
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Mostrar el ID del Plan con botón de copiar
+                  // ID del plan con botón para copiar.
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -125,15 +216,21 @@ class MyPlansScreen extends StatelessWidget {
                       style: const TextStyle(color: Colors.black)),
                   Text("Máximo Participantes: ${plan.maxParticipants ?? 'Sin límite'}",
                       style: const TextStyle(color: Colors.black)),
-                  Text("Ubicación: ${plan.location}",
-                      style: const TextStyle(color: Colors.black)),
+                  const SizedBox(height: 10),
+                  // Mostrar la imagen de fondo (si existe)
+                  _buildBackgroundImage(plan),
+                  // Mostrar la ubicación (mapa de solo lectura)
+                  _buildReadOnlyLocationMap(plan),
+                  const SizedBox(height: 10),
                   Text("Fecha del Evento: ${plan.formattedDate(plan.date)}",
                       style: const TextStyle(color: Colors.black)),
                   Text("Creado el: ${plan.formattedDate(plan.createdAt)}",
                       style: const TextStyle(color: Colors.black)),
                   const SizedBox(height: 10),
-
-                  // Creador del plan
+                  // Mostrar la visibilidad del plan.
+                  _buildVisibilityField(plan),
+                  const SizedBox(height: 10),
+                  // Creador del plan.
                   if (plan.createdBy.isNotEmpty)
                     FutureBuilder<DocumentSnapshot>(
                       future: FirebaseFirestore.instance.collection('users').doc(plan.createdBy).get(),
@@ -168,13 +265,10 @@ class MyPlansScreen extends StatelessWidget {
                         );
                       },
                     ),
-
-                  // Participantes
+                  // Participantes.
                   const Text("Participantes:",
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-
-                  // Mostrar el ID de plan como parte de los detalles
                   FutureBuilder<List<Map<String, dynamic>>>(
                     future: _fetchAllPlanParticipants(plan),
                     builder: (context, snapshot) {
@@ -187,24 +281,18 @@ class MyPlansScreen extends StatelessWidget {
                           style: const TextStyle(color: Colors.black),
                         );
                       }
-
                       final all = snapshot.data ?? [];
-
-                      // 1) Creador
+                      // Separar creador y participantes.
                       final creator = all.firstWhere(
                         (p) => p['isCreator'] == true,
                         orElse: () => {},
                       );
-
-                      // 2) Participantes (excluyendo creador)
                       final participants = all.where((p) => p['isCreator'] == false).toList();
-                      // Orden alfabético por 'name'
                       participants.sort((a, b) {
                         final nameA = (a['name'] ?? '') as String;
                         final nameB = (b['name'] ?? '') as String;
                         return nameA.compareTo(nameB);
                       });
-
                       return participants.isEmpty
                           ? const Text(
                               'No hay participantes en este plan.',
@@ -219,7 +307,6 @@ class MyPlansScreen extends StatelessWidget {
                                 final pic = part['photoUrl'] ?? '';
                                 final name = part['name'] ?? 'Usuario';
                                 final age = part['age'] ?? '';
-
                                 return ListTile(
                                   leading: CircleAvatar(
                                     backgroundImage: pic.isNotEmpty
@@ -271,13 +358,12 @@ class MyPlansScreen extends StatelessWidget {
                 backgroundColor: Colors.red,
               ),
               onPressed: () async {
-                // Elimina el plan
+                // Elimina el plan.
                 await FirebaseFirestore.instance
                     .collection('plans')
                     .doc(plan.id)
                     .delete();
-
-                // Elimina sus suscripciones asociadas
+                // Elimina sus suscripciones asociadas.
                 final subs = await FirebaseFirestore.instance
                     .collection('subscriptions')
                     .where('id', isEqualTo: plan.id)
@@ -285,7 +371,6 @@ class MyPlansScreen extends StatelessWidget {
                 for (var doc in subs.docs) {
                   await doc.reference.delete();
                 }
-
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Plan ${plan.type} eliminado correctamente.')),
@@ -310,7 +395,6 @@ class MyPlansScreen extends StatelessWidget {
         ),
       );
     }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Planes'),
@@ -327,11 +411,9 @@ class MyPlansScreen extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(child: Text('No tienes planes aún.'));
           }
-
           final plans = snapshot.data!.docs
               .map((doc) => PlanModel.fromMap(doc.data() as Map<String, dynamic>))
               .toList();
-
           return ListView.builder(
             itemCount: plans.length,
             itemBuilder: (context, index) {

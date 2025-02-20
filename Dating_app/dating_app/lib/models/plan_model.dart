@@ -18,8 +18,11 @@ class PlanModel {
   String? creatorName;       
   String? creatorProfilePic;
   DateTime? createdAt;       
-
-  // *** AÑADE ESTA LÍNEA: Lista de participantes ***
+  // Nuevo campo para la imagen de fondo. Se puede almacenar como base64 o URL.
+  String? backgroundImage;   
+  // Nuevo campo para la visibilidad del plan.
+  String? visibility;
+  // Lista de participantes
   List<String>? participants; 
 
   // Constructor
@@ -38,8 +41,8 @@ class PlanModel {
     this.creatorName,
     this.creatorProfilePic,
     this.createdAt,
-
-    // *** AÑADE ESTA LÍNEA: inicialización en el constructor ***
+    this.backgroundImage,
+    this.visibility,
     this.participants,
   });
 
@@ -60,7 +63,7 @@ class PlanModel {
     return snapshot.exists;
   }
 
-  // Convierte este objeto a Map, para guardar en Firestore
+  // Convierte este objeto a Map para guardar en Firestore
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -77,7 +80,8 @@ class PlanModel {
       'creatorName': creatorName,
       'creatorProfilePic': creatorProfilePic,
       'createdAt': createdAt?.toIso8601String(),
-      // *** AÑADE ESTA LÍNEA: incluye la lista de participantes ***
+      'backgroundImage': backgroundImage,
+      'visibility': visibility,
       'participants': participants ?? [],
     };
   }
@@ -101,7 +105,8 @@ class PlanModel {
       creatorName: map['creatorName'] as String?,
       creatorProfilePic: map['creatorProfilePic'] as String?,
       createdAt: _parseDate(map['createdAt']),
-      // *** AÑADE ESTA LÍNEA: recupera la lista de Firestore ***
+      backgroundImage: map['backgroundImage'] as String?,
+      visibility: map['visibility'] as String?,
       participants: map['participants'] != null
           ? List<String>.from(map['participants'] as List)
           : <String>[],
@@ -144,10 +149,13 @@ class PlanModel {
     required String description,
     required int minAge,
     required int maxAge,
-    String? location,
+    int? maxParticipants,
+    required String location,
     double? latitude,
     double? longitude,
     DateTime? date,
+    String? backgroundImage,
+    String? visibility,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -171,7 +179,8 @@ class PlanModel {
       description: description,
       minAge: minAge,
       maxAge: maxAge,
-      location: location ?? '',
+      maxParticipants: maxParticipants,
+      location: location,
       latitude: latitude,
       longitude: longitude,
       date: date,
@@ -179,7 +188,8 @@ class PlanModel {
       creatorName: userData['name'],
       creatorProfilePic: userData['profilePic'],
       createdAt: DateTime.now(),
-      // *** AÑADE ESTA LÍNEA: inicializa el array vacío por defecto ***
+      backgroundImage: backgroundImage,
+      visibility: visibility,
       participants: [],
     );
 
