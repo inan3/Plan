@@ -22,6 +22,8 @@ class PlanModel {
   String? backgroundImage;   
   // Nuevo campo para la visibilidad del plan.
   String? visibility;
+  // Nuevo campo para el icono del plan.
+  String? iconAsset;
   // Lista de participantes
   List<String>? participants; 
 
@@ -43,6 +45,7 @@ class PlanModel {
     this.createdAt,
     this.backgroundImage,
     this.visibility,
+    this.iconAsset,
     this.participants,
   });
 
@@ -82,6 +85,7 @@ class PlanModel {
       'createdAt': createdAt?.toIso8601String(),
       'backgroundImage': backgroundImage,
       'visibility': visibility,
+      'iconAsset': iconAsset,
       'participants': participants ?? [],
     };
   }
@@ -107,6 +111,7 @@ class PlanModel {
       createdAt: _parseDate(map['createdAt']),
       backgroundImage: map['backgroundImage'] as String?,
       visibility: map['visibility'] as String?,
+      iconAsset: map['iconAsset'] as String?,
       participants: map['participants'] != null
           ? List<String>.from(map['participants'] as List)
           : <String>[],
@@ -139,7 +144,7 @@ class PlanModel {
     return '${d.day.toString().padLeft(2, '0')}/'
            '${d.month.toString().padLeft(2, '0')}/'
            '${d.year} '
-           '${d.hour.toString().padLeft(2, '0')}:'
+           '${d.hour.toString().padLeft(2, '0')}:' 
            '${d.minute.toString().padLeft(2, '0')}';
   }
 
@@ -156,6 +161,7 @@ class PlanModel {
     DateTime? date,
     String? backgroundImage,
     String? visibility,
+    String? iconAsset,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -190,6 +196,7 @@ class PlanModel {
       createdAt: DateTime.now(),
       backgroundImage: backgroundImage,
       visibility: visibility,
+      iconAsset: iconAsset,
       participants: [],
     );
 

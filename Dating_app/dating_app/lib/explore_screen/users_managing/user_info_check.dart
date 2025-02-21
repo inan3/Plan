@@ -12,7 +12,9 @@ import 'package:flutter_svg/flutter_svg.dart'; // Para manejar .svg
 import '../../main/colors.dart';        // Para AppColors.blue
 import '../../models/plan_model.dart';  // Tu modelo unificado
 import 'user_info_inside_chat.dart';    // Para abrir chat
-
+import 'dart:convert';
+import 'dart:ui' as ui;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 part 'frosted_plan_dialog_state.dart';  // <-- Incluimos el archivo PART
 
 /// -----------------------------------------------------------------------------

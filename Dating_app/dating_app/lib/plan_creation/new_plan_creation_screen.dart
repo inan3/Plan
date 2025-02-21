@@ -1637,6 +1637,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               date: _selectedDateTime,
                               backgroundImage: backgroundImageString,
                               visibility: _selectedVisibility,
+                              iconAsset: _selectedIconAsset, // Se guarda la ruta del icono seleccionado
                             );
                             // Se cierra el popup de creación de plan
                             Navigator.pop(context);

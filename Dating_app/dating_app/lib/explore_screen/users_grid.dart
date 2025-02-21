@@ -2,6 +2,7 @@ import 'dart:ui'; // Para BackdropFilter, ImageFilter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:convert';
 
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
@@ -24,7 +25,7 @@ class UsersGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 100), // Ajusta el valor según la altura del dock
+      padding: const EdgeInsets.only(bottom: 100), // Ajusta según la altura del dock
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       itemCount: users.length,
@@ -352,9 +353,9 @@ class UsersGrid extends StatelessWidget {
     final String? uid = userData['uid']?.toString();
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
 
-    // Si tienes un campo "planBackground" en Firestore, lo usarías aquí:
-    final String? backgroundImage = null; // Ajusta según tu caso.
-
+    // Obtenemos la imagen de fondo del plan
+    final String? backgroundImage = plan.backgroundImage;
+    
     // Usamos la descripción del plan como "caption"
     final String caption = plan.description.isNotEmpty
         ? plan.description
@@ -372,45 +373,52 @@ class UsersGrid extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 15),
         child: Stack(
           children: [
-            // Imagen de fondo (planBackground o la del usuario)
-            // Dentro de _buildPlanLayout, en el widget que envuelve el fondo del plan:
-GestureDetector(
-  onTap: () {
-    // Al pulsar, mostramos el pop up con los detalles del plan.
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      barrierColor: Colors.black.withOpacity(0.4),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return FrostedPlanDialog(
-          plan: plan,
-          fetchParticipants: _fetchPlanParticipants, // Función ya definida en UsersGrid
-        );
-      },
-      transitionBuilder: (context, anim1, anim2, child) {
-        return FadeTransition(
-          opacity: anim1,
-          child: child,
-        );
-      },
-    );
-  },
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(30),
-    child: (backgroundImage != null && backgroundImage.isNotEmpty)
-        ? Image.network(
-            backgroundImage,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (_, __, ___) => _buildPlaceholder(),
-          )
-        : _buildPlaceholder(),
-  ),
-),
-
+            // Imagen de fondo usando backgroundImage del plan
+            GestureDetector(
+              onTap: () {
+                // Al pulsar, mostramos el pop up con los detalles del plan.
+                showGeneralDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  barrierLabel: 'Cerrar',
+                  barrierColor: Colors.transparent, // Sin oscurecer el fondo
+                  transitionDuration: const Duration(milliseconds: 300),
+                  pageBuilder: (context, animation, secondaryAnimation) {
+                    // Alineamos el pop up en el centro con fondo transparente
+                    return SafeArea(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: FrostedPlanDialog(
+                            plan: plan,
+                            fetchParticipants: _fetchPlanParticipants,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  transitionBuilder: (context, anim1, anim2, child) {
+                    return FadeTransition(
+                      opacity: anim1,
+                      child: child,
+                    );
+                  },
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: (backgroundImage != null && backgroundImage.isNotEmpty)
+                    ? Image.memory(
+                        base64Decode(backgroundImage),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
+            ),
             // Avatar + nombre (tap -> abre perfil)
             Positioned(
               top: 10,
@@ -605,7 +613,7 @@ GestureDetector(
               context: context,
               barrierDismissible: true,
               barrierLabel: 'Cerrar',
-              barrierColor: Colors.transparent,
+              barrierColor: Colors.transparent, // También transparente para el chat
               transitionDuration: const Duration(milliseconds: 300),
               pageBuilder: (_, __, ___) => const SizedBox(),
               transitionBuilder: (ctx, anim1, anim2, child) {
