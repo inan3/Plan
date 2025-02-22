@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -68,15 +67,15 @@ class MyPlansScreen extends StatelessWidget {
     return participants;
   }
 
-  /// Widget que muestra la imagen de fondo, en caso de existir.
+  /// Widget que muestra la imagen de fondo, en caso de existir, usando Image.network.
   Widget _buildBackgroundImage(PlanModel plan) {
     if (plan.backgroundImage == null || plan.backgroundImage!.isEmpty) return const SizedBox();
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Image.memory(
-          base64Decode(plan.backgroundImage!),
+        child: Image.network(
+          plan.backgroundImage!,
           fit: BoxFit.cover,
           height: 200,
           width: double.infinity,
@@ -85,8 +84,7 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  /// Widget que muestra la ubicación en un mapa de solo lectura:
-  /// Muestra un mapa con un marcador azul y, sobre él, un contenedor frosted glass con la dirección.
+  /// Widget que muestra la ubicación en un mapa de solo lectura.
   Widget _buildReadOnlyLocationMap(PlanModel plan) {
     if (plan.latitude == null || plan.longitude == null) {
       return const SizedBox();
@@ -164,7 +162,7 @@ class MyPlansScreen extends StatelessWidget {
         return AlertDialog(
           // Ajusta el padding interno del diálogo para desplazarlo hacia abajo.
           insetPadding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.15, // 15% desde arriba.
+            top: MediaQuery.of(context).size.height * 0.15,
             left: 20,
             right: 20,
             bottom: 20,
@@ -180,7 +178,7 @@ class MyPlansScreen extends StatelessWidget {
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.7,
-            child: SingleChildScrollView( // Permite scroll en contenido extenso.
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

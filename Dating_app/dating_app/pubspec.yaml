@@ -66,6 +66,8 @@ flutter:
     - assets/users.svg
     - assets/sin-plan.svg
     - assets/anadir-imagen.svg
+    - assets/corazon.svg
+    - assets/compartir.svg
     - assets/icono-deporte.svg
     - assets/icono-cafe.svg
     - assets/icono-cena.svg
@@ -87,6 +89,9 @@ flutter:
     - assets/icono-plan-publico.svg
     - assets/icono-plan-privado.svg
     - assets/icono-plan-seguidores.svg
+    - assets/icono-id-plan.svg
+    - assets/icono-descripcion-plan.svg
+    - assets/icono-mapa.svg
 
   fonts:
     - family: Inter

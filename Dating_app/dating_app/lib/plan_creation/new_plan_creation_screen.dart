@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'dart:convert'; // Para convertir la imagen a base64
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // <--- Import necesario
+import 'package:firebase_storage/firebase_storage.dart';
 import '../main/colors.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
@@ -22,13 +22,29 @@ Future<BitmapDescriptor> getCustomSvgMarker(
   // Reemplaza el atributo fill del SVG por el color deseado.
   final String coloredSvgString = svgString.replaceAll(
     RegExp(r'fill="[^"]*"'),
-    'fill="#${color.value.toRadixString(16).padLeft(8, '0')}"',
+    'fill="#${color.value.toRadixString(16).padLeft(8, "0")}"',
   );
   final DrawableRoot svgDrawableRoot = await svg.fromSvgString(coloredSvgString, assetPath);
   final ui.Picture picture = svgDrawableRoot.toPicture(size: Size(width, height));
   final ui.Image image = await picture.toImage(width.toInt(), height.toInt());
   final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.png);
   return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+}
+
+/// Función para subir la imagen a Firebase Storage y obtener la URL de descarga.
+Future<String?> uploadBackgroundImage(Uint8List imageData, String planId) async {
+  try {
+    // Crea una referencia en Storage en la carpeta 'plan_backgrounds'
+    final ref = FirebaseStorage.instance.ref().child('plan_backgrounds/$planId.png');
+    // Sube la imagen
+    await ref.putData(imageData);
+    // Obtén la URL pública de descarga
+    String downloadURL = await ref.getDownloadURL();
+    return downloadURL;
+  } catch (error) {
+    print('Error al subir la imagen: $error');
+    return null;
+  }
 }
 
 class NewPlanCreationScreen {
@@ -103,7 +119,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   IconData? _selectedIconData;
   bool _isDropdownOpen = false;
   OverlayEntry? _overlayEntry;
-  double _separatorSpacing = 20.0;
   final LayerLink _layerLink = LayerLink();
 
   // Paso 3: Fecha y hora
@@ -123,7 +138,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Paso 2: Imagen de fondo
   Uint8List? _selectedImage;
 
-  // Pasos 5, 6 y 7:
   // Paso 5: Restricción de edad
   RangeValues _ageRange = const RangeValues(18, 60);
 
@@ -133,7 +147,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Paso 7: Breve descripción del plan
   String? _planDescription;
 
-  // Nuevo Paso 8: Visibilidad del plan
+  // Paso 8: Visibilidad del plan
   String? _selectedVisibility;
 
   double headerHorizontalInset = 0;
@@ -247,8 +261,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       width: 265,
                       height: 300,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 165, 159, 159)
-                            .withOpacity(0.2),
+                        color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -276,22 +289,18 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   fontFamily: 'Inter-Regular',
                                 ),
                                 border: OutlineInputBorder(
-                                  borderSide: BorderSide(
-                                      color: Colors.white.withOpacity(0.8)),
+                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(
-                                      color: Colors.white.withOpacity(0.8)),
+                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(
-                                      color: Colors.white, width: 1.5),
+                                  borderSide: const BorderSide(color: Colors.white, width: 1.5),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                             ),
                           ),
@@ -411,7 +420,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               BoxShadow(
                 color: Colors.black.withOpacity(0.5),
                 blurRadius: 10,
-                offset: const Offset(0, 5),
+                offset: Offset(0, 5),
               ),
             ],
           ),
@@ -512,9 +521,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 width: 30,
                                 height: 30,
                                 decoration: BoxDecoration(
-                                  color: _allDay
-                                      ? AppColors.blue
-                                      : Colors.grey.withOpacity(0.5),
+                                  color: _allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -549,9 +556,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 width: 30,
                                 height: 30,
                                 decoration: BoxDecoration(
-                                  color: _includeEndDate
-                                      ? AppColors.blue
-                                      : Colors.grey.withOpacity(0.5),
+                                  color: _includeEndDate ? AppColors.blue : Colors.grey.withOpacity(0.5),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -579,9 +584,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     DateTime now = DateTime.now();
                                     DateTime? pickedDate = await showDatePicker(
                                       context: context,
-                                      initialDate: _startDate == null || _startDate!.isBefore(now)
-                                          ? now
-                                          : _startDate!,
+                                      initialDate: _startDate == null || _startDate!.isBefore(now) ? now : _startDate!,
                                       firstDate: now,
                                       lastDate: DateTime(2100),
                                     );
@@ -612,9 +615,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                       }
                                     },
                                     child: _buildFrostedGlassContainer(
-                                      text: _startTime == null
-                                          ? "Seleccionar"
-                                          : _startTime!.format(context),
+                                      text: _startTime == null ? "Seleccionar" : _startTime!.format(context),
                                     ),
                                   ),
                               ],
@@ -672,29 +673,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           );
                                           if (pickedTime != null) {
                                             if (_startDate != null && _endDate != null) {
-                                              DateTime startDateTime;
-                                              if (_allDay || _startTime == null) {
-                                                startDateTime = DateTime(
-                                                  _startDate!.year,
-                                                  _startDate!.month,
-                                                  _startDate!.day,
-                                                );
-                                              } else {
-                                                startDateTime = DateTime(
-                                                  _startDate!.year,
-                                                  _startDate!.month,
-                                                  _startDate!.day,
-                                                  _startTime!.hour,
-                                                  _startTime!.minute,
-                                                );
-                                              }
-                                              DateTime endDateTime = DateTime(
-                                                _endDate!.year,
-                                                _endDate!.month,
-                                                _endDate!.day,
-                                                pickedTime.hour,
-                                                pickedTime.minute,
-                                              );
+                                              DateTime startDateTime = (_allDay || _startTime == null)
+                                                  ? DateTime(_startDate!.year, _startDate!.month, _startDate!.day)
+                                                  : DateTime(_startDate!.year, _startDate!.month, _startDate!.day, _startTime!.hour, _startTime!.minute);
+                                              DateTime endDateTime = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, pickedTime.hour, pickedTime.minute);
                                               if (!endDateTime.isAfter(startDateTime)) {
                                                 showDialog(
                                                   context: context,
@@ -720,9 +702,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           }
                                         },
                                         child: _buildFrostedGlassContainer(
-                                          text: _endTime == null
-                                              ? "Seleccionar"
-                                              : _endTime!.format(context),
+                                          text: _endTime == null ? "Seleccionar" : _endTime!.format(context),
                                         ),
                                       ),
                                     ],
@@ -854,9 +834,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return const Center(child: CircularProgressIndicator());
                             }
-                            final icon = snapshot.hasData
-                                ? snapshot.data!
-                                : BitmapDescriptor.defaultMarker;
+                            final icon = snapshot.hasData ? snapshot.data! : BitmapDescriptor.defaultMarker;
                             return GoogleMap(
                               initialCameraPosition: CameraPosition(
                                 target: LatLng(_latitude!, _longitude!),
@@ -1177,8 +1155,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         children: [
           // Se añade el padding inferior según el teclado
           SingleChildScrollView(
-            padding: EdgeInsets.only(
-                right: 5, bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(right: 5, bottom: MediaQuery.of(context).viewInsets.bottom),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -1222,21 +1199,16 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                               child: Container(
                                 width: 260,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 124, 120, 120)
-                                      .withOpacity(0.2),
+                                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                                   border: Border.all(
                                     color: const Color.fromARGB(255, 151, 121, 215),
                                   ),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Row(
@@ -1253,14 +1225,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                               _selectedIconData,
                                               color: Colors.white,
                                             ),
-                                          if (_selectedIconAsset != null ||
-                                              _selectedIconData != null)
+                                          if (_selectedIconAsset != null || _selectedIconData != null)
                                             const SizedBox(width: 10),
                                           Flexible(
                                             child: Text(
-                                              _customPlan ??
-                                                  _selectedPlan ??
-                                                  "Elige un plan",
+                                              _customPlan ?? _selectedPlan ?? "Elige un plan",
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontFamily: 'Inter-Regular',
@@ -1275,8 +1244,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     ),
                                     const Icon(
                                       Icons.arrow_drop_down,
-                                      color:
-                                          ui.Color.fromARGB(255, 227, 225, 231),
+                                      color: Color.fromARGB(255, 227, 225, 231),
                                     ),
                                   ],
                                 ),
@@ -1323,9 +1291,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: const Color.fromARGB(
-                                                255, 124, 120, 120)
-                                            .withOpacity(0.2),
+                                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       child: Column(
@@ -1333,19 +1299,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           SliderTheme(
                                             data: SliderTheme.of(context).copyWith(
                                               activeTrackColor: AppColors.blue,
-                                              inactiveTrackColor: const ui.Color.fromARGB(
-                                                      235, 225, 225, 234)
-                                                  .withOpacity(0.3),
+                                              inactiveTrackColor: const Color.fromARGB(235, 225, 225, 234).withOpacity(0.3),
                                               trackHeight: 1,
                                               thumbColor: AppColors.blue,
-                                              overlayColor: AppColors.blue
-                                                  .withOpacity(0.2),
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                      enabledThumbRadius: 8),
-                                              overlayShape:
-                                                  const RoundSliderOverlayShape(
-                                                      overlayRadius: 24),
+                                              overlayColor: AppColors.blue.withOpacity(0.2),
+                                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
                                             ),
                                             child: RangeSlider(
                                               values: _ageRange,
@@ -1367,8 +1326,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           Text(
                                             "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
                                             style: const TextStyle(
-                                              color: ui.Color.fromARGB(
-                                                  255, 223, 199, 199),
+                                              color: Color.fromARGB(255, 223, 199, 199),
                                               fontSize: 14,
                                               decoration: TextDecoration.none,
                                               fontFamily: 'Inter-Regular',
@@ -1447,12 +1405,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     ),
                                     const SizedBox(height: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: const Color.fromARGB(
-                                                255, 124, 120, 120)
-                                            .withOpacity(0.2),
+                                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       child: TextField(
@@ -1477,7 +1432,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                         ),
                                       ),
                                     ),
-                                    // Nuevo Paso 8: Visibilidad del plan
+                                    // Paso 8: Visibilidad del plan
                                     const SizedBox(height: 20),
                                     const Text(
                                       "Este plan es:",
@@ -1616,34 +1571,39 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             : const SizedBox.shrink(),
                       ),
                       const SizedBox(height: 20),
-                      // Botón de Finalizar Plan: Se envían los datos a Firebase y se cierra el popup.
+                      // Botón de Finalizar Plan: Enviar datos a Firebase y cerrar popup
                       if (_countCompletedSteps() == 8)
                         ElevatedButton(
                           onPressed: () async {
-                            // Convertir la imagen a base64 si existe
-                            final String? backgroundImageString = _selectedImage != null
-                                ? base64Encode(_selectedImage!)
-                                : null;
-                            // Crear el plan utilizando el método actualizado (incluyendo los nuevos campos)
-                            await PlanModel.createPlan(
-                              type: _customPlan ?? _selectedPlan!,
-                              description: _planDescription ?? '',
-                              minAge: _ageRange.start.round(),
-                              maxAge: _ageRange.end.round(),
-                              maxParticipants: _maxParticipants,
-                              location: _location ?? '',
-                              latitude: _latitude,
-                              longitude: _longitude,
-                              date: _selectedDateTime,
-                              backgroundImage: backgroundImageString,
-                              visibility: _selectedVisibility,
-                              iconAsset: _selectedIconAsset, // Se guarda la ruta del icono seleccionado
-                            );
-                            // Se cierra el popup de creación de plan
-                            Navigator.pop(context);
+                            try {
+                              String? backgroundImageUrl;
+                              // Si existe una imagen seleccionada, súbela a Firebase Storage
+                              if (_selectedImage != null) {
+                                final planId = DateTime.now().millisecondsSinceEpoch.toString();
+                                backgroundImageUrl = await uploadBackgroundImage(_selectedImage!, planId);
+                              }
+                              // Crear el plan utilizando el método actualizado (guardando la URL de la imagen)
+                              await PlanModel.createPlan(
+                                type: _customPlan ?? _selectedPlan!,
+                                description: _planDescription ?? '',
+                                minAge: _ageRange.start.round(),
+                                maxAge: _ageRange.end.round(),
+                                maxParticipants: _maxParticipants,
+                                location: _location ?? '',
+                                latitude: _latitude,
+                                longitude: _longitude,
+                                date: _selectedDateTime,
+                                backgroundImage: backgroundImageUrl, // Se guarda la URL
+                                visibility: _selectedVisibility,
+                                iconAsset: _selectedIconAsset,
+                              );
+                              Navigator.pop(context);
+                            } catch (error) {
+                              print("Error al crear el plan: $error");
+                            }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const ui.Color.fromARGB(235, 17, 19, 135),
+                            backgroundColor: const Color.fromARGB(235, 17, 19, 135),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),

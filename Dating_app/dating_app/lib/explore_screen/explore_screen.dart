@@ -11,16 +11,17 @@ import 'package:dating_app/main/colors.dart';
 import 'explore_screen_filter.dart';
 
 import 'explore_app_bar.dart';
-import 'popular_users_section.dart';
 import 'users_grid.dart';
 import 'menu_side_bar_screen.dart';
 import 'chats/chats_screen.dart'; // Pantalla de mensajes
 import 'users_managing/user_info_check.dart';
-import 'search_screen.dart'; // Pantalla de búsqueda
+import 'map_screen.dart'; // Pantalla de búsqueda
 import 'profile_screen.dart'; // Gestión del perfil
 import 'notification_screen.dart'; // Pantalla de notificaciones
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'package:dating_app/plan_joining/plan_join_request.dart';
+import 'filter_screen.dart';
+import 'map_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -66,7 +67,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     _setStatusBarDark();
     // Definición de páginas: 1 → Search, 2 → Chats, 3 → Perfil
     _otherPages = [
-      const SearchScreen(),
+      const MapScreen(),
       const ChatsScreen(),
       ProfileScreen(),
     ];
@@ -145,7 +146,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         children: [
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
-            onFilterPressed: _onFilterPressed,
             onNotificationPressed: () {
               Navigator.push(
                 context,
@@ -159,13 +159,59 @@ class ExploreScreenState extends State<ExploreScreen> {
             onSearchChanged: _onSearchChanged,
             notificationCountStream: _notificationCountStream(),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: PopularUsersSection(topSpacing: _popularTopSpacing),
+          // Envuelve el buscador en un Transform para moverlo hacia arriba:
+          Transform.translate(
+            offset: const Offset(0, -0), // ajusta el valor según necesites
+            child: _buildSearchContainer(),
           ),
           SizedBox(height: _spacingPopularToNearby),
           Expanded(child: _buildNearbySection()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchContainer() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 15, right: 15, top: 0, bottom: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 213, 212, 212),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: SvgPicture.asset(
+                'assets/lupa.svg',
+                width: 24,
+                height: 24,
+                color: AppColors.blue,
+              ),
+            ),
+            Expanded(
+              child: TextField(
+                onChanged: (value) {
+                  // Lógica de búsqueda
+                },
+                decoration: const InputDecoration(
+                  hintText: 'Buscar...',
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Image.asset(
+                'assets/filter.png',
+                width: 24,
+                height: 24,
+                color: AppColors.blue,
+              ),
+              onPressed: _onFilterPressed,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -418,13 +464,14 @@ class ExploreScreenState extends State<ExploreScreen> {
         statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
+        resizeToAvoidBottomInset: false, // Evitamos que el contenido se ajuste al abrir el teclado
         body: Container(
           // Fondo degradado, sin BackdropFilter global
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color.fromARGB(255, 239, 235, 243),
-                Color.fromARGB(255, 232, 223, 242),
+                Color.fromARGB(255, 245, 239, 240),
+                Color.fromARGB(255, 250, 249, 251),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -518,7 +565,7 @@ class DockSection extends StatelessWidget {
               child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
             ),
             SizedBox(width: iconSpacing),
-            _buildIconButton(index: 1, asset: 'assets/lupa.svg'),
+            _buildIconButton(index: 1, asset: 'assets/icono-mapa.svg'),
             SizedBox(width: iconSpacing),
             _buildIconButton(
               index: 2,

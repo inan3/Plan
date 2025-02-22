@@ -1,20 +1,17 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../main/colors.dart';
-import 'explore_screen_filter.dart';
 import 'notification_screen.dart';
 
 class ExploreAppBar extends StatelessWidget {
   final VoidCallback onMenuPressed;
-  final VoidCallback onFilterPressed;
-  final VoidCallback onNotificationPressed; // Callback para notificaciones
+  final VoidCallback onNotificationPressed;
   final ValueChanged<String> onSearchChanged;
-  final Stream<int>? notificationCountStream; // Stream para contar notificaciones
+  final Stream<int>? notificationCountStream;
 
   const ExploreAppBar({
     super.key,
     required this.onMenuPressed,
-    required this.onFilterPressed,
     required this.onNotificationPressed,
     required this.onSearchChanged,
     this.notificationCountStream,
@@ -23,7 +20,7 @@ class ExploreAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20.0),
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 5), // Ajustado: 5 píxeles abajo
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -68,54 +65,18 @@ class ExploreAppBar extends StatelessWidget {
 
           // Logo desplazado hacia la derecha
           Transform.translate(
-            offset: const Offset(34, 0),
+            offset: const Offset(0, 0),
             child: Image.asset(
               'assets/plan-sin-fondo.png',
               height: 80,
             ),
           ),
 
-          // Contenedor para los botones de filtro y notificación en la derecha
+          // Contenedor para el botón de notificación en la derecha
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                // Botón de filtro
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromARGB(255, 92, 92, 92)
-                                .withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(5, 5),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
-                      ),
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset(
-                          'assets/filter.png',
-                          color: AppColors.blue,
-                          width: 20,
-                          height: 20,
-                        ),
-                        onPressed: onFilterPressed,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Botón de notificación con badge posicionado
                 ClipRRect(
                   borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(

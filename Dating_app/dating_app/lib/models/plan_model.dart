@@ -18,14 +18,16 @@ class PlanModel {
   String? creatorName;       
   String? creatorProfilePic;
   DateTime? createdAt;       
-  // Nuevo campo para la imagen de fondo. Se puede almacenar como base64 o URL.
+  // Nuevo campo para la imagen de fondo.
   String? backgroundImage;   
   // Nuevo campo para la visibilidad del plan.
   String? visibility;
   // Nuevo campo para el icono del plan.
   String? iconAsset;
   // Lista de participantes
-  List<String>? participants; 
+  List<String>? participants;
+  // NUEVO: Contador de likes
+  int likes; 
 
   // Constructor
   PlanModel({
@@ -47,6 +49,7 @@ class PlanModel {
     this.visibility,
     this.iconAsset,
     this.participants,
+    this.likes = 0, // Valor por defecto 0
   });
 
   // Genera un ID único para el plan de 10 caracteres alfanuméricos
@@ -87,6 +90,7 @@ class PlanModel {
       'visibility': visibility,
       'iconAsset': iconAsset,
       'participants': participants ?? [],
+      'likes': likes, // NUEVO
     };
   }
 
@@ -115,6 +119,7 @@ class PlanModel {
       participants: map['participants'] != null
           ? List<String>.from(map['participants'] as List)
           : <String>[],
+      likes: map['likes'] != null ? map['likes'] as int : 0,
     );
   }
 
@@ -198,6 +203,7 @@ class PlanModel {
       visibility: visibility,
       iconAsset: iconAsset,
       participants: [],
+      likes: 0, // Inicialmente 0
     );
 
     // Guardar en la colección 'plans'
