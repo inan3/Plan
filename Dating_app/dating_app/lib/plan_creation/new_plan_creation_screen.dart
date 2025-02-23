@@ -9,6 +9,7 @@ import '../main/colors.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
 import 'meeting_location_screen.dart'; // Este fichero contiene MeetingLocationPopup
+import '../utils/plans_list.dart'; // Este fichero contiene la lista de planes
 
 /// Función auxiliar para convertir un SVG en BitmapDescriptor aplicando un color.
 Future<BitmapDescriptor> getCustomSvgMarker(
@@ -156,7 +157,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Variable para el ícono del marcador
   Future<BitmapDescriptor>? _markerIconFuture;
 
-  final List<Map<String, dynamic>> _plans = [
+  /*final List<Map<String, dynamic>> plans = [
     {'icon': 'assets/icono-baile.svg', 'name': 'Baile'},
     {'icon': 'assets/icono-cena.svg', 'name': 'Cena'},
     {'icon': 'assets/icono-charla-seminario.svg', 'name': 'Charla o Seminario'},
@@ -171,7 +172,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     {'icon': 'assets/icono-cafe.svg', 'name': 'Tomar algo'},
     {'icon': 'assets/icono-viaje.svg', 'name': 'Viaje'},
     {'icon': 'assets/icono-yoga.svg', 'name': 'Yoga o Relajación'},
-  ];
+  ];*/
 
   @override
   void initState() {
@@ -327,7 +328,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             child: ListView.builder(
                               physics: const BouncingScrollPhysics(),
                               padding: EdgeInsets.zero,
-                              itemCount: _plans.length,
+                              itemCount: plans.length,
                               itemBuilder: (context, index) => Container(
                                 decoration: const BoxDecoration(
                                   border: Border(
@@ -341,13 +342,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                                   dense: true,
                                   leading: SvgPicture.asset(
-                                    _plans[index]['icon'],
+                                    plans[index]['icon'],
                                     width: 28,
                                     height: 28,
                                     color: const Color.fromARGB(235, 229, 229, 252),
                                   ),
                                   title: Text(
-                                    _plans[index]['name'],
+                                    plans[index]['name'],
                                     style: const TextStyle(
                                       color: Color.fromARGB(255, 218, 207, 207),
                                       decoration: TextDecoration.none,
@@ -356,8 +357,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   ),
                                   onTap: () {
                                     setState(() {
-                                      _selectedPlan = _plans[index]['name'];
-                                      _selectedIconAsset = _plans[index]['icon'];
+                                      _selectedPlan = plans[index]['name'];
+                                      _selectedIconAsset = plans[index]['icon'];
                                       _selectedIconData = null;
                                       _customPlan = null;
                                     });
@@ -841,11 +842,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 zoom: 16,
                               ),
                               markers: {
-                                Marker(
+                                  Marker(
                                   markerId: const MarkerId('selected'),
                                   position: LatLng(_latitude!, _longitude!),
                                   icon: icon,
-                                  anchor: const Offset(0.5, 0.5),
+                                  anchor: const Offset(0.5, 1.0), // La punta estará en la parte inferior central
                                 )
                               },
                               zoomControlsEnabled: false,

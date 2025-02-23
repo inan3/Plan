@@ -1,15 +1,22 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui';
+import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart'; // Asegúrate de haber agregado la dependencia en pubspec.yaml
-import '../main/colors.dart'; // Asegúrate de tener definido AppColors
-import '../main/keys.dart';  // Debe contener las claves: APIKeys.androidApiKey y APIKeys.iosApiKey
+import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import '../main/colors.dart'; // Define AppColors
+import '../main/keys.dart';   // Contiene las claves APIKeys.androidApiKey y APIKeys.iosApiKey
+import '../utils/plans_list.dart'; // Lista de planes
 
+// El diálogo acepta opcionalmente filtros iniciales para preservar el último estado.
 class ExploreScreenFilterDialog extends StatefulWidget {
-  const ExploreScreenFilterDialog({Key? key}) : super(key: key);
+  final Map<String, dynamic>? initialFilters;
+  const ExploreScreenFilterDialog({Key? key, this.initialFilters}) : super(key: key);
 
   @override
   _ExploreScreenFilterDialogState createState() =>
@@ -18,70 +25,186 @@ class ExploreScreenFilterDialog extends StatefulWidget {
 
 class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     with SingleTickerProviderStateMixin {
-  // Variables de filtro
-  String planBusqueda = ''; // Para búsqueda por nombre o descripción
-  String? planPredeterminado; // Para seleccionar de una lista predeterminada
-  // Lista de planes predeterminados de ejemplo
-  final List<String> tiposPlan = ['Deportivo', 'Cultural', 'Social', 'Otro'];
+  String planBusqueda = '';
+  String? _selectedPlan;
+  String? _customPlan;
+  String? _selectedIconAsset;
+  IconData? _selectedIconData;
 
-  // Variables de región
   String regionBusqueda = '';
-  // Controlador para el input de región (con autocompletado)
   final TextEditingController _regionController = TextEditingController();
+  final FocusNode _regionFocusNode = FocusNode();
   List<dynamic> _regionPredictions = [];
 
-  // Variable para indicar si se ha concedido la ubicación actual
   bool locationAllowed = false;
-
-  // Rango de edad (valor mínimo y máximo)
   RangeValues edadRange = const RangeValues(18, 60);
-
-  // Género seleccionado: 0 - Hombres, 1 - Mujeres, 2 - Todo el mundo
   int generoSeleccionado = 2;
 
-  // AnimationController para el efecto animado en el título
+  // Posición del usuario para cálculos internos
+  Position? _userPosition;
+
   late AnimationController _animationController;
+
+  final LayerLink _layerLink = LayerLink();
+  final GlobalKey _dropdownKey = GlobalKey();
+  OverlayEntry? _overlayEntry;
+  bool _isDropdownOpen = false;
+
+  static const double _dropdownWidth = 260;
 
   @override
   void initState() {
     super.initState();
-    // Configuramos la animación para que dure 2 segundos y se repita en modo reversible.
-    _animationController =
-        AnimationController(duration: const Duration(seconds: 2), vsync: this)
-          ..repeat(reverse: true);
+    // Si existen filtros iniciales, se cargan
+    if (widget.initialFilters != null) {
+      final init = widget.initialFilters!;
+      planBusqueda = init['planBusqueda'] ?? '';
+      _selectedPlan = init['planPredeterminado'];
+      _selectedIconAsset = init['planIcon']; // Se carga el icono si existe
+      regionBusqueda = init['regionBusqueda'] ?? '';
+      edadRange = RangeValues(
+        (init['edadMin'] ?? 18).toDouble(),
+        (init['edadMax'] ?? 60).toDouble(),
+      );
+      generoSeleccionado = init['genero'] ?? 2;
+      if (init['userCoordinates'] != null) {
+        _userPosition = Position(
+          latitude: init['userCoordinates']['lat'],
+          longitude: init['userCoordinates']['lng'],
+          timestamp: DateTime.now(),
+          accuracy: 0.0,
+          altitude: 0.0,
+          heading: 0.0,
+          speed: 0.0,
+          speedAccuracy: 0.0,
+          altitudeAccuracy: 0.0,
+          headingAccuracy: 0.0,
+          floor: 0,
+        );
+        _regionController.text = regionBusqueda;
+      }
+    }
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _regionFocusNode.addListener(() {
+      if (!_regionFocusNode.hasFocus) {
+        setState(() {
+          _regionPredictions = [];
+        });
+        if (_regionController.text.isNotEmpty) {
+          _updateUserCoordinatesFromAddress(_regionController.text);
+        }
+      }
+    });
   }
 
-  // Método auxiliar para construir el botón de género con parámetros opcionales borderRadius y width
-  Widget _buildGenderButton(String label, int value,
-      {double borderRadius = 10.0, double? width}) {
-    bool isSelected = (generoSeleccionado == value);
-    return Align(
-      alignment: Alignment.center,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            generoSeleccionado = value;
-          });
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              width: width ?? double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color:
-                    isSelected ? AppColors.blue : Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(borderRadius),
-              ),
-              child: Center(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _regionController.dispose();
+    _regionFocusNode.dispose();
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  Future<void> _updateUserCoordinatesFromAddress(String address) async {
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        setState(() {
+          _userPosition = Position(
+            latitude: locations.first.latitude,
+            longitude: locations.first.longitude,
+            timestamp: DateTime.now(),
+            accuracy: 0.0,
+            altitude: 0.0,
+            heading: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
+            altitudeAccuracy: 0.0,
+            headingAccuracy: 0.0,
+            floor: 0,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint("Error al convertir dirección a coordenadas: $e");
+    }
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    RenderBox renderBox = _dropdownKey.currentContext!.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        width: _dropdownWidth,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(0, size.height + 5),
+          child: Material(
+            color: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                    border: Border.all(
+                      color: const Color.fromARGB(255, 151, 121, 215),
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  constraints: const BoxConstraints(maxHeight: 280),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: plans.map<Widget>((plan) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedPlan = plan['name'];
+                              _selectedIconAsset = plan['icon'];
+                              _customPlan = null;
+                            });
+                            _toggleDropdown();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                if (plan['icon'] != null)
+                                  SvgPicture.asset(
+                                    plan['icon'],
+                                    width: 28,
+                                    height: 28,
+                                    color: Colors.white,
+                                  ),
+                                if (plan['icon'] != null)
+                                  const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    plan['name'],
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Inter-Regular',
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               ),
@@ -92,60 +215,40 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     );
   }
 
-  // Widget separador elegante (línea fina blanca continua)
-  Widget _buildElegantDivider() {
-    return Divider(
-      color: Colors.white,
-      thickness: 0.2,
-      height: 20,
-    );
-  }
-
-  // Widget animado para el título "Filtrar Planes"
-  Widget _buildAnimatedTitle() {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return ShaderMask(
-          shaderCallback: (Rect bounds) {
-            // Definimos un gradiente que se desplaza en función del valor de la animación.
-            double animValue = _animationController.value;
-            return LinearGradient(
-              colors: [AppColors.blue, Colors.white, AppColors.blue],
-              stops: [
-                (animValue - 0.1).clamp(0.0, 1.0),
-                animValue.clamp(0.0, 1.0),
-                (animValue + 0.1).clamp(0.0, 1.0),
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ).createShader(bounds);
-          },
-          child: child,
-          blendMode: BlendMode.srcIn,
-        );
-      },
-      child: const Text(
-        'Filtrar Planes',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.white, // Este color será sobrescrito por el ShaderMask
-        ),
-      ),
-    );
-  }
-
-  // Función para simular obtener la ubicación actual (en una implementación real usarías geolocalización)
-  void _obtenerUbicacion() {
+  void _toggleDropdown() {
+    if (_isDropdownOpen) {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    } else {
+      _overlayEntry = _createOverlayEntry();
+      Overlay.of(context)?.insert(_overlayEntry!);
+    }
     setState(() {
-      regionBusqueda = 'Ubicación actual';
-      _regionController.text = regionBusqueda;
-      _regionPredictions = [];
+      _isDropdownOpen = !_isDropdownOpen;
     });
   }
 
-  // Función para pedir permiso de ubicación y, en caso afirmativo, obtener la ubicación actual
+  Future<void> _obtenerUbicacion() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _userPosition = position;
+      });
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+        String address = "${placemark.street ?? ''} ${placemark.subThoroughfare ?? ''}, ${placemark.thoroughfare ?? ''}, ${placemark.postalCode ?? ''}, ${placemark.locality ?? ''}, ${placemark.country ?? ''}";
+        setState(() {
+          regionBusqueda = address;
+          _regionController.text = address;
+          _regionPredictions = [];
+        });
+      }
+    } catch (e) {
+      debugPrint("Error al obtener ubicación: $e");
+    }
+  }
+
   Future<void> _requestLocationPermission() async {
     PermissionStatus status = await Permission.location.request();
 
@@ -158,13 +261,11 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       setState(() {
         locationAllowed = false;
       });
-      // Muestra un diálogo para que el usuario vaya a la configuración
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Permiso de ubicación'),
-          content: const Text(
-              'El permiso de ubicación ha sido denegado permanentemente. Por favor, ve a la configuración de la app para habilitarlo.'),
+          content: const Text('El permiso de ubicación ha sido denegado permanentemente. Ve a la configuración de la app para habilitarlo.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -184,11 +285,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       setState(() {
         locationAllowed = false;
       });
-      // Si es denegado temporalmente, podrías notificar al usuario o simplemente no hacer nada.
     }
   }
 
-  // Función para obtener predicciones de lugares desde Google Places
   Future<void> _fetchRegionPredictions(String input) async {
     if (input.isEmpty) {
       setState(() {
@@ -196,10 +295,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       });
       return;
     }
-    // Selecciona la clave adecuada según la plataforma
+
     final String key = Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
-    final String url =
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$key&language=es';
+    final String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$key&language=es';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -210,340 +308,500 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
             _regionPredictions = data['predictions'];
           });
         } else {
-          print('Error en la API de Google Places: ${data['status']}');
+          debugPrint('Error en la API de Google Places: ${data['status']}');
         }
       } else {
-        print('Error HTTP: ${response.statusCode}');
+        debugPrint('Error HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error al obtener predicciones: $e');
+      debugPrint('Error al obtener predicciones: $e');
     }
   }
 
-  // Cuando se selecciona una predicción, se actualiza el campo de región
   void _onRegionPredictionTap(dynamic prediction) {
     setState(() {
       regionBusqueda = prediction['description'];
       _regionController.text = regionBusqueda;
       _regionPredictions = [];
     });
+    _updateUserCoordinatesFromAddress(regionBusqueda);
   }
 
+  // Al aplicar filtros se devuelve un mapa que incluye:
+  // - planBusqueda o planPredeterminado (para filtrar plan)
+  // - regionBusqueda (texto a mostrar)
+  // - edadMin, edadMax, genero y userCoordinates (para cálculos internos)
   void _aplicarFiltros() {
-    // Se pasan los valores del filtro a la pantalla Explore para filtrar los planes.
     Navigator.of(context).pop({
       'planBusqueda': planBusqueda,
-      'planPredeterminado': planPredeterminado,
+      'planPredeterminado': _selectedPlan,
+      'planIcon': _selectedIconAsset, // Se incluye el icono asociado
       'regionBusqueda': regionBusqueda,
       'edadMin': edadRange.start,
       'edadMax': edadRange.end,
       'genero': generoSeleccionado,
+      'userCoordinates': _userPosition != null
+          ? {
+              'lat': _userPosition!.latitude,
+              'lng': _userPosition!.longitude,
+            }
+          : null,
+    });
+  }
+
+  // Función para limpiar los filtros de tipo de plan, dirección y rango de edades.
+  void _limpiarFiltros() {
+    setState(() {
+      planBusqueda = '';
+      _selectedPlan = null;
+      _selectedIconAsset = null;
+      _customPlan = null;
+      regionBusqueda = '';
+      _regionController.clear();
+      edadRange = const RangeValues(18, 60);
     });
   }
 
   @override
-  void dispose() {
-    _animationController.dispose();
-    _regionController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Contenedor de pantalla completa para detectar toques fuera del popup y cerrar el diálogo.
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        // Al tocar fuera del popup se cierra el diálogo
-        onTap: () {
-          Navigator.of(context).pop();
-        },
-        child: Center(
-          // GestureDetector interno para evitar que toques dentro del popup cierren el diálogo.
-          child: GestureDetector(
-            onTap: () {},
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Título animado
-                        _buildAnimatedTitle(),
-                        _buildElegantDivider(),
-                        // ¿Qué tipo de planes buscas?
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '¿Qué tipo de planes buscas?',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
+    final List<Map<String, dynamic>> planSugeridos = planBusqueda.isNotEmpty
+        ? plans.where((plan) {
+            final nombre = plan['name'].toString().toLowerCase();
+            return nombre.contains(planBusqueda.toLowerCase());
+          }).toList()
+        : [];
+
+    final textStyle = const TextStyle(color: Colors.white, fontSize: 14);
+    final textPainter = TextPainter(
+      text: TextSpan(text: _regionController.text, style: textStyle),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final double minWidth = _dropdownWidth;
+    final double dynamicWidth = textPainter.size.width + 48;
+    final double regionFieldWidth = max(minWidth, dynamicWidth);
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      behavior: HitTestBehavior.translucent,
+      child: Center(
+        child: GestureDetector(
+          onTap: () {},
+          behavior: HitTestBehavior.opaque,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 68, 66, 66).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          final animValue = _animationController.value;
+                          return ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return LinearGradient(
+                                colors: [AppColors.blue, Colors.white, AppColors.blue],
+                                stops: [
+                                  (animValue - 0.1).clamp(0.0, 1.0),
+                                  animValue.clamp(0.0, 1.0),
+                                  (animValue + 0.1).clamp(0.0, 1.0),
+                                ],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ).createShader(bounds);
+                            },
+                            blendMode: BlendMode.srcIn,
+                            child: const Text(
+                              'Filtrar Planes',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(
+                        color: Colors.white,
+                        thickness: 0.2,
+                        height: 20,
+                      ),
+                      CompositedTransformTarget(
+                        key: _dropdownKey,
+                        link: _layerLink,
+                        child: GestureDetector(
+                          onTap: _toggleDropdown,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                width: _dropdownWidth,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                  border: Border.all(
+                                    color: const Color.fromARGB(255, 151, 121, 215),
+                                  ),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          if (_selectedIconAsset != null)
+                                            SvgPicture.asset(
+                                              _selectedIconAsset!,
+                                              width: 28,
+                                              height: 28,
+                                              color: Colors.white,
+                                            ),
+                                          if (_selectedIconData != null)
+                                            Icon(
+                                              _selectedIconData,
+                                              color: Colors.white,
+                                            ),
+                                          if (_selectedIconAsset != null || _selectedIconData != null)
+                                            const SizedBox(width: 10),
+                                          Flexible(
+                                            child: Text(
+                                              _customPlan ?? _selectedPlan ?? "Elige un plan",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontFamily: 'Inter-Regular',
+                                                fontSize: 14,
+                                                decoration: TextDecoration.none,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.arrow_drop_down,
+                                      color: Color.fromARGB(255, 227, 225, 231),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        // Dropdown para planes predeterminados
-                        DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.2),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            labelText: 'Tipo de plan',
-                            labelStyle: const TextStyle(
-                                color: Color.fromARGB(255, 207, 193, 193)),
-                          ),
-                          dropdownColor: AppColors.blue,
-                          style: const TextStyle(color: Colors.white),
-                          value: planPredeterminado,
-                          items: tiposPlan.map((String plan) {
-                            return DropdownMenuItem<String>(
-                              value: plan,
-                              child: Text(plan),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              planPredeterminado = value;
-                            });
-                          },
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        '- o -',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(height: 10),
-                        // Separador entre dropdown y búsqueda por nombre:
-                        Center(
-                          child: Text(
-                            '- o -',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Campo de búsqueda por nombre o descripción:
-                        TextField(
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: _dropdownWidth,
+                        child: TextField(
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.2),
                             hintText: 'Busca por nombre...',
                             hintStyle: const TextStyle(
-                                color: Color.fromARGB(255, 207, 193, 193)),
+                              color: Color.fromARGB(255, 207, 193, 193),
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
                           ),
                           onChanged: (value) {
-                            planBusqueda = value;
-                          },
-                        ),
-                        _buildElegantDivider(),
-                        // ¿En qué región buscas planes?
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '¿En qué región buscas planes?',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Campo de región con autocompletado y botón de "Tu ubicación actual"
-                        Column(
-                          children: [
-                            TextField(
-                              controller: _regionController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.2),
-                                hintText: 'Ciudad, país o radio (km)',
-                                hintStyle: const TextStyle(
-                                    color: Color.fromARGB(255, 207, 193, 193)),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.my_location,
-                                      color: Colors.white),
-                                  onPressed: _obtenerUbicacion,
-                                ),
-                              ),
-                              onChanged: (value) {
-                                // Actualiza el filtro de región y obtiene predicciones
-                                setState(() {
-                                  regionBusqueda = value;
-                                });
-                                _fetchRegionPredictions(value);
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            // Separador entre el campo de dirección y el botón
-                            Center(
-                              child: Text(
-                                '- o -',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            // Botón elegante para "Tu ubicación actual"
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: locationAllowed
-                                    ? AppColors.blue
-                                    : AppColors.blue.withOpacity(0.5),
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 20),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              onPressed: _requestLocationPermission,
-                              child: const Text(
-                                'Tu ubicación actual',
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 16),
-                              ),
-                            ),
-                            // Lista de predicciones con efecto frosted glass:
-                            if (_regionPredictions.isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: BackdropFilter(
-                                  filter:
-                                      ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(top: 5),
-                                    padding: const EdgeInsets.all(5),
-                                    color: Colors.white.withOpacity(0.2),
-                                    constraints:
-                                        const BoxConstraints(maxHeight: 150),
-                                    child: ListView.builder(
-                                      shrinkWrap: true,
-                                      itemCount: _regionPredictions.length,
-                                      itemBuilder: (context, index) {
-                                        final prediction =
-                                            _regionPredictions[index];
-                                        return ListTile(
-                                          title: Text(
-                                            prediction['description'],
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                          onTap: () =>
-                                              _onRegionPredictionTap(prediction),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        _buildElegantDivider(),
-                        // ¿Qué rango de edad?
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '¿Qué rango de edad?',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // RangeSlider para el rango de edad
-                        RangeSlider(
-                          values: edadRange,
-                          min: 18,
-                          max: 100,
-                          divisions: 82,
-                          activeColor: AppColors.blue,
-                          inactiveColor: Colors.white.withOpacity(0.3),
-                          labels: RangeLabels(
-                            edadRange.start.round().toString(),
-                            edadRange.end.round().toString(),
-                          ),
-                          onChanged: (RangeValues values) {
                             setState(() {
-                              edadRange = values;
+                              planBusqueda = value;
                             });
                           },
                         ),
-                        _buildElegantDivider(),
-                        // ¿Qué géneros participan?
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '¿Qué géneros participan?',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
+                      ),
+                      if (planBusqueda.isNotEmpty && planSugeridos.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          width: _dropdownWidth,
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 151, 121, 215),
                             ),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: planSugeridos.map((plan) {
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedPlan = plan['name'];
+                                    _selectedIconAsset = plan['icon'];
+                                    _customPlan = null;
+                                    planBusqueda = '';
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      if (plan['icon'] != null)
+                                        SvgPicture.asset(
+                                          plan['icon'],
+                                          width: 28,
+                                          height: 28,
+                                          color: Colors.white,
+                                        ),
+                                      if (plan['icon'] != null)
+                                        const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          plan['name'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: 'Inter-Regular',
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        // Botones verticales para elegir género
-                        Column(
-                          children: [
-                            _buildGenderButton("Hombres", 0,
-                                borderRadius: 30, width: 200),
-                            const SizedBox(height: 10),
-                            _buildGenderButton("Mujeres", 1,
-                                borderRadius: 30, width: 200),
-                            const SizedBox(height: 10),
-                            _buildGenderButton("Todo el mundo", 2,
-                                borderRadius: 30, width: 200),
-                          ],
+                      const Divider(
+                        color: Colors.white,
+                        thickness: 0.2,
+                        height: 20,
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '¿En qué región buscas planes?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
-                        const SizedBox(height: 30),
-                        // Botones de acción: Cancelar y Aplicar
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              child: const Text(
-                                'Cancelar',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).pop();
+                      ),
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: _dropdownWidth,
+                          maxWidth: regionFieldWidth,
+                        ),
+                        child: TextField(
+                          focusNode: _regionFocusNode,
+                          controller: _regionController,
+                          style: const TextStyle(color: Colors.white),
+                          maxLines: null,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.2),
+                            hintText: 'Ciudad, país...',
+                            hintStyle: const TextStyle(
+                              color: Color.fromARGB(255, 207, 193, 193),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.my_location,
+                              color: Color.fromARGB(255, 175, 173, 173),
+                            ),
+                            suffixIcon: _regionController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _regionController.clear();
+                                        regionBusqueda = '';
+                                        _regionPredictions = [];
+                                      });
+                                    },
+                                  )
+                                : null,
+                          ),
+                          onEditingComplete: () {
+                            if (_regionController.text.isNotEmpty) {
+                              _updateUserCoordinatesFromAddress(_regionController.text);
+                            }
+                          },
+                          onChanged: (value) {
+                            setState(() {
+                              regionBusqueda = value;
+                            });
+                            _fetchRegionPredictions(value);
+                          },
+                        ),
+                      ),
+                      if (_regionPredictions.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          width: _dropdownWidth,
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 151, 121, 215),
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _regionPredictions.map((prediction) {
+                              return ListTile(
+                                title: Text(
+                                  prediction['description'],
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                onTap: () => _onRegionPredictionTap(prediction),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Text(
+                          '- o -',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: locationAllowed ? AppColors.blue : AppColors.blue.withOpacity(0.5),
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: _requestLocationPermission,
+                        child: const Text(
+                          'Tu ubicación actual',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const Divider(
+                        color: Colors.white,
+                        thickness: 0.2,
+                        height: 20,
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '¿Qué rango de edad?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RangeSlider(
+                              values: edadRange,
+                              min: 18,
+                              max: 100,
+                              divisions: 82,
+                              activeColor: AppColors.blue,
+                              inactiveColor: Colors.white.withOpacity(0.3),
+                              onChanged: (RangeValues values) {
+                                setState(() {
+                                  edadRange = values;
+                                });
                               },
                             ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.blue,
-                              ),
-                              onPressed: _aplicarFiltros,
-                              child: const Text(
-                                'Aceptar',
-                                style: TextStyle(color: Colors.white),
+                          ),
+                          const SizedBox(width: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "${edadRange.start.round()} - ${edadRange.end.round()}",
+                                  style: const TextStyle(color: Colors.white),
+                                ),
                               ),
                             ),
-                          ],
-                        )
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Botón de Limpiar Filtro
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: _limpiarFiltros,
+                        child: const Text(
+                          'Limpiar Filtro',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            child: const Text(
+                              'Cancelar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.blue,
+                            ),
+                            onPressed: _aplicarFiltros,
+                            child: const Text(
+                              'Aceptar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -555,15 +813,15 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   }
 }
 
-/// Función para mostrar el pop up desde cualquier parte de la app.
-Future<Map<String, dynamic>?> showExploreFilterDialog(BuildContext context) {
+Future<Map<String, dynamic>?> showExploreFilterDialog(BuildContext context,
+    {Map<String, dynamic>? initialFilters}) {
   return showDialog<Map<String, dynamic>>(
     context: context,
     barrierDismissible: true,
-    builder: (context) => const Dialog(
+    builder: (context) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.all(10),
-      child: ExploreScreenFilterDialog(),
+      insetPadding: const EdgeInsets.all(10),
+      child: ExploreScreenFilterDialog(initialFilters: initialFilters),
     ),
   );
 }

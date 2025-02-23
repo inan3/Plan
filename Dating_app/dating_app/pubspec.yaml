@@ -30,6 +30,7 @@ dependencies:
   cached_network_image: ^3.2.3
   permission_handler: ^10.2.0
   image_cropper: ^9.0.0
+  http: ^1.3.0
 
 
 dev_dependencies:
@@ -92,6 +93,7 @@ flutter:
     - assets/icono-id-plan.svg
     - assets/icono-descripcion-plan.svg
     - assets/icono-mapa.svg
+    - assets/icono-globo-usuario.svg
 
   fonts:
     - family: Inter

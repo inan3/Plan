@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dating_app/main/colors.dart';
 
-// Importa el diálogo de filtros (puede seguir usando el mismo si lo requieres)
+// Importa el diálogo de filtros (actualizado)
 import 'explore_screen_filter.dart';
 
 import 'explore_app_bar.dart';
@@ -15,13 +15,12 @@ import 'users_grid.dart';
 import 'menu_side_bar_screen.dart';
 import 'chats/chats_screen.dart'; // Pantalla de mensajes
 import 'users_managing/user_info_check.dart';
-import 'map_screen.dart'; // Pantalla de búsqueda
+import 'map/map_screen.dart'; // Pantalla de búsqueda
 import 'profile_screen.dart'; // Gestión del perfil
 import 'notification_screen.dart'; // Pantalla de notificaciones
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'package:dating_app/plan_joining/plan_join_request.dart';
 import 'filter_screen.dart';
-import 'map_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -31,12 +30,8 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class ExploreScreenState extends State<ExploreScreen> {
-  // _currentIndex: pestaña activa (0: Explore, 1: Search, 2: Chats, 3: Perfil)
   int _currentIndex = 0;
-  // _selectedIconIndex: icono resaltado en el dock (índices 0..4; 2 es "añadir")
   int _selectedIconIndex = 0;
-
-  // Control para el pop up flotante (Crear/Unirse a plan)
   bool _showPopup = false;
 
   final double _iconSize = 30.0;
@@ -46,32 +41,31 @@ class ExploreScreenState extends State<ExploreScreen> {
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
-  int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
+  // Eliminamos el uso de selectedSearchIndex ya que no filtraremos por género.
+  // int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
-  // Ubicación actual (ejemplo: Barcelona)
+  // Ubicación por defecto en caso de que no se filtre
   final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
 
-  // Filtros aplicados desde el diálogo
+  // Filtros aplicados (se espera recibir: planBusqueda o planPredeterminado, regionBusqueda,
+  // userCoordinates, edadMin, edadMax y genero)
   Map<String, dynamic> appliedFilters = {};
 
-  // Espaciados
   double _spacingPopularToNearby = 10;
   double _popularTopSpacing = 5;
-
-  // Lista de páginas para las pestañas (excepto Explore que es 0)
   late List<Widget> _otherPages;
 
   @override
   void initState() {
     super.initState();
     _setStatusBarDark();
-    // Definición de páginas: 1 → Search, 2 → Chats, 3 → Perfil
     _otherPages = [
       const MapScreen(),
       const ChatsScreen(),
       ProfileScreen(),
     ];
-    _loadUserInterest();
+    // Ya no es necesario cargar la preferencia de género del usuario.
+    // _loadUserInterest();
     _currentIndex = 0;
     _selectedIconIndex = 0;
   }
@@ -84,46 +78,31 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onSearchChanged(String value) {
-    // Implementa la búsqueda si la necesitas
+    // Implementa la lógica de búsqueda si lo requieres
   }
 
+  // Al presionar el filtro, se envía el último estado de filtros
   void _onFilterPressed() async {
-    final result = await showExploreFilterDialog(context);
+    final result = await showExploreFilterDialog(context, initialFilters: appliedFilters);
     if (result != null) {
       setState(() {
         appliedFilters = result;
+        // Actualizamos el rango de edad a partir de los filtros aplicados.
+        selectedAgeRange = RangeValues(
+          (result['edadMin'] ?? 18).toDouble(),
+          (result['edadMax'] ?? 40).toDouble(),
+        );
+        // Si es necesario, actualiza también la ubicación y otros filtros:
+        // Por ejemplo, para la ubicación:
+        if (result['userCoordinates'] != null) {
+          // Puedes actualizar currentLocation o una variable similar
+        }
+        // Y para el filtro de plan se mantiene en appliedFilters.
       });
     }
   }
 
-  void _loadUserInterest() async {
-    if (currentUser != null) {
-      try {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser!.uid)
-            .get();
-        if (userDoc.exists) {
-          final String interest = userDoc['interest'].toString();
-          int defaultIndex;
-          if (interest == 'Hombres') {
-            defaultIndex = 0;
-          } else if (interest == 'Mujeres') {
-            defaultIndex = 1;
-          } else {
-            defaultIndex = 2;
-          }
-          setState(() {
-            selectedSearchIndex = defaultIndex;
-          });
-        }
-      } catch (e) {
-        print('Error al cargar la preferencia del usuario: $e');
-      }
-    }
-  }
-
-  // Distancia (Haversine)
+  // Fórmula de Haversine para calcular distancias
   double computeDistance(double lat1, double lng1, double lat2, double lng2) {
     const earthRadius = 6371; // km
     double dLat = _deg2rad(lat2 - lat1);
@@ -159,9 +138,8 @@ class ExploreScreenState extends State<ExploreScreen> {
             onSearchChanged: _onSearchChanged,
             notificationCountStream: _notificationCountStream(),
           ),
-          // Envuelve el buscador en un Transform para moverlo hacia arriba:
           Transform.translate(
-            offset: const Offset(0, -0), // ajusta el valor según necesites
+            offset: const Offset(0, 0),
             child: _buildSearchContainer(),
           ),
           SizedBox(height: _spacingPopularToNearby),
@@ -193,7 +171,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             Expanded(
               child: TextField(
                 onChanged: (value) {
-                  // Lógica de búsqueda
+                  // Lógica de búsqueda si la requieres
                 },
                 decoration: const InputDecoration(
                   hintText: 'Buscar...',
@@ -216,6 +194,24 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  // Consulta la colección "plans" para obtener los uid de usuarios cuyo plan
+  // contenga (en minúsculas) el texto filtrado
+  Future<List<String>> _fetchUserIdsWithPlan(String planFilter) async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('plans').get();
+    List<String> uids = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final String planType = data['type']?.toString().toLowerCase() ?? '';
+      if (planType.contains(planFilter.toLowerCase().trim())) {
+        uids.add(data['createdBy'].toString());
+      }
+    }
+    return uids;
+  }
+
+  // Construye la sección de usuarios aplicando en cadena los filtros: edad, ubicación y plan.
+  // Se ha eliminado el filtrado por género para mostrar a "todo el mundo".
+  // Además, se excluye al usuario actual para que no vea su propio plan.
   Widget _buildNearbySection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
@@ -232,63 +228,85 @@ class ExploreScreenState extends State<ExploreScreen> {
           );
         }
 
-        final validUsers = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final uid = data['uid'];
-          return uid != null && uid != currentUser?.uid;
-        }).toList();
+        List<QueryDocumentSnapshot> validUsers = snapshot.data!.docs;
 
-        // Filtrado por interés (Hombres, Mujeres, o Todos)
-        List<QueryDocumentSnapshot> filteredUsers = validUsers;
-        if (selectedSearchIndex == 0) {
-          filteredUsers = validUsers.where((doc) =>
-            (doc.data() as Map<String, dynamic>)['gender'] == 'Hombre'
-          ).toList();
-        } else if (selectedSearchIndex == 1) {
-          filteredUsers = validUsers.where((doc) =>
-            (doc.data() as Map<String, dynamic>)['gender'] == 'Mujer'
-          ).toList();
-        }
-
-        // Filtrado por edad
-        filteredUsers = filteredUsers.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final int userAge = int.tryParse(data['age'].toString()) ?? 0;
-          return userAge >= selectedAgeRange.start.round() &&
-                 userAge <= selectedAgeRange.end.round();
-        }).toList();
-
-        // Filtrado por región
-        if (appliedFilters.containsKey('regionBusqueda') &&
-            (appliedFilters['regionBusqueda'] as String).isNotEmpty) {
-          final String regionFilter =
-              (appliedFilters['regionBusqueda'] as String).toLowerCase();
-          filteredUsers = filteredUsers.where((doc) {
+        // Excluir al usuario actual (para que no se muestren sus propios planes)
+        if (currentUser != null) {
+          validUsers = validUsers.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            final String city = (data['city'] ?? '').toString().toLowerCase();
-            final String country = (data['country'] ?? '').toString().toLowerCase();
-            return city.contains(regionFilter) || country.contains(regionFilter);
+            return data['uid']?.toString() != currentUser!.uid;
           }).toList();
         }
 
-        // Ordenamos por distancia
-        filteredUsers.sort((a, b) {
+        // Filtrado por rango de edad
+        validUsers = validUsers.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final int userAge = int.tryParse(data['age'].toString()) ?? 0;
+          return userAge >= selectedAgeRange.start.round() &&
+              userAge <= selectedAgeRange.end.round();
+        }).toList();
+
+        // Se define el punto de referencia: se usan las coordenadas del filtro si existen, sino la ubicación por defecto
+        final double referenceLat = (appliedFilters.containsKey('userCoordinates') &&
+                appliedFilters['userCoordinates'] != null)
+            ? (appliedFilters['userCoordinates']['lat'] as double)
+            : currentLocation['lat']!;
+        final double referenceLng = (appliedFilters.containsKey('userCoordinates') &&
+                appliedFilters['userCoordinates'] != null)
+            ? (appliedFilters['userCoordinates']['lng'] as double)
+            : currentLocation['lng']!;
+
+        // Ordenamos los usuarios por distancia
+        validUsers.sort((a, b) {
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
           final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
           final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
           final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
           final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-          final distanceA = computeDistance(
-            currentLocation['lat']!, currentLocation['lng']!, latA, lngA
-          );
-          final distanceB = computeDistance(
-            currentLocation['lat']!, currentLocation['lng']!, latB, lngB
-          );
+          final distanceA = computeDistance(referenceLat, referenceLng, latA, lngA);
+          final distanceB = computeDistance(referenceLat, referenceLng, latB, lngB);
+
+          // Si la diferencia es menor a un umbral, consideramos que el usuario está en la misma ubicación
+          const double epsilon = 0.2; // 0.2 km de tolerancia
+          if (distanceA < epsilon && distanceB >= epsilon) return -1;
+          if (distanceB < epsilon && distanceA >= epsilon) return 1;
           return distanceA.compareTo(distanceB);
         });
 
-        return UsersGrid(users: filteredUsers);
+        // Si se especifica un filtro por plan (ya sea en planPredeterminado o planBusqueda)
+        final String? planFilter = (appliedFilters['planPredeterminado'] != null && (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
+            ? appliedFilters['planPredeterminado'] as String
+            : (appliedFilters['planBusqueda'] != null && (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
+                ? appliedFilters['planBusqueda'] as String
+                : null);
+
+        if (planFilter != null) {
+          return FutureBuilder<List<String>>(
+            future: _fetchUserIdsWithPlan(planFilter),
+            builder: (context, planSnapshot) {
+              if (planSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No hay planes con ese nombre.',
+                    style: TextStyle(fontSize: 18, color: Colors.black),
+                  ),
+                );
+              }
+              final allowedUids = planSnapshot.data!;
+              final filteredUsers = validUsers.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return allowedUids.contains(data['uid'].toString());
+              }).toList();
+              return UsersGrid(users: filteredUsers);
+            },
+          );
+        } else {
+          return UsersGrid(users: validUsers);
+        }
       },
     );
   }
@@ -311,7 +329,7 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Pop up no modal (Crear/Unirse a Plan), SIN BackdropFilter
+  // Pop up no modal (Crear/Unirse a Plan)
   Widget _buildPopup() {
     const double dockBottomMargin = 50.0;
     const double dockHeight = 70.0;
@@ -321,7 +339,6 @@ class ExploreScreenState extends State<ExploreScreen> {
       right: 40,
       child: Material(
         color: Colors.transparent,
-        // Eliminamos BackdropFilter y solo dejamos contenedor con color
         child: Container(
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 38, 37, 37).withOpacity(0.6),
@@ -371,7 +388,6 @@ class ExploreScreenState extends State<ExploreScreen> {
                   ),
                 ),
               ),
-              // Separador
               Container(
                 height: 1,
                 color: Colors.white,
@@ -418,7 +434,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Mapea el índice del dock (0,1,3,4) a la página correspondiente.
   int _mapDockIndexToPageIndex(int dockIndex) {
     switch (dockIndex) {
       case 0:
@@ -434,16 +449,13 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  // Callback para el tap en el dock
   void _onDockIconTap(int dockIndex) {
     if (dockIndex == 2) {
-      // Pulsado "añadir": mostrar pop up no modal
       setState(() {
         _selectedIconIndex = 2;
         _showPopup = true;
       });
     } else {
-      // Si se pulsa otro icono, cerramos pop up si estaba abierto
       if (_showPopup) {
         setState(() {
           _showPopup = false;
@@ -464,9 +476,8 @@ class ExploreScreenState extends State<ExploreScreen> {
         statusBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        resizeToAvoidBottomInset: false, // Evitamos que el contenido se ajuste al abrir el teclado
+        resizeToAvoidBottomInset: false,
         body: Container(
-          // Fondo degradado, sin BackdropFilter global
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -479,13 +490,8 @@ class ExploreScreenState extends State<ExploreScreen> {
           ),
           child: Stack(
             children: [
-              // Página actual (Explore, Search, Chats, Perfil)
               _currentIndex == 0 ? _buildExplorePage() : _otherPages[_currentIndex - 1],
-
-              // Pop up flotante (Crear/Unirse plan) si _showPopup == true
               if (_showPopup) _buildPopup(),
-
-              // Dock inferior (SIN BackdropFilter para no difuminar todo)
               Positioned(
                 bottom: 20,
                 left: 0,
@@ -500,8 +506,6 @@ class ExploreScreenState extends State<ExploreScreen> {
                   ),
                 ),
               ),
-
-              // Menú lateral
               MainSideBarScreen(
                 key: _menuKey,
                 onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
@@ -549,7 +553,6 @@ class DockSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padding,
-      // Se elimina el BackdropFilter, solo Container con color semitransparente
       child: Container(
         height: 70,
         width: containerWidth,
@@ -648,7 +651,6 @@ class DockSection extends StatelessWidget {
                   ),
           ),
         ),
-        // Notificaciones (si se usan)
         if (notificationCountStream != null)
           Positioned(
             right: 2,
@@ -659,7 +661,6 @@ class DockSection extends StatelessWidget {
                 final count = snapshot.data ?? 0;
                 if (count == 0) return const SizedBox();
                 if (index == 3) {
-                  // Mensaje no leído
                   return Container(
                     width: 10,
                     height: 10,
