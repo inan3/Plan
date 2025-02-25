@@ -64,17 +64,27 @@ class MapScreenState extends State<MapScreen> {
         );
       }
 
-      // Carga los marcadores de planes aplicando (o no) el filtro
-      _loadNearbyPlans();
+      // Carga los marcadores (planes + usuarios sin plan)
+      _loadMarkers();
     }
   }
 
-  Future<void> _loadNearbyPlans() async {
+  /// Carga y combina los marcadores de planes con los de usuarios sin plan
+  Future<void> _loadMarkers() async {
     final plansLoader = PlansInMapScreen();
-    // Se pasa el parámetro 'filters' para que el método lo utilice internamente
+
+    // 1) Marcadores de planes con el filtro
     final planMarkers = await plansLoader.loadPlansMarkers(context, filters: _filters);
+
+    // 2) Marcadores de usuarios sin plan (también con el filtro, si procede)
+    final userNoPlanMarkers = await plansLoader.loadUsersWithoutPlansMarkers(context, filters: _filters);
+
+    // 3) Combinamos
     setState(() {
-      _markers = planMarkers;
+      _markers = {
+        ...planMarkers,
+        ...userNoPlanMarkers,
+      };
     });
   }
 
@@ -85,8 +95,8 @@ class MapScreenState extends State<MapScreen> {
       setState(() {
         _filters = result;
       });
-      // Aquí se podría notificar a la pantalla de users_grid.dart para aplicar los mismos filtros
-      _loadNearbyPlans();
+      // Vuelve a cargar para aplicar los filtros
+      _loadMarkers();
     }
   }
 

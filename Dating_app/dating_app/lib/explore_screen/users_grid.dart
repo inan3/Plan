@@ -12,6 +12,8 @@ import 'users_managing/user_info_inside_chat.dart';
 import 'users_managing/user_info_check.dart'; // Contiene FrostedPlanDialog, etc.
 import 'options_for_plans.dart'; // Para el menú de opciones (si lo usas)
 
+import 'invite_users_to_plan_screen.dart';
+
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
   final List<dynamic> users;
@@ -594,6 +596,9 @@ class UsersGrid extends StatelessWidget {
           label: 'Invítale a un Plan',
           onTap: () {
             // Tu lógica para invitar
+            if (userId != null && userId.isNotEmpty) {
+              InviteUsersToPlanScreen.showPopup(context, userId);
+            }
           },
         ),
         const SizedBox(width: 16),

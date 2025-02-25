@@ -60,11 +60,11 @@ class PlansInMapScreen {
 
       final position = LatLng(lat, lng);
 
-      // Construye el marcador personalizado
+      // Construye el marcador personalizado para planes
       final BitmapDescriptor customMarker =
           await _buildPlanMarker(userPhotoUrl, planType);
 
-      // Calcular el anchor dinámicamente usando los mismos parámetros que en _buildPlanMarker:
+      // Calcular el anchor para alinear la punta del marcador con la posición:
       const double markerMinWidth = 120;
       const double padding = 4.0;
       const double fontSize = 20;
@@ -87,8 +87,6 @@ class PlansInMapScreen {
       final double yTip = textContainerHeight + (avatarAreaHeight / 2) + circleRadius;
       final double anchorY = yTip / markerHeight;
 
-      // IMPORTANTE: Se establece el anclaje calculado para que la punta del marcador (canvas)
-      // coincida exactamente con la ubicación del plan en el mapa.
       markers.add(
         Marker(
           markerId: MarkerId(planDoc.id),
@@ -196,29 +194,28 @@ class PlansInMapScreen {
     }
   }
 
-  /// Construye un marcador personalizado:
-  /// - Dibuja el tipo de plan en la parte superior con un fondo dinámico (se adapta a la cantidad de líneas).
-  /// - Pinta el avatar en una región circular.
-  /// - Dibuja un borde verde alrededor del avatar.
+  /// Construye el marcador para un plan, con mayor calidad en el avatar.
   Future<BitmapDescriptor> _buildPlanMarker(String photoUrl, String planType) async {
     try {
-      // 1) Descarga y procesa la imagen del avatar
+      // (1) Descargamos la imagen con calidad original
       final Uint8List imageBytes = await _downloadImageAsBytes(photoUrl);
+
+      // (2) Decodifica en alta resolución (ej: 256x256).
       final ui.Codec codec = await ui.instantiateImageCodec(
         imageBytes,
-        targetWidth: 90,
-        targetHeight: 90,
+        targetWidth: 256,
+        targetHeight: 256,
       );
       final ui.FrameInfo frame = await codec.getNextFrame();
       final ui.Image avatarImage = frame.image;
 
-      // 2) Define parámetros para el dibujo
+      // Parámetros de tamaño del marcador
       const double markerMinWidth = 120;
       const double padding = 4.0;
       const double fontSize = 20;
       const double textTopMargin = 10;
       
-      // Se prepara el TextPainter para el tipo de plan
+      // Preparar texto (planType)
       final textPainter = TextPainter(
         text: TextSpan(
           text: planType,
@@ -231,15 +228,9 @@ class PlansInMapScreen {
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.center,
       );
-      
-      // Se define un ancho máximo para el contenedor de texto (en este caso el mínimo del marcador)
       textPainter.layout(maxWidth: markerMinWidth - 2 * padding);
-      
-      // Calcula la altura del contenedor del texto (incluyendo padding)
+
       final double textContainerHeight = textPainter.height + 2 * padding;
-      
-      // Define la altura total del marcador sumando el área reservada para el avatar
-      // Aquí se reserva 110 puntos para el área del avatar (puedes ajustar este valor según necesites)
       const double avatarAreaHeight = 110;
       final double markerHeight = textContainerHeight + avatarAreaHeight;
       final double markerWidth = markerMinWidth;
@@ -247,7 +238,7 @@ class PlansInMapScreen {
       final ui.PictureRecorder recorder = ui.PictureRecorder();
       final Canvas canvas = Canvas(recorder);
 
-      // 3) Dibuja el contenedor del texto en la parte superior
+      // (3) Fondo para el texto
       final double textX = (markerWidth - textPainter.width) / 2;
       final double textY = textTopMargin;
       final Rect bgRect = Rect.fromLTWH(
@@ -259,45 +250,48 @@ class PlansInMapScreen {
       final RRect bgRRect = RRect.fromRectAndRadius(bgRect, const Radius.circular(8));
       final Paint bgPaint = Paint()..color = Colors.white;
       canvas.drawRRect(bgRRect, bgPaint);
+
       final Paint textBorderPaint = Paint()
         ..color = Colors.orange
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1;
       canvas.drawRRect(bgRRect, textBorderPaint);
+
       textPainter.paint(canvas, Offset(textX, textY));
 
-      // 4) Dibuja el avatar debajo del contenedor de texto
+      // (4) Avatar
       final double circleCenterX = markerWidth / 2;
       final double circleCenterY = textContainerHeight + avatarAreaHeight / 2;
       const double circleRadius = 40;
       final Offset center = Offset(circleCenterX, circleCenterY);
 
-      // 5) Recorta el canvas a la región circular y pinta el avatar centrado
       final Path clipPath = Path()
         ..addOval(Rect.fromCircle(center: center, radius: circleRadius));
       canvas.save();
       canvas.clipPath(clipPath);
+
       final Rect imageRect = Rect.fromCenter(
         center: center,
         width: circleRadius * 2,
         height: circleRadius * 2,
       );
+
       paintImage(
         canvas: canvas,
         rect: imageRect,
         image: avatarImage,
         fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
       );
       canvas.restore();
 
-      // 6) Dibuja un borde verde alrededor del avatar
+      // Borde verde alrededor del avatar
       final Paint avatarBorderPaint = Paint()
         ..color = Colors.green
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3;
       canvas.drawCircle(center, circleRadius, avatarBorderPaint);
 
-      // 7) Convierte el dibujo en una imagen PNG
       final ui.Picture picture = recorder.endRecording();
       final ui.Image markerImage = await picture.toImage(
         markerWidth.toInt(),
@@ -306,10 +300,159 @@ class PlansInMapScreen {
       final ByteData? byteData = await markerImage.toByteData(format: ui.ImageByteFormat.png);
       final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-      // 8) Retorna el BitmapDescriptor creado a partir de los bytes PNG
       return BitmapDescriptor.fromBytes(pngBytes);
     } catch (e) {
       print("Error creando marcador personalizado: $e");
+      return BitmapDescriptor.defaultMarker;
+    }
+  }
+
+  /// Carga los usuarios que NO tengan ningún plan y crea un marcador (solo avatar, sin "?").
+  Future<Set<Marker>> loadUsersWithoutPlansMarkers(
+    BuildContext context, {
+    Map<String, dynamic>? filters,
+  }) async {
+    final usersCollection = FirebaseFirestore.instance.collection('users');
+    final plansCollection = FirebaseFirestore.instance.collection('plans');
+
+    // 1) Obtener los userIds que tienen al menos un plan
+    final planSnapshot = await plansCollection.get();
+    final Set<String> userIdsConPlan = {};
+    for (var doc in planSnapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data == null) continue;
+      final createdBy = data['createdBy'] as String?;
+      if (createdBy != null && createdBy.isNotEmpty) {
+        userIdsConPlan.add(createdBy);
+      }
+    }
+
+    // 2) Obtiene todos los usuarios
+    final usersSnapshot = await usersCollection.get();
+    final Set<Marker> userMarkers = {};
+
+    for (var userDoc in usersSnapshot.docs) {
+      final data = userDoc.data() as Map<String, dynamic>?;
+      if (data == null) continue;
+
+      final String userId = data['uid'] ?? '';
+      if (userId.isEmpty) continue;
+
+      // Filtros opcionales (edad, etc.) si lo deseas
+      // ...
+
+      // Verifica que el usuario NO tenga plan
+      if (userIdsConPlan.contains(userId)) {
+        continue; 
+      }
+
+      // Consigue lat/lng
+      final double? lat = data['latitude']?.toDouble();
+      final double? lng = data['longitude']?.toDouble();
+      if (lat == null || lng == null) {
+        continue;
+      }
+
+      final position = LatLng(lat, lng);
+
+      // Foto de perfil (opcional)
+      final String? userPhotoUrl = data['photoUrl'] as String?;
+      // Construimos el marcador (sin "?")
+      final BitmapDescriptor customMarker = await _buildNoPlanMarker(
+        userPhotoUrl ?? '',
+      );
+
+      userMarkers.add(
+        Marker(
+          markerId: MarkerId('noPlanUser_$userId'),
+          position: position,
+          icon: customMarker,
+          // Ajusta anchor si lo deseas. Con anchor default, la punta estará en el centro-bajo del icono
+          onTap: () {
+            // TODO: acción especial para usuarios sin plan
+          },
+        ),
+      );
+    }
+
+    return userMarkers;
+  }
+
+  /// Construye un marcador SÓLO con el avatar (sin "?").
+  Future<BitmapDescriptor> _buildNoPlanMarker(String photoUrl) async {
+    try {
+      // Tamaño final del lienzo
+      const double markerSize = 100; // Puedes ajustarlo
+      const double avatarRadius = 40; // Radio para la foto
+
+      Uint8List? imageBytes;
+      if (photoUrl.isNotEmpty) {
+        imageBytes = await _downloadImageAsBytes(photoUrl);
+      }
+
+      ui.Image? avatarImage;
+      if (imageBytes != null) {
+        // Decodifica en alta resolución para mayor nitidez
+        final ui.Codec codec = await ui.instantiateImageCodec(
+          imageBytes,
+          targetWidth: 256,
+          targetHeight: 256,
+        );
+        final ui.FrameInfo frame = await codec.getNextFrame();
+        avatarImage = frame.image;
+      }
+
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(recorder);
+
+      // Centramos el círculo en markerSize / 2
+      final Offset center = Offset(markerSize / 2, markerSize / 2);
+
+      if (avatarImage != null) {
+        // 1) recortamos en círculo
+        final Path clipPath = Path()
+          ..addOval(Rect.fromCircle(center: center, radius: avatarRadius));
+        canvas.save();
+        canvas.clipPath(clipPath);
+
+        // 2) pintamos la imagen
+        final Rect imageRect = Rect.fromCenter(
+          center: center,
+          width: avatarRadius * 2,
+          height: avatarRadius * 2,
+        );
+        paintImage(
+          canvas: canvas,
+          rect: imageRect,
+          image: avatarImage,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+        );
+        canvas.restore();
+
+        // 3) Dibujamos el borde
+        final Paint borderPaint = Paint()
+          ..color = Colors.green
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3;
+        canvas.drawCircle(center, avatarRadius, borderPaint);
+      } else {
+        // Si no hay foto, un círculo gris
+        final Paint circlePaint = Paint()..color = const Color(0xFFE0E0E0);
+        canvas.drawCircle(center, avatarRadius, circlePaint);
+      }
+
+      final ui.Picture picture = recorder.endRecording();
+      final ui.Image markerImage = await picture.toImage(
+        markerSize.toInt(),
+        markerSize.toInt(),
+      );
+      final ByteData? byteData = await markerImage.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      return BitmapDescriptor.fromBytes(pngBytes);
+    } catch (e) {
+      print("Error creando marcador de usuario sin plan: $e");
       return BitmapDescriptor.defaultMarker;
     }
   }
