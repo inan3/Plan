@@ -530,6 +530,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
 
   // -------------------------------------------------------------------------
   // UI: Selección de Fecha/Hora (copia de new_plan_creation_screen.dart)
+  // Se actualiza para combinar fecha y hora en _selectedDateTime.
   // -------------------------------------------------------------------------
   void _showDateSelectionPopup() {
     showDialog(
@@ -603,7 +604,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // Fecha de inicio
+                        // Fecha de inicio (fecha y hora)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -732,11 +733,23 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                         ElevatedButton(
                           onPressed: () {
                             if (_startDate != null) {
+                              DateTime finalDateTime;
+                              if (!_allDay && _startTime != null) {
+                                finalDateTime = DateTime(
+                                  _startDate!.year,
+                                  _startDate!.month,
+                                  _startDate!.day,
+                                  _startTime!.hour,
+                                  _startTime!.minute,
+                                );
+                              } else {
+                                finalDateTime = _startDate!;
+                              }
                               setState(() {
-                                _selectedDateTime = _startDate;
+                                _selectedDateTime = finalDateTime;
                               });
+                              Navigator.pop(context);
                             }
-                            Navigator.pop(context);
                           },
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.blue),
                           child: const Text("Aceptar", style: TextStyle(color: Colors.white)),
@@ -896,8 +909,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         _startDate!.year,
         _startDate!.month,
         _startDate!.day,
-        startTime.hour,
-        startTime.minute,
+        !_allDay && _startTime != null ? _startTime!.hour : 0,
+        !_allDay && _startTime != null ? _startTime!.minute : 0,
       );
       final planDoc = FirebaseFirestore.instance.collection('plans').doc();
       final planId = planDoc.id;
@@ -914,6 +927,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         "createdAt": DateTime.now().toIso8601String(),
         "privateInvite": true, // Este plan NO se mostrará en Explore
         "likes": 0,
+        "special_plan": 1, // Plan especial creado desde invite_users_to_plan_screen.dart
       };
 
       await planDoc.set(dataToSave);
@@ -1202,7 +1216,7 @@ Future<void> _sendInvitationNotification({
   final notiDoc = FirebaseFirestore.instance.collection('notifications').doc();
   await notiDoc.set({
     "id": notiDoc.id,
-    "type": "join_request", // Usamos join_request para que se muestre en notificaciones.
+    "type": "invitation", // Cambiado a "invitation"
     "senderId": senderUid,
     "receiverId": receiverUid,
     "planId": planId,

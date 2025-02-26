@@ -1580,6 +1580,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 backgroundImage: backgroundImageUrl, // Se guarda la URL
                                 visibility: _selectedVisibility,
                                 iconAsset: _selectedIconAsset,
+                                special_plan: 0, // Plan normal
                               );
                               Navigator.pop(context);
                             } catch (error) {

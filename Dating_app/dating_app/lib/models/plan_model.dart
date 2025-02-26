@@ -27,7 +27,9 @@ class PlanModel {
   // Lista de participantes
   List<String>? participants;
   // NUEVO: Contador de likes
-  int likes; 
+  int likes;
+  // NUEVO: Variable especial, 1 si se crea desde invite_users_to_plan_screen.dart y 0 si se crea desde new_plan_creation_screen.dart.
+  int special_plan;
 
   // Constructor
   PlanModel({
@@ -50,6 +52,7 @@ class PlanModel {
     this.iconAsset,
     this.participants,
     this.likes = 0, // Valor por defecto 0
+    this.special_plan = 0, // Por defecto 0 (plan normal)
   });
 
   // Genera un ID único para el plan de 10 caracteres alfanuméricos
@@ -90,7 +93,8 @@ class PlanModel {
       'visibility': visibility,
       'iconAsset': iconAsset,
       'participants': participants ?? [],
-      'likes': likes, // NUEVO
+      'likes': likes,
+      'special_plan': special_plan,
     };
   }
 
@@ -120,6 +124,7 @@ class PlanModel {
           ? List<String>.from(map['participants'] as List)
           : <String>[],
       likes: map['likes'] != null ? map['likes'] as int : 0,
+      special_plan: map['special_plan'] != null ? map['special_plan'] as int : 0,
     );
   }
 
@@ -149,11 +154,11 @@ class PlanModel {
     return '${d.day.toString().padLeft(2, '0')}/'
            '${d.month.toString().padLeft(2, '0')}/'
            '${d.year} '
-           '${d.hour.toString().padLeft(2, '0')}:' 
+           '${d.hour.toString().padLeft(2, '0')}:'
            '${d.minute.toString().padLeft(2, '0')}';
   }
 
-  // Crea y guarda un plan en Firestore
+  // Crea y guarda un plan en Firestore (usado en new_plan_creation_screen.dart)
   static Future<PlanModel> createPlan({
     required String type,
     required String description,
@@ -167,6 +172,7 @@ class PlanModel {
     String? backgroundImage,
     String? visibility,
     String? iconAsset,
+    int special_plan = 0, // Por defecto 0 (plan normal)
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -203,7 +209,8 @@ class PlanModel {
       visibility: visibility,
       iconAsset: iconAsset,
       participants: [],
-      likes: 0, // Inicialmente 0
+      likes: 0,
+      special_plan: special_plan,
     );
 
     // Guardar en la colección 'plans'

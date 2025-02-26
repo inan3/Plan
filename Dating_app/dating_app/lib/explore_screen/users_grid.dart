@@ -46,6 +46,7 @@ class UsersGrid extends StatelessWidget {
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: userId)
+        .where('special_plan', isEqualTo: 0) // Solo planes no especiales
         .get();
 
     return snapshot.docs.map((doc) {

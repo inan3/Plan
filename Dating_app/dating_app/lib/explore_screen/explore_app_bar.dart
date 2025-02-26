@@ -20,7 +20,7 @@ class ExploreAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 20, 0, 5), // Ajustado: 5 píxeles abajo
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -63,7 +63,7 @@ class ExploreAppBar extends StatelessWidget {
             ),
           ),
 
-          // Logo desplazado hacia la derecha
+          // Logo
           Transform.translate(
             offset: const Offset(0, 0),
             child: Image.asset(
@@ -110,6 +110,7 @@ class ExploreAppBar extends StatelessWidget {
                             ),
                             onPressed: onNotificationPressed,
                           ),
+                          // Badge de notificaciones
                           if (notificationCountStream != null)
                             Positioned(
                               right: 11,

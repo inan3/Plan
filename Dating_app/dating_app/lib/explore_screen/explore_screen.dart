@@ -41,8 +41,6 @@ class ExploreScreenState extends State<ExploreScreen> {
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
-  // Eliminamos el uso de selectedSearchIndex ya que no filtraremos por género.
-  // int selectedSearchIndex = 0; // 0: Hombres, 1: Mujeres, 2: Todo el mundo
 
   // Ubicación por defecto en caso de que no se filtre
   final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
@@ -64,8 +62,6 @@ class ExploreScreenState extends State<ExploreScreen> {
       const ChatsScreen(),
       ProfileScreen(),
     ];
-    // Ya no es necesario cargar la preferencia de género del usuario.
-    // _loadUserInterest();
     _currentIndex = 0;
     _selectedIconIndex = 0;
   }
@@ -87,22 +83,17 @@ class ExploreScreenState extends State<ExploreScreen> {
     if (result != null) {
       setState(() {
         appliedFilters = result;
-        // Actualizamos el rango de edad a partir de los filtros aplicados.
+        // Actualiza rango de edad
         selectedAgeRange = RangeValues(
           (result['edadMin'] ?? 18).toDouble(),
           (result['edadMax'] ?? 40).toDouble(),
         );
-        // Si es necesario, actualiza también la ubicación y otros filtros:
-        // Por ejemplo, para la ubicación:
-        if (result['userCoordinates'] != null) {
-          // Puedes actualizar currentLocation o una variable similar
-        }
-        // Y para el filtro de plan se mantiene en appliedFilters.
+        // Si es necesario, actualiza ubicación, etc.
       });
     }
   }
 
-  // Fórmula de Haversine para calcular distancias
+  // Cálculo de distancia (Haversine)
   double computeDistance(double lat1, double lng1, double lat2, double lng2) {
     const earthRadius = 6371; // km
     double dLat = _deg2rad(lat2 - lat1);
@@ -194,8 +185,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Consulta la colección "plans" para obtener los uid de usuarios cuyo plan
-  // contenga (en minúsculas) el texto filtrado
+  // Consulta "plans" para ver qué usuarios tienen un plan que coincida con un texto
   Future<List<String>> _fetchUserIdsWithPlan(String planFilter) async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('plans').get();
     List<String> uids = [];
@@ -209,9 +199,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     return uids;
   }
 
-  // Construye la sección de usuarios aplicando en cadena los filtros: edad, ubicación y plan.
-  // Se ha eliminado el filtrado por género para mostrar a "todo el mundo".
-  // Además, se excluye al usuario actual para que no vea su propio plan.
+  // Listado de usuarios cercanos, filtrados
   Widget _buildNearbySection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
@@ -230,7 +218,7 @@ class ExploreScreenState extends State<ExploreScreen> {
 
         List<QueryDocumentSnapshot> validUsers = snapshot.data!.docs;
 
-        // Excluir al usuario actual (para que no se muestren sus propios planes)
+        // Excluir usuario actual
         if (currentUser != null) {
           validUsers = validUsers.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
@@ -238,7 +226,7 @@ class ExploreScreenState extends State<ExploreScreen> {
           }).toList();
         }
 
-        // Filtrado por rango de edad
+        // Filtrar por rango de edad
         validUsers = validUsers.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final int userAge = int.tryParse(data['age'].toString()) ?? 0;
@@ -246,17 +234,14 @@ class ExploreScreenState extends State<ExploreScreen> {
               userAge <= selectedAgeRange.end.round();
         }).toList();
 
-        // Se define el punto de referencia: se usan las coordenadas del filtro si existen, sino la ubicación por defecto
-        final double referenceLat = (appliedFilters.containsKey('userCoordinates') &&
-                appliedFilters['userCoordinates'] != null)
+        // Ordenar por distancia
+        final double referenceLat = (appliedFilters['userCoordinates'] != null)
             ? (appliedFilters['userCoordinates']['lat'] as double)
             : currentLocation['lat']!;
-        final double referenceLng = (appliedFilters.containsKey('userCoordinates') &&
-                appliedFilters['userCoordinates'] != null)
+        final double referenceLng = (appliedFilters['userCoordinates'] != null)
             ? (appliedFilters['userCoordinates']['lng'] as double)
             : currentLocation['lng']!;
 
-        // Ordenamos los usuarios por distancia
         validUsers.sort((a, b) {
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
@@ -266,18 +251,15 @@ class ExploreScreenState extends State<ExploreScreen> {
           final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
           final distanceA = computeDistance(referenceLat, referenceLng, latA, lngA);
           final distanceB = computeDistance(referenceLat, referenceLng, latB, lngB);
-
-          // Si la diferencia es menor a un umbral, consideramos que el usuario está en la misma ubicación
-          const double epsilon = 0.2; // 0.2 km de tolerancia
-          if (distanceA < epsilon && distanceB >= epsilon) return -1;
-          if (distanceB < epsilon && distanceA >= epsilon) return 1;
           return distanceA.compareTo(distanceB);
         });
 
-        // Si se especifica un filtro por plan (ya sea en planPredeterminado o planBusqueda)
-        final String? planFilter = (appliedFilters['planPredeterminado'] != null && (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
+        // Filtrar por plan (opcional)
+        final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
+                (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
             ? appliedFilters['planPredeterminado'] as String
-            : (appliedFilters['planBusqueda'] != null && (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
+            : (appliedFilters['planBusqueda'] != null &&
+                    (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
                 ? appliedFilters['planBusqueda'] as String
                 : null);
 
@@ -311,15 +293,22 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  /// NOTA: Se ha quitado el filtro `.where('read', isEqualTo: false)` para que no falle con notificaciones viejas.
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
         .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('type', whereIn: ['join_request', 'join_accepted', 'join_rejected'])
+        .where('type', whereIn: [
+          'join_request',
+          'join_accepted',
+          'join_rejected',
+          'invitation',
+        ])
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
+  /// Seguimos filtrando mensajes no leídos
   Stream<int> _unreadMessagesCountStream() {
     return FirebaseFirestore.instance
         .collection('messages')
@@ -439,7 +428,7 @@ class ExploreScreenState extends State<ExploreScreen> {
       case 0:
         return 0; // Explore
       case 1:
-        return 1; // Search
+        return 1; // Search (MapScreen)
       case 3:
         return 2; // Chats
       case 4:
@@ -501,7 +490,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                     currentIndex: _currentIndex,
                     selectedIconIndex: _selectedIconIndex,
                     onTapIcon: _onDockIconTap,
-                    notificationCountStream: null,
+                    notificationCountStream: null, // No se usa aquí
                     unreadMessagesCountStream: _unreadMessagesCountStream(),
                   ),
                 ),
@@ -651,43 +640,7 @@ class DockSection extends StatelessWidget {
                   ),
           ),
         ),
-        if (notificationCountStream != null)
-          Positioned(
-            right: 2,
-            top: 2,
-            child: StreamBuilder<int>(
-              stream: notificationCountStream,
-              builder: (context, snapshot) {
-                final count = snapshot.data ?? 0;
-                if (count == 0) return const SizedBox();
-                if (index == 3) {
-                  return Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: AppColors.blue,
-                      shape: BoxShape.circle,
-                    ),
-                  );
-                }
-                return Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    count > 9 ? '9+' : '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+        // Ejemplo si quieres poner un badge en este icono también...
       ],
     );
   }
