@@ -6,17 +6,17 @@ import 'package:dating_app/main/colors.dart';
 import 'dart:ui';
 
 // Importaciones de pantallas
-import 'menu_side_bar/profile_screen.dart';
-import 'menu_side_bar/my_plans_screen.dart';
-import 'menu_side_bar/explore_plans_screen.dart';
-import 'menu_side_bar/notifications_screen.dart';
-import 'menu_side_bar/chat_screen.dart';
-import 'menu_side_bar/valorations_screen.dart';
-import 'menu_side_bar/favourites_screen.dart';
-import 'menu_side_bar/settings_screen.dart';
-import 'menu_side_bar/help_center_screen.dart';
-import 'menu_side_bar/close_session_screen.dart';
-import 'menu_side_bar/subscribed_plans_screen.dart';
+import 'profile_screen.dart';
+import 'my_plans_screen.dart';
+import 'explore_plans_screen.dart';
+import 'notifications_screen.dart';
+import 'chat_screen.dart';
+import 'valorations_screen.dart';
+import 'favourites_screen.dart';
+import 'settings_screen.dart';
+import 'help_center_screen.dart';
+import 'close_session_screen.dart';
+import 'subscribed_plans_screen.dart';
 
 class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
@@ -70,7 +70,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(0.6),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,58 +244,88 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
-  Widget _buildMenuItemWithBadge({
-    required IconData icon,
-    required String title,
-    required Widget destination,
-    required Color iconColor,
-    required Color textColor,
-    required Stream<QuerySnapshot> stream,
-  }) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: stream,
-      builder: (context, snapshot) {
-        int count = 0;
-        if (snapshot.hasData) {
-          count = snapshot.data!.docs.length;
-        }
+Widget _buildMenuItemWithBadge({
+  required IconData icon,
+  required String title,
+  required Widget destination,
+  required Color iconColor,
+  required Color textColor,
+  required Stream<QuerySnapshot> stream,
+}) {
+  return StreamBuilder<QuerySnapshot>(
+    stream: stream,
+    builder: (context, snapshot) {
+      int count = 0;
+      if (snapshot.hasData) {
+        count = snapshot.data!.docs.length;
+      }
 
-        return ListTile(
-          dense: true,
-          leading: Icon(icon, color: iconColor, size: 24),
-          title: Text(
-            title,
-            style: GoogleFonts.roboto(
-              color: textColor,
-              fontSize: 16,
-            ),
+      return ListTile(
+        dense: true,
+        leading: Icon(icon, color: iconColor, size: 24),
+        title: Text(
+          title,
+          style: GoogleFonts.roboto(
+            color: textColor,
+            fontSize: 16,
           ),
-          trailing: count > 0
-              ? Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: AppColors.blue,
-                    shape: BoxShape.circle,
+        ),
+        trailing: count > 0
+            ? Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: AppColors.blue,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                ),
+              )
+            : const SizedBox(),
+        onTap: () {
+          
+          if (title == 'Mis Planes') {
+            showDialog(
+              context: context,
+              builder: (context) => Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.all(16.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20.0),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20.0),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      constraints: const BoxConstraints(
+                        maxHeight: 500, // Ajusta el tamaño según tus necesidades.
+                      ),
+                      child: const MyPlansScreen(),
                     ),
                   ),
-                )
-              : const SizedBox(),
-          onTap: () {
+                ),
+              ),
+            );
+          } else {
             toggleMenu();
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => destination),
             );
-          },
-        );
-      },
-    );
-  }
+          }
+        },
+      );
+    },
+  );
+}
 }

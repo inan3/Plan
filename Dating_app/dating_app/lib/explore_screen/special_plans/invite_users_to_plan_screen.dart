@@ -1,5 +1,5 @@
+import 'dart:ui' as ui; // Asegúrate de incluir esta línea
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,10 +7,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // Si usas una lista de planes predefinidos
-import '../../utils/plans_list.dart'; 
-import '../../models/plan_model.dart';
-import '../plan_creation/meeting_location_screen.dart'; // Asegúrate que esta clase exista y esté correctamente importada.
-import '../../main/colors.dart';
+import '../../../utils/plans_list.dart'; 
+import '../../../models/plan_model.dart';
+import '../../plan_creation/meeting_location_screen.dart';
+import '../../../main/colors.dart';
 
 /// ---------------------------------------------------------------------------
 /// PANTALLA DE INVITAR USUARIOS A UN PLAN
@@ -59,7 +59,7 @@ class _InvitePlanPopup extends StatefulWidget {
 class _InvitePlanPopupState extends State<_InvitePlanPopup> {
   @override
   Widget build(BuildContext context) {
-    final double popupWidth = MediaQuery.of(context).size.width * 0.8;
+    final double popupWidth = MediaQuery.of(context).size.width * 0.66;
 
     return Center(
       child: Material(
@@ -68,13 +68,13 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
           width: popupWidth,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(30),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
                 Color(0xFF0D253F),
-                Color(0xFF1B3A57),
+                ui.Color.fromARGB(255, 0, 0, 0),
                 Color(0xFF12232E),
               ],
             ),
@@ -90,11 +90,10 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                "Invita a un Plan",
+                "Invítale a un plan",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
                   decoration: TextDecoration.none,
                 ),
               ),
@@ -102,15 +101,15 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               // BOTÓN 1: PLAN YA EXISTENTE
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: AppColors.blue,
+                  minimumSize: const Size(100, 40),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
                 onPressed: _onInviteExistingPlan,
                 child: const Text(
-                  "Invítale a un Plan ya existente",
+                  "Existente",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -122,15 +121,15 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               // BOTÓN 2: PLAN NUEVO
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: AppColors.blue,
+                  minimumSize: const Size(120, 40),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
                 onPressed: _onInviteNewPlan,
                 child: const Text(
-                  "Invítale a un Plan nuevo",
+                  "Nuevo",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -149,6 +148,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
+    // Se obtienen únicamente los planes creados por el usuario invitador (A)
     final activePlans = await _fetchActivePlans(currentUser.uid);
     if (activePlans.isEmpty) {
       _showNoPlansPopup();
@@ -184,42 +184,127 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
   }
 
   void _showExistingPlansPopup(List<PlanModel> activePlans) {
-    showModalBottomSheet(
+    showGeneralDialog(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      isScrollControlled: true,
-      builder: (_) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            const Text(
-              "Selecciona uno de tus planes",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      barrierColor: Colors.black.withOpacity(0.4),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) {
+        return Center(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.85,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
             ),
-            const Divider(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: activePlans.length,
-                itemBuilder: (context, index) {
-                  final plan = activePlans[index];
-                  return ListTile(
-                    title: Text(plan.type),
-                    subtitle: Text(
-                      "Creado el: ${plan.formattedDate(plan.createdAt)}",
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Material( // Provee la base Material
+                  color: Colors.white.withOpacity(0.3),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
                     ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _inviteUserToExistingPlan(plan);
-                    },
-                  );
-                },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Selecciona uno de tus planes",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Divider(color: Colors.white54),
+                        Expanded(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: activePlans.length,
+                            itemBuilder: (context, index) {
+                              final plan = activePlans[index];
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: BackdropFilter(
+                                    filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                                    child: Container(
+                                      color: Colors.white.withOpacity(0.15),
+                                      child: ListTile(
+                                        title: Text(
+                                          plan.type,
+                                          style: const TextStyle(color: Colors.white),
+                                        ),
+                                        subtitle: Text(
+                                          "Creado el: ${plan.formattedDate(plan.createdAt)}",
+                                          style: const TextStyle(color: Colors.white70),
+                                        ),
+                                        onTap: () {
+                                          // Lanza el popup de confirmación frosted
+                                          showGeneralDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            barrierLabel: "Confirmar invitación",
+                                            barrierColor: Colors.black54,
+                                            transitionDuration: const Duration(milliseconds: 300),
+                                            pageBuilder: (context, animation, secondaryAnimation) {
+                                              return const SizedBox();
+                                            },
+                                            transitionBuilder: (context, anim1, anim2, child) {
+                                              return FadeTransition(
+                                                opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+                                                child: ScaleTransition(
+                                                  scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+                                                  child: Center(
+                                                    child: _FrostedConfirmDialog(
+                                                      plan: plan,
+                                                      onConfirm: () {
+                                                        // Cierra primero el dialog de confirmación,
+                                                        // luego el popup de lista de planes e invita.
+                                                        Navigator.pop(context);
+                                                        Navigator.pop(context);
+                                                        _inviteUserToExistingPlan(plan);
+                                                      },
+                                                      onCancel: () {
+                                                        Navigator.pop(context);
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ],
+          ),
+        );
+      },
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+          child: ScaleTransition(
+            scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+            child: child,
+          ),
         );
       },
     );
@@ -230,7 +315,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     if (currentUser == null) return;
     final invitedUid = widget.invitedUserId;
 
-    // Envia notificación. Se usa "join_request" para que se muestre en NotificationScreen.
+    // Envía notificación. Se usa "invitation" para que aparezca en NotificationScreen.
     await _sendInvitationNotification(
       senderUid: currentUser.uid,
       receiverUid: invitedUid,
@@ -250,9 +335,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// POPUP DE CREACIÓN DE PLAN PRIVADO (4 pasos: tipo, fecha/hora, ubicación, descripción)
-// ---------------------------------------------------------------------------
+/// POPUP DE CREACIÓN DE PLAN PRIVADO (4 pasos: tipo, fecha/hora, ubicación, descripción)
 void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
   showGeneralDialog(
     context: context,
@@ -802,8 +885,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       id: '',
       type: _customPlan ?? _selectedPlan ?? '',
       description: _planDescription ?? '',
-      minAge: 18,   // Valor por defecto (puedes cambiarlo)
-      maxAge: 99,   // Valor por defecto
+      minAge: 18,
+      maxAge: 99,
       location: _location ?? '',
       latitude: _latitude ?? 0.0,
       longitude: _longitude ?? 0.0,
@@ -925,14 +1008,13 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         "longitude": _longitude ?? 0.0,
         "date": dateTime.toIso8601String(),
         "createdAt": DateTime.now().toIso8601String(),
-        "privateInvite": true, // Este plan NO se mostrará en Explore
+        "privateInvite": true,
         "likes": 0,
-        "special_plan": 1, // Plan especial creado desde invite_users_to_plan_screen.dart
+        "special_plan": 1,
       };
 
       await planDoc.set(dataToSave);
 
-      // Envía notificación. Se usa "join_request" para que aparezca en NotificationScreen.
       await _sendInvitationNotification(
         senderUid: currentUser.uid,
         receiverUid: widget.invitedUserId,
@@ -977,18 +1059,14 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Paso 1: Tipo de plan
               _buildTypeOfPlanSection(),
               const SizedBox(height: 20),
               if (_selectedPlan != null || (_customPlan != null && _customPlan!.isNotEmpty)) ...[
-                // Paso 2: Fecha/hora
                 _buildDateTimeSection(),
                 const SizedBox(height: 20),
                 if (_selectedDateTime != null) ...[
-                  // Paso 3: Ubicación
                   _buildLocationSelectionArea(),
                   const SizedBox(height: 20),
-                  // Paso 4: Breve descripción
                   _buildDescriptionSection(),
                 ],
               ],
@@ -1162,13 +1240,12 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// MÉTODOS AUXILIARES GLOBALES
-// ---------------------------------------------------------------------------
+/// MÉTODOS AUXILIARES GLOBALES
+
 Future<List<PlanModel>> _fetchActivePlans(String userId) async {
   final List<PlanModel> activePlans = [];
 
-  // Planes creados
+  // Solo se obtienen los planes creados por el usuario
   final createdSnap = await FirebaseFirestore.instance
       .collection('plans')
       .where('createdBy', isEqualTo: userId)
@@ -1179,34 +1256,11 @@ Future<List<PlanModel>> _fetchActivePlans(String userId) async {
     activePlans.add(plan);
   }
 
-  // Planes suscritos (si se usan)
-  final subsSnap = await FirebaseFirestore.instance
-      .collection('subscriptions')
-      .where('userId', isEqualTo: userId)
-      .get();
-  for (var sDoc in subsSnap.docs) {
-    final subData = sDoc.data();
-    final planId = subData['id'];
-    if (planId == null) continue;
-    final planDoc = await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(planId)
-        .get();
-    if (planDoc.exists) {
-      final planData = planDoc.data()!;
-      final plan = PlanModel.fromMap(planData);
-      if (!activePlans.any((p) => p.id == plan.id)) {
-        activePlans.add(plan);
-      }
-    }
-  }
   activePlans.sort((a, b) =>
       (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()));
   return activePlans;
 }
 
-/// Envía la notificación de invitación.
-/// Se usa "join_request" como tipo para que aparezca en NotificationScreen.
 Future<void> _sendInvitationNotification({
   required String senderUid,
   required String receiverUid,
@@ -1216,7 +1270,7 @@ Future<void> _sendInvitationNotification({
   final notiDoc = FirebaseFirestore.instance.collection('notifications').doc();
   await notiDoc.set({
     "id": notiDoc.id,
-    "type": "invitation", // Cambiado a "invitation"
+    "type": "invitation",
     "senderId": senderUid,
     "receiverId": receiverUid,
     "planId": planId,
@@ -1225,3 +1279,123 @@ Future<void> _sendInvitationNotification({
     "read": false,
   });
 }
+
+class _FrostedConfirmDialog extends StatelessWidget {
+  final PlanModel plan;
+  final VoidCallback onConfirm;
+  final VoidCallback onCancel;
+
+  const _FrostedConfirmDialog({
+    Key? key,
+    required this.plan,
+    required this.onConfirm,
+    required this.onCancel,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Material(
+          color: Colors.white.withOpacity(0.2),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white30),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Confirmar invitación",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "¿Confirmas invitarle a este plan?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Aquí se muestra el plan.type en un contenedor frosted glass
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const ui.Color.fromARGB(255, 222, 219, 219).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        plan.type,
+                        style: const TextStyle(
+                          color: AppColors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: onCancel,
+                      child: const Text(
+                        "No",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: onConfirm,
+                      child: const Text(
+                        "Sí",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+

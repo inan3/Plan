@@ -12,7 +12,7 @@ import 'explore_screen_filter.dart';
 
 import 'explore_app_bar.dart';
 import 'users_grid.dart';
-import 'menu_side_bar_screen.dart';
+import 'menu_side_bar/menu_side_bar_screen.dart';
 import 'chats/chats_screen.dart'; // Pantalla de mensajes
 import 'users_managing/user_info_check.dart';
 import 'map/map_screen.dart'; // Pantalla de búsqueda
