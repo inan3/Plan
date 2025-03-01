@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui'; // Para ImageFilter, etc.
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,17 +7,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dating_app/main/colors.dart';
 
-// Importa el diálogo de filtros (actualizado)
 import 'explore_screen_filter.dart';
-
 import 'explore_app_bar.dart';
 import 'users_grid.dart';
 import 'menu_side_bar/menu_side_bar_screen.dart';
-import 'chats/chats_screen.dart'; // Pantalla de mensajes
+import 'chats/chats_screen.dart';
 import 'users_managing/user_info_check.dart';
-import 'map/map_screen.dart'; // Pantalla de búsqueda
-import 'profile_screen.dart'; // Gestión del perfil
-import 'notification_screen.dart'; // Pantalla de notificaciones
+import 'map/map_screen.dart';
+import 'profile_screen.dart';
+import 'notification_screen.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'package:dating_app/plan_joining/plan_join_request.dart';
 import 'filter_screen.dart';
@@ -42,11 +40,8 @@ class ExploreScreenState extends State<ExploreScreen> {
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
 
-  // Ubicación por defecto en caso de que no se filtre
   final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
 
-  // Filtros aplicados (se espera recibir: planBusqueda o planPredeterminado, regionBusqueda,
-  // userCoordinates, edadMin, edadMax y genero)
   Map<String, dynamic> appliedFilters = {};
 
   double _spacingPopularToNearby = 10;
@@ -60,7 +55,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     _otherPages = [
       const MapScreen(),
       const ChatsScreen(),
-      ProfileScreen(),
+      const ProfileScreen(),
     ];
     _currentIndex = 0;
     _selectedIconIndex = 0;
@@ -73,29 +68,23 @@ class ExploreScreenState extends State<ExploreScreen> {
     ));
   }
 
-  void _onSearchChanged(String value) {
-    // Implementa la lógica de búsqueda si lo requieres
-  }
+  void _onSearchChanged(String value) {}
 
-  // Al presionar el filtro, se envía el último estado de filtros
   void _onFilterPressed() async {
     final result = await showExploreFilterDialog(context, initialFilters: appliedFilters);
     if (result != null) {
       setState(() {
         appliedFilters = result;
-        // Actualiza rango de edad
         selectedAgeRange = RangeValues(
           (result['edadMin'] ?? 18).toDouble(),
           (result['edadMax'] ?? 40).toDouble(),
         );
-        // Si es necesario, actualiza ubicación, etc.
       });
     }
   }
 
-  // Cálculo de distancia (Haversine)
   double computeDistance(double lat1, double lng1, double lat2, double lng2) {
-    const earthRadius = 6371; // km
+    const earthRadius = 6371;
     double dLat = _deg2rad(lat2 - lat1);
     double dLng = _deg2rad(lng2 - lng1);
     double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
@@ -108,6 +97,17 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   double _deg2rad(double deg) => deg * (math.pi / 180);
+
+  // Nueva función para cambiar la página desde el menú lateral
+  void changePage(int pageIndex) {
+    setState(() {
+      _currentIndex = pageIndex;
+      _selectedIconIndex = _mapPageIndexToDockIndex(pageIndex);
+      if (_showPopup) {
+        _showPopup = false;
+      }
+    });
+  }
 
   Widget _buildExplorePage() {
     return Padding(
@@ -161,9 +161,7 @@ class ExploreScreenState extends State<ExploreScreen> {
             ),
             Expanded(
               child: TextField(
-                onChanged: (value) {
-                  // Lógica de búsqueda si la requieres
-                },
+                onChanged: (value) {},
                 decoration: const InputDecoration(
                   hintText: 'Buscar...',
                   border: InputBorder.none,
@@ -185,7 +183,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Consulta "plans" para ver qué usuarios tienen un plan que coincida con un texto
   Future<List<String>> _fetchUserIdsWithPlan(String planFilter) async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('plans').get();
     List<String> uids = [];
@@ -199,7 +196,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     return uids;
   }
 
-  // Listado de usuarios cercanos, filtrados
   Widget _buildNearbySection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
@@ -218,7 +214,6 @@ class ExploreScreenState extends State<ExploreScreen> {
 
         List<QueryDocumentSnapshot> validUsers = snapshot.data!.docs;
 
-        // Excluir usuario actual
         if (currentUser != null) {
           validUsers = validUsers.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
@@ -226,7 +221,6 @@ class ExploreScreenState extends State<ExploreScreen> {
           }).toList();
         }
 
-        // Filtrar por rango de edad
         validUsers = validUsers.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final int userAge = int.tryParse(data['age'].toString()) ?? 0;
@@ -234,7 +228,6 @@ class ExploreScreenState extends State<ExploreScreen> {
               userAge <= selectedAgeRange.end.round();
         }).toList();
 
-        // Ordenar por distancia
         final double referenceLat = (appliedFilters['userCoordinates'] != null)
             ? (appliedFilters['userCoordinates']['lat'] as double)
             : currentLocation['lat']!;
@@ -254,7 +247,6 @@ class ExploreScreenState extends State<ExploreScreen> {
           return distanceA.compareTo(distanceB);
         });
 
-        // Filtrar por plan (opcional)
         final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
                 (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
             ? appliedFilters['planPredeterminado'] as String
@@ -293,7 +285,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  /// NOTA: Se ha quitado el filtro `.where('read', isEqualTo: false)` para que no falle con notificaciones viejas.
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
@@ -308,7 +299,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Seguimos filtrando mensajes no leídos
   Stream<int> _unreadMessagesCountStream() {
     return FirebaseFirestore.instance
         .collection('messages')
@@ -318,7 +308,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Pop up no modal (Crear/Unirse a Plan)
   Widget _buildPopup() {
     const double dockBottomMargin = 50.0;
     const double dockHeight = 70.0;
@@ -339,7 +328,6 @@ class ExploreScreenState extends State<ExploreScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Botón "Crear Plan"
               InkWell(
                 onTap: () {
                   setState(() {
@@ -381,7 +369,6 @@ class ExploreScreenState extends State<ExploreScreen> {
                 height: 1,
                 color: Colors.white,
               ),
-              // Botón "Unirse a Plan"
               InkWell(
                 onTap: () {
                   setState(() {
@@ -426,15 +413,31 @@ class ExploreScreenState extends State<ExploreScreen> {
   int _mapDockIndexToPageIndex(int dockIndex) {
     switch (dockIndex) {
       case 0:
-        return 0; // Explore
+        return 0;
       case 1:
-        return 1; // Search (MapScreen)
+        return 1;
       case 3:
-        return 2; // Chats
+        return 2;
       case 4:
-        return 3; // Perfil
+        return 3;
       default:
         return _currentIndex;
+    }
+  }
+
+  // Nueva función para mapear el índice de página al índice del dock
+  int _mapPageIndexToDockIndex(int pageIndex) {
+    switch (pageIndex) {
+      case 0:
+        return 0;
+      case 1:
+        return 1;
+      case 2:
+        return 3;
+      case 3:
+        return 4;
+      default:
+        return _selectedIconIndex;
     }
   }
 
@@ -490,7 +493,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                     currentIndex: _currentIndex,
                     selectedIconIndex: _selectedIconIndex,
                     onTapIcon: _onDockIconTap,
-                    notificationCountStream: null, // No se usa aquí
+                    notificationCountStream: null,
                     unreadMessagesCountStream: _unreadMessagesCountStream(),
                   ),
                 ),
@@ -498,6 +501,7 @@ class ExploreScreenState extends State<ExploreScreen> {
               MainSideBarScreen(
                 key: _menuKey,
                 onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
+                onPageChange: changePage, // Pasamos la función para cambiar la página
               ),
             ],
           ),
@@ -507,9 +511,6 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-// -----------------------------------------------------------------------
-// DockSection: Versión sin BackdropFilter
-// -----------------------------------------------------------------------
 class DockSection extends StatelessWidget {
   final int currentIndex;
   final int selectedIconIndex;
@@ -640,7 +641,6 @@ class DockSection extends StatelessWidget {
                   ),
           ),
         ),
-        // Ejemplo si quieres poner un badge en este icono también...
       ],
     );
   }

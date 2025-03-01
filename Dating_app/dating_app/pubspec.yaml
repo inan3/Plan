@@ -94,6 +94,10 @@ flutter:
     - assets/icono-descripcion-plan.svg
     - assets/icono-mapa.svg
     - assets/icono-globo-usuario.svg
+    - assets/icono-ajustes.svg
+    - assets/icono-centro-ayuda.svg
+    - assets/icono-cerrar-sesion.svg
+    - assets/icono-corazon.svg
 
   fonts:
     - family: Inter

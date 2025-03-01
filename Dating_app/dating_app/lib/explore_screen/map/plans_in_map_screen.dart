@@ -19,52 +19,67 @@ class PlansInMapScreen {
   /// - 'planPredeterminado': cadena exacta (ignora mayúsculas) que debe coincidir con el campo 'type'
   /// - 'planBusqueda': subcadena que debe estar contenida en el campo 'type'
   Future<Set<Marker>> loadPlansMarkers(BuildContext context, {Map<String, dynamic>? filters}) async {
-    final QuerySnapshot plansSnapshot =
-        await FirebaseFirestore.instance.collection('plans').get();
+  final QuerySnapshot plansSnapshot =
+      await FirebaseFirestore.instance.collection('plans').get();
 
-    final Set<Marker> markers = {};
+  final Set<Marker> markers = {};
 
-    for (var planDoc in plansSnapshot.docs) {
-      final data = planDoc.data() as Map<String, dynamic>?;
-      if (data == null) continue;
+  for (var planDoc in plansSnapshot.docs) {
+    final data = planDoc.data() as Map<String, dynamic>?;
+    if (data == null) continue;
 
-      // Datos mínimos necesarios del plan
-      final double? lat = data['latitude']?.toDouble();
-      final double? lng = data['longitude']?.toDouble();
-      final String? planType = data['type'] as String?;
-      final String? userId = data['createdBy'] as String?;
+    // Datos mínimos necesarios del plan
+    final double? lat = data['latitude']?.toDouble();
+    final double? lng = data['longitude']?.toDouble();
+    final String? planType = data['type'] as String?;
+    final String? userId = data['createdBy'] as String?;
+    final int specialPlan = data['special_plan'] is int ? data['special_plan'] as int : 0;
 
-      if (lat == null || lng == null || planType == null || userId == null) {
-        continue;
-      }
+    if (lat == null || lng == null || planType == null || userId == null) {
+      continue;
+    }
 
-      // Aplica los filtros si existen
-      if (filters != null) {
-        // Si se ha seleccionado un plan predeterminado, se compara de forma exacta
-        if (filters['planPredeterminado'] != null && filters['planPredeterminado'].toString().isNotEmpty) {
-          if (planType.toLowerCase() != filters['planPredeterminado'].toString().toLowerCase()) {
-            continue;
-          }
-        } 
-        // Si no se seleccionó un plan predeterminado, se puede usar el texto de búsqueda
-        else if (filters['planBusqueda'] != null && filters['planBusqueda'].toString().isNotEmpty) {
-          if (!planType.toLowerCase().contains(filters['planBusqueda'].toString().toLowerCase())) {
-            continue;
-          }
+    // Aplica los filtros si existen (igual que antes)
+    if (filters != null) {
+      if (filters['planPredeterminado'] != null && filters['planPredeterminado'].toString().isNotEmpty) {
+        if (planType.toLowerCase() != filters['planPredeterminado'].toString().toLowerCase()) {
+          continue;
+        }
+      } else if (filters['planBusqueda'] != null && filters['planBusqueda'].toString().isNotEmpty) {
+        if (!planType.toLowerCase().contains(filters['planBusqueda'].toString().toLowerCase())) {
+          continue;
         }
       }
+    }
 
-      // Obtiene la URL de la foto de perfil del usuario
-      final String? userPhotoUrl = await _getUserProfilePhoto(userId);
-      if (userPhotoUrl == null) continue;
+    // Obtiene la URL de la foto de perfil del usuario
+    final String? userPhotoUrl = await _getUserProfilePhoto(userId);
+    if (userPhotoUrl == null) continue;
 
-      final position = LatLng(lat, lng);
+    final position = LatLng(lat, lng);
 
-      // Construye el marcador personalizado para planes
-      final BitmapDescriptor customMarker =
-          await _buildPlanMarker(userPhotoUrl, planType);
-
-      // Calcular el anchor para alinear la punta del marcador con la posición:
+    // Si es un plan especial, no se mostrará el nombre ni se asignará acción al pulsar
+    if (specialPlan == 1) {
+      // Para el marcador especial, no se pinta texto.
+      // Se usa showText: false para que _buildPlanMarker no dibuje el nombre.
+      final BitmapDescriptor customMarker = await _buildPlanMarker(userPhotoUrl, planType, showText: false);
+      // Calculamos el anchor sin contenedor de texto:
+      const double avatarAreaHeight = 110;
+      const double circleRadius = 40;
+      final double anchorY = ((avatarAreaHeight / 2) + circleRadius) / avatarAreaHeight;
+      
+      markers.add(
+        Marker(
+          markerId: MarkerId(planDoc.id),
+          position: position,
+          icon: customMarker,
+          anchor: Offset(0.5, anchorY),
+          // Sin onTap para planes especiales.
+        ),
+      );
+    } else {
+      // Marcador para planes normales (special_plan == 0)
+      // Calcula dimensiones del texto:
       const double markerMinWidth = 120;
       const double padding = 4.0;
       const double fontSize = 20;
@@ -87,6 +102,8 @@ class PlansInMapScreen {
       final double yTip = textContainerHeight + (avatarAreaHeight / 2) + circleRadius;
       final double anchorY = yTip / markerHeight;
 
+      final BitmapDescriptor customMarker = await _buildPlanMarker(userPhotoUrl, planType);
+      
       markers.add(
         Marker(
           markerId: MarkerId(planDoc.id),
@@ -125,9 +142,11 @@ class PlansInMapScreen {
         ),
       );
     }
-
-    return markers;
   }
+
+  return markers;
+}
+
 
   /// Función auxiliar para obtener los participantes del plan.
   Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
@@ -195,28 +214,31 @@ class PlansInMapScreen {
   }
 
   /// Construye el marcador para un plan, con mayor calidad en el avatar.
-  Future<BitmapDescriptor> _buildPlanMarker(String photoUrl, String planType) async {
-    try {
-      // (1) Descargamos la imagen con calidad original
-      final Uint8List imageBytes = await _downloadImageAsBytes(photoUrl);
+  Future<BitmapDescriptor> _buildPlanMarker(String photoUrl, String planType, {bool showText = true}) async {
+  try {
+    // (1) Descargamos la imagen con calidad original
+    final Uint8List imageBytes = await _downloadImageAsBytes(photoUrl);
 
-      // (2) Decodifica en alta resolución (ej: 256x256).
-      final ui.Codec codec = await ui.instantiateImageCodec(
-        imageBytes,
-        targetWidth: 256,
-        targetHeight: 256,
-      );
-      final ui.FrameInfo frame = await codec.getNextFrame();
-      final ui.Image avatarImage = frame.image;
+    // (2) Decodifica en alta resolución (ej: 256x256).
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      imageBytes,
+      targetWidth: 256,
+      targetHeight: 256,
+    );
+    final ui.FrameInfo frame = await codec.getNextFrame();
+    final ui.Image avatarImage = frame.image;
 
-      // Parámetros de tamaño del marcador
-      const double markerMinWidth = 120;
-      const double padding = 4.0;
-      const double fontSize = 20;
-      const double textTopMargin = 10;
-      
-      // Preparar texto (planType)
-      final textPainter = TextPainter(
+    // Parámetros de tamaño del marcador
+    const double markerMinWidth = 120;
+    const double padding = 4.0;
+    const double fontSize = 20;
+    const double textTopMargin = 10;
+    
+    // Se calcula el área para el texto solo si showText es true.
+    double textContainerHeight = 0;
+    TextPainter? textPainter;
+    if (showText) {
+      textPainter = TextPainter(
         text: TextSpan(
           text: planType,
           style: const TextStyle(
@@ -229,16 +251,18 @@ class PlansInMapScreen {
         textAlign: TextAlign.center,
       );
       textPainter.layout(maxWidth: markerMinWidth - 2 * padding);
+      textContainerHeight = textPainter.height + 2 * padding;
+    }
 
-      final double textContainerHeight = textPainter.height + 2 * padding;
-      const double avatarAreaHeight = 110;
-      final double markerHeight = textContainerHeight + avatarAreaHeight;
-      final double markerWidth = markerMinWidth;
+    const double avatarAreaHeight = 110;
+    final double markerHeight = textContainerHeight + avatarAreaHeight;
+    final double markerWidth = markerMinWidth;
 
-      final ui.PictureRecorder recorder = ui.PictureRecorder();
-      final Canvas canvas = Canvas(recorder);
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
 
-      // (3) Fondo para el texto
+    // (3) Si showText es true, pinta fondo y texto
+    if (showText && textPainter != null) {
       final double textX = (markerWidth - textPainter.width) / 2;
       final double textY = textTopMargin;
       final Rect bgRect = Rect.fromLTWH(
@@ -258,54 +282,58 @@ class PlansInMapScreen {
       canvas.drawRRect(bgRRect, textBorderPaint);
 
       textPainter.paint(canvas, Offset(textX, textY));
-
-      // (4) Avatar
-      final double circleCenterX = markerWidth / 2;
-      final double circleCenterY = textContainerHeight + avatarAreaHeight / 2;
-      const double circleRadius = 40;
-      final Offset center = Offset(circleCenterX, circleCenterY);
-
-      final Path clipPath = Path()
-        ..addOval(Rect.fromCircle(center: center, radius: circleRadius));
-      canvas.save();
-      canvas.clipPath(clipPath);
-
-      final Rect imageRect = Rect.fromCenter(
-        center: center,
-        width: circleRadius * 2,
-        height: circleRadius * 2,
-      );
-
-      paintImage(
-        canvas: canvas,
-        rect: imageRect,
-        image: avatarImage,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.high,
-      );
-      canvas.restore();
-
-      // Borde verde alrededor del avatar
-      final Paint avatarBorderPaint = Paint()
-        ..color = Colors.green
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3;
-      canvas.drawCircle(center, circleRadius, avatarBorderPaint);
-
-      final ui.Picture picture = recorder.endRecording();
-      final ui.Image markerImage = await picture.toImage(
-        markerWidth.toInt(),
-        markerHeight.toInt(),
-      );
-      final ByteData? byteData = await markerImage.toByteData(format: ui.ImageByteFormat.png);
-      final Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-      return BitmapDescriptor.fromBytes(pngBytes);
-    } catch (e) {
-      print("Error creando marcador personalizado: $e");
-      return BitmapDescriptor.defaultMarker;
     }
+
+    // (4) Avatar
+    // Si no se muestra el texto, se usa 0 como offset vertical
+    final double currentTextContainerHeight = showText ? textContainerHeight : 0;
+    final double circleCenterX = markerWidth / 2;
+    final double circleCenterY = currentTextContainerHeight + avatarAreaHeight / 2;
+    const double circleRadius = 40;
+    final Offset center = Offset(circleCenterX, circleCenterY);
+
+    final Path clipPath = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: circleRadius));
+    canvas.save();
+    canvas.clipPath(clipPath);
+
+    final Rect imageRect = Rect.fromCenter(
+      center: center,
+      width: circleRadius * 2,
+      height: circleRadius * 2,
+    );
+
+    paintImage(
+      canvas: canvas,
+      rect: imageRect,
+      image: avatarImage,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+    );
+    canvas.restore();
+
+    // Borde verde alrededor del avatar
+    final Paint avatarBorderPaint = Paint()
+      ..color = Colors.green
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawCircle(center, circleRadius, avatarBorderPaint);
+
+    final ui.Picture picture = recorder.endRecording();
+    final ui.Image markerImage = await picture.toImage(
+      markerWidth.toInt(),
+      markerHeight.toInt(),
+    );
+    final ByteData? byteData = await markerImage.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+    return BitmapDescriptor.fromBytes(pngBytes);
+  } catch (e) {
+    print("Error creando marcador personalizado: $e");
+    return BitmapDescriptor.defaultMarker;
   }
+}
+
 
   /// Carga los usuarios que NO tengan ningún plan y crea un marcador (solo avatar, sin "?").
   Future<Set<Marker>> loadUsersWithoutPlansMarkers(

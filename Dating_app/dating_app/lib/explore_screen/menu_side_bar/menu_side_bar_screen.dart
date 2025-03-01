@@ -4,14 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dating_app/main/colors.dart';
 import 'dart:ui';
+import 'package:flutter_svg/flutter_svg.dart';
 
 // Importaciones de pantallas
-import 'profile_screen.dart';
 import 'my_plans_screen.dart';
-import 'explore_plans_screen.dart';
-import 'notifications_screen.dart';
-import 'chat_screen.dart';
-import 'valorations_screen.dart';
 import 'favourites_screen.dart';
 import 'settings_screen.dart';
 import 'help_center_screen.dart';
@@ -20,10 +16,12 @@ import 'subscribed_plans_screen.dart';
 
 class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
+  final Function(int)? onPageChange;
 
   const MainSideBarScreen({
     super.key,
     this.onMenuToggled,
+    this.onPageChange,
   });
 
   @override
@@ -51,13 +49,12 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
           GestureDetector(
             onTap: toggleMenu,
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
               child: Container(
-                color: Colors.black.withOpacity(0.2),
+                color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.8),
               ),
             ),
           ),
-
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           left: isOpen ? 0 : -screenSize.width,
@@ -76,7 +73,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 16.0, top: 40.0, bottom: 16.0),
+                        padding: const EdgeInsets.only(
+                            left: 16.0, top: 40.0, bottom: 16.0),
                         child: Row(
                           children: [
                             Image.asset(
@@ -92,86 +90,56 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         child: ListView(
                           padding: EdgeInsets.zero,
                           children: [
-                            _buildMenuItem(
-                              icon: Icons.person,
-                              title: 'Perfil',
-                              destination: const ProfileScreen(),
-                              iconColor: AppColors.blue,
-                              textColor: AppColors.black,
-                            ),
+                            _buildProfileHeader(),
                             _buildMenuItemWithBadge(
-                              icon: Icons.event,
+                              icon: 'assets/icono-calendario.svg',
                               title: 'Mis Planes',
                               destination: const MyPlansScreen(),
                               iconColor: AppColors.blue,
-                              textColor: AppColors.black,
+                              textColor: const Color.fromARGB(255, 255, 255, 255),
                               stream: FirebaseFirestore.instance
                                   .collection('plans')
                                   .where('createdBy', isEqualTo: currentUserId)
                                   .snapshots(),
                             ),
-                            _buildMenuItem(
-                              icon: Icons.search,
-                              title: 'Explorar Planes',
-                              destination: const ExplorePlansScreen(),
-                              iconColor: AppColors.blue,
-                              textColor: AppColors.black,
-                            ),
                             _buildMenuItemWithBadge(
-                              icon: Icons.image,
+                              icon: 'assets/union.svg',
                               title: 'Planes Suscritos',
                               destination: SubscribedPlansScreen(userId: currentUserId!),
                               iconColor: AppColors.blue,
-                              textColor: AppColors.black,
+                              textColor: const Color.fromARGB(255, 255, 255, 255),
                               stream: FirebaseFirestore.instance
                                   .collection('subscriptions')
                                   .where('userId', isEqualTo: currentUserId)
                                   .snapshots(),
                             ),
-                            _buildMenuItem(
-                              icon: Icons.notifications,
-                              title: 'Notificaciones',
-                              destination: const NotificationsScreen(),
-                              iconColor: AppColors.blue,
-                              textColor: AppColors.black,
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.chat,
-                              title: 'Chat',
-                              destination: const ChatScreen(),
-                              iconColor: AppColors.blue,
-                              textColor: AppColors.black,
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.star,
-                              title: 'Valoraciones',
-                              destination: const ValorationsScreen(),
-                              iconColor: AppColors.blue,
-                              textColor: AppColors.black,
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.favorite,
+                            _buildMenuItemWithBadge(
+                              icon: 'assets/icono-corazon.svg',
                               title: 'Favoritos',
                               destination: const FavouritesScreen(),
                               iconColor: AppColors.blue,
-                              textColor: AppColors.black,
+                              textColor: const Color.fromARGB(255, 255, 255, 255),
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUserId)
+                                  .snapshots(),
                             ),
                             _buildMenuItem(
-                              icon: Icons.settings,
+                              icon: 'assets/icono-ajustes.svg',
                               title: 'Ajustes',
                               destination: const SettingsScreen(),
                               iconColor: AppColors.blue,
-                              textColor: AppColors.black,
+                              textColor: const Color.fromARGB(255, 255, 255, 255),
                             ),
                             _buildMenuItem(
-                              icon: Icons.help_outline,
+                              icon: 'assets/icono-centro-ayuda.svg',
                               title: 'Centro de Ayuda',
                               destination: const HelpCenterScreen(),
                               iconColor: AppColors.blue,
-                              textColor: AppColors.black,
+                              textColor: const Color.fromARGB(255, 255, 255, 255),
                             ),
                             _buildMenuItem(
-                              icon: Icons.logout,
+                              icon: 'assets/icono-cerrar-sesion.svg',
                               title: 'Cerrar Sesión',
                               destination: const CloseSessionScreen(),
                               iconColor: Colors.red,
@@ -217,8 +185,108 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
+  Widget _buildProfileHeader() {
+    return GestureDetector(
+      onTap: () {
+        toggleMenu();
+        widget.onPageChange?.call(3);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUserId)
+                    .get(),
+                builder: (context, snapshot) {
+                  String profileImageUrl = "https://via.placeholder.com/150";
+                  String userName = "Cargando...";
+                  String userId = currentUserId ?? "Sin ID";
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.grey,
+                          child: CircularProgressIndicator(),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          userName,
+                          style: GoogleFonts.roboto(
+                            color: AppColors.black,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+                    userName = "Error";
+                    return Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundImage: NetworkImage(profileImageUrl),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          userName,
+                          style: GoogleFonts.roboto(
+                            color: AppColors.black,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                  profileImageUrl = userData?['photoUrl'] ?? profileImageUrl;
+                  userName = userData?['name'] ?? "Usuario";
+
+                  return Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundImage: NetworkImage(profileImageUrl),
+                        backgroundColor: Colors.grey.shade200,
+                        onBackgroundImageError: (_, __) => const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        userName,
+                        style: GoogleFonts.roboto(
+                          color: AppColors.blue,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuItem({
-    required IconData icon,
+    required dynamic icon,
     required String title,
     required Widget destination,
     required Color iconColor,
@@ -226,7 +294,15 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   }) {
     return ListTile(
       dense: true,
-      leading: Icon(icon, color: iconColor, size: 24),
+      leading: icon is String
+          ? SvgPicture.asset(
+              icon,
+              width: 32,
+              height: 32,
+              color: iconColor,
+              colorBlendMode: BlendMode.srcIn,
+            )
+          : Icon(icon, color: iconColor, size: 24),
       title: Text(
         title,
         style: GoogleFonts.roboto(
@@ -244,88 +320,212 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
-Widget _buildMenuItemWithBadge({
-  required IconData icon,
-  required String title,
-  required Widget destination,
-  required Color iconColor,
-  required Color textColor,
-  required Stream<QuerySnapshot> stream,
-}) {
-  return StreamBuilder<QuerySnapshot>(
-    stream: stream,
-    builder: (context, snapshot) {
-      int count = 0;
-      if (snapshot.hasData) {
-        count = snapshot.data!.docs.length;
-      }
+  Widget _buildMenuItemWithBadge({
+    required dynamic icon,
+    required String title,
+    required Widget destination,
+    required Color iconColor,
+    required Color textColor,
+    required Stream stream,
+  }) {
+    return StreamBuilder(
+      stream: stream,
+      builder: (context, AsyncSnapshot snapshot) {
+        int count = 0;
+        if (snapshot.hasData) {
+          if (title == 'Favoritos') {
+            // Para favoritos, usamos el snapshot del documento del usuario
+            final data = (snapshot.data as DocumentSnapshot).data() as Map<String, dynamic>?;
+            count = (data?['favourites'] as List<dynamic>?)?.length ?? 0;
+          } else {
+            count = (snapshot.data as QuerySnapshot).docs.length;
+          }
+        }
 
-      return ListTile(
-        dense: true,
-        leading: Icon(icon, color: iconColor, size: 24),
-        title: Text(
-          title,
-          style: GoogleFonts.roboto(
-            color: textColor,
-            fontSize: 16,
+        return ListTile(
+          dense: true,
+          leading: icon is String
+              ? SvgPicture.asset(
+                  icon,
+                  width: 32,
+                  height: 32,
+                  color: iconColor,
+                  colorBlendMode: BlendMode.srcIn,
+                )
+              : Icon(icon, color: iconColor, size: 24),
+          title: Text(
+            title,
+            style: GoogleFonts.roboto(
+              color: textColor,
+              fontSize: 16,
+            ),
           ),
-        ),
-        trailing: count > 0
-            ? Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: AppColors.blue,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+          trailing: count > 0
+              ? Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: AppColors.blue,
+                    shape: BoxShape.circle,
                   ),
-                ),
-              )
-            : const SizedBox(),
-        onTap: () {
-          
-          if (title == 'Mis Planes') {
-            showDialog(
-              context: context,
-              builder: (context) => Dialog(
-                backgroundColor: Colors.transparent,
-                insetPadding: const EdgeInsets.all(16.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20.0),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20.0),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                        ),
-                      ),
-                      constraints: const BoxConstraints(
-                        maxHeight: 500, // Ajusta el tamaño según tus necesidades.
-                      ),
-                      child: const MyPlansScreen(),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                )
+              : const SizedBox(),
+          onTap: () {
+            if (title == 'Mis Planes') {
+              showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+                  insetPadding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Mi lista de planes',
+                          style: GoogleFonts.roboto(
+                            color: AppColors.white,
+                            fontSize: 26,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20.0),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20.0),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              maxHeight: 500,
+                            ),
+                            child: const MyPlansScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          } else {
-            toggleMenu();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => destination),
-            );
-          }
-        },
-      );
-    },
-  );
-}
+              );
+            } else if (title == 'Planes Suscritos') {
+              showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+                  insetPadding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Planes a los que me he unido',
+                          style: GoogleFonts.roboto(
+                            color: AppColors.white,
+                            fontSize: 24,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20.0),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20.0),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              maxHeight: 500,
+                            ),
+                            child: SubscribedPlansScreen(userId: currentUserId!),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else if (title == 'Favoritos') {
+              showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+                  insetPadding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Mis planes favoritos',
+                          style: GoogleFonts.roboto(
+                            color: AppColors.white,
+                            fontSize: 24,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20.0),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20.0),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              maxHeight: 500,
+                            ),
+                            child: const FavouritesScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              toggleMenu();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => destination),
+              );
+            }
+          },
+        );
+      },
+    );
+  }
 }
