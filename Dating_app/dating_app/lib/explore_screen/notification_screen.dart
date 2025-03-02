@@ -2,9 +2,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../models/plan_model.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
+import '../../models/plan_model.dart';
+import '../main/colors.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;
@@ -18,6 +20,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Trae todas las notificaciones (join_request, invitation, join_accepted, join_rejected)
+  /// (Sin orderBy para evitar error si algún documento carece de "timestamp")
   Stream<QuerySnapshot> _getAllNotifications() {
     return _firestore
         .collection('notifications')
@@ -31,12 +34,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
         .snapshots();
   }
 
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return '';
+    DateTime dateTime = (timestamp as Timestamp).toDate();
+    return DateFormat('HH:mm').format(dateTime);
+  }
+
   /// Aceptar join request
   Future<void> _handleAcceptJoinRequest(DocumentSnapshot doc) async {
     try {
       final data = doc.data() as Map<String, dynamic>;
       final planId = data['planId'] as String;
       final senderId = data['senderId'] as String;
+      final planType = data['planType'] ?? data['planName'] ?? 'Plan';
 
       // Elimina la notificación original
       await doc.reference.delete();
@@ -66,10 +76,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'receiverId': senderId,
         'senderId': widget.currentUserId,
         'planId': planId,
-        'planName': data['planName'] ?? 'Plan',
+        'planName': planType,
         'senderProfilePic': acceptorPhoto,
         'timestamp': FieldValue.serverTimestamp(),
-        'read': false, // Importante para notificaciones nuevas
+        'read': false,
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,6 +94,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final data = doc.data() as Map<String, dynamic>;
       final planId = data['planId'] as String;
       final senderId = data['senderId'] as String;
+      final planType = data['planType'] ?? data['planName'] ?? 'Plan';
 
       // Elimina la notificación de join_request
       await doc.reference.delete();
@@ -97,7 +108,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'receiverId': senderId,
         'senderId': widget.currentUserId,
         'planId': planId,
-        'planName': data['planName'] ?? 'Plan',
+        'planName': planType,
         'senderProfilePic': rejectorPhoto,
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
@@ -116,12 +127,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final planId = data['planId'] as String;
       final creatorId = data['senderId'] as String;
       final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+      final planType = data['planType'] ?? data['planName'] ?? 'Plan';
 
       // Borra la notificación
       await doc.reference.delete();
 
       // Añade al usuario actual a participants
-      final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
+      final planRef = _firestore.collection('plans').doc(planId);
       final planDoc = await planRef.get();
       if (!planDoc.exists) return;
 
@@ -130,19 +142,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
       // Crea suscripción
-      await FirebaseFirestore.instance.collection('subscriptions').add({
+      await _firestore.collection('subscriptions').add({
         ...planDoc.data()!,
         'userId': currentUserId,
         'subscriptionDate': FieldValue.serverTimestamp(),
       });
 
       // Notifica al creador
-      await FirebaseFirestore.instance.collection('notifications').add({
+      await _firestore.collection('notifications').add({
         'type': 'join_accepted',
         'receiverId': creatorId,
         'senderId': currentUserId,
         'planId': planId,
-        'planName': data['planName'] ?? 'Plan',
+        'planName': planType,
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
@@ -159,6 +171,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final data = doc.data() as Map<String, dynamic>;
       final planId = data['planId'] as String;
       final creatorId = data['senderId'] as String;
+      final planType = data['planType'] ?? data['planName'] ?? 'Plan';
 
       // Elimina la notificación original
       await doc.reference.delete();
@@ -172,7 +185,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'receiverId': creatorId,
         'senderId': widget.currentUserId,
         'planId': planId,
-        'planName': data['planName'] ?? 'Plan',
+        'planName': planType,
         'senderProfilePic': inviteePhoto,
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
@@ -409,16 +422,27 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   final docs = snapshot.data?.docs ?? [];
                   if (docs.isEmpty) return _buildEmpty("No tienes notificaciones nuevas");
 
+                  // Ordenamos manualmente los documentos por timestamp descendente
+                  docs.sort((a, b) {
+                    final dataA = a.data() as Map<String, dynamic>;
+                    final dataB = b.data() as Map<String, dynamic>;
+                    final Timestamp tA = dataA['timestamp'] as Timestamp? ?? Timestamp(0, 0);
+                    final Timestamp tB = dataB['timestamp'] as Timestamp? ?? Timestamp(0, 0);
+                    return tB.compareTo(tA);
+                  });
+
                   return ListView.builder(
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       final doc = docs[index];
                       final data = doc.data() as Map<String, dynamic>;
-                      final planName = data['planName'] ?? 'Plan';
+                      final planType = data['planType'] ?? data['planName'] ?? 'Plan';
                       final planId = data['planId'] ?? '';
                       final senderId = data['senderId'] ?? '';
                       final senderPhoto = data['senderProfilePic'] ?? '';
                       final type = data['type'] as String? ?? '';
+                      final timestamp = data['timestamp'];
+                      final timeString = _formatTimestamp(timestamp);
 
                       return FutureBuilder<DocumentSnapshot>(
                         future: _firestore.collection('users').doc(senderId).get(),
@@ -433,6 +457,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             }
                           }
 
+                          Widget buildSubtitle(String primaryText) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  primaryText,
+                                  style: const TextStyle(color: AppColors.blue),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  timeString,
+                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                              ],
+                            );
+                          }
+
                           switch (type) {
                             case 'join_request':
                               return ListTile(
@@ -440,15 +481,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   radius: 25,
                                   backgroundImage: userPhoto.isNotEmpty
                                       ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
+                                      : const NetworkImage('https://cdn-icons-png.flaticon.com/512/847/847969.png'),
                                 ),
                                 title: Text(
-                                  "¡$userName quiere unirse a tu plan!",
+                                  "¡$userName se quiere unir a un plan tuyo!",
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                subtitle: Text("Plan: $planName",
-                                    style: const TextStyle(color: Colors.black54)),
+                                subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -470,15 +509,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   radius: 25,
                                   backgroundImage: userPhoto.isNotEmpty
                                       ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
+                                      : const NetworkImage('https://cdn-icons-png.flaticon.com/512/847/847969.png'),
                                 ),
                                 title: Text(
-                                  "$userName te ha invitado a un plan especial",
+                                  "$userName te ha invitado a un plan especial de $planType",
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                subtitle: Text("Plan: $planName",
-                                    style: const TextStyle(color: Colors.black54)),
+                                subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -500,15 +537,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   radius: 25,
                                   backgroundImage: userPhoto.isNotEmpty
                                       ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
+                                      : const NetworkImage('https://cdn-icons-png.flaticon.com/512/847/847969.png'),
                                 ),
                                 title: Text(
-                                  "$userName ha aceptado unirse a tu plan",
+                                  "¡$userName ha aceptado que te unas a su plan!",
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                subtitle: Text("Plan: $planName",
-                                    style: const TextStyle(color: Colors.black54)),
+                                subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),
@@ -521,15 +556,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   radius: 25,
                                   backgroundImage: userPhoto.isNotEmpty
                                       ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
+                                      : const NetworkImage('https://cdn-icons-png.flaticon.com/512/847/847969.png'),
                                 ),
                                 title: Text(
-                                  "$userName ha rechazado tu plan",
+                                  "¡$userName ha rechazado tu solicitud para unirte a su plan!",
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                subtitle: Text("Plan: $planName",
-                                    style: const TextStyle(color: Colors.black54)),
+                                subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),
@@ -561,19 +594,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
           children: [
             Icon(Icons.error_outline, color: Colors.red, size: 40),
             SizedBox(height: 10),
-            Text('Error al cargar datos',
-                style: TextStyle(color: Colors.red, fontSize: 16)),
+            Text('Error al cargar datos', style: TextStyle(color: Colors.red, fontSize: 16)),
           ],
         ),
       );
   Widget _buildEmpty(String text) => Center(
         child: Text(
           text,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 16,
-            fontStyle: FontStyle.italic,
-          ),
+          style: const TextStyle(color: Colors.grey, fontSize: 16, fontStyle: FontStyle.italic),
         ),
       );
 }

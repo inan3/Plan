@@ -11,7 +11,6 @@ import '../../models/plan_model.dart';
 import 'users_managing/user_info_inside_chat.dart';
 import 'users_managing/user_info_check.dart'; // Contiene FrostedPlanDialog, etc.
 import 'options_for_plans.dart'; // Para el menú de opciones (si lo usas)
-
 import 'special_plans/invite_users_to_plan_screen.dart';
 
 class UsersGrid extends StatelessWidget {
@@ -350,239 +349,257 @@ class UsersGrid extends StatelessWidget {
   Map<String, dynamic> userData,
   PlanModel plan,
 ) {
-  final String name = userData['name']?.toString().trim() ?? 'Usuario';
-  final String userHandle = userData['handle']?.toString() ?? '@usuario';
-  final String? uid = userData['uid']?.toString();
-  final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
-
-  // Obtenemos la imagen de fondo del plan
-  final String? backgroundImage = plan.backgroundImage;
-  
-  // Usamos la descripción del plan como "caption"
-  final String caption = plan.description.isNotEmpty
-      ? plan.description
-      : 'Descripción breve o #hashtags';
-
-  // Los contadores de comentarios y shares siguen siendo ficticios
-  final String commentsCount = '173';
-  final String sharesCount = '227';
-
-  return Center(
-    child: Container(
-      width: MediaQuery.of(context).size.width * 0.95,
-      height: 330,
-      margin: const EdgeInsets.only(bottom: 15),
-      child: Stack(
-        children: [
-          // Imagen de fondo usando la URL almacenada en backgroundImage
-          GestureDetector(
-            onTap: () {
-              // Al pulsar, mostramos el pop up con los detalles del plan.
-              showGeneralDialog(
-                context: context,
-                barrierDismissible: true,
-                barrierLabel: 'Cerrar',
-                barrierColor: Colors.transparent,
-                transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return SafeArea(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: FrostedPlanDialog(
-                          plan: plan,
-                          fetchParticipants: _fetchPlanParticipants,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                transitionBuilder: (context, anim1, anim2, child) {
-                  return FadeTransition(
-                    opacity: anim1,
-                    child: child,
-                  );
-                },
-              );
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: (backgroundImage != null && backgroundImage.isNotEmpty)
-                  ? Image.network(
-                      backgroundImage,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
-            ),
+  return StreamBuilder<DocumentSnapshot>(
+    stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return SizedBox(
+          height: 330,
+          child: Center(
+            child: CircularProgressIndicator(color: Colors.white),
           ),
-          // Avatar + nombre (tap -> abre perfil)
-          Positioned(
-            top: 10,
-            left: 10,
-            child: GestureDetector(
-              onTap: () {
-                if (uid != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => UserInfoCheck(userId: uid),
-                    ),
+        );
+      }
+
+      // Obtenemos los datos actualizados del plan desde Firestore
+      final updatedData = snapshot.data!.data() as Map<String, dynamic>;
+      final updatedParticipants = updatedData['participants'] as List<dynamic>? ?? [];
+      final int participantes = updatedParticipants.length;
+      final int maxPart = updatedData['maxParticipants'] ?? plan.maxParticipants ?? 0;
+
+      // Resto del código se mantiene, usando participantes y maxPart actualizados
+      final String name = userData['name']?.toString().trim() ?? 'Usuario';
+      final String userHandle = userData['handle']?.toString() ?? '@usuario';
+      final String? uid = userData['uid']?.toString();
+      final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
+      final String? backgroundImage = plan.backgroundImage;
+      final String caption = plan.description.isNotEmpty
+          ? plan.description
+          : 'Descripción breve o #hashtags';
+      const String commentsCount = '173';
+      const String sharesCount = '227';
+
+      return Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.95,
+          height: 330,
+          margin: const EdgeInsets.only(bottom: 15),
+          child: Stack(
+            children: [
+              // Imagen de fondo usando la URL almacenada en backgroundImage
+              GestureDetector(
+                onTap: () {
+                  // Al pulsar, mostramos el pop up con los detalles del plan.
+                  showGeneralDialog(
+                    context: context,
+                    barrierDismissible: true,
+                    barrierLabel: 'Cerrar',
+                    barrierColor: Colors.transparent,
+                    transitionDuration: const Duration(milliseconds: 300),
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return SafeArea(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: FrostedPlanDialog(
+                              plan: plan,
+                              fetchParticipants: _fetchPlanParticipants,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    transitionBuilder: (context, anim1, anim2, child) {
+                      return FadeTransition(
+                        opacity: anim1,
+                        child: child,
+                      );
+                    },
                   );
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(36),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    color: const Color.fromARGB(255, 14, 14, 14)
-                        .withOpacity(0.2),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildProfileAvatar(fallbackPhotoUrl),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: (backgroundImage != null && backgroundImage.isNotEmpty)
+                      ? Image.network(
+                          backgroundImage,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                        )
+                      : _buildPlaceholder(),
+                ),
+              ),
+              // Avatar + nombre (tap -> abre perfil)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: GestureDetector(
+                  onTap: () {
+                    if (uid != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UserInfoCheck(userId: uid),
+                        ),
+                      );
+                    }
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(36),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        color: const Color.fromARGB(255, 14, 14, 14)
+                            .withOpacity(0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
+                            _buildProfileAvatar(fallbackPhotoUrl),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                    const SizedBox(width: 4),
+                                    SvgPicture.asset(
+                                      'assets/verificado.svg',
+                                      width: 14,
+                                      height: 14,
+                                      color: Colors.blueAccent,
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 4),
-                                SvgPicture.asset(
-                                  'assets/verificado.svg',
-                                  width: 14,
-                                  height: 14,
-                                  color: Colors.blueAccent,
+                                Text(
+                                  userHandle,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ],
                             ),
-                            Text(
-                              userHandle,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          // Menú reemplazado por 3 iconos frosted, ahora se le pasa también el plan
-          Positioned(
-            top: 16,
-            right: 16,
-            child: _buildThreeDotsMenu(userData, plan),
-          ),
-          // Parte inferior: contadores + caption
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+              // Menú de opciones (3 iconos frosted)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: _buildThreeDotsMenu(context, userData, plan),
               ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.5),
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
+              // Parte inferior: contadores + caption
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.5),
+                          ],
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildIconText(
-                            icon: Icons.favorite_border,
-                            label: plan.likes.toString(), // Usamos directamente plan.likes
-                          ),
-                          const SizedBox(width: 25),
-                          _buildIconText(
-                            icon: Icons.chat_bubble_outline,
-                            label: commentsCount,
-                          ),
-                          const SizedBox(width: 25),
-                          _buildIconText(
-                            icon: Icons.share,
-                            label: sharesCount,
-                          ),
-                          const Spacer(),
                           Row(
                             children: [
-                              Text(
-                                '7/10',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              _buildIconText(
+                                icon: Icons.favorite_border,
+                                label: plan.likes.toString(),
                               ),
-                              const SizedBox(width: 6),
-                              SvgPicture.asset(
-                                'assets/users.svg',
-                                color: AppColors.blue,
-                                width: 20,
-                                height: 20,
+                              const SizedBox(width: 25),
+                              _buildIconText(
+                                icon: Icons.chat_bubble_outline,
+                                label: commentsCount,
+                              ),
+                              const SizedBox(width: 25),
+                              _buildIconText(
+                                icon: Icons.share,
+                                label: sharesCount,
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  // Se muestra el número actual de participantes y el máximo permitido
+                                  Text(
+                                    '$participantes/$maxPart',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SvgPicture.asset(
+                                    'assets/users.svg',
+                                    color: AppColors.blue,
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            caption,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        caption,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    ),
+        ),
+      );
+    },
   );
 }
+
+
   // -----------------------------------------------------------------------
   // Botones de acción (Invitar / Chat) en la tarjeta de un usuario SIN plan
   // -----------------------------------------------------------------------
@@ -678,7 +695,7 @@ class UsersGrid extends StatelessWidget {
   // Helper para construir el menú de opciones: ahora una fila de 3 iconos frosted.
   // Se le pasa además el [plan] para el botón de like.
   // -----------------------------------------------------------------------
-  Widget _buildThreeDotsMenu(Map<String, dynamic> userData, PlanModel plan) {
+  Widget _buildThreeDotsMenu(BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -690,16 +707,170 @@ class UsersGrid extends StatelessWidget {
           },
         ),
         const SizedBox(width: 16),
-        // Usamos el LikeButton modificado para actualizar también el campo "favourites"
         LikeButton(plan: plan),
         const SizedBox(width: 16),
         _buildFrostedIcon(
           'assets/union.svg',
           size: 40,
-          onTap: () {
-            // Acción para unión u otra funcionalidad
+          onTap: () async {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user == null) return; // Asegúrate de que el usuario está logueado
+
+            // Evita que el creador se una a su propio plan
+            if (plan.createdBy == user.uid) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No puedes unirte a tu propio plan')),
+              );
+              return;
+            }
+
+            // Verifica si el usuario ya está suscrito al plan
+            // Verifica si el usuario ya está suscrito al plan
+            if (plan.participants?.contains(user.uid) ?? false) {
+              showGeneralDialog(
+                context: context,
+                barrierDismissible: false,
+                barrierLabel: '',
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return Center(
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        "¡Ya estás suscrito a este plan!",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.none,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                transitionBuilder: (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 300),
+              );
+              
+              // Cierra el popup después de 3 segundos
+              Future.delayed(const Duration(seconds: 2), () {
+                Navigator.of(context).pop();
+              });
+              return;
+            }
+
+            // Comprueba si el plan ya tiene el cupo máximo de participantes
+            final int participantes = plan.participants?.length ?? 0;
+            final int maxPart = plan.maxParticipants ?? 0;
+            if (participantes >= maxPart) {
+              showGeneralDialog(
+                context: context,
+                barrierDismissible: false,
+                barrierLabel: '',
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return Center(
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        "El cupo máximo de participantes para este plan está cubierto",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.none,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                transitionBuilder: (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 300),
+              );
+              Future.delayed(const Duration(seconds: 3), () {
+                Navigator.of(context).pop();
+              });
+              return;
+            }
+
+            // Define el planType a partir de plan.type (o 'Plan' por defecto)
+            final String planType = plan.type.isNotEmpty ? plan.type : 'Plan';
+
+            // Crea la notificación de join_request enviando "planType"
+            await FirebaseFirestore.instance.collection('notifications').add({
+              'type': 'join_request',
+              'receiverId': plan.createdBy,
+              'senderId': user.uid,
+              'planId': plan.id,
+              'planType': planType,
+              'timestamp': FieldValue.serverTimestamp(),
+              'read': false,
+            });
+
+            // Muestra un popup pequeño, elegante y profesional con efecto frosted glass
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: false,
+              barrierLabel: '',
+              pageBuilder: (context, animation, secondaryAnimation) {
+                return Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      "¡Tu solicitud de unión se ha enviado correctamente!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.none,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                );
+              },
+              transitionBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 300),
+            );
+            Future.delayed(const Duration(seconds: 3), () {
+              Navigator.of(context).pop();
+            });
           },
         ),
+
       ],
     );
   }

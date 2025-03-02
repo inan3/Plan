@@ -311,25 +311,59 @@ class MyPlansScreen extends StatelessWidget {
                 Positioned(
                   top: 16,
                   right: 16,
-                  child: GestureDetector(
-                    onTap: () => _confirmDeletePlan(context, plan),
-                    child: ClipOval(
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.delete,
-                            color: Colors.white,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Botón compartir
+                      GestureDetector(
+                        onTap: () {
+                          // Acción para compartir (implementar funcionalidad)
+                        },
+                        child: ClipOval(
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: SvgPicture.asset(
+                                  'assets/compartir.svg',
+                                  width: 20,
+                                  height: 20,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      // Botón eliminar
+                      GestureDetector(
+                        onTap: () => _confirmDeletePlan(context, plan),
+                        child: ClipOval(
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.3),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Parte inferior: contadores
@@ -383,23 +417,59 @@ class MyPlansScreen extends StatelessWidget {
                                   label: sharesCount,
                                 ),
                                 const Spacer(),
-                                Row(
-                                  children: const [
-                                    Text(
-                                      '7/10',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    SizedBox(width: 6),
-                                    Icon(
-                                      Icons.person,
-                                      color: AppColors.blue,
-                                      size: 20,
-                                    ),
-                                  ],
+                                // Contador de participantes dinámico
+                                StreamBuilder<DocumentSnapshot>(
+                                  stream: FirebaseFirestore.instance
+                                      .collection('plans')
+                                      .doc(plan.id)
+                                      .snapshots(),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return Row(
+                                        children: [
+                                          Text(
+                                            '0/0',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          SvgPicture.asset(
+                                            'assets/users.svg',
+                                            color: AppColors.blue,
+                                            width: 20,
+                                            height: 20,
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    final updatedData = snapshot.data!.data() as Map<String, dynamic>;
+                                    final List<dynamic> updatedParticipants =
+                                        updatedData['participants'] as List<dynamic>? ?? [];
+                                    final int participantes = updatedParticipants.length;
+                                    final int maxPart = updatedData['maxParticipants'] ?? plan.maxParticipants ?? 0;
+                                    return Row(
+                                      children: [
+                                        Text(
+                                          '$participantes/$maxPart',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        SvgPicture.asset(
+                                          'assets/users.svg',
+                                          color: AppColors.blue,
+                                          width: 20,
+                                          height: 20,
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),

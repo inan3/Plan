@@ -3,19 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+// 1) Importamos el archivo con el diálogo FrostedPlanDialog real (p.ej. user_info_check.dart):
+import '../users_managing/user_info_check.dart' as new_frosted;
+
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({Key? key}) : super(key: key);
 
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
+  // ------------------------------------------------------------------------
+  // Obtener todos los participantes (creador + suscriptores) de un plan
+  // ------------------------------------------------------------------------
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+      PlanModel plan) async {
     final List<Map<String, dynamic>> participants = [];
 
-    final planDoc = await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(plan.id)
-        .get();
+    final planDoc =
+        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
     if (planDoc.exists) {
       final planData = planDoc.data();
       final creatorId = planData?['createdBy'];
@@ -44,10 +50,8 @@ class FavouritesScreen extends StatelessWidget {
       final sData = sDoc.data();
       final uid = sData['userId'];
       if (uid == null) continue;
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (userDoc.exists) {
         final uData = userDoc.data()!;
         participants.add({
@@ -61,6 +65,9 @@ class FavouritesScreen extends StatelessWidget {
     return participants;
   }
 
+  // ------------------------------------------------------------------------
+  // Pantalla principal: planes marcados como favoritos
+  // ------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
@@ -74,10 +81,7 @@ class FavouritesScreen extends StatelessWidget {
     }
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').doc(userId).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -111,7 +115,6 @@ class FavouritesScreen extends StatelessWidget {
             }
 
             final plans = planSnapshot.data!;
-
             if (plans.isEmpty) {
               return const Center(
                 child: Text(
@@ -127,7 +130,10 @@ class FavouritesScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final plan = plans[index];
                 return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance.collection('users').doc(plan.createdBy).get(),
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(plan.createdBy)
+                      .get(),
                   builder: (context, userSnapshot) {
                     if (userSnapshot.connectionState == ConnectionState.waiting) {
                       return const SizedBox(
@@ -135,7 +141,9 @@ class FavouritesScreen extends StatelessWidget {
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
-                    if (userSnapshot.hasError || !userSnapshot.hasData || !userSnapshot.data!.exists) {
+                    if (userSnapshot.hasError ||
+                        !userSnapshot.hasData ||
+                        !userSnapshot.data!.exists) {
                       return const SizedBox(
                         height: 330,
                         child: Center(
@@ -147,7 +155,8 @@ class FavouritesScreen extends StatelessWidget {
                       );
                     }
 
-                    final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                    final userData =
+                        userSnapshot.data!.data() as Map<String, dynamic>;
                     return _buildPlanCard(context, userData, plan);
                   },
                 );
@@ -159,84 +168,82 @@ class FavouritesScreen extends StatelessWidget {
     );
   }
 
-  // Método auxiliar para obtener los planes completos desde la colección 'plans'
+  // ------------------------------------------------------------------------
+  // Obtener planes completos desde la colección 'plans'
+  // ------------------------------------------------------------------------
   Future<List<PlanModel>> _fetchPlansFromIds(List<String> planIds) async {
     if (planIds.isEmpty) return [];
 
     final List<PlanModel> plans = [];
     for (String planId in planIds) {
-      final planDoc = await FirebaseFirestore.instance
-          .collection('plans')
-          .doc(planId)
-          .get();
+      final planDoc =
+          await FirebaseFirestore.instance.collection('plans').doc(planId).get();
       if (planDoc.exists) {
         final planData = planDoc.data() as Map<String, dynamic>;
-        planData['id'] = planDoc.id; // Asegurarse de que el ID esté en el mapa
+        // Aseguramos que planData tenga el id
+        planData['id'] = planDoc.id;
         plans.add(PlanModel.fromMap(planData));
       }
     }
     return plans;
   }
 
-  // Construye cada tarjeta de plan.
-  Widget _buildPlanCard(BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
+  // ------------------------------------------------------------------------
+  // Construir una tarjeta de plan (con fondo, avatar, etc.)
+  // Al pulsar, mostramos FrostedPlanDialog (el que viene de user_info_check.dart)
+  // ------------------------------------------------------------------------
+  Widget _buildPlanCard(
+      BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String userHandle = userData['handle']?.toString() ?? '@usuario';
-    final String? uid = userData['uid']?.toString();
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
-
-    // Obtenemos la imagen de fondo del plan
     final String? backgroundImage = plan.backgroundImage;
-
-    // Usamos la descripción del plan como "caption"
     final String caption = plan.description.isNotEmpty
         ? plan.description
         : 'Descripción breve o #hashtags';
-
-    // Los contadores de comentarios y shares siguen siendo ficticios
     final String commentsCount = '173';
     final String sharesCount = '227';
 
-    return Center(
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: 330,
-        margin: const EdgeInsets.only(bottom: 15),
-        child: Stack(
-          children: [
-            // Imagen de fondo usando la URL almacenada en backgroundImage
-            GestureDetector(
-              onTap: () {
-                // Aquí podrías mostrar un pop-up con más detalles si lo necesitas
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    title: Text(plan.type),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (backgroundImage != null && backgroundImage.isNotEmpty)
-                          Image.network(
-                            backgroundImage,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.image),
-                          ),
-                        const SizedBox(height: 10),
-                        Text(caption),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cerrar'),
-                      ),
-                    ],
+    return GestureDetector(
+      onTap: () {
+        // Al pulsar, mostramos el diálogo frosted real
+        showGeneralDialog(
+          context: context,
+          barrierDismissible: true,
+          barrierLabel: 'Cerrar',
+          transitionDuration: const Duration(milliseconds: 300),
+          pageBuilder: (ctx, animation, secondaryAnimation) {
+            return SafeArea(
+              child: Align(
+                alignment: Alignment.center,
+                child: Material(
+                  color: Colors.transparent,
+                  // Usamos la clase importada con alias new_frosted:
+                  child: new_frosted.FrostedPlanDialog(
+                    plan: plan,
+                    fetchParticipants: _fetchAllPlanParticipants,
                   ),
-                );
-              },
-              child: ClipRRect(
+                ),
+              ),
+            );
+          },
+          transitionBuilder: (context, anim1, anim2, child) {
+            return FadeTransition(
+              opacity: anim1,
+              child: child,
+            );
+          },
+        );
+      },
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.95,
+          height: 330,
+          margin: const EdgeInsets.only(bottom: 15),
+          child: Stack(
+            children: [
+              // Imagen de fondo
+              ClipRRect(
                 borderRadius: BorderRadius.circular(30),
                 child: (backgroundImage != null && backgroundImage.isNotEmpty)
                     ? Image.network(
@@ -248,166 +255,179 @@ class FavouritesScreen extends StatelessWidget {
                       )
                     : _buildPlaceholder(),
               ),
-            ),
-            // Avatar + nombre (tap -> abre perfil)
-            Positioned(
-              top: 10,
-              left: 10,
-              child: GestureDetector(
-                onTap: () {
-                  // Aquí podrías agregar navegación al perfil del creador si es necesario
-                  // Por ahora, dejamos el onTap vacío
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(36),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildProfileAvatar(fallbackPhotoUrl),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      name,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  SvgPicture.asset(
-                                    'assets/verificado.svg',
-                                    width: 14,
-                                    height: 14,
-                                    color: Colors.blueAccent,
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                userHandle,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Menú reemplazado por 3 iconos frosted
-            Positioned(
-              top: 16,
-              right: 16,
-              child: _buildThreeDotsMenu(userData, plan),
-            ),
-            // Parte inferior: contadores + caption
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.5),
-                        ],
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(30),
-                        bottomRight: Radius.circular(30),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+              // Avatar + nombre en la esquina superior izquierda.
+
+              Positioned(
+                top: 10,
+                left: 10,
+                child: GestureDetector(
+                  onTap: () {
+                    // Obtén el uid: si userData tiene 'uid', lo usamos; de lo contrario, usamos plan.createdBy.
+                    final String? uid = userData['uid']?.toString() ?? plan.createdBy;
+                    if (uid != null && uid.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => new_frosted.UserInfoCheck(userId: uid),
+                        ),
+                      );
+                    }
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(36),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            _buildIconText(
-                              icon: Icons.favorite_border,
-                              label: plan.likes.toString(),
-                            ),
-                            const SizedBox(width: 25),
-                            _buildIconText(
-                              icon: Icons.chat_bubble_outline,
-                              label: commentsCount,
-                            ),
-                            const SizedBox(width: 25),
-                            _buildIconText(
-                              icon: Icons.share,
-                              label: sharesCount,
-                            ),
-                            const Spacer(),
-                            Row(
+                            _buildProfileAvatar(fallbackPhotoUrl),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  '7/10',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    SvgPicture.asset(
+                                      'assets/verificado.svg',
+                                      width: 14,
+                                      height: 14,
+                                      color: Colors.blueAccent,
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 6),
-                                SvgPicture.asset(
-                                  'assets/users.svg',
-                                  color: AppColors.blue,
-                                  width: 20,
-                                  height: 20,
+                                Text(
+                                  userHandle,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          caption,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+
+
+              // Menú con 3 iconos en la esquina superior derecha
+              Positioned(
+                top: 16,
+                right: 16,
+                child: _buildThreeDotsMenu(userData, plan),
+              ),
+              // Parte inferior: contadores + descripción
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.5),
+                          ],
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              _buildIconText(
+                                icon: Icons.favorite_border,
+                                label: plan.likes.toString(),
+                              ),
+                              const SizedBox(width: 25),
+                              _buildIconText(
+                                icon: Icons.chat_bubble_outline,
+                                label: commentsCount,
+                              ),
+                              const SizedBox(width: 25),
+                              _buildIconText(
+                                icon: Icons.share,
+                                label: sharesCount,
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  const Text(
+                                    '7/10',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SvgPicture.asset(
+                                    'assets/users.svg',
+                                    color: AppColors.blue,
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            caption,
+                            style: const TextStyle(fontSize: 13, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Método para construir el menú de opciones: una fila de 3 iconos frosted.
+  // ------------------------------------------------------------------------
+  // Menú de 3 iconos (compartir, like, unión)
+  // ------------------------------------------------------------------------
   Widget _buildThreeDotsMenu(Map<String, dynamic> userData, PlanModel plan) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -426,16 +446,20 @@ class FavouritesScreen extends StatelessWidget {
           'assets/union.svg',
           size: 40,
           onTap: () {
-            // Acción para unión u otra funcionalidad
+            // Acción de unión o lo que necesites
           },
         ),
       ],
     );
   }
 
-  // Helper para construir un icono con efecto frosted.
-  Widget _buildFrostedIcon(String assetPath,
-      {double size = 40, Color iconColor = Colors.white, VoidCallback? onTap}) {
+  // Helper para un icono con efecto frosted
+  Widget _buildFrostedIcon(
+    String assetPath, {
+    double size = 40,
+    Color iconColor = Colors.white,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: ClipOval(
@@ -462,7 +486,7 @@ class FavouritesScreen extends StatelessWidget {
     );
   }
 
-  // Helper para el avatar de perfil.
+  // Helper para avatar de perfil
   Widget _buildProfileAvatar(String? photoUrl) {
     if (photoUrl != null && photoUrl.isNotEmpty) {
       return CircleAvatar(
@@ -478,7 +502,7 @@ class FavouritesScreen extends StatelessWidget {
     }
   }
 
-  // Placeholder para cuando no hay imagen o falla la carga.
+  // Placeholder para cuando no hay imagen
   Widget _buildPlaceholder() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -493,7 +517,7 @@ class FavouritesScreen extends StatelessWidget {
     );
   }
 
-  // Helper para mostrar un icono junto a un texto.
+  // Icono + texto
   Widget _buildIconText({required IconData icon, required String label}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -502,22 +526,18 @@ class FavouritesScreen extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
         ),
       ],
     );
   }
 }
 
-// Widget para el botón de "like" (corazón) que permite togglear y actualizar Firebase,
-// y además actualiza el campo "favourites" en el documento del usuario.
+// ------------------------------------------------------------------------
+// Botón de Like que actualiza el contador de likes y el array favourites
+// ------------------------------------------------------------------------
 class LikeButton extends StatefulWidget {
   final PlanModel plan;
-
   const LikeButton({Key? key, required this.plan}) : super(key: key);
 
   @override
@@ -527,7 +547,6 @@ class LikeButton extends StatefulWidget {
 class _LikeButtonState extends State<LikeButton> {
   bool liked = false;
 
-  // Al iniciar, consultamos si el plan está en los "favourites" del usuario para definir el estado inicial.
   @override
   void initState() {
     super.initState();
@@ -556,7 +575,7 @@ class _LikeButtonState extends State<LikeButton> {
     final planRef = FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
     final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-    // Actualizamos el contador de likes del plan mediante una transacción.
+    // Actualizamos contador 'likes' en la colección 'plans'.
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(planRef);
       if (!snapshot.exists) return;
@@ -569,7 +588,7 @@ class _LikeButtonState extends State<LikeButton> {
       transaction.update(planRef, {'likes': currentLikes});
     });
 
-    // Actualizamos el campo 'favourites' en el documento del usuario.
+    // Actualizamos el array 'favourites' en 'users'.
     if (!liked) {
       await userRef.update({
         'favourites': FieldValue.arrayUnion([widget.plan.id])
