@@ -12,6 +12,7 @@ import 'users_managing/user_info_inside_chat.dart';
 import 'users_managing/user_info_check.dart'; // Contiene FrostedPlanDialog, etc.
 import 'options_for_plans.dart'; // Para el menú de opciones (si lo usas)
 import 'special_plans/invite_users_to_plan_screen.dart';
+import 'package:share_plus/share_plus.dart';
 
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
@@ -569,7 +570,8 @@ class UsersGrid extends StatelessWidget {
                                   const SizedBox(width: 6),
                                   SvgPicture.asset(
                                     'assets/users.svg',
-                                    color: AppColors.blue,
+                                    // Si se alcanza o supera el tope máximo, el icono se pinta de rojo.
+                                    color: participantes >= maxPart ? Colors.red : AppColors.blue,
                                     width: 20,
                                     height: 20,
                                   ),
@@ -591,6 +593,7 @@ class UsersGrid extends StatelessWidget {
                   ),
                 ),
               ),
+
             ],
           ),
         ),
@@ -695,141 +698,42 @@ class UsersGrid extends StatelessWidget {
   // Helper para construir el menú de opciones: ahora una fila de 3 iconos frosted.
   // Se le pasa además el [plan] para el botón de like.
   // -----------------------------------------------------------------------
-  Widget _buildThreeDotsMenu(BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildFrostedIcon(
-          'assets/compartir.svg',
-          size: 40,
-          onTap: () {
-            // Acción para compartir
-          },
-        ),
-        const SizedBox(width: 16),
-        LikeButton(plan: plan),
-        const SizedBox(width: 16),
-        _buildFrostedIcon(
-          'assets/union.svg',
-          size: 40,
-          onTap: () async {
-            final user = FirebaseAuth.instance.currentUser;
-            if (user == null) return; // Asegúrate de que el usuario está logueado
+  // Dentro del método _buildThreeDotsMenu:
+Widget _buildThreeDotsMenu(BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      _buildFrostedIcon(
+        'assets/compartir.svg',
+        size: 40,
+        onTap: () {
+          // Acción para compartir el plan
+          final String shareText = '¡Mira este plan!\n'
+              'Título: ${plan.type ?? 'Sin título'}\n'
+              'Descripción: ${plan.description.isNotEmpty ? plan.description : 'Sin descripción'}\n'
+              '¡Únete y participa!';
+          Share.share(shareText);
+        },
+      ),
+      const SizedBox(width: 16),
+      LikeButton(plan: plan),
+      const SizedBox(width: 16),
+      _buildFrostedIcon(
+        'assets/union.svg',
+        size: 40,
+        onTap: () async {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user == null) return; // Asegúrate de que el usuario está logueado
 
-            // Evita que el creador se una a su propio plan
-            if (plan.createdBy == user.uid) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No puedes unirte a tu propio plan')),
-              );
-              return;
-            }
+          // Evita que el creador se una a su propio plan
+          if (plan.createdBy == user.uid) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No puedes unirte a tu propio plan')),
+            );
+            return;
+          }
 
-            // Verifica si el usuario ya está suscrito al plan
-            // Verifica si el usuario ya está suscrito al plan
-            if (plan.participants?.contains(user.uid) ?? false) {
-              showGeneralDialog(
-                context: context,
-                barrierDismissible: false,
-                barrierLabel: '',
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return Center(
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.7,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "¡Ya estás suscrito a este plan!",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          decoration: TextDecoration.none,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                transitionBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              );
-              
-              // Cierra el popup después de 3 segundos
-              Future.delayed(const Duration(seconds: 2), () {
-                Navigator.of(context).pop();
-              });
-              return;
-            }
-
-            // Comprueba si el plan ya tiene el cupo máximo de participantes
-            final int participantes = plan.participants?.length ?? 0;
-            final int maxPart = plan.maxParticipants ?? 0;
-            if (participantes >= maxPart) {
-              showGeneralDialog(
-                context: context,
-                barrierDismissible: false,
-                barrierLabel: '',
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return Center(
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.7,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "El cupo máximo de participantes para este plan está cubierto",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          decoration: TextDecoration.none,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                transitionBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 300),
-              );
-              Future.delayed(const Duration(seconds: 3), () {
-                Navigator.of(context).pop();
-              });
-              return;
-            }
-
-            // Define el planType a partir de plan.type (o 'Plan' por defecto)
-            final String planType = plan.type.isNotEmpty ? plan.type : 'Plan';
-
-            // Crea la notificación de join_request enviando "planType"
-            await FirebaseFirestore.instance.collection('notifications').add({
-              'type': 'join_request',
-              'receiverId': plan.createdBy,
-              'senderId': user.uid,
-              'planId': plan.id,
-              'planType': planType,
-              'timestamp': FieldValue.serverTimestamp(),
-              'read': false,
-            });
-
-            // Muestra un popup pequeño, elegante y profesional con efecto frosted glass
+          if (plan.participants?.contains(user.uid) ?? false) {
             showGeneralDialog(
               context: context,
               barrierDismissible: false,
@@ -844,7 +748,51 @@ class UsersGrid extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
-                      "¡Tu solicitud de unión se ha enviado correctamente!",
+                      "¡Ya estás suscrito a este plan!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.none,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                );
+              },
+              transitionBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 300),
+            );
+            Future.delayed(const Duration(seconds: 2), () {
+              Navigator.of(context).pop();
+            });
+            return;
+          }
+
+          final int participantes = plan.participants?.length ?? 0;
+          final int maxPart = plan.maxParticipants ?? 0;
+          if (participantes >= maxPart) {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: false,
+              barrierLabel: '',
+              pageBuilder: (context, animation, secondaryAnimation) {
+                return Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      "El cupo máximo de participantes para este plan está cubierto",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -868,12 +816,64 @@ class UsersGrid extends StatelessWidget {
             Future.delayed(const Duration(seconds: 3), () {
               Navigator.of(context).pop();
             });
-          },
-        ),
+            return;
+          }
 
-      ],
-    );
-  }
+          final String planType = plan.type.isNotEmpty ? plan.type : 'Plan';
+          await FirebaseFirestore.instance.collection('notifications').add({
+            'type': 'join_request',
+            'receiverId': plan.createdBy,
+            'senderId': user.uid,
+            'planId': plan.id,
+            'planType': planType,
+            'timestamp': FieldValue.serverTimestamp(),
+            'read': false,
+          });
+
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: false,
+            barrierLabel: '',
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return Center(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    "¡Tu solicitud de unión se ha enviado correctamente!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      decoration: TextDecoration.none,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              );
+            },
+            transitionBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+          );
+          Future.delayed(const Duration(seconds: 3), () {
+            Navigator.of(context).pop();
+          });
+        },
+      ),
+    ],
+  );
+}
+
 
   // -----------------------------------------------------------------------
   // Helper para construir un icono con efecto frosted.
