@@ -12,7 +12,12 @@
           "package_name": "com.company.plan"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "861608593316-95qadesq218fdb9tkp0l5lf6hdo8os0g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDl7XQgtzNCNy5lYdVP2phPsnmhswXMNSg"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "861608593316-95qadesq218fdb9tkp0l5lf6hdo8os0g.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "861608593316-9glsvqnh6l9ugjbfkjf2l5ug5or2ohlm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.company.plan"
+              }
+            }
+          ]
         }
       }
     }

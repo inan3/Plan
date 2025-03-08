@@ -14,7 +14,7 @@ import 'menu_side_bar/menu_side_bar_screen.dart';
 import 'chats/chats_screen.dart';
 import 'users_managing/user_info_check.dart';
 import 'map/map_screen.dart';
-import 'profile_screen.dart';
+import 'profile/profile_screen.dart';
 import 'notification_screen.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'package:dating_app/plan_joining/plan_join_request.dart';

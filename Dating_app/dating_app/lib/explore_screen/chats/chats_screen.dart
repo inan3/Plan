@@ -1,10 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'chat_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
-  const ChatsScreen({super.key});
+  final String? sharedText; // Texto que llega si la app se selecciona en el panel de compartir.
+
+  const ChatsScreen({Key? key, this.sharedText}) : super(key: key);
 
   @override
   _ChatsScreenState createState() => _ChatsScreenState();
@@ -13,7 +16,64 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  /// Elimina un chat guardando el timestamp de eliminación para el usuario actual.
+  @override
+  void initState() {
+    super.initState();
+    // Si llegó texto compartido, muestra un cuadro de diálogo al iniciar
+    if (widget.sharedText != null && widget.sharedText!.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSharedTextDialog(widget.sharedText!);
+      });
+    }
+  }
+
+  /// Muestra un diálogo que contiene el texto compartido.
+  /// Desde aquí el usuario puede cerrar el diálogo o decidir enviarlo a un contacto.
+  void _showSharedTextDialog(String text) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Contenido compartido"),
+          content: Text(text),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cerrar"),
+            ),
+            TextButton(
+              onPressed: () {
+                // Por ejemplo, podrías abrir una pantalla
+                // para seleccionar el contacto al que enviar.
+                // O podrías enviar directamente a un ChatScreen predefinido.
+                Navigator.pop(context);
+
+                // EJEMPLO: envía el texto a un chat con un ID "destUserId"
+                // En un caso real, mostrarías una lista de contactos
+                // y al elegir uno, harías algo así:
+                String destUserId = "123456"; // Ejemplo
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatScreen(
+                      chatPartnerId: destUserId,
+                      chatPartnerName: "Contacto Ejemplo",
+                      chatPartnerPhoto: "",
+                      // Podrías añadir un parámetro extra en ChatScreen para mandar el texto inicial
+                      // Ej: initialMessage: text,
+                    ),
+                  ),
+                );
+              },
+              child: const Text("Enviar a un contacto"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Método de ejemplo para eliminar un chat, si tuvieras esa lógica.
   Future<void> _deleteChat(String otherUserId) async {
     try {
       await FirebaseFirestore.instance
@@ -32,9 +92,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  /// Convierte un Timestamp en una hora legible.
+  /// Convierte un [Timestamp] a un string con la hora para mostrar en la lista
   String _formatTimestamp(Timestamp? timestamp) {
-    DateTime date = timestamp?.toDate() ?? DateTime.now();
+    final date = timestamp?.toDate() ?? DateTime.now();
     return "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
   }
 
@@ -47,202 +107,126 @@ class _ChatsScreenState extends State<ChatsScreen> {
         foregroundColor: Colors.black,
         elevation: 0.5,
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUserId)
-            .snapshots(),
-        builder: (context, userSnapshot) {
-          if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-            return const Center(child: CircularProgressIndicator());
+      body: _buildChatList(),
+    );
+  }
+
+  /// Ejemplo de widget que muestra la lista de chats
+  /// Tu lógica puede ser distinta según cómo guardes tus mensajes.
+  Widget _buildChatList() {
+    return StreamBuilder<QuerySnapshot>(
+      // Suponiendo que guardas la lista de mensajes en 'messages'
+      stream: FirebaseFirestore.instance
+          .collection('messages')
+          .where('participants', arrayContains: currentUserId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text("No tienes mensajes aún."));
+        }
+
+        final docs = snapshot.data!.docs;
+        // Lógica de ejemplo para agrupar por último mensaje
+        // (depende de cómo implementes tu base de datos)
+        Map<String, Map<String, dynamic>> lastMessages = {};
+        for (var doc in docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final Timestamp? ts = data['timestamp'];
+          if (ts == null) continue;
+
+          // Quien es el "otro" usuario
+          final String otherUserId = (data['senderId'] == currentUserId)
+              ? data['receiverId']
+              : data['senderId'];
+
+          // Si ya existe, chequea si este mensaje es más reciente
+          if (!lastMessages.containsKey(otherUserId)) {
+            lastMessages[otherUserId] = data;
+          } else {
+            final existingTs = lastMessages[otherUserId]!['timestamp'] as Timestamp;
+            if (ts.toDate().isAfter(existingTs.toDate())) {
+              lastMessages[otherUserId] = data;
+            }
           }
+        }
 
-          // Se obtienen los chats eliminados y sus timestamps.
-          Map<String, dynamic> deletedChats =
-              (userSnapshot.data!.data() as Map<String, dynamic>)['deletedChats'] ??
-                  {};
+        // Ordenar por fecha descendente
+        final entries = lastMessages.entries.toList()
+          ..sort((a, b) {
+            final tA = a.value['timestamp'] as Timestamp;
+            final tB = b.value['timestamp'] as Timestamp;
+            return tB.toDate().compareTo(tA.toDate());
+          });
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('messages')
-                .where('participants', arrayContains: currentUserId)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(
-                  child: Text(
-                    "No tienes mensajes aún.",
-                    style: TextStyle(color: Colors.grey, fontSize: 18),
+        return ListView.builder(
+          itemCount: entries.length,
+          itemBuilder: (_, i) {
+            final otherUserId = entries[i].key;
+            final lastMsgData = entries[i].value;
+
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(otherUserId)
+                  .get(),
+              builder: (ctx, usrSnapshot) {
+                if (!usrSnapshot.hasData || !usrSnapshot.data!.exists) {
+                  return const SizedBox.shrink();
+                }
+
+                final userData = usrSnapshot.data!.data() as Map<String, dynamic>?;
+                if (userData == null) return const SizedBox.shrink();
+
+                final userName = userData['name'] ?? 'Usuario';
+                final userPhoto = userData['photoUrl'] ?? '';
+
+                return Dismissible(
+                  key: Key(otherUserId),
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.delete, color: Colors.white, size: 32),
                   ),
-                );
-              }
-
-              // Map para almacenar el último mensaje por cada conversación (con otro usuario).
-              Map<String, Map<String, dynamic>> lastMessages = {};
-
-              for (var doc in snapshot.data!.docs) {
-                var data = doc.data() as Map<String, dynamic>;
-
-                // Determinar el otro usuario según senderId y receiverId.
-                String otherUserId = (data['senderId'] == currentUserId)
-                    ? data['receiverId']
-                    : data['senderId'];
-
-                // Verificar que 'timestamp' sea un Timestamp válido.
-                if (data['timestamp'] is! Timestamp) continue;
-                Timestamp messageTimestamp = data['timestamp'] as Timestamp;
-
-                // Si existe un 'deletedAt' para este chat, solo se toman mensajes posteriores a esa fecha.
-                Timestamp? deletedAt = deletedChats[otherUserId] is Timestamp
-                    ? deletedChats[otherUserId] as Timestamp
-                    : null;
-                if (deletedAt != null &&
-                    messageTimestamp.toDate().isBefore(deletedAt.toDate())) {
-                  continue;
-                }
-
-                // Si ya existe un mensaje para este chat, se compara el timestamp.
-                if (lastMessages.containsKey(otherUserId)) {
-                  Timestamp existingTimestamp =
-                      lastMessages[otherUserId]!['timestamp'] as Timestamp;
-                  if (messageTimestamp.toDate().isAfter(existingTimestamp.toDate())) {
-                    lastMessages[otherUserId] = data;
-                  }
-                } else {
-                  lastMessages[otherUserId] = data;
-                }
-              }
-
-              // Convertir el mapa a una lista de entradas y ordenarlas por timestamp descendente.
-              List<MapEntry<String, Map<String, dynamic>>> sortedEntries =
-                  lastMessages.entries.toList();
-              sortedEntries.sort((a, b) {
-                Timestamp aTimestamp = a.value['timestamp'] as Timestamp;
-                Timestamp bTimestamp = b.value['timestamp'] as Timestamp;
-                return bTimestamp.toDate().compareTo(aTimestamp.toDate());
-              });
-
-              return ListView.builder(
-              itemCount: sortedEntries.length,
-              itemBuilder: (context, index) {
-                String otherUserId = sortedEntries[index].key;
-                var lastMessage = sortedEntries[index].value;
-
-                return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
-                  builder: (context, userSnapshot) {
-                    if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                      return const SizedBox.shrink();
-                    }
-                    var userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-                    if (userData == null) return const SizedBox.shrink();
-
-                    return Dismissible(
-                      key: Key(otherUserId),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: const Icon(Icons.delete, color: Colors.white, size: 32),
-                      ),
-                      onDismissed: (direction) {
-                        _deleteChat(otherUserId);
-                      },
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ChatScreen(
-                                chatPartnerId: otherUserId,
-                                chatPartnerName: userData['name'] ?? 'Usuario',
-                                chatPartnerPhoto: userData['photoUrl'] ?? '',
-                                deletedAt: deletedChats[otherUserId] is Timestamp
-                                    ? deletedChats[otherUserId] as Timestamp
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.3),
-                                blurRadius: 5,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              // Foto de perfil (Contenedor 1)
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundImage: (userData['photoUrl'] != null &&
-                                        userData['photoUrl'].toString().isNotEmpty)
-                                    ? NetworkImage(userData['photoUrl'])
-                                    : null,
-                                backgroundColor: Colors.grey[300],
-                              ),
-                              const SizedBox(width: 12),
-                              // Nombre y último mensaje (Contenedor 2)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      userData['name'] ?? 'Usuario',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      lastMessage['text'] ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Hora del último mensaje.
-                              Text(
-                                _formatTimestamp(
-                                  lastMessage['timestamp'] is Timestamp
-                                      ? lastMessage['timestamp'] as Timestamp
-                                      : null,
-                                ),
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ],
+                  direction: DismissDirection.endToStart,
+                  onDismissed: (_) => _deleteChat(otherUserId),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: userPhoto.isNotEmpty ? NetworkImage(userPhoto) : null,
+                      backgroundColor: Colors.grey[300],
+                    ),
+                    title: Text(
+                      userName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(lastMsgData['text'] ?? ''),
+                    trailing: Text(
+                      _formatTimestamp(lastMsgData['timestamp'] as Timestamp?),
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    onTap: () {
+                      // Navega a la pantalla de chat individual
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            chatPartnerId: otherUserId,
+                            chatPartnerName: userName,
+                            chatPartnerPhoto: userPhoto,
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             );
-
-
-            },
-          );
-        },
-      ),
+          },
+        );
+      },
     );
   }
 }
