@@ -2,17 +2,19 @@
 
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
-// Importamos el diálogo frosted para ver detalles de un plan:
 import 'frosted_plan_dialog_state.dart' as new_frosted;
+
+import '../special_plans/invite_users_to_plan_screen.dart';
+import 'user_info_inside_chat.dart';
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
-
   const UserInfoCheck({Key? key, required this.userId}) : super(key: key);
 
   @override
@@ -20,20 +22,19 @@ class UserInfoCheck extends StatefulWidget {
 }
 
 class _UserInfoCheckState extends State<UserInfoCheck> {
-  // Atributos para portada y fotos adicionales
   String? _profileImageUrl;
   String? _coverImageUrl;
   List<String> _additionalPhotos = [];
+
+  bool isFollowing = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _checkIfFollowing();
   }
 
-  // --------------------------------------------------------------------------
-  // Carga datos del usuario (photoUrl, coverPhotoUrl, additionalPhotos)
-  // --------------------------------------------------------------------------
   Future<void> _loadUserData() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -57,9 +58,19 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Obtiene el número de planes activos (NO ESPECIALES) creados por userId
-  // --------------------------------------------------------------------------
+  Future<void> _checkIfFollowing() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('followed')
+        .where('userId', isEqualTo: user.uid)
+        .where('followedId', isEqualTo: widget.userId)
+        .get();
+    setState(() {
+      isFollowing = snapshot.docs.isNotEmpty;
+    });
+  }
+
   Future<int> _getActivePlanCount() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
@@ -69,9 +80,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snapshot.docs.length;
   }
 
-  // --------------------------------------------------------------------------
-  // Obtiene la lista de planes activos (NO ESPECIALES) creados por userId
-  // --------------------------------------------------------------------------
   Future<List<PlanModel>> _fetchActivePlans() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
@@ -86,13 +94,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }).toList();
   }
 
-  // --------------------------------------------------------------------------
-  // Obtiene los participantes de un plan. (solo el creador, expandir si quieres)
-  // --------------------------------------------------------------------------
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
     final List<Map<String, dynamic>> participants = [];
 
-    // Buscamos el creador
     final creatorDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(plan.createdBy)
@@ -106,13 +110,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         'isCreator': true,
       });
     }
-
-    // Podrías expandir lógica para participants en array o suscripciones...
-
     return participants;
   }
 
-  /// Devuelve la ruta del icono según el nivel de privilegio.
   String _getPrivilegeIconPath(int level) {
     switch (level) {
       case 1:
@@ -126,7 +126,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }
   }
 
-  /// Construye el widget con el icono de privilegio.
   Widget _buildPrivilegeIcon(int level) {
     return SvgPicture.asset(
       _getPrivilegeIconPath(level),
@@ -135,7 +134,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  /// Devuelve la cantidad de seguidores (followers) de [userId].
   Future<int> _getFollowersCount(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('followers')
@@ -144,7 +142,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snapshot.size;
   }
 
-  /// Devuelve la cantidad de seguidos (followed) de [userId].
   Future<int> _getFollowedCount(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('followed')
@@ -153,15 +150,77 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snapshot.size;
   }
 
+  Future<void> _toggleFollow() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Necesitas iniciar sesión para seguir.')),
+      );
+      return;
+    }
+    if (user.uid == widget.userId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No puedes seguirte a ti mismo.')),
+      );
+      return;
+    }
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        final followedSnap = await FirebaseFirestore.instance
+            .collection('followed')
+            .where('userId', isEqualTo: user.uid)
+            .where('followedId', isEqualTo: widget.userId)
+            .get();
+        for (var doc in followedSnap.docs) {
+          await doc.reference.delete();
+        }
+        final followersSnap = await FirebaseFirestore.instance
+            .collection('followers')
+            .where('userId', isEqualTo: widget.userId)
+            .where('followerId', isEqualTo: user.uid)
+            .get();
+        for (var doc in followersSnap.docs) {
+          await doc.reference.delete();
+        }
+        setState(() {
+          isFollowing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Has dejado de seguir a este usuario.')),
+        );
+      } else {
+        // Follow
+        await FirebaseFirestore.instance.collection('followers').add({
+          'userId': widget.userId,
+          'followerId': user.uid,
+        });
+        await FirebaseFirestore.instance.collection('followed').add({
+          'userId': user.uid,
+          'followedId': widget.userId,
+        });
+        setState(() {
+          isFollowing = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Has comenzado a seguir a este usuario!')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar follow: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.userId)
-            .get(),
+        future:
+            FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -177,7 +236,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // Portada + Avatar
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -207,18 +265,18 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 ),
                 const SizedBox(height: 100),
 
-                // Stats
+                _buildActionButtons(context, widget.userId),
+                const SizedBox(height: 20),
+
                 _buildBioAndStats(),
                 const SizedBox(height: 20),
 
-                // Separador
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Divider(color: Colors.grey[400], thickness: 0.5),
                 ),
                 const SizedBox(height: 20),
 
-                // Fotos adicionales
                 _buildAdditionalPhotosSection(),
                 const SizedBox(height: 40),
               ],
@@ -236,10 +294,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       width: double.infinity,
       color: Colors.grey[300],
       child: hasCover
-          ? Image.network(
-              _coverImageUrl!,
-              fit: BoxFit.cover,
-            )
+          ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
           : Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -307,11 +362,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStatItem("planes activos", "...", iconoCalendario: true),
+                      _buildStatItem("planes activos", "...", isActive: false),
                       const SizedBox(width: 20),
-                      _buildStatItem("seguidores", "..."),
+                      _buildStatItem("seguidores", "...", isActive: false),
                       const SizedBox(width: 20),
-                      _buildStatItem("seguidos", "..."),
+                      _buildStatItem("seguidos", "...", isActive: false),
                     ],
                   );
                 }
@@ -324,11 +379,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStatItem("planes activos", "0", iconoCalendario: true),
+                      _buildStatItem("planes activos", "0", isActive: false),
                       const SizedBox(width: 20),
-                      _buildStatItem("seguidores", "0"),
+                      _buildStatItem("seguidores", "0", isActive: false),
                       const SizedBox(width: 20),
-                      _buildStatItem("seguidos", "0"),
+                      _buildStatItem("seguidos", "0", isActive: false),
                     ],
                   );
                 }
@@ -341,11 +396,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildStatItem("planes activos", planeCount.toString(),
-                        iconoCalendario: true),
+                        isActive: planeCount >= 1),
                     const SizedBox(width: 20),
-                    _buildStatItem("seguidores", followersCount.toString()),
+                    _buildStatItem("seguidores", followersCount.toString(),
+                        isActive: followersCount >= 1),
                     const SizedBox(width: 20),
-                    _buildStatItem("seguidos", followedCount.toString()),
+                    _buildStatItem("seguidos", followedCount.toString(),
+                        isActive: followedCount >= 1),
                   ],
                 );
               },
@@ -356,12 +413,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  Widget _buildStatItem(String label, String count, {bool iconoCalendario = false}) {
-    final bool isPlanesActivos = label.contains("planes activos");
-    String iconPath = isPlanesActivos
+  Widget _buildStatItem(String label, String count, {required bool isActive}) {
+    final String iconPath = label == "planes activos"
         ? 'assets/icono-calendario.svg'
         : 'assets/icono-seguidores.svg';
-    Color iconColor = isPlanesActivos ? AppColors.blue : Colors.blueGrey;
+    final Color iconColor = isActive ? AppColors.blue : Colors.grey;
 
     return SizedBox(
       width: 100,
@@ -376,15 +432,204 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           const SizedBox(height: 4),
           Text(
             count,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, String otherUserId) {
+    final safeUserId = otherUserId;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildActionButton(
+          context: context,
+          iconPath: 'assets/agregar-usuario.svg',
+          label: 'Invítale a un Plan',
+          onTap: () {
+            if (safeUserId.isNotEmpty) {
+              InviteUsersToPlanScreen.showPopup(context, safeUserId);
+            }
+          },
+        ),
+        const SizedBox(width: 12),
+        _buildActionButton(
+          context: context,
+          iconPath: 'assets/mensaje.svg',
+          label: null,
+          onTap: () {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: 'Cerrar',
+              barrierColor: Colors.transparent,
+              transitionDuration: const Duration(milliseconds: 300),
+              pageBuilder: (_, __, ___) => const SizedBox(),
+              transitionBuilder: (ctx, anim1, anim2, child) {
+                return FadeTransition(
+                  opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+                  child: UserInfoInsideChat(
+                    key: ValueKey(safeUserId),
+                    chatPartnerId: safeUserId,
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(width: 12),
+        _buildActionButton(
+          context: context,
+          iconPath: isFollowing ? 'assets/icono-tick.svg' : 'assets/agregar-usuario.svg',
+          label: isFollowing ? 'Siguiendo' : 'Seguir',
+          onTap: () => _toggleFollow(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required String iconPath,
+    String? label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            color: const Color.fromARGB(255, 84, 78, 78).withOpacity(0.3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 24, // Icono aún más pequeño
+                  height: 24,
+                  color: Colors.white,
+                ),
+                if (label != null) ...[
+                  if (label == 'Siguiendo') const SizedBox(width: 2),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13, // Texto más pequeño
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdditionalPhotosSection() {
+    if (_additionalPhotos.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0),
+        child: Text(
+          'No hay fotos adicionales',
+          style: TextStyle(color: Colors.black87),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'Fotos adicionales:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _additionalPhotos.length,
+            itemBuilder: (context, index) {
+              final imageUrl = _additionalPhotos[index];
+              return GestureDetector(
+                onTap: () => _openPhotoViewer(index),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                    image: DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openPhotoViewer(int initialIndex) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          child: Container(
+            width: double.maxFinite,
+            height: double.maxFinite,
+            color: Colors.black,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: PageController(initialPage: initialIndex),
+                  itemCount: _additionalPhotos.length,
+                  itemBuilder: (context, index) {
+                    final imageUrl = _additionalPhotos[index];
+                    return InteractiveViewer(
+                      child: Center(
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -526,100 +771,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAdditionalPhotosSection() {
-    if (_additionalPhotos.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
-        child: Text(
-          'No hay fotos adicionales',
-          style: TextStyle(color: Colors.black87),
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Fotos adicionales:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _additionalPhotos.length,
-            itemBuilder: (context, index) {
-              final imageUrl = _additionalPhotos[index];
-              return GestureDetector(
-                onTap: () => _openPhotoViewer(index),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      image: NetworkImage(imageUrl),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _openPhotoViewer(int initialIndex) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          child: Container(
-            width: double.maxFinite,
-            height: double.maxFinite,
-            color: Colors.black,
-            child: Stack(
-              children: [
-                PageView.builder(
-                  controller: PageController(initialPage: initialIndex),
-                  itemCount: _additionalPhotos.length,
-                  itemBuilder: (context, index) {
-                    final imageUrl = _additionalPhotos[index];
-                    return InteractiveViewer(
-                      child: Center(
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                Positioned(
-                  top: 40,
-                  right: 20,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

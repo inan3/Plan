@@ -111,6 +111,7 @@ flutter:
     - assets/icono-usuario-premium.svg
     - assets/icono-usuario-diamante.svg
     - assets/icono-usuario-vip.svg
+    - assets/icono-tick.svg
 
   fonts:
     - family: Inter
