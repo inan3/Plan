@@ -1,4 +1,4 @@
-//plan_model.dart
+// plan_model.dart
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -56,7 +56,7 @@ class PlanModel {
     this.special_plan = 0, // Por defecto 0 (plan normal)
   });
 
-  // Genera un ID único para el plan de 10 caracteres alfanuméricos
+  // Genera un ID único de 10 caracteres alfanuméricos
   static Future<String> generateUniqueId() async {
     const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     final Random random = Random();

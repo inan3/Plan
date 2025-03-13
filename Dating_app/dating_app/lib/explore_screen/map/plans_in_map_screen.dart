@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 // Asegúrate de importar el diálogo de detalles (FrostedPlanDialog)
-import '../users_managing/user_info_check.dart'; // O la ruta correspondiente donde se encuentre
+import '../users_managing/frosted_plan_dialog_state.dart'; // O la ruta correspondiente donde se encuentre
 
 // Importa tu modelo de plan
 import '../../models/plan_model.dart';

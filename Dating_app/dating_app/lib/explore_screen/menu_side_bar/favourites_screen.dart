@@ -5,7 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // 1) Importamos el archivo con el diálogo FrostedPlanDialog real (p.ej. user_info_check.dart):
-import '../users_managing/user_info_check.dart' as new_frosted;
+import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
+import '../users_managing/user_info_check.dart' as profile_readonly;
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
@@ -268,7 +269,7 @@ class FavouritesScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => new_frosted.UserInfoCheck(userId: uid),
+                          builder: (_) => profile_readonly.UserInfoCheck(userId: uid),
                         ),
                       );
                     }

@@ -7,7 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // Importa la clase real FrostedPlanDialog (y UserInfoCheck, si la necesitas) desde el archivo adecuado.
-import '../users_managing/user_info_check.dart' as new_frosted;
+import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';

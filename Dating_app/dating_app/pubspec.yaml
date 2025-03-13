@@ -107,6 +107,10 @@ flutter:
     - assets/icono-cerrar-sesion.svg
     - assets/icono-corazon.svg
     - assets/icono-seguidores.svg
+    - assets/icono-usuario-basico.svg
+    - assets/icono-usuario-premium.svg
+    - assets/icono-usuario-diamante.svg
+    - assets/icono-usuario-vip.svg
 
   fonts:
     - family: Inter
