@@ -9,9 +9,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import 'frosted_plan_dialog_state.dart' as new_frosted;
-
 import '../special_plans/invite_users_to_plan_screen.dart';
 import 'user_info_inside_chat.dart';
+
+// NUEVO: Importamos el nuevo fichero donde estará la clase 'PrivilegeLevelDetails'
+import 'privilege_level_details.dart';
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
@@ -25,7 +27,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   String? _profileImageUrl;
   String? _coverImageUrl;
   List<String> _additionalPhotos = [];
-
   bool isFollowing = false;
 
   @override
@@ -36,12 +37,16 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<void> _loadUserData() async {
+    print("[_loadUserData] Cargando datos de usuario desde Firestore...");
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
           .get();
-      if (!doc.exists) return;
+      if (!doc.exists) {
+        print("[_loadUserData] El documento no existe en Firestore.");
+        return;
+      }
       final data = doc.data() ?? {};
       setState(() {
         _profileImageUrl = data['photoUrl'] ?? '';
@@ -53,14 +58,19 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           _additionalPhotos = [];
         }
       });
+      print("[_loadUserData] Cargado con éxito. profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl");
     } catch (e) {
-      print('Error al cargar datos de usuario: $e');
+      print("[_loadUserData] Error al cargar datos de usuario: $e");
     }
   }
 
   Future<void> _checkIfFollowing() async {
+    print("[_checkIfFollowing] Revisando si el usuario actual sigue a ${widget.userId}");
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      print("[_checkIfFollowing] No hay usuario logueado, no se puede seguir.");
+      return;
+    }
     final snapshot = await FirebaseFirestore.instance
         .collection('followed')
         .where('userId', isEqualTo: user.uid)
@@ -69,9 +79,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     setState(() {
       isFollowing = snapshot.docs.isNotEmpty;
     });
+    print("[_checkIfFollowing] isFollowing=$isFollowing");
   }
 
   Future<int> _getActivePlanCount() async {
+    print("[_getActivePlanCount] Buscando planes activos (special_plan=0) creados por ${widget.userId}");
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: widget.userId)
@@ -81,12 +93,17 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<List<PlanModel>> _fetchActivePlans() async {
+    print("[_fetchActivePlans] Buscando planes activos creados por ${widget.userId}");
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: widget.userId)
         .where('special_plan', isEqualTo: 0)
         .get();
-    if (snapshot.docs.isEmpty) return [];
+    if (snapshot.docs.isEmpty) {
+      print("[_fetchActivePlans] El usuario no tiene planes activos.");
+      return [];
+    }
+    print("[_fetchActivePlans] Se encontraron ${snapshot.docs.length} planes.");
     return snapshot.docs.map((doc) {
       final data = doc.data();
       data['id'] = doc.id;
@@ -95,6 +112,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
+    print("[_fetchAllPlanParticipants] Cargando participantes del plan con ID=${plan.id}");
     final List<Map<String, dynamic>> participants = [];
 
     final creatorDoc = await FirebaseFirestore.instance
@@ -110,31 +128,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         'isCreator': true,
       });
     }
+    print("[_fetchAllPlanParticipants] Participantes: ${participants.length}");
     return participants;
   }
 
-  String _getPrivilegeIconPath(int level) {
-    switch (level) {
-      case 1:
-        return 'assets/icono-usuario-premium.svg';
-      case 2:
-        return 'assets/icono-usuario-diamond.svg';
-      case 3:
-        return 'assets/icono-usuario-vip.svg';
-      default:
-        return 'assets/icono-usuario-basico.svg';
-    }
-  }
-
-  Widget _buildPrivilegeIcon(int level) {
-    return SvgPicture.asset(
-      _getPrivilegeIconPath(level),
-      width: 24,
-      height: 24,
-    );
-  }
-
   Future<int> _getFollowersCount(String userId) async {
+    print("[_getFollowersCount] Contando followers de userId=$userId");
     final snapshot = await FirebaseFirestore.instance
         .collection('followers')
         .where('userId', isEqualTo: userId)
@@ -143,6 +142,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<int> _getFollowedCount(String userId) async {
+    print("[_getFollowedCount] Contando seguidos por userId=$userId");
     final snapshot = await FirebaseFirestore.instance
         .collection('followed')
         .where('userId', isEqualTo: userId)
@@ -151,6 +151,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<void> _toggleFollow() async {
+    print("[_toggleFollow] isFollowing=$isFollowing, userId=${widget.userId}");
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -167,7 +168,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
     try {
       if (isFollowing) {
-        // Unfollow
+        print("[_toggleFollow] Procediendo a Unfollow");
         final followedSnap = await FirebaseFirestore.instance
             .collection('followed')
             .where('userId', isEqualTo: user.uid)
@@ -191,7 +192,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           const SnackBar(content: Text('Has dejado de seguir a este usuario.')),
         );
       } else {
-        // Follow
+        print("[_toggleFollow] Procediendo a Follow");
         await FirebaseFirestore.instance.collection('followers').add({
           'userId': widget.userId,
           'followerId': user.uid,
@@ -208,6 +209,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         );
       }
     } catch (e) {
+      print("[_toggleFollow] Error al actualizar follow: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al actualizar follow: $e')),
       );
@@ -219,8 +221,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: FutureBuilder<DocumentSnapshot>(
-        future:
-            FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -231,7 +235,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
           final userData = snapshot.data!.data() as Map<String, dynamic>;
           final String name = userData['name'] ?? 'Usuario';
-          final int privilegeLevel = userData['privilegeLevel'] ?? 0;
 
           return SingleChildScrollView(
             child: Column(
@@ -248,7 +251,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                           color: Colors.black.withOpacity(0.4),
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back, color: Colors.white),
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              print("[UserInfoCheck] Botón atrás pulsado, Navigator.pop");
+                              Navigator.pop(context);
+                            },
                           ),
                         ),
                       ),
@@ -258,25 +264,28 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                       left: 0,
                       right: 0,
                       child: Center(
-                        child: _buildAvatarAndName(name, privilegeLevel),
+                        child: _buildAvatarAndName(name),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 100),
 
+                // Ajustamos el espacio para que haya menos “salto”
+                const SizedBox(height: 90),
+
+                // NUEVO: Botón extra para ver/gestionar nivel de privilegios
+                _buildPrivilegeButton(context),
+
+                const SizedBox(height: 20),
                 _buildActionButtons(context, widget.userId),
                 const SizedBox(height: 20),
-
                 _buildBioAndStats(),
                 const SizedBox(height: 20),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Divider(color: Colors.grey[400], thickness: 0.5),
                 ),
                 const SizedBox(height: 20),
-
                 _buildAdditionalPhotosSection(),
                 const SizedBox(height: 40),
               ],
@@ -287,8 +296,89 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  // --------------------------
+  // NUEVA FUNCIÓN:
+  // --------------------------
+  Widget _buildPrivilegeButton(BuildContext context) {
+  return GestureDetector(
+    onTap: () {
+      print("[_buildPrivilegeButton] Botón 'Ver Privilegios' pulsado");
+      _showPrivilegeLevelDetailsPopup();
+    },
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFB22222), // Rojo sangre
+              Color(0xFF1E90FF), // Azul (puedes ajustar este tono)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/icono-usuario-basico.svg',
+              width: 52,
+              height: 52,
+              color: Colors.white,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+
+  // --------------------------
+  // NUEVA FUNCIÓN (popup):
+  // --------------------------
+  void _showPrivilegeLevelDetailsPopup() {
+    print("[_showPrivilegeLevelDetailsPopup] Mostrando popup para ver nivel de privilegios");
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (ctx, anim, _, child) {
+        return FadeTransition(
+          opacity: anim,
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.center,
+              child: Material(
+                color: Colors.transparent,
+                // Llamamos a nuestro nuevo widget PrivilegeLevelDetails
+                child: PrivilegeLevelDetails(
+                  userId: widget.userId,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCoverImage() {
     final bool hasCover = (_coverImageUrl != null && _coverImageUrl!.isNotEmpty);
+    if (hasCover) {
+      print("[_buildCoverImage] Mostrando coverImageUrl=$_coverImageUrl");
+    } else {
+      print("[_buildCoverImage] El usuario no tiene coverPhotoUrl");
+    }
+
     return Container(
       height: 300,
       width: double.infinity,
@@ -308,11 +398,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  Widget _buildAvatarAndName(String userName, int privilegeLevel) {
+  Widget _buildAvatarAndName(String userName) {
     final fallbackAvatar = "https://via.placeholder.com/150";
     final avatarUrl = (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
         ? _profileImageUrl!
         : fallbackAvatar;
+
+    print("[_buildAvatarAndName] avatarUrl=$avatarUrl, userName=$userName");
 
     return Column(
       children: [
@@ -340,8 +432,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             const Icon(Icons.verified, color: Colors.blue, size: 20),
           ],
         ),
-        const SizedBox(height: 8),
-        _buildPrivilegeIcon(privilegeLevel),
       ],
     );
   }
@@ -376,6 +466,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     !snapshotPlans.hasData ||
                     !snapshotFol.hasData ||
                     !snapshotFing.hasData) {
+                  print("[_buildBioAndStats] Error o falta de datos en alguno de los FutureBuilders.");
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -392,6 +483,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 final followersCount = snapshotFol.data ?? 0;
                 final followedCount = snapshotFing.data ?? 0;
 
+                print("[_buildBioAndStats] planeCount=$planeCount, followersCount=$followersCount, followedCount=$followedCount");
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -439,7 +531,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
     );
@@ -447,6 +542,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
   Widget _buildActionButtons(BuildContext context, String otherUserId) {
     final safeUserId = otherUserId;
+    print("[_buildActionButtons] safeUserId=$safeUserId, isFollowing=$isFollowing");
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -455,6 +551,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           iconPath: 'assets/agregar-usuario.svg',
           label: 'Invítale a un Plan',
           onTap: () {
+            print("[_buildActionButtons] Botón 'Invítale a un Plan' pulsado");
             if (safeUserId.isNotEmpty) {
               InviteUsersToPlanScreen.showPopup(context, safeUserId);
             }
@@ -466,6 +563,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           iconPath: 'assets/mensaje.svg',
           label: null,
           onTap: () {
+            print("[_buildActionButtons] Botón 'Mensaje' pulsado");
             showGeneralDialog(
               context: context,
               barrierDismissible: true,
@@ -490,7 +588,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           context: context,
           iconPath: isFollowing ? 'assets/icono-tick.svg' : 'assets/agregar-usuario.svg',
           label: isFollowing ? 'Siguiendo' : 'Seguir',
-          onTap: () => _toggleFollow(),
+          onTap: () {
+            print("[_buildActionButtons] Botón 'Seguir/Siguiendo' pulsado");
+            _toggleFollow();
+          },
         ),
       ],
     );
@@ -510,24 +611,24 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            color: const Color.fromARGB(255, 84, 78, 78).withOpacity(0.3),
+            color: const ui.Color.fromARGB(255, 12, 11, 11).withOpacity(0.3),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SvgPicture.asset(
                   iconPath,
-                  width: 24, // Icono aún más pequeño
+                  width: 24,
                   height: 24,
                   color: Colors.white,
                 ),
                 if (label != null) ...[
-                  if (label == 'Siguiendo') const SizedBox(width: 2),
+                  const SizedBox(width: 4),
                   Text(
                     label,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 13, // Texto más pequeño
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -540,6 +641,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Widget _buildAdditionalPhotosSection() {
+    print("[_buildAdditionalPhotosSection] _additionalPhotos.length=${_additionalPhotos.length}");
     if (_additionalPhotos.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -568,7 +670,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             itemBuilder: (context, index) {
               final imageUrl = _additionalPhotos[index];
               return GestureDetector(
-                onTap: () => _openPhotoViewer(index),
+                onTap: () {
+                  print("[_buildAdditionalPhotosSection] Pulsada foto adicional index=$index");
+                  _openPhotoViewer(index);
+                },
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   width: 100,
@@ -591,6 +696,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   void _openPhotoViewer(int initialIndex) {
+    print("[_openPhotoViewer] Mostrando foto en pantalla completa, index=$initialIndex");
     showDialog(
       context: context,
       builder: (context) {
@@ -622,7 +728,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   right: 20,
                   child: IconButton(
                     icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      print("[_openPhotoViewer] Cerrar el diálogo de fotos");
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ),
               ],
@@ -634,6 +743,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   void _showActivePlansPopup() {
+    print("[_showActivePlansPopup] Mostrando popup con los planes activos del usuario");
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -681,6 +791,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                               final plan = plans[index];
                               return GestureDetector(
                                 onTap: () {
+                                  print("[_showActivePlansPopup] Se pulsó un plan con ID=${plan.id}");
                                   Navigator.of(context).pop();
                                   _showFrostedPlanDialog(plan);
                                 },
@@ -702,6 +813,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   void _showFrostedPlanDialog(PlanModel plan) {
+    print("[_showFrostedPlanDialog] Mostrando frostedPlanDialog para plan con ID=${plan.id}");
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
