@@ -107,10 +107,10 @@ flutter:
     - assets/icono-cerrar-sesion.svg
     - assets/icono-corazon.svg
     - assets/icono-seguidores.svg
-    - assets/icono-usuario-basico.svg
-    - assets/icono-usuario-premium.svg
-    - assets/icono-usuario-diamante.svg
-    - assets/icono-usuario-vip.svg
+    - assets/icono-usuario-basico.png
+    - assets/icono-usuario-premium.png
+    - assets/icono-usuario-golden.png
+    - assets/icono-usuario-vip.png
     - assets/icono-tick.svg
 
   fonts:

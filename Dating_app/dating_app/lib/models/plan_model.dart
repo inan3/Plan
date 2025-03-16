@@ -1,4 +1,3 @@
-// plan_model.dart
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -144,7 +143,7 @@ class PlanModel {
       return val.toDate();
     }
     if (val is String) {
-      return DateTime.tryParse(val); 
+      return DateTime.tryParse(val);
     }
     return null;
   }
@@ -181,7 +180,8 @@ class PlanModel {
     }
 
     // Datos del usuario que crea el plan
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final userDoc = await userRef.get();
     final userData = userDoc.data();
     if (userData == null) {
       throw Exception("No se encontraron datos del usuario");
@@ -220,6 +220,58 @@ class PlanModel {
         .doc(plan.id)
         .set(plan.toMap());
 
+    // Actualiza el campo 'total_created_plans' del usuario creador
+    await userRef.update({
+      'total_created_plans': FieldValue.increment(1),
+    });
+
     return plan;
+  }
+
+  /// Función de ejemplo para añadir un participante a un plan
+  /// y actualizar los contadores en el documento del usuario creador.
+  static Future<void> addParticipantToPlan(String planId, String participantId) async {
+    final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
+    final doc = await planRef.get();
+
+    if (!doc.exists) return;
+    final planData = doc.data()!;
+    final plan = PlanModel.fromMap(planData);
+
+    // Lista actual de participantes
+    final currentParticipants = List<String>.from(planData['participants'] ?? []);
+    // Evitar duplicados
+    if (currentParticipants.contains(participantId)) {
+      // El participante ya está en la lista
+      return;
+    }
+    // Añadir al participante
+    currentParticipants.add(participantId);
+
+    // Guardar la lista actualizada en el plan
+    await planRef.update({'participants': currentParticipants});
+
+    // Actualizar los datos del usuario creador
+    final creatorRef = FirebaseFirestore.instance.collection('users').doc(plan.createdBy);
+    final creatorDoc = await creatorRef.get();
+    if (!creatorDoc.exists) return;
+
+    final creatorData = creatorDoc.data() ?? {};
+    final oldTotalParticipants = creatorData['total_participants_until_now'] ?? 0;
+    final oldMaxParticipants = creatorData['max_participants_in_one_plan'] ?? 0;
+
+    // Sumar 1 al total de participantes reunidos
+    final newTotalParticipants = oldTotalParticipants + 1;
+
+    // Verificar si el plan actual supera el récord anterior
+    final newMaxParticipants = currentParticipants.length > oldMaxParticipants
+        ? currentParticipants.length
+        : oldMaxParticipants;
+
+    // Actualizar en Firestore
+    await creatorRef.update({
+      'total_participants_until_now': newTotalParticipants,
+      'max_participants_in_one_plan': newMaxParticipants,
+    });
   }
 }

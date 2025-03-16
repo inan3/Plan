@@ -147,13 +147,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _getPrivilegeIconPath(int level) {
     switch (level) {
       case 1:
-        return 'assets/icono-usuario-premium.svg';
+        return 'assets/icono-usuario-premium.png';
       case 2:
-        return 'assets/icono-usuario-diamond.svg';
+        return 'assets/icono-usuario-golden.png';
       case 3:
-        return 'assets/icono-usuario-vip.svg';
+        return 'assets/icono-usuario-vip.png';
       default:
-        return 'assets/icono-usuario-basico.svg';
+        return 'assets/icono-usuario-basico.png';
     }
   }
 

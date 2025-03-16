@@ -12,7 +12,7 @@ import 'frosted_plan_dialog_state.dart' as new_frosted;
 import '../special_plans/invite_users_to_plan_screen.dart';
 import 'user_info_inside_chat.dart';
 
-// NUEVO: Importamos el nuevo fichero donde estará la clase 'PrivilegeLevelDetails'
+// NUEVO: Importamos el nuevo fichero donde está la clase 'PrivilegeLevelDetails'
 import 'privilege_level_details.dart';
 
 class UserInfoCheck extends StatefulWidget {
@@ -28,6 +28,23 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   String? _coverImageUrl;
   List<String> _additionalPhotos = [];
   bool isFollowing = false;
+
+  // NUEVO: Para mostrar el icono según privilegeLevel
+  String _privilegeLevel = "basico";
+
+  // Función que decide qué icono usar según el nivel
+  String _getPrivilegeIcon(String level) {
+    switch (level.toLowerCase()) {
+      case "premium":
+        return "assets/icono-usuario-premium.png";
+      case "golden":
+        return "assets/icono-usuario-golden.png";
+      case "vip":
+        return "assets/icono-usuario-vip.png";
+      default:
+        return "assets/icono-usuario-basico.png";
+    }
+  }
 
   @override
   void initState() {
@@ -48,6 +65,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         return;
       }
       final data = doc.data() ?? {};
+
       setState(() {
         _profileImageUrl = data['photoUrl'] ?? '';
         _coverImageUrl = data['coverPhotoUrl'] ?? '';
@@ -57,8 +75,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         } else {
           _additionalPhotos = [];
         }
+
+        // Leemos el nivel actual para mostrar el ícono correcto
+        _privilegeLevel = (data['privilegeLevel'] ?? 'basico').toString();
       });
-      print("[_loadUserData] Cargado con éxito. profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl");
+
+      print("[_loadUserData] Cargado con éxito. profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl, level=$_privilegeLevel");
     } catch (e) {
       print("[_loadUserData] Error al cargar datos de usuario: $e");
     }
@@ -270,7 +292,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   ],
                 ),
 
-                // Ajustamos el espacio para que haya menos “salto”
                 const SizedBox(height: 90),
 
                 // NUEVO: Botón extra para ver/gestionar nivel de privilegios
@@ -297,49 +318,47 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   // --------------------------
-  // NUEVA FUNCIÓN:
+  // Botón: "Ver Privilegios"
   // --------------------------
   Widget _buildPrivilegeButton(BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      print("[_buildPrivilegeButton] Botón 'Ver Privilegios' pulsado");
-      _showPrivilegeLevelDetailsPopup();
-    },
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFB22222), // Rojo sangre
-              Color(0xFF1E90FF), // Azul (puedes ajustar este tono)
+    return GestureDetector(
+      onTap: () {
+        print("[_buildPrivilegeButton] Botón 'Ver Privilegios' pulsado");
+        _showPrivilegeLevelDetailsPopup();
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFB22222), // Rojo sangre
+                Color(0xFF1E90FF), // Azul
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Aquí podríamos mostrar un mini icono, si quieres que sea
+              // siempre "basico" o dinámico:
+              Image.asset(
+                _getPrivilegeIcon(_privilegeLevel),
+                width: 52,
+                height: 52,
+              ),
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              'assets/icono-usuario-basico.svg',
-              width: 52,
-              height: 52,
-              color: Colors.white,
-            ),
-          ],
-        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-
-  // --------------------------
-  // NUEVA FUNCIÓN (popup):
-  // --------------------------
+  // Popup con el widget PrivilegeLevelDetails
   void _showPrivilegeLevelDetailsPopup() {
     print("[_showPrivilegeLevelDetailsPopup] Mostrando popup para ver nivel de privilegios");
     showGeneralDialog(
@@ -359,7 +378,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               alignment: Alignment.center,
               child: Material(
                 color: Colors.transparent,
-                // Llamamos a nuestro nuevo widget PrivilegeLevelDetails
                 child: PrivilegeLevelDetails(
                   userId: widget.userId,
                 ),
@@ -417,20 +435,14 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              userName,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.verified, color: Colors.blue, size: 20),
-          ],
+        // Muestra el nombre y, DEBAJO, el ícono de nivel
+        Text(
+          userName,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
       ],
     );

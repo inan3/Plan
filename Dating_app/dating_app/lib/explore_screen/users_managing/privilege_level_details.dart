@@ -1,5 +1,3 @@
-// lib/explore_screen/users_managing/privilege_level_details.dart
-
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -19,21 +17,38 @@ class PrivilegeLevelDetails extends StatefulWidget {
 
 class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   String _privilegeInfo = "Cargando nivel de privilegios...";
-  // Valores simulados. Reemplázalos con la lógica real de consulta.
-  int _createdPlans = 2; // Ejemplo: el usuario ha creado 2 planes
-  int _maxParticipantsInOnePlan = 3; // Ejemplo: en su plan más concurrido se han reunido 3 participantes
-  int _totalParticipants = 10; // Ejemplo: en total se han reunido 10 participantes en todos sus planes
 
-  // Máximos para un usuario básico
+  // Variables obtenidas de Firestore.
+  int _totalCreatedPlans = 0;
+  int _maxParticipantsInOnePlan = 0;
+  int _totalParticipantsUntilNow = 0;
+
+  // Valores máximos para la interfaz (solo para mostrar barras de progreso).
   final int _maxPlans = 5;
   final int _maxParticipantsPerPlan = 5;
   final int _maxTotalParticipants = 20;
+
+  // Nivel de privilegio actual del usuario.
+  String _privilegeLevel = "Básico";
+
+  // Obtener el icono según el nivel
+  String get _privilegeIcon {
+    switch (_privilegeLevel.toLowerCase()) {
+      case "premium":
+        return "assets/icono-usuario-premium.png";
+      case "golden":
+        return "assets/icono-usuario-golden.png";
+      case "vip":
+        return "assets/icono-usuario-vip.png";
+      default:
+        return "assets/icono-usuario-basico.png";
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _loadPrivilegeInfo();
-    // Aquí podrías disparar funciones que consulten Firestore y actualicen _createdPlans, _maxParticipantsInOnePlan y _totalParticipants.
   }
 
   Future<void> _loadPrivilegeInfo() async {
@@ -45,9 +60,29 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
 
       if (doc.exists) {
         final data = doc.data() ?? {};
-        final level = data['privilegeLevel'] ?? 'Básico';
+
+        // Cargamos los campos desde Firestore.
+        _totalCreatedPlans = data['total_created_plans'] ?? 0;
+        _maxParticipantsInOnePlan = data['max_participants_in_one_plan'] ?? 0;
+        _totalParticipantsUntilNow = data['total_participants_until_now'] ?? 0;
+
+        // Leemos el nivel actual en la BD (por si ya lo tuviera).
+        _privilegeLevel = (data['privilegeLevel'] ?? 'Básico').toString();
+
+        // Tras cargar los datos, verificamos si debe cambiar de nivel.
+        await _checkAndUpdatePrivilegeLevel();
+
+        // Volvemos a leer el nivel (por si se actualizó).
+        final updatedDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get();
+        final updatedData = updatedDoc.data() ?? {};
+        _privilegeLevel = (updatedData['privilegeLevel'] ?? 'Básico').toString();
+
         setState(() {
-          _privilegeInfo = "Nivel de privilegios: $level";
+          // Mantenemos la misma variable para el texto, pero ya contiene la frase completa
+          _privilegeInfo = "Nivel de privilegios: $_privilegeLevel";
         });
       } else {
         setState(() {
@@ -61,121 +96,209 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     }
   }
 
-  Widget _buildProgressIndicator({required double progress, Color? color}) {
-    return LinearProgressIndicator(
-      value: progress,
-      backgroundColor: Colors.grey[300],
-      valueColor: AlwaysStoppedAnimation<Color>(
-        progress == 0 ? Colors.transparent : (color ?? Colors.blue),
+  /// Verifica y actualiza el nivel de privilegios según las condiciones.
+  Future<void> _checkAndUpdatePrivilegeLevel() async {
+    // Lógica de salto de nivel:
+    // Premium -> si 5 planes, máx. 5 participantes, total 20
+    // Golden  -> si 50 planes, máx. 50 participantes, total 2000
+    // VIP     -> si 500 planes, máx. 500 participantes, total 10000
+
+    String newLevel = _privilegeLevel; // Mantenemos el nivel actual
+
+    if (_totalCreatedPlans >= 500 &&
+        _maxParticipantsInOnePlan >= 500 &&
+        _totalParticipantsUntilNow >= 10000) {
+      newLevel = "VIP";
+    } else if (_totalCreatedPlans >= 50 &&
+        _maxParticipantsInOnePlan >= 50 &&
+        _totalParticipantsUntilNow >= 2000) {
+      newLevel = "Golden";
+    } else if (_totalCreatedPlans >= 5 &&
+        _maxParticipantsInOnePlan >= 5 &&
+        _totalParticipantsUntilNow >= 20) {
+      newLevel = "Premium";
+    } else {
+      newLevel = "Básico";
+    }
+
+    // Si hay un cambio de nivel, actualizamos en Firestore.
+    if (newLevel != _privilegeLevel) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .update({'privilegeLevel': newLevel});
+    }
+  }
+
+  Widget _buildProgressIndicator({
+    required double progress,
+    Color? color,
+    double width = 100,
+    double height = 10,
+    double borderRadius = 5,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: LinearProgressIndicator(
+          value: progress,
+          backgroundColor: const Color.fromARGB(255, 108, 104, 104),
+          valueColor: AlwaysStoppedAnimation<Color>(
+            progress == 0 ? Colors.transparent : (color ?? Colors.blue),
+          ),
+        ),
       ),
     );
   }
 
-  // Widget para dibujar el triángulo (sólo bordes)
+  // Íconos de ejemplo en la interfaz
   Widget _buildTriangleIcon() {
-    return CustomPaint(
-      size: const Size(30, 30),
-      painter: TrianglePainter(),
+    return SvgPicture.asset(
+      'assets/icono-calendario.svg',
+      width: 30,
+      height: 30,
+      color: Colors.white,
     );
   }
 
-  // Widget para dibujar el cuadrado (sólo bordes)
   Widget _buildSquareIcon() {
-    return CustomPaint(
-      size: const Size(30, 30),
-      painter: SquarePainter(),
+    return SvgPicture.asset(
+      'assets/icono-seguidores.svg',
+      width: 30,
+      height: 30,
+      color: Colors.white,
     );
   }
 
-  // Widget para dibujar el pentágono (sólo bordes)
   Widget _buildPentagonIcon() {
-    return CustomPaint(
-      size: const Size(30, 30),
-      painter: PentagonPainter(),
+    return SvgPicture.asset(
+      'assets/icono-seguidores.svg',
+      width: 30,
+      height: 30,
+      color: Colors.white,
     );
   }
 
   Widget _buildIndicatorsRow() {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: [
-      // Triángulo para "Planes creados"
-      Expanded(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return Column(
+      children: [
+        // Fila 1: Íconos SVG
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildTriangleIcon(),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 60,
-              child: _buildProgressIndicator(
-                progress: _createdPlans / _maxPlans,
-                color: Colors.orange,
-              ),
+            Expanded(
+              child: Center(child: _buildTriangleIcon()),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              "Planes creados",
-              style: TextStyle(color: Colors.white, fontSize: 10),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Center(child: _buildSquareIcon()),
+            ),
+            Expanded(
+              child: Center(child: _buildPentagonIcon()),
             ),
           ],
         ),
-      ),
-      // Cuadrado para "Máx. participantes en un plan"
-      Expanded(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: 10),
+        // Fila 2: Barras de progreso
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildSquareIcon(),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 60,
-              child: _buildProgressIndicator(
-                progress: _maxParticipantsInOnePlan / _maxParticipantsPerPlan,
-                color: Colors.green,
+            Expanded(
+              child: Center(
+                child: _buildProgressIndicator(
+                  progress: _maxPlans == 0
+                      ? 0
+                      : _totalCreatedPlans / _maxPlans,
+                  color: Colors.white,
+                  width: 80,
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              "Máx. participantes\nen un plan",
-              style: TextStyle(color: Colors.white, fontSize: 10),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Center(
+                child: _buildProgressIndicator(
+                  progress: _maxParticipantsPerPlan == 0
+                      ? 0
+                      : _maxParticipantsInOnePlan / _maxParticipantsPerPlan,
+                  color: Colors.white,
+                  width: 80,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _buildProgressIndicator(
+                  progress: _maxTotalParticipants == 0
+                      ? 0
+                      : _totalParticipantsUntilNow / _maxTotalParticipants,
+                  color: Colors.white,
+                  width: 80,
+                ),
+              ),
             ),
           ],
         ),
-      ),
-      // Pentágono para "Total de participantes reunidos hasta ahora"
-      Expanded(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: 1),
+        // Fila 3: Textos
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildPentagonIcon(),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 60,
-              child: _buildProgressIndicator(
-                progress: _totalParticipants / _maxTotalParticipants,
-                color: Colors.purple,
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    "Planes creados",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              "Total de participantes\nreunidos hasta ahora",
-              style: TextStyle(color: Colors.white, fontSize: 10),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    "Máx. participantes",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    "en un plan",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Text(
+                    "Total de participantes",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    "reunidos hasta ahora",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-      ),
-    ],
-  );
-}
-
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Contenedor semitransparente con blur de fondo (efecto "frosted glass")
+    // Popup con fondo degradado.
     return Center(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -184,38 +307,39 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
           child: Container(
             width: MediaQuery.of(context).size.width * 0.85,
             padding: const EdgeInsets.all(16),
-            color: Colors.black.withOpacity(0.3),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0D253F),
+                  Color(0xFF1B3A57),
+                  Color(0xFF12232E),
+                ],
+              ),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Ícono de privilegio básico en la parte superior
-                SvgPicture.asset(
-                  'assets/icono-usuario-basico.svg',
+                // 1) Mostramos el icono del nivel actual
+                Image.asset(
+                  _privilegeIcon,
                   width: 60,
                   height: 60,
-                  color: Colors.white,
                 ),
-                const SizedBox(height: 14),
-                // Fila de indicadores
-                _buildIndicatorsRow(),
-                const SizedBox(height: 16),
+                // 2) Justo debajo, el texto con el nivel (tamaño reducido a 10)
+                const SizedBox(height: 8),
                 Text(
-                  'Detalles de privilegios',
+                  _privilegeInfo, // Ej: "Nivel de privilegios: Premium"
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _privilegeInfo,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 10,
                   ),
                   textAlign: TextAlign.center,
                 ),
+                // Separación y luego las barras de progreso
+                const SizedBox(height: 14),
+                _buildIndicatorsRow(),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
@@ -230,63 +354,4 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
       ),
     );
   }
-}
-
-// CustomPainter para el triángulo (sólo bordes)
-class TrianglePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final Path path = Path();
-    path.moveTo(size.width / 2, 0); // vértice superior central
-    path.lineTo(0, size.height); // esquina inferior izquierda
-    path.lineTo(size.width, size.height); // esquina inferior derecha
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-// CustomPainter para el cuadrado (sólo bordes)
-class SquarePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-// CustomPainter para el pentágono (sólo bordes)
-class PentagonPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final Path path = Path();
-    final double w = size.width;
-    final double h = size.height;
-    path.moveTo(w * 0.5, 0); // vértice superior central
-    path.lineTo(w, h * 0.38); // vértice superior derecho
-    path.lineTo(w * 0.8, h); // vértice inferior derecho
-    path.lineTo(w * 0.2, h); // vértice inferior izquierdo
-    path.lineTo(0, h * 0.38); // vértice superior izquierdo
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
