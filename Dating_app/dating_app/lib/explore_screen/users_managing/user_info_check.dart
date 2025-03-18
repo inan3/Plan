@@ -12,7 +12,7 @@ import 'frosted_plan_dialog_state.dart' as new_frosted;
 import '../special_plans/invite_users_to_plan_screen.dart';
 import 'user_info_inside_chat.dart';
 
-// NUEVO: Importamos el nuevo fichero donde está la clase 'PrivilegeLevelDetails'
+// IMPORTAMOS el fichero de privilegios
 import 'privilege_level_details.dart';
 
 class UserInfoCheck extends StatefulWidget {
@@ -29,28 +29,60 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   List<String> _additionalPhotos = [];
   bool isFollowing = false;
 
-  // NUEVO: Para mostrar el icono según privilegeLevel
+  // Para mostrar el ícono según privilegeLevel
   String _privilegeLevel = "basico";
-
-  // Función que decide qué icono usar según el nivel
-  String _getPrivilegeIcon(String level) {
-    switch (level.toLowerCase()) {
-      case "premium":
-        return "assets/icono-usuario-premium.png";
-      case "golden":
-        return "assets/icono-usuario-golden.png";
-      case "vip":
-        return "assets/icono-usuario-vip.png";
-      default:
-        return "assets/icono-usuario-basico.png";
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadUserData().then((_) {
+      // Después de cargar los datos del usuario,
+      // refrescamos las estadísticas basadas en todos sus planes
+      _updateStatsBasedOnAllPlans();
+    });
     _checkIfFollowing();
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// NUEVO:
+  /// Lee TODOS los planes creados por [widget.userId], suma cuántos participantes
+  /// hay en total y encuentra el plan con más participantes. Luego actualiza
+  /// 'total_participants_until_now' y 'max_participants_in_one_plan' en 'users/{userId}'.
+  //////////////////////////////////////////////////////////////////////////////
+  Future<void> _updateStatsBasedOnAllPlans() async {
+    try {
+      final planSnap = await FirebaseFirestore.instance
+          .collection('plans')
+          .where('createdBy', isEqualTo: widget.userId)
+          .where('special_plan', isEqualTo: 0)
+          .get();
+
+      int totalParticipantsAcrossAllPlans = 0;
+      int maxParticipantsInAnyPlan = 0;
+
+      for (final doc in planSnap.docs) {
+        final data = doc.data();
+        final participants = data['participants'] as List<dynamic>? ?? [];
+        final count = participants.length;
+        totalParticipantsAcrossAllPlans += count;
+        if (count > maxParticipantsInAnyPlan) {
+          maxParticipantsInAnyPlan = count;
+        }
+      }
+
+      // Actualizamos en 'users/{userId}' con estos valores.
+      final userRef = FirebaseFirestore.instance.collection('users').doc(widget.userId);
+      await userRef.update({
+        'total_participants_until_now': totalParticipantsAcrossAllPlans,
+        'max_participants_in_one_plan': maxParticipantsInAnyPlan,
+      });
+
+      print("[_updateStatsBasedOnAllPlans] Usuario=${widget.userId} -> "
+            "total_participants_until_now=$totalParticipantsAcrossAllPlans, "
+            "max_participants_in_one_plan=$maxParticipantsInAnyPlan");
+    } catch (e) {
+      print("[_updateStatsBasedOnAllPlans] Error: $e");
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -76,11 +108,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           _additionalPhotos = [];
         }
 
-        // Leemos el nivel actual para mostrar el ícono correcto
+        // Leemos el nivel actual para mostrar el ícono correspondiente
         _privilegeLevel = (data['privilegeLevel'] ?? 'basico').toString();
       });
 
-      print("[_loadUserData] Cargado con éxito. profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl, level=$_privilegeLevel");
+      print("[_loadUserData] Cargado con éxito. "
+            "profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl, "
+            "level=$_privilegeLevel");
     } catch (e) {
       print("[_loadUserData] Error al cargar datos de usuario: $e");
     }
@@ -104,6 +138,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     print("[_checkIfFollowing] isFollowing=$isFollowing");
   }
 
+  /// Devuelve cuántos planes activos ha creado este usuario
   Future<int> _getActivePlanCount() async {
     print("[_getActivePlanCount] Buscando planes activos (special_plan=0) creados por ${widget.userId}");
     final snapshot = await FirebaseFirestore.instance
@@ -114,6 +149,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snapshot.docs.length;
   }
 
+  /// Busca todos los planes activos (special_plan=0)
+  /// y devuelve una lista de PlanModel
   Future<List<PlanModel>> _fetchActivePlans() async {
     print("[_fetchActivePlans] Buscando planes activos creados por ${widget.userId}");
     final snapshot = await FirebaseFirestore.instance
@@ -133,6 +170,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }).toList();
   }
 
+  /// Carga datos de los participantes del plan (si quisieras mostrarlos).
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
     print("[_fetchAllPlanParticipants] Cargando participantes del plan con ID=${plan.id}");
     final List<Map<String, dynamic>> participants = [];
@@ -172,6 +210,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snapshot.size;
   }
 
+  /// Botón para seguir/dejar de seguir a este usuario
   Future<void> _toggleFollow() async {
     print("[_toggleFollow] isFollowing=$isFollowing, userId=${widget.userId}");
     final user = FirebaseAuth.instance.currentUser;
@@ -190,6 +229,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
     try {
       if (isFollowing) {
+        // Dejar de seguir
         print("[_toggleFollow] Procediendo a Unfollow");
         final followedSnap = await FirebaseFirestore.instance
             .collection('followed')
@@ -214,6 +254,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           const SnackBar(content: Text('Has dejado de seguir a este usuario.')),
         );
       } else {
+        // Comenzar a seguir
         print("[_toggleFollow] Procediendo a Follow");
         await FirebaseFirestore.instance.collection('followers').add({
           'userId': widget.userId,
@@ -237,6 +278,50 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       );
     }
   }
+
+  // **************************************************************
+  // Función opcional para unirse a un plan (ya la tenías).
+  // Manténla si también quieres unirte con un botón "add" en la UI.
+  // **************************************************************
+  Future<void> _joinPlan(PlanModel plan) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final planDocRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
+
+    // Añadimos el usuario a 'participants' (si no está)
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(planDocRef);
+      if (!snapshot.exists) return; // El plan se borró
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final participants = List<String>.from(data['participants'] ?? []);
+
+      if (!participants.contains(currentUser.uid)) {
+        participants.add(currentUser.uid);
+        transaction.update(planDocRef, {'participants': participants});
+      }
+    });
+
+    // Leemos cuántos hay ahora
+    final updatedSnap = await planDocRef.get();
+    final updatedData = updatedSnap.data() ?? {};
+    final newParticipants = List<String>.from(updatedData['participants'] ?? []);
+    final newCount = newParticipants.length;
+
+    // Actualiza la estadística manual (pero ya no es necesario si
+    // _updateStatsBasedOnAllPlans() corre cada vez que abres la pantalla).
+    // Aun así, se deja por si lo quieres al instante:
+    await PrivilegeLevelDetails.updateSubscriptionStats(plan.createdBy, newCount);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Te uniste al plan ${plan.type}. Participantes ahora: $newCount")),
+    );
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // A PARTIR DE AQUÍ: Construcción de la UI
+  //////////////////////////////////////////////////////////////////////////////
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +379,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
                 const SizedBox(height: 90),
 
-                // NUEVO: Botón extra para ver/gestionar nivel de privilegios
+                // Botón: "Ver Privilegios"
                 _buildPrivilegeButton(context),
 
                 const SizedBox(height: 20),
@@ -317,9 +402,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  // --------------------------
   // Botón: "Ver Privilegios"
-  // --------------------------
   Widget _buildPrivilegeButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -344,8 +427,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Aquí podríamos mostrar un mini icono, si quieres que sea
-              // siempre "basico" o dinámico:
               Image.asset(
                 _getPrivilegeIcon(_privilegeLevel),
                 width: 52,
@@ -358,7 +439,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  // Popup con el widget PrivilegeLevelDetails
   void _showPrivilegeLevelDetailsPopup() {
     print("[_showPrivilegeLevelDetailsPopup] Mostrando popup para ver nivel de privilegios");
     showGeneralDialog(
@@ -435,7 +515,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           ),
         ),
         const SizedBox(height: 8),
-        // Muestra el nombre y, DEBAJO, el ícono de nivel
         Text(
           userName,
           style: const TextStyle(
@@ -478,7 +557,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     !snapshotPlans.hasData ||
                     !snapshotFol.hasData ||
                     !snapshotFing.hasData) {
-                  print("[_buildBioAndStats] Error o falta de datos en alguno de los FutureBuilders.");
+                  print("[_buildBioAndStats] Error o datos faltantes en FutureBuilders.");
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -495,18 +574,29 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 final followersCount = snapshotFol.data ?? 0;
                 final followedCount = snapshotFing.data ?? 0;
 
-                print("[_buildBioAndStats] planeCount=$planeCount, followersCount=$followersCount, followedCount=$followedCount");
+                print("[_buildBioAndStats] planeCount=$planeCount, "
+                      "followersCount=$followersCount, followedCount=$followedCount");
+
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildStatItem("planes activos", planeCount.toString(),
-                        isActive: planeCount >= 1),
+                    _buildStatItem(
+                      "planes activos",
+                      planeCount.toString(),
+                      isActive: planeCount >= 1,
+                    ),
                     const SizedBox(width: 20),
-                    _buildStatItem("seguidores", followersCount.toString(),
-                        isActive: followersCount >= 1),
+                    _buildStatItem(
+                      "seguidores",
+                      followersCount.toString(),
+                      isActive: followersCount >= 1,
+                    ),
                     const SizedBox(width: 20),
-                    _buildStatItem("seguidos", followedCount.toString(),
-                        isActive: followedCount >= 1),
+                    _buildStatItem(
+                      "seguidos",
+                      followedCount.toString(),
+                      isActive: followedCount >= 1,
+                    ),
                   ],
                 );
               },
@@ -518,7 +608,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Widget _buildStatItem(String label, String count, {required bool isActive}) {
-    final String iconPath = label == "planes activos"
+    final String iconPath = (label == "planes activos")
         ? 'assets/icono-calendario.svg'
         : 'assets/icono-seguidores.svg';
     final Color iconColor = isActive ? AppColors.blue : Colors.grey;
@@ -553,8 +643,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Widget _buildActionButtons(BuildContext context, String otherUserId) {
-    final safeUserId = otherUserId;
-    print("[_buildActionButtons] safeUserId=$safeUserId, isFollowing=$isFollowing");
+    print("[_buildActionButtons] userId=$otherUserId, isFollowing=$isFollowing");
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -564,8 +653,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           label: 'Invítale a un Plan',
           onTap: () {
             print("[_buildActionButtons] Botón 'Invítale a un Plan' pulsado");
-            if (safeUserId.isNotEmpty) {
-              InviteUsersToPlanScreen.showPopup(context, safeUserId);
+            if (otherUserId.isNotEmpty) {
+              InviteUsersToPlanScreen.showPopup(context, otherUserId);
             }
           },
         ),
@@ -587,8 +676,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 return FadeTransition(
                   opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
                   child: UserInfoInsideChat(
-                    key: ValueKey(safeUserId),
-                    chatPartnerId: safeUserId,
+                    key: ValueKey(otherUserId),
+                    chatPartnerId: otherUserId,
                   ),
                 );
               },
@@ -754,6 +843,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  /// Popup para mostrar planes activos del usuario
   void _showActivePlansPopup() {
     print("[_showActivePlansPopup] Mostrando popup con los planes activos del usuario");
     showGeneralDialog(
@@ -824,6 +914,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  /// Muestra un dialog especial con info del plan y la opción de unirse
   void _showFrostedPlanDialog(PlanModel plan) {
     print("[_showFrostedPlanDialog] Mostrando frostedPlanDialog para plan con ID=${plan.id}");
     showGeneralDialog(
@@ -870,6 +961,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       ),
       child: Stack(
         children: [
+          // Imagen y título del plan
           Positioned(
             bottom: 0,
             left: 0,
@@ -893,8 +985,34 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               ),
             ),
           ),
+          // Botón para unirse
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IconButton(
+              icon: const Icon(Icons.add, color: Colors.white),
+              onPressed: () {
+                // Al pulsar, nos unimos al plan (opcional)
+                _joinPlan(plan);
+              },
+            ),
+          )
         ],
       ),
     );
+  }
+
+  // Selecciona el ícono según el nivel de privilegio
+  String _getPrivilegeIcon(String level) {
+    switch (level.toLowerCase()) {
+      case "premium":
+        return "assets/icono-usuario-premium.png";
+      case "golden":
+        return "assets/icono-usuario-golden.png";
+      case "vip":
+        return "assets/icono-usuario-vip.png";
+      default:
+        return "assets/icono-usuario-basico.png";
+    }
   }
 }

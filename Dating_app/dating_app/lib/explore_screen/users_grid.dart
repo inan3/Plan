@@ -2,6 +2,7 @@
 import 'dart:ui'; // Para BackdropFilter, ImageFilter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,6 +14,7 @@ import '../../models/plan_model.dart';
 import 'users_managing/user_info_check.dart';
 import 'users_managing/user_info_inside_chat.dart';
 import 'special_plans/invite_users_to_plan_screen.dart';
+import 'users_managing/frosted_plan_dialog_state.dart';
 
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
@@ -53,6 +55,52 @@ class UsersGrid extends StatelessWidget {
       final data = doc.data() as Map<String, dynamic>;
       return PlanModel.fromMap(data);
     }).toList();
+  }
+
+  /// Función auxiliar para obtener todos los participantes de un plan.
+  /// Se obtiene primero el creador y luego los suscriptores registrados.
+  Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
+    List<Map<String, dynamic>> participants = [];
+    final planDoc = await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
+    if (planDoc.exists) {
+      final planData = planDoc.data();
+      final creatorId = planData?['createdBy'];
+      if (creatorId != null) {
+        final creatorUserDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(creatorId)
+            .get();
+        if (creatorUserDoc.exists && creatorUserDoc.data() != null) {
+          final cdata = creatorUserDoc.data()!;
+          participants.add({
+            'name': cdata['name'] ?? 'Sin nombre',
+            'age': cdata['age']?.toString() ?? '',
+            'photoUrl': cdata['photoUrl'] ?? cdata['profilePic'] ?? '',
+            'isCreator': true,
+          });
+        }
+      }
+    }
+
+    final subsSnap = await FirebaseFirestore.instance
+        .collection('subscriptions')
+        .where('id', isEqualTo: plan.id)
+        .get();
+    for (var sDoc in subsSnap.docs) {
+      final sData = sDoc.data();
+      final userId = sData['userId'];
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (userDoc.exists && userDoc.data() != null) {
+        final uData = userDoc.data()!;
+        participants.add({
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'isCreator': false,
+        });
+      }
+    }
+    return participants;
   }
 
   Widget _buildUserCard(Map<String, dynamic> userData, BuildContext context) {
@@ -97,10 +145,13 @@ class UsersGrid extends StatelessWidget {
           // Sin planes
           return _buildNoPlanLayout(context, userData);
         } else {
-          // Con planes
+          // Con planes: cada tarjeta se envuelve en GestureDetector para abrir el diálogo de detalles
           return Column(
             children: plans.map((plan) {
-              return _buildPlanLayout(context, userData, plan);
+              return GestureDetector(
+                onTap: () => _openPlanDetails(context, plan, userData),
+                child: _buildPlanLayout(context, userData, plan),
+              );
             }).toList(),
           );
         }
@@ -137,7 +188,6 @@ class UsersGrid extends StatelessWidget {
                     )
                   : _buildPlaceholder(),
             ),
-
             // Avatar + nombre (tap -> abre NUEVO user_info_check.dart)
             Positioned(
               top: 10,
@@ -207,7 +257,6 @@ class UsersGrid extends StatelessWidget {
                 ),
               ),
             ),
-
             // Texto + icon + botones
             Center(
               child: Padding(
@@ -241,7 +290,6 @@ class UsersGrid extends StatelessWidget {
                         color: Colors.white,
                       ),
                       const SizedBox(height: 20),
-
                       // Botones: Invitar / Mensaje
                       _buildActionButtons(context, uid),
                     ],
@@ -294,7 +342,6 @@ class UsersGrid extends StatelessWidget {
                     )
                   : _buildPlaceholder(),
             ),
-
             // Avatar + nombre (tap -> abre NUEVO user_info_check.dart)
             Positioned(
               top: 10,
@@ -364,7 +411,6 @@ class UsersGrid extends StatelessWidget {
                 ),
               ),
             ),
-
             // Menú de opciones (compartir, like, unirse)
             Positioned(
               top: 16,
@@ -447,7 +493,6 @@ class UsersGrid extends StatelessWidget {
                 ],
               ),
             ),
-
             // Parte inferior: likes, comentarios, shares, etc.
             Positioned(
               bottom: 0,
@@ -461,8 +506,7 @@ class UsersGrid extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -497,7 +541,7 @@ class UsersGrid extends StatelessWidget {
                               label: sharesCount,
                             ),
                             const Spacer(),
-                            // Participantes
+                            // Participantes: contador dinámico
                             Row(
                               children: [
                                 StreamBuilder<DocumentSnapshot>(
@@ -556,6 +600,29 @@ class UsersGrid extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Función para abrir los detalles del plan usando el diálogo FrostedPlanDialog.
+  void _openPlanDetails(BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return FrostedPlanDialog(
+          plan: plan,
+          fetchParticipants: _fetchPlanParticipants,
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
     );
   }
 
