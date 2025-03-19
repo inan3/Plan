@@ -3,13 +3,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // <--- Import necesario
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../main/colors.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
-import 'meeting_location_screen.dart'; // Este fichero contiene MeetingLocationPopup
-import '../utils/plans_list.dart'; // Este fichero contiene la lista de planes
+import 'meeting_location_screen.dart';
+import '../utils/plans_list.dart';
 
 /// Función auxiliar para convertir un SVG en BitmapDescriptor aplicando un color.
 Future<BitmapDescriptor> getCustomSvgMarker(
@@ -25,7 +25,8 @@ Future<BitmapDescriptor> getCustomSvgMarker(
     RegExp(r'fill="[^"]*"'),
     'fill="#${color.value.toRadixString(16).padLeft(8, "0")}"',
   );
-  final DrawableRoot svgDrawableRoot = await svg.fromSvgString(coloredSvgString, assetPath);
+  final DrawableRoot svgDrawableRoot =
+      await svg.fromSvgString(coloredSvgString, assetPath);
   final ui.Picture picture = svgDrawableRoot.toPicture(size: Size(width, height));
   final ui.Image image = await picture.toImage(width.toInt(), height.toInt());
   final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -35,11 +36,10 @@ Future<BitmapDescriptor> getCustomSvgMarker(
 /// Función para subir la imagen a Firebase Storage y obtener la URL de descarga.
 Future<String?> uploadBackgroundImage(Uint8List imageData, String planId) async {
   try {
-    // Crea una referencia en Storage en la carpeta 'plan_backgrounds'
-    final ref = FirebaseStorage.instance.ref().child('plan_backgrounds/$planId.png');
-    // Sube la imagen
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('plan_backgrounds/$planId.png');
     await ref.putData(imageData);
-    // Obtén la URL pública de descarga
     String downloadURL = await ref.getDownloadURL();
     return downloadURL;
   } catch (error) {
@@ -123,7 +123,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   final LayerLink _layerLink = LayerLink();
 
   // Paso 3: Fecha y hora
-  DateTime? _selectedDateTime;
   bool _allDay = false;
   bool _includeEndDate = false;
   DateTime? _startDate;
@@ -153,14 +152,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   double headerHorizontalInset = 0;
   double fieldsHorizontalInset = 20;
-  
+
   // Variable para el ícono del marcador
   Future<BitmapDescriptor>? _markerIconFuture;
 
   @override
   void initState() {
     super.initState();
-    // Se puede cargar un ícono por defecto si se desea
   }
 
   /// Función para asignar (o reasignar) el Future del marcador personalizado.
@@ -245,7 +243,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       width: 265,
                       height: 300,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
+                        color: const Color.fromARGB(255, 165, 159, 159)
+                            .withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -273,23 +272,28 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   fontFamily: 'Inter-Regular',
                                 ),
                                 border: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
+                                  borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.8)),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
+                                  borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.8)),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(color: Colors.white, width: 1.5),
+                                  borderSide:
+                                      const BorderSide(color: Colors.white),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0, vertical: 4.0),
                             child: Center(
                               child: Text(
                                 "Si no se te ocurre nada, echa un vistazo a los siguientes:",
@@ -322,13 +326,15 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   ),
                                 ),
                                 child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 4.0),
                                   dense: true,
                                   leading: SvgPicture.asset(
                                     plans[index]['icon'],
                                     width: 28,
                                     height: 28,
-                                    color: const Color.fromARGB(235, 229, 229, 252),
+                                    color: const Color.fromARGB(
+                                        235, 229, 229, 252),
                                   ),
                                   title: Text(
                                     plans[index]['name'],
@@ -505,7 +511,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 width: 30,
                                 height: 30,
                                 decoration: BoxDecoration(
-                                  color: _allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
+                                  color: _allDay
+                                      ? AppColors.blue
+                                      : Colors.grey.withOpacity(0.5),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -540,7 +548,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 width: 30,
                                 height: 30,
                                 decoration: BoxDecoration(
-                                  color: _includeEndDate ? AppColors.blue : Colors.grey.withOpacity(0.5),
+                                  color: _includeEndDate
+                                      ? AppColors.blue
+                                      : Colors.grey.withOpacity(0.5),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -568,7 +578,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     DateTime now = DateTime.now();
                                     DateTime? pickedDate = await showDatePicker(
                                       context: context,
-                                      initialDate: _startDate == null || _startDate!.isBefore(now) ? now : _startDate!,
+                                      initialDate: _startDate == null ||
+                                              _startDate!.isBefore(now)
+                                          ? now
+                                          : _startDate!,
                                       firstDate: now,
                                       lastDate: DateTime(2100),
                                     );
@@ -581,16 +594,21 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   child: _buildFrostedGlassContainer(
                                     text: _startDate == null
                                         ? "Seleccionar"
-                                        : _startDate!.toLocal().toString().split(' ')[0],
+                                        : _startDate!
+                                            .toLocal()
+                                            .toString()
+                                            .split(' ')[0],
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 if (!_allDay)
                                   GestureDetector(
                                     onTap: () async {
-                                      TimeOfDay? pickedTime = await showTimePicker(
+                                      TimeOfDay? pickedTime =
+                                          await showTimePicker(
                                         context: context,
-                                        initialTime: _startTime ?? TimeOfDay.now(),
+                                        initialTime:
+                                            _startTime ?? TimeOfDay.now(),
                                       );
                                       if (pickedTime != null) {
                                         setStateDialog(() {
@@ -599,7 +617,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                       }
                                     },
                                     child: _buildFrostedGlassContainer(
-                                      text: _startTime == null ? "Seleccionar" : _startTime!.format(context),
+                                      text: _startTime == null
+                                          ? "Seleccionar"
+                                          : _startTime!.format(context),
                                     ),
                                   ),
                               ],
@@ -625,12 +645,19 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
-                                          DateTime firstPossibleDate = _startDate != null && _startDate!.isAfter(DateTime.now())
-                                              ? _startDate!
-                                              : DateTime.now();
-                                          DateTime? pickedDate = await showDatePicker(
+                                          DateTime firstPossibleDate =
+                                              _startDate != null &&
+                                                      _startDate!
+                                                          .isAfter(DateTime
+                                                              .now())
+                                                  ? _startDate!
+                                                  : DateTime.now();
+                                          DateTime? pickedDate =
+                                              await showDatePicker(
                                             context: context,
-                                            initialDate: _endDate == null || _endDate!.isBefore(firstPossibleDate)
+                                            initialDate: _endDate == null ||
+                                                    _endDate!
+                                                        .isBefore(firstPossibleDate)
                                                 ? firstPossibleDate
                                                 : _endDate!,
                                             firstDate: firstPossibleDate,
@@ -645,34 +672,64 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                         child: _buildFrostedGlassContainer(
                                           text: _endDate == null
                                               ? "Seleccionar"
-                                              : _endDate!.toLocal().toString().split(' ')[0],
+                                              : _endDate!
+                                                  .toLocal()
+                                                  .toString()
+                                                  .split(' ')[0],
                                         ),
                                       ),
                                       const SizedBox(width: 10),
                                       GestureDetector(
                                         onTap: () async {
-                                          TimeOfDay? pickedTime = await showTimePicker(
+                                          TimeOfDay? pickedTime =
+                                              await showTimePicker(
                                             context: context,
-                                            initialTime: _endTime ?? TimeOfDay.now(),
+                                            initialTime: _endTime ??
+                                                TimeOfDay.now(),
                                           );
                                           if (pickedTime != null) {
-                                            if (_startDate != null && _endDate != null) {
-                                              DateTime startDateTime = (_allDay || _startTime == null)
-                                                  ? DateTime(_startDate!.year, _startDate!.month, _startDate!.day)
-                                                  : DateTime(_startDate!.year, _startDate!.month, _startDate!.day, _startTime!.hour, _startTime!.minute);
-                                              DateTime endDateTime = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, pickedTime.hour, pickedTime.minute);
-                                              if (!endDateTime.isAfter(startDateTime)) {
+                                            // Verificamos que fin sea posterior al inicio
+                                            if (_startDate != null &&
+                                                _endDate != null) {
+                                              DateTime startDateTime = (_allDay ||
+                                                      _startTime == null)
+                                                  ? DateTime(
+                                                      _startDate!.year,
+                                                      _startDate!.month,
+                                                      _startDate!.day)
+                                                  : DateTime(
+                                                      _startDate!.year,
+                                                      _startDate!.month,
+                                                      _startDate!.day,
+                                                      _startTime!.hour,
+                                                      _startTime!.minute);
+                                              DateTime endDateTime =
+                                                  DateTime(
+                                                _endDate!.year,
+                                                _endDate!.month,
+                                                _endDate!.day,
+                                                pickedTime.hour,
+                                                pickedTime.minute,
+                                              );
+                                              if (!endDateTime
+                                                  .isAfter(startDateTime)) {
                                                 showDialog(
                                                   context: context,
-                                                  builder: (context) => AlertDialog(
-                                                    title: const Text("Error"),
+                                                  builder:
+                                                      (context) =>
+                                                          AlertDialog(
+                                                    title:
+                                                        const Text("Error"),
                                                     content: const Text(
                                                       "La fecha final debe ser posterior a la fecha y hora de inicio.",
                                                     ),
                                                     actions: [
                                                       TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text("Aceptar"),
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                                context),
+                                                        child:
+                                                            const Text("Aceptar"),
                                                       ),
                                                     ],
                                                   ),
@@ -686,20 +743,21 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           }
                                         },
                                         child: _buildFrostedGlassContainer(
-                                          text: _endTime == null ? "Seleccionar" : _endTime!.format(context),
+                                          text: _endTime == null
+                                              ? "Seleccionar"
+                                              : _endTime!.format(context),
                                         ),
                                       ),
                                     ],
                                   )
-                                : _buildFrostedGlassContainer(text: "Sin elegir"),
+                                : _buildFrostedGlassContainer(
+                                    text: "Sin elegir",
+                                  ),
                           ],
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              _selectedDateTime = _startDate;
-                            });
                             Navigator.pop(context);
                           },
                           style: ElevatedButton.styleFrom(
@@ -726,7 +784,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Función para abrir el popup de MeetingLocation y actualizar la ubicación
+  /// Popup de ubicación
   void _navigateToMeetingLocation() {
     final plan = PlanModel(
       id: '',
@@ -737,10 +795,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       location: _location ?? '',
       latitude: _latitude ?? 0.0,
       longitude: _longitude ?? 0.0,
-      date: DateTime.now(),
+      startTimestamp: null,
+      finishTimestamp: null,
       createdBy: '',
     );
-    
+
     showGeneralDialog(
       context: context,
       barrierLabel: "Ubicación",
@@ -770,7 +829,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       },
     ).then((updatedPlan) async {
       if (updatedPlan != null && updatedPlan is PlanModel) {
-        print("Plan actualizado recibido: ${updatedPlan.toString()}");
         setState(() {
           _location = updatedPlan.location;
           _latitude = updatedPlan.latitude;
@@ -783,7 +841,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     });
   }
 
-  /// Widget para la selección de ubicación
   Widget _buildLocationSelectionArea() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,21 +872,25 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         child: FutureBuilder<BitmapDescriptor>(
                           future: _markerIconFuture,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
                             }
-                            final icon = snapshot.hasData ? snapshot.data! : BitmapDescriptor.defaultMarker;
+                            final icon = snapshot.hasData
+                                ? snapshot.data!
+                                : BitmapDescriptor.defaultMarker;
                             return GoogleMap(
                               initialCameraPosition: CameraPosition(
                                 target: LatLng(_latitude!, _longitude!),
                                 zoom: 16,
                               ),
                               markers: {
-                                  Marker(
+                                Marker(
                                   markerId: const MarkerId('selected'),
                                   position: LatLng(_latitude!, _longitude!),
                                   icon: icon,
-                                  anchor: const Offset(0.5, 1.0), // La punta estará en la parte inferior central
+                                  anchor: const Offset(0.5, 1.0),
                                 )
                               },
                               zoomControlsEnabled: false,
@@ -881,7 +942,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       height: 240,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                        color:
+                            const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Center(
@@ -902,14 +964,15 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   int _countCompletedSteps() {
     int completed = 0;
-    if (_selectedPlan != null || _customPlan != null) completed++; // Paso 1: Elección del tipo de plan
-    if (_selectedImage != null) completed++; // Paso 2: Selección de imagen de fondo
-    if (_selectedDateTime != null) completed++; // Paso 3: Selección de fecha y hora
-    if (_location != null && _location!.isNotEmpty) completed++; // Paso 4: Selección de ubicación
-    if (_ageRange != null) completed++; // Paso 5: Restricción de edad
-    if (_maxParticipants != null && _maxParticipants! > 0) completed++; // Paso 6: Máximo número de participantes
-    if (_planDescription != null && _planDescription!.isNotEmpty) completed++; // Paso 7: Breve descripción del plan
-    if (_selectedVisibility != null) completed++; // Paso 8: Visibilidad del plan
+    if (_selectedPlan != null || _customPlan != null) completed++;
+    if (_selectedImage != null) completed++;
+    // Para contar como completado, verificamos si al menos eligió fecha de inicio
+    if (_startDate != null) completed++;
+    if (_location != null && _location!.isNotEmpty) completed++;
+    if (_ageRange != null) completed++;
+    if (_maxParticipants != null && _maxParticipants! > 0) completed++;
+    if (_planDescription != null && _planDescription!.isNotEmpty) completed++;
+    if (_selectedVisibility != null) completed++;
     return completed;
   }
 
@@ -937,7 +1000,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  // Paso 2: Área de selección de imagen
   Widget _buildImageSelectionArea() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -966,7 +1028,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                 height: 240,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                  color:
+                      const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Center(
@@ -992,9 +1055,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  // Paso 3: Área de selección de fecha y hora
-  TextSpan _buildFormattedDateTextSpan(DateTime date,
-      {TimeOfDay? time, bool allDay = false, bool isEndDate = false}) {
+  TextSpan _buildFormattedDateTextSpan(
+    DateTime date, {
+    TimeOfDay? time,
+    bool allDay = false,
+    bool isEndDate = false,
+  }) {
     final String formattedDate =
         "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
     final Map<int, String> weekdays = {
@@ -1009,15 +1075,16 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     final String weekday = weekdays[date.weekday] ?? "";
 
     const TextStyle baseStyle = TextStyle(
-        fontSize: 14,
-        fontFamily: 'Inter-Regular',
-        decoration: TextDecoration.none,
-        color: Colors.white);
+      fontSize: 14,
+      fontFamily: 'Inter-Regular',
+      decoration: TextDecoration.none,
+      color: Colors.white,
+    );
     const TextStyle valueStyle = TextStyle(
       fontSize: 16,
       fontFamily: 'Inter-Regular',
       decoration: TextDecoration.none,
-      color: ui.Color.fromARGB(235, 155, 157, 251),
+      color: Color.fromARGB(235, 155, 157, 251),
     );
 
     List<TextSpan> children = [];
@@ -1076,11 +1143,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                  color:
+                      const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: _includeEndDate ? 140 : 100,
@@ -1106,7 +1175,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   allDay: _allDay,
                                 ),
                               ),
-                              if (_includeEndDate && _endDate != null && (_allDay || _endTime != null))
+                              if (_includeEndDate &&
+                                  _endDate != null &&
+                                  (_allDay || _endTime != null))
                                 RichText(
                                   textAlign: TextAlign.center,
                                   text: _buildFormattedDateTextSpan(
@@ -1133,17 +1204,17 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      // Se envuelve todo el contenido en un widget Material
       type: MaterialType.transparency,
       child: Stack(
         children: [
-          // Se añade el padding inferior según el teclado
           SingleChildScrollView(
-            padding: EdgeInsets.only(right: 5, bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              right: 5,
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Encabezado (imagen, título, etc.)
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: headerHorizontalInset),
                   child: Center(
@@ -1183,11 +1254,14 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                               child: Container(
                                 width: 260,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                  color: const Color.fromARGB(255, 124, 120, 120)
+                                      .withOpacity(0.2),
                                   border: Border.all(
-                                    color: const Color.fromARGB(255, 151, 121, 215),
+                                    color:
+                                        const Color.fromARGB(255, 151, 121, 215),
                                   ),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
@@ -1209,11 +1283,14 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                               _selectedIconData,
                                               color: Colors.white,
                                             ),
-                                          if (_selectedIconAsset != null || _selectedIconData != null)
+                                          if (_selectedIconAsset != null ||
+                                              _selectedIconData != null)
                                             const SizedBox(width: 10),
                                           Flexible(
                                             child: Text(
-                                              _customPlan ?? _selectedPlan ?? "Elige un plan",
+                                              _customPlan ??
+                                                  _selectedPlan ??
+                                                  "Elige un plan",
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontFamily: 'Inter-Regular',
@@ -1238,7 +1315,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Una vez elegido el plan (Pasos 1-4), se muestran los siguientes pasos
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: ((_selectedPlan != null) || (_customPlan != null))
@@ -1246,21 +1322,17 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 key: const ValueKey(1),
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  // Paso 2: Selección de imagen
                                   _buildImageSelectionArea(),
                                   if (_selectedImage != null) ...[
                                     const SizedBox(height: 20),
-                                    // Paso 3: Selección de fecha y hora
                                     _buildDateSelectionArea(),
                                   ],
-                                  if (_selectedDateTime != null) ...[
+                                  if (_startDate != null) ...[
                                     const SizedBox(height: 20),
-                                    // Paso 4: Selección de ubicación
                                     _buildLocationSelectionArea(),
                                   ],
                                   if (_location != null && _location!.isNotEmpty) ...[
                                     const SizedBox(height: 20),
-                                    // Paso 5: Restricción de edad
                                     const Text(
                                       "Restricción de edad para el plan",
                                       textAlign: TextAlign.center,
@@ -1275,7 +1347,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                        color: const Color.fromARGB(
+                                                255, 124, 120, 120)
+                                            .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       child: Column(
@@ -1283,12 +1357,20 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           SliderTheme(
                                             data: SliderTheme.of(context).copyWith(
                                               activeTrackColor: AppColors.blue,
-                                              inactiveTrackColor: const Color.fromARGB(235, 225, 225, 234).withOpacity(0.3),
+                                              inactiveTrackColor:
+                                                  const Color.fromARGB(
+                                                          235, 225, 225, 234)
+                                                      .withOpacity(0.3),
                                               trackHeight: 1,
                                               thumbColor: AppColors.blue,
-                                              overlayColor: AppColors.blue.withOpacity(0.2),
-                                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
+                                              overlayColor:
+                                                  AppColors.blue.withOpacity(0.2),
+                                              thumbShape:
+                                                  const RoundSliderThumbShape(
+                                                      enabledThumbRadius: 8),
+                                              overlayShape:
+                                                  const RoundSliderOverlayShape(
+                                                      overlayRadius: 24),
                                             ),
                                             child: RangeSlider(
                                               values: _ageRange,
@@ -1310,7 +1392,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           Text(
                                             "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
                                             style: const TextStyle(
-                                              color: Color.fromARGB(255, 223, 199, 199),
+                                              color:
+                                                  Color.fromARGB(255, 223, 199, 199),
                                               fontSize: 14,
                                               decoration: TextDecoration.none,
                                               fontFamily: 'Inter-Regular',
@@ -1319,7 +1402,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                         ],
                                       ),
                                     ),
-                                    // Paso 6: Máximo número de participantes
                                     const SizedBox(height: 20),
                                     const Text(
                                       "Máximo número de participantes",
@@ -1333,9 +1415,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     ),
                                     const SizedBox(height: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 1),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 18, vertical: 1),
                                       decoration: BoxDecoration(
-                                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                        color: const Color.fromARGB(
+                                                255, 124, 120, 120)
+                                            .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       child: Row(
@@ -1352,17 +1437,22 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                               keyboardType: TextInputType.number,
                                               onChanged: (value) {
                                                 setState(() {
-                                                  _maxParticipants = int.tryParse(value);
+                                                  _maxParticipants =
+                                                      int.tryParse(value);
                                                 });
                                               },
                                               decoration: const InputDecoration(
                                                 isDense: true,
-                                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 0),
                                                 hintText: "Ingresa un número...",
                                                 hintStyle: TextStyle(
                                                   color: Colors.white70,
                                                   fontFamily: 'Inter-Regular',
-                                                  decoration: TextDecoration.none,
+                                                  decoration:
+                                                      TextDecoration.none,
                                                 ),
                                                 border: InputBorder.none,
                                               ),
@@ -1375,7 +1465,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                         ],
                                       ),
                                     ),
-                                    // Paso 7: Breve descripción del plan
                                     const SizedBox(height: 20),
                                     const Text(
                                       "Breve descripción del plan",
@@ -1389,9 +1478,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     ),
                                     const SizedBox(height: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                                        color: const Color.fromARGB(
+                                                255, 124, 120, 120)
+                                            .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       child: TextField(
@@ -1402,7 +1494,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           });
                                         },
                                         decoration: const InputDecoration(
-                                          hintText: "Describe brevemente tu plan...",
+                                          hintText:
+                                              "Describe brevemente tu plan...",
                                           hintStyle: TextStyle(
                                             color: Colors.white70,
                                             fontFamily: 'Inter-Regular',
@@ -1416,7 +1509,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                         ),
                                       ),
                                     ),
-                                    // Paso 8: Visibilidad del plan
                                     const SizedBox(height: 20),
                                     const Text(
                                       "Este plan es:",
@@ -1439,15 +1531,21 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           },
                                           child: Container(
                                             width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 12),
                                             decoration: BoxDecoration(
-                                              color: _selectedVisibility == "Publico"
+                                              color: _selectedVisibility ==
+                                                      "Publico"
                                                   ? AppColors.blue
-                                                  : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(30),
+                                                  : const Color.fromARGB(
+                                                          255, 124, 120, 120)
+                                                      .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 SvgPicture.asset(
                                                   'assets/icono-plan-publico.svg',
@@ -1462,7 +1560,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontFamily: 'Inter-Regular',
-                                                    decoration: TextDecoration.none,
+                                                    decoration:
+                                                        TextDecoration.none,
                                                   ),
                                                 ),
                                               ],
@@ -1478,15 +1577,21 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                           },
                                           child: Container(
                                             width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 12),
                                             decoration: BoxDecoration(
-                                              color: _selectedVisibility == "Privado"
+                                              color: _selectedVisibility ==
+                                                      "Privado"
                                                   ? AppColors.blue
-                                                  : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(30),
+                                                  : const Color.fromARGB(
+                                                          255, 124, 120, 120)
+                                                      .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 SvgPicture.asset(
                                                   'assets/icono-plan-privado.svg',
@@ -1501,7 +1606,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontFamily: 'Inter-Regular',
-                                                    decoration: TextDecoration.none,
+                                                    decoration:
+                                                        TextDecoration.none,
                                                   ),
                                                 ),
                                               ],
@@ -1512,20 +1618,27 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                         GestureDetector(
                                           onTap: () {
                                             setState(() {
-                                              _selectedVisibility = "Solo para mis seguidores";
+                                              _selectedVisibility =
+                                                  "Solo para mis seguidores";
                                             });
                                           },
                                           child: Container(
                                             width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 12),
                                             decoration: BoxDecoration(
-                                              color: _selectedVisibility == "Solo para mis seguidores"
+                                              color: _selectedVisibility ==
+                                                      "Solo para mis seguidores"
                                                   ? AppColors.blue
-                                                  : const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(30),
+                                                  : const Color.fromARGB(
+                                                          255, 124, 120, 120)
+                                                      .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 SvgPicture.asset(
                                                   'assets/icono-plan-seguidores.svg',
@@ -1540,7 +1653,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontFamily: 'Inter-Regular',
-                                                    decoration: TextDecoration.none,
+                                                    decoration:
+                                                        TextDecoration.none,
                                                   ),
                                                 ),
                                               ],
@@ -1555,7 +1669,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             : const SizedBox.shrink(),
                       ),
                       const SizedBox(height: 20),
-                      // Botón de Finalizar Plan: Enviar datos a Firebase y cerrar popup
+                      // Botón de Finalizar Plan
                       if (_countCompletedSteps() == 8)
                         ElevatedButton(
                           onPressed: () async {
@@ -1563,10 +1677,58 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               String? backgroundImageUrl;
                               // Si existe una imagen seleccionada, súbela a Firebase Storage
                               if (_selectedImage != null) {
-                                final planId = DateTime.now().millisecondsSinceEpoch.toString();
-                                backgroundImageUrl = await uploadBackgroundImage(_selectedImage!, planId);
+                                final planId =
+                                    DateTime.now().millisecondsSinceEpoch
+                                        .toString();
+                                backgroundImageUrl = await uploadBackgroundImage(
+                                    _selectedImage!, planId);
                               }
-                              // Crear el plan utilizando el método actualizado (guardando la URL de la imagen)
+
+                              // ================================
+                              // LÓGICA PARA start_timestamp y finish_timestamp
+                              // ================================
+                              // Aseguramos fecha/hora de inicio
+                              DateTime finalStartDateTime;
+                              if (_startDate != null) {
+                                finalStartDateTime = DateTime(
+                                  _startDate!.year,
+                                  _startDate!.month,
+                                  _startDate!.day,
+                                  // Si _allDay, asumimos 00:00
+                                  _allDay ? 0 : (_startTime?.hour ?? 0),
+                                  _allDay ? 0 : (_startTime?.minute ?? 0),
+                                );
+                              } else {
+                                // En caso extremo de que no haya elegido nada
+                                // asumimos "ahora" como la fecha de inicio
+                                final now = DateTime.now();
+                                finalStartDateTime = DateTime(
+                                    now.year, now.month, now.day, 0, 0);
+                              }
+
+                              // Aseguramos fecha/hora de fin
+                              DateTime finalFinishDateTime;
+                              if (_includeEndDate && _endDate != null) {
+                                finalFinishDateTime = DateTime(
+                                  _endDate!.year,
+                                  _endDate!.month,
+                                  _endDate!.day,
+                                  _allDay ? 0 : (_endTime?.hour ?? 0),
+                                  _allDay ? 0 : (_endTime?.minute ?? 0),
+                                );
+                              } else {
+                                // Si no incluyó fecha/hora final,
+                                // ponemos 00:00 del siguiente día
+                                finalFinishDateTime = DateTime(
+                                  finalStartDateTime.year,
+                                  finalStartDateTime.month,
+                                  finalStartDateTime.day + 1,
+                                  0,
+                                  0,
+                                );
+                              }
+
+                              // Creamos el plan en Firestore
                               await PlanModel.createPlan(
                                 type: _customPlan ?? _selectedPlan!,
                                 description: _planDescription ?? '',
@@ -1576,8 +1738,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                 location: _location ?? '',
                                 latitude: _latitude,
                                 longitude: _longitude,
-                                date: _selectedDateTime,
-                                backgroundImage: backgroundImageUrl, // Se guarda la URL
+
+                                /// Pasamos nuestros timestamps calculados
+                                startTimestamp: finalStartDateTime,
+                                finishTimestamp: finalFinishDateTime,
+
+                                backgroundImage: backgroundImageUrl,
                                 visibility: _selectedVisibility,
                                 iconAsset: _selectedIconAsset,
                                 special_plan: 0, // Plan normal
@@ -1588,7 +1754,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(235, 17, 19, 135),
+                            backgroundColor:
+                                const Color.fromARGB(235, 17, 19, 135),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -1610,7 +1777,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               ],
             ),
           ),
-          // Botón de cerrar popup
           Positioned(
             top: 0,
             right: 0,
@@ -1631,7 +1797,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               ),
             ),
           ),
-          // Barra de progreso vertical a la derecha
           Positioned(
             top: 0,
             bottom: 0,

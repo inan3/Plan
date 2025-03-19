@@ -15,11 +15,6 @@ import '../../../main/colors.dart';
 /// ---------------------------------------------------------------------------
 /// PANTALLA DE INVITAR USUARIOS A UN PLAN
 /// ---------------------------------------------------------------------------
-/// Se invoca al pulsar "Invítale a un Plan" en tu `users_grid.dart`.
-/// Muestra un popup con 2 opciones:
-///    - Invitar a un plan ya existente.
-///    - Invitar a un plan nuevo.
-/// ---------------------------------------------------------------------------
 class InviteUsersToPlanScreen {
   static void showPopup(BuildContext context, String invitedUserId) {
     showGeneralDialog(
@@ -148,7 +143,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    // Se obtienen únicamente los planes creados por el usuario invitador (A)
+    // Se obtienen únicamente los planes creados por el usuario invitador
     final activePlans = await _fetchActivePlans(currentUser.uid);
     if (activePlans.isEmpty) {
       _showNoPlansPopup();
@@ -201,7 +196,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               borderRadius: BorderRadius.circular(20),
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Material( // Provee la base Material
+                child: Material(
                   color: Colors.white.withOpacity(0.3),
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -265,8 +260,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                                                     child: _FrostedConfirmDialog(
                                                       plan: plan,
                                                       onConfirm: () {
-                                                        // Cierra primero el dialog de confirmación,
-                                                        // luego el popup de lista de planes e invita.
+                                                        // Cierra el diálogo y el popup de lista, luego invita
                                                         Navigator.pop(context);
                                                         Navigator.pop(context);
                                                         _inviteUserToExistingPlan(plan);
@@ -459,7 +453,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 
   // -------------------------------------------------------------------------
-  // UI: Dropdown para Tipo de Plan (copia de new_plan_creation_screen.dart)
+  // UI: Dropdown para Tipo de Plan
   // -------------------------------------------------------------------------
   void _toggleDropdown() {
     if (_isDropdownOpen) {
@@ -524,9 +518,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                                   _selectedIconAsset = null;
                                 }
                               },
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
+                              style: const TextStyle(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: "Escribe tu plan...",
                                 hintStyle: const TextStyle(
@@ -612,8 +604,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 
   // -------------------------------------------------------------------------
-  // UI: Selección de Fecha/Hora (copia de new_plan_creation_screen.dart)
-  // Se actualiza para combinar fecha y hora en _selectedDateTime.
+  // Selección de Fecha/Hora
   // -------------------------------------------------------------------------
   void _showDateSelectionPopup() {
     showDialog(
@@ -687,7 +678,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // Fecha de inicio (fecha y hora)
+                        // Fecha de inicio
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -738,7 +729,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // Fecha final (si aplica)
+                        // Fecha final
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -877,10 +868,10 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 
   // -------------------------------------------------------------------------
-  // Ubicación: Llama a MeetingLocationPopup (asegúrate de que existe y se importa correctamente)
+  // Ubicación
   // -------------------------------------------------------------------------
   void _navigateToMeetingLocation() async {
-    // Aquí se crean valores temporales para pasar a la pantalla de ubicación.
+    // La línea conflictiva era 'date: DateTime.now()'. Se quita y se usan startTimestamp, finishTimestamp, o se deja nulo
     final planTemp = PlanModel(
       id: '',
       type: _customPlan ?? _selectedPlan ?? '',
@@ -890,9 +881,13 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       location: _location ?? '',
       latitude: _latitude ?? 0.0,
       longitude: _longitude ?? 0.0,
-      date: DateTime.now(),
+      // date: DateTime.now(), // <-- Se elimina
+      // Usamos startTimestamp y finishTimestamp, aunque aquí realmente no se usan para la ubicación
+      startTimestamp: DateTime.now(),
+      finishTimestamp: DateTime.now().add(const Duration(days: 1)),
       createdBy: '',
     );
+
     final updatedPlan = await showGeneralDialog(
       context: context,
       barrierLabel: "Ubicación",
@@ -901,7 +896,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, anim1, anim2) {
         return Center(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.6,
             child: MeetingLocationPopup(plan: planTemp),
@@ -921,6 +916,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         );
       },
     );
+
     if (updatedPlan != null && updatedPlan is PlanModel) {
       setState(() {
         _location = updatedPlan.location;
@@ -971,7 +967,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 
   // -------------------------------------------------------------------------
-  // Botón de Finalizar: Valida campos, crea plan privado y envía notificación.
+  // Finalizar Plan (Crea doc y envía notificación)
   // -------------------------------------------------------------------------
   bool get _areStepsComplete => _countCompletedSteps() == 4;
 
@@ -987,6 +983,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     if (currentUser == null) return;
 
     try {
+      // Ejemplo simple: guardamos en "plans" con un doc autogenerado
       final startTime = _startTime ?? const TimeOfDay(hour: 0, minute: 0);
       final dateTime = DateTime(
         _startDate!.year,
@@ -995,18 +992,22 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         !_allDay && _startTime != null ? _startTime!.hour : 0,
         !_allDay && _startTime != null ? _startTime!.minute : 0,
       );
+
       final planDoc = FirebaseFirestore.instance.collection('plans').doc();
       final planId = planDoc.id;
 
       final dataToSave = {
         "id": planId,
         "createdBy": currentUser.uid,
+        // Si definiste plan.type en la BD, o usas "type" con tu valor
         "type": _customPlan?.isNotEmpty == true ? _customPlan : _selectedPlan,
         "description": _planDescription ?? '',
         "location": _location ?? '',
         "latitude": _latitude ?? 0.0,
         "longitude": _longitude ?? 0.0,
-        "date": dateTime.toIso8601String(),
+
+        // Podrías manejar start_timestamp y finish_timestamp, en lugar de "date"
+        "date": dateTime.toIso8601String(), // Lo usas si así lo deseas
         "createdAt": DateTime.now().toIso8601String(),
         "privateInvite": true,
         "likes": 0,
@@ -1015,6 +1016,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
 
       await planDoc.set(dataToSave);
 
+      // Envía notificación de "invitation"
       await _sendInvitationNotification(
         senderUid: currentUser.uid,
         receiverUid: widget.invitedUserId,
@@ -1061,7 +1063,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               const SizedBox(height: 20),
               _buildTypeOfPlanSection(),
               const SizedBox(height: 20),
-              if (_selectedPlan != null || (_customPlan != null && _customPlan!.isNotEmpty)) ...[
+              if (_selectedPlan != null ||
+                  (_customPlan != null && _customPlan!.isNotEmpty)) ...[
                 _buildDateTimeSection(),
                 const SizedBox(height: 20),
                 if (_selectedDateTime != null) ...[
@@ -1240,8 +1243,11 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 }
 
+/// ----------------------------------------------------------------------------
 /// MÉTODOS AUXILIARES GLOBALES
+/// ----------------------------------------------------------------------------
 
+/// Obtiene los planes creados por [userId].
 Future<List<PlanModel>> _fetchActivePlans(String userId) async {
   final List<PlanModel> activePlans = [];
 
@@ -1256,11 +1262,14 @@ Future<List<PlanModel>> _fetchActivePlans(String userId) async {
     activePlans.add(plan);
   }
 
-  activePlans.sort((a, b) =>
-      (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()));
+  // Ordena por fecha de creación
+  activePlans.sort(
+    (a, b) => (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()),
+  );
   return activePlans;
 }
 
+/// Envía una notificación de "invitation".
 Future<void> _sendInvitationNotification({
   required String senderUid,
   required String receiverUid,
@@ -1280,6 +1289,9 @@ Future<void> _sendInvitationNotification({
   });
 }
 
+/// ---------------------------------------------------------------------------
+/// Diálogo simple con fondo frosted para confirmar la invitación a un plan.
+/// ---------------------------------------------------------------------------
 class _FrostedConfirmDialog extends StatelessWidget {
   final PlanModel plan;
   final VoidCallback onConfirm;
@@ -1328,7 +1340,7 @@ class _FrostedConfirmDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Aquí se muestra el plan.type en un contenedor frosted glass
+                // Muestra el plan.type
                 ClipRRect(
                   borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(
@@ -1397,5 +1409,3 @@ class _FrostedConfirmDialog extends StatelessWidget {
     );
   }
 }
-
-

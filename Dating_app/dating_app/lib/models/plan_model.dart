@@ -13,22 +13,20 @@ class PlanModel {
   String location;
   double? latitude;
   double? longitude;
-  DateTime? date;
-  String createdBy;          
-  String? creatorName;       
+
+  /// Usamos dos campos en vez de 'date':
+  DateTime? startTimestamp;
+  DateTime? finishTimestamp;
+
+  String createdBy;
+  String? creatorName;
   String? creatorProfilePic;
-  DateTime? createdAt;       
-  // Nuevo campo para la imagen de fondo.
-  String? backgroundImage;   
-  // Nuevo campo para la visibilidad del plan.
+  DateTime? createdAt;
+  String? backgroundImage;
   String? visibility;
-  // Nuevo campo para el icono del plan.
   String? iconAsset;
-  // Lista de participantes
   List<String>? participants;
-  // NUEVO: Contador de likes
   int likes;
-  // NUEVO: Variable especial, 1 si se crea desde invite_users_to_plan_screen.dart y 0 si se crea desde new_plan_creation_screen.dart.
   int special_plan;
 
   // Constructor
@@ -42,7 +40,8 @@ class PlanModel {
     required this.location,
     this.latitude,
     this.longitude,
-    this.date,
+    this.startTimestamp,
+    this.finishTimestamp,
     required this.createdBy,
     this.creatorName,
     this.creatorProfilePic,
@@ -51,8 +50,8 @@ class PlanModel {
     this.visibility,
     this.iconAsset,
     this.participants,
-    this.likes = 0, // Valor por defecto 0
-    this.special_plan = 0, // Por defecto 0 (plan normal)
+    this.likes = 0,
+    this.special_plan = 0,
   });
 
   // Genera un ID único de 10 caracteres alfanuméricos
@@ -84,7 +83,15 @@ class PlanModel {
       'location': location,
       'latitude': latitude,
       'longitude': longitude,
-      'date': date?.toIso8601String(),
+
+      /// Guardamos como Timestamp de Firestore
+      'start_timestamp': startTimestamp != null
+          ? Timestamp.fromDate(startTimestamp!)
+          : null,
+      'finish_timestamp': finishTimestamp != null
+          ? Timestamp.fromDate(finishTimestamp!)
+          : null,
+
       'createdBy': createdBy,
       'creatorName': creatorName,
       'creatorProfilePic': creatorProfilePic,
@@ -101,30 +108,33 @@ class PlanModel {
   // Crea un objeto PlanModel a partir de un Map (documento Firestore)
   factory PlanModel.fromMap(Map<String, dynamic> map) {
     return PlanModel(
-      id: map['id'] == null ? '' : map['id'] as String,
-      type: map['type'] == null ? '' : map['type'] as String,
-      description: map['description'] == null ? '' : map['description'] as String,
-      minAge: map['minAge'] == null ? 0 : map['minAge'] as int,
-      maxAge: map['maxAge'] == null ? 99 : map['maxAge'] as int,
-      maxParticipants: map['maxParticipants'] != null
-          ? map['maxParticipants'] as int
-          : null,
-      location: map['location'] == null ? '' : map['location'] as String,
+      id: map['id'] ?? '',
+      type: map['type'] ?? '',
+      description: map['description'] ?? '',
+      minAge: map['minAge'] ?? 0,
+      maxAge: map['maxAge'] ?? 99,
+      maxParticipants: map['maxParticipants'],
+      location: map['location'] ?? '',
       latitude: _parseDouble(map['latitude']),
       longitude: _parseDouble(map['longitude']),
-      date: _parseDate(map['date']),
-      createdBy: map['createdBy'] == null ? '' : map['createdBy'] as String,
-      creatorName: map['creatorName'] as String?,
-      creatorProfilePic: map['creatorProfilePic'] as String?,
+      startTimestamp: map['start_timestamp'] != null
+          ? (map['start_timestamp'] as Timestamp).toDate()
+          : null,
+      finishTimestamp: map['finish_timestamp'] != null
+          ? (map['finish_timestamp'] as Timestamp).toDate()
+          : null,
+      createdBy: map['createdBy'] ?? '',
+      creatorName: map['creatorName'],
+      creatorProfilePic: map['creatorProfilePic'],
       createdAt: _parseDate(map['createdAt']),
-      backgroundImage: map['backgroundImage'] as String?,
-      visibility: map['visibility'] as String?,
-      iconAsset: map['iconAsset'] as String?,
+      backgroundImage: map['backgroundImage'],
+      visibility: map['visibility'],
+      iconAsset: map['iconAsset'],
       participants: map['participants'] != null
           ? List<String>.from(map['participants'] as List)
           : <String>[],
-      likes: map['likes'] != null ? map['likes'] as int : 0,
-      special_plan: map['special_plan'] != null ? map['special_plan'] as int : 0,
+      likes: map['likes'] ?? 0,
+      special_plan: map['special_plan'] ?? 0,
     );
   }
 
@@ -148,9 +158,10 @@ class PlanModel {
     return null;
   }
 
-  // Formatea la fecha/hora en dd/MM/yyyy HH:mm
+  // Método auxiliar para formatear fechas en tu UI
   String formattedDate(DateTime? d) {
     if (d == null) return 'Sin fecha';
+    // Por ejemplo: dd/MM/yyyy HH:mm
     return '${d.day.toString().padLeft(2, '0')}/'
            '${d.month.toString().padLeft(2, '0')}/'
            '${d.year} '
@@ -158,7 +169,7 @@ class PlanModel {
            '${d.minute.toString().padLeft(2, '0')}';
   }
 
-  // Crea y guarda un plan en Firestore (usado en new_plan_creation_screen.dart)
+  // Crea y guarda un plan en Firestore
   static Future<PlanModel> createPlan({
     required String type,
     required String description,
@@ -168,11 +179,12 @@ class PlanModel {
     required String location,
     double? latitude,
     double? longitude,
-    DateTime? date,
+    required DateTime startTimestamp,
+    required DateTime finishTimestamp,
     String? backgroundImage,
     String? visibility,
     String? iconAsset,
-    int special_plan = 0, // Por defecto 0 (plan normal)
+    int special_plan = 0,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -201,7 +213,8 @@ class PlanModel {
       location: location,
       latitude: latitude,
       longitude: longitude,
-      date: date,
+      startTimestamp: startTimestamp,
+      finishTimestamp: finishTimestamp,
       createdBy: user.uid,
       creatorName: userData['name'],
       creatorProfilePic: userData['profilePic'],
@@ -226,52 +239,5 @@ class PlanModel {
     });
 
     return plan;
-  }
-
-  /// Función de ejemplo para añadir un participante a un plan
-  /// y actualizar los contadores en el documento del usuario creador.
-  static Future<void> addParticipantToPlan(String planId, String participantId) async {
-    final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
-    final doc = await planRef.get();
-
-    if (!doc.exists) return;
-    final planData = doc.data()!;
-    final plan = PlanModel.fromMap(planData);
-
-    // Lista actual de participantes
-    final currentParticipants = List<String>.from(planData['participants'] ?? []);
-    // Evitar duplicados
-    if (currentParticipants.contains(participantId)) {
-      // El participante ya está en la lista
-      return;
-    }
-    // Añadir al participante
-    currentParticipants.add(participantId);
-
-    // Guardar la lista actualizada en el plan
-    await planRef.update({'participants': currentParticipants});
-
-    // Actualizar los datos del usuario creador
-    final creatorRef = FirebaseFirestore.instance.collection('users').doc(plan.createdBy);
-    final creatorDoc = await creatorRef.get();
-    if (!creatorDoc.exists) return;
-
-    final creatorData = creatorDoc.data() ?? {};
-    final oldTotalParticipants = creatorData['total_participants_until_now'] ?? 0;
-    final oldMaxParticipants = creatorData['max_participants_in_one_plan'] ?? 0;
-
-    // Sumar 1 al total de participantes reunidos
-    final newTotalParticipants = oldTotalParticipants + 1;
-
-    // Verificar si el plan actual supera el récord anterior
-    final newMaxParticipants = currentParticipants.length > oldMaxParticipants
-        ? currentParticipants.length
-        : oldMaxParticipants;
-
-    // Actualizar en Firestore
-    await creatorRef.update({
-      'total_participants_until_now': newTotalParticipants,
-      'max_participants_in_one_plan': newMaxParticipants,
-    });
   }
 }

@@ -1,5 +1,3 @@
-// lib/explore_screen/users_managing/frosted_plan_dialog_state.dart
-
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -12,12 +10,6 @@ import '../../models/plan_model.dart';
 /// -----------------------------------------------------------------------------
 /// DIÁLOGO PERSONALIZADO CON EFECTO FROSTED
 /// -----------------------------------------------------------------------------
-///
-/// Esta clase muestra un diálogo con efecto “frosted glass” para desplegar
-/// los detalles de un plan, incluyendo la información de sus participantes.
-///
-/// - [plan]: Modelo del plan a mostrar.
-/// - [fetchParticipants]: Función asíncrona que obtiene la lista de participantes.
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
   final Future<List<Map<String, dynamic>>> Function(PlanModel plan) fetchParticipants;
@@ -70,7 +62,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  /// Widget que muestra el área de "Detalles del Plan de X-Plan" con efecto frosted.
+  /// Widget que muestra el área de "Detalles del Plan" con efecto frosted.
   Widget _buildPlanDetailsArea(
     PlanModel plan, {
     double width = 240,
@@ -164,8 +156,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         color: Colors.white,
                       ),
                       const SizedBox(width: 8),
-                      Flexible(
-                        child: const Text(
+                      const Flexible(
+                        child: Text(
                           "Descripción",
                           softWrap: true,
                           style: TextStyle(
@@ -180,7 +172,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Contenido de la descripción, alineado a la izquierda y ajustable
+                // Contenido de la descripción
                 Text(
                   plan.description,
                   style: const TextStyle(
@@ -254,13 +246,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                 fit: BoxFit.cover,
                               ),
                             ),
-                          // 2. Contenido del pop up con padding
+                          // 2. Contenido del pop up
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Nueva fila de iconos (los botones de acción sobre fondo frosted)
+                                // Fila de iconos (frosted)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -272,10 +264,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                // Área con efecto frosted que muestra el título, el tipo y el icono del plan.
+                                // Detalles del plan (tipo, icono, etc.)
                                 _buildPlanDetailsArea(plan),
                                 const SizedBox(height: 10),
-                                // Se muestra el creador y los participantes justo después del área de detalles
+                                // Creador y participantes
                                 FutureBuilder<List<Map<String, dynamic>>>(
                                   future: _futureParticipants,
                                   builder: (context, snapshot) {
@@ -333,7 +325,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   },
                                 ),
                                 const SizedBox(height: 10),
-                                // El resto de detalles (ID, descripción, restricciones, etc.)
+                                // ID, descripción, restricciones, etc.
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -370,7 +362,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.copy, color: Color.fromARGB(255, 151, 121, 215)),
+                                      icon: const Icon(Icons.copy,
+                                          color: Color.fromARGB(255, 151, 121, 215)),
                                       onPressed: () {
                                         Clipboard.setData(ClipboardData(text: plan.id));
                                         ScaffoldMessenger.of(context).showSnackBar(
@@ -383,7 +376,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                 const SizedBox(height: 10),
                                 _buildPlanDescriptionArea(plan),
                                 const SizedBox(height: 5),
-                                // Restricción de Edad (solo para planes normales)
+                                // Restricción de Edad
                                 if (plan.special_plan != 1)
                                   Text.rich(
                                     TextSpan(
@@ -404,7 +397,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   ),
                                 if (plan.special_plan != 1)
                                   const SizedBox(height: 5),
-                                // Máximo de Participantes (solo para planes normales)
                                 if (plan.special_plan != 1)
                                   Text.rich(
                                     TextSpan(
@@ -415,8 +407,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                         ),
                                         TextSpan(
                                           text: "${plan.maxParticipants ?? 'Sin límite'}",
-                                          style: TextStyle(
-                                            color: const Color.fromARGB(255, 151, 121, 215),
+                                          style: const TextStyle(
+                                            color: Color.fromARGB(255, 151, 121, 215),
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -424,6 +416,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                     ),
                                   ),
                                 const SizedBox(height: 5),
+                                // Ubicación
                                 Text.rich(
                                   TextSpan(
                                     children: [
@@ -433,8 +426,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                       ),
                                       TextSpan(
                                         text: plan.location,
-                                        style: TextStyle(
-                                          color: const Color.fromARGB(255, 151, 121, 215),
+                                        style: const TextStyle(
+                                          color: Color.fromARGB(255, 151, 121, 215),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -442,6 +435,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   ),
                                 ),
                                 const SizedBox(height: 5),
+
+                                // CAMBIO: antes "plan.date" -> ahora "plan.startTimestamp"
                                 Text.rich(
                                   TextSpan(
                                     children: [
@@ -450,9 +445,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                         style: TextStyle(color: Colors.white),
                                       ),
                                       TextSpan(
-                                        text: plan.formattedDate(plan.date),
-                                        style: TextStyle(
-                                          color: const Color.fromARGB(255, 151, 121, 215),
+                                        text: plan.formattedDate(plan.startTimestamp),
+                                        style: const TextStyle(
+                                          color: Color.fromARGB(255, 151, 121, 215),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -469,8 +464,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                       ),
                                       TextSpan(
                                         text: plan.formattedDate(plan.createdAt),
-                                        style: TextStyle(
-                                          color: const Color.fromARGB(255, 151, 121, 215),
+                                        style: const TextStyle(
+                                          color: Color.fromARGB(255, 151, 121, 215),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -478,7 +473,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                // Ubicación en mapa (de solo lectura)
+                                // Mapa de Ubicación (solo lectura)
                                 _buildReadOnlyLocationMap(plan),
                                 const SizedBox(height: 16),
                                 // Botón de cerrar
@@ -511,7 +506,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  /// Muestra un mapa de solo lectura con un marcador y la dirección del plan.
+  /// Muestra un mapa de solo lectura con un marcador
   Widget _buildReadOnlyLocationMap(PlanModel plan) {
     if (plan.latitude == null || plan.longitude == null) {
       return const SizedBox();
@@ -520,7 +515,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       borderRadius: BorderRadius.circular(30),
       child: Stack(
         children: [
-          Container(
+          SizedBox(
             height: 240,
             width: double.infinity,
             child: GoogleMap(
@@ -541,7 +536,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               zoomControlsEnabled: false,
               myLocationButtonEnabled: false,
               liteModeEnabled: true,
-              onMapCreated: (controller) {},
             ),
           ),
           Positioned(
