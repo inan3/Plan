@@ -1,4 +1,5 @@
 // users_grid.dart
+
 import 'dart:ui'; // Para BackdropFilter, ImageFilter
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -44,15 +45,36 @@ class UsersGrid extends StatelessWidget {
   }
 
   /// Obtiene todos los planes creados por [userId].
+  /// Luego filtra en **memoria** para descartar:
+  /// - special_plan != 0
+  /// - finish_timestamp <= ahora
   Future<List<PlanModel>> _fetchUserPlans(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: userId)
-        .where('special_plan', isEqualTo: 0)
         .get();
 
-    return snapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
+    final now = DateTime.now();
+
+    // Filtramos en memoria
+    final filteredDocs = snapshot.docs.where((doc) {
+      final data = doc.data();
+      // Verificamos special_plan
+      final int sp = data['special_plan'] ?? 0;
+      if (sp != 0) return false;
+
+      // Verificamos finish_timestamp
+      final Timestamp? finishTs = data['finish_timestamp'] as Timestamp?;
+      if (finishTs == null) return false;
+      final finishDate = finishTs.toDate();
+
+      // Solo planes que acaban en el futuro
+      return finishDate.isAfter(now);
+    }).toList();
+
+    // Transformamos a PlanModel
+    return filteredDocs.map((doc) {
+      final data = doc.data();
       return PlanModel.fromMap(data);
     }).toList();
   }
@@ -61,6 +83,7 @@ class UsersGrid extends StatelessWidget {
   /// Se obtiene primero el creador y luego los suscriptores registrados.
   Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
     List<Map<String, dynamic>> participants = [];
+
     final planDoc = await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
     if (planDoc.exists) {
       final planData = planDoc.data();
@@ -86,6 +109,7 @@ class UsersGrid extends StatelessWidget {
         .collection('subscriptions')
         .where('id', isEqualTo: plan.id)
         .get();
+
     for (var sDoc in subsSnap.docs) {
       final sData = sDoc.data();
       final userId = sData['userId'];
@@ -100,6 +124,7 @@ class UsersGrid extends StatelessWidget {
         });
       }
     }
+
     return participants;
   }
 
@@ -145,7 +170,8 @@ class UsersGrid extends StatelessWidget {
           // Sin planes
           return _buildNoPlanLayout(context, userData);
         } else {
-          // Con planes: cada tarjeta se envuelve en GestureDetector para abrir el diálogo de detalles
+          // Con planes: cada tarjeta se envuelve en GestureDetector
+          // para abrir el diálogo de detalles
           return Column(
             children: plans.map((plan) {
               return GestureDetector(
@@ -188,7 +214,7 @@ class UsersGrid extends StatelessWidget {
                     )
                   : _buildPlaceholder(),
             ),
-            // Avatar + nombre (tap -> abre NUEVO user_info_check.dart)
+            // Avatar + nombre (tap -> user_info_check)
             Positioned(
               top: 10,
               left: 10,
@@ -439,7 +465,6 @@ class UsersGrid extends StatelessWidget {
                     'assets/union.svg',
                     size: 40,
                     onTap: () async {
-                      // Unirse a un plan (código existente)
                       final user = FirebaseAuth.instance.currentUser;
                       if (user == null) return;
 
@@ -603,8 +628,9 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  /// Función para abrir los detalles del plan usando el diálogo FrostedPlanDialog.
-  void _openPlanDetails(BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
+  /// Muestra los detalles del plan en un diálogo FrostedPlanDialog
+  void _openPlanDetails(
+      BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
