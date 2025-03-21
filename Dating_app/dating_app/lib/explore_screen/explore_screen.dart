@@ -152,11 +152,24 @@ class ExploreScreenState extends State<ExploreScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: SvgPicture.asset(
-                'assets/lupa.svg',
-                width: 24,
-                height: 24,
-                color: AppColors.blue,
+              child: ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF0D253F),
+                      Color(0xFF1B3A57),
+                      Color(0xFF12232E),
+                    ],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.srcIn,
+                child: SvgPicture.asset(
+                  'assets/lupa.svg',
+                  width: 24,
+                  height: 24,
+                ),
               ),
             ),
             Expanded(
@@ -169,11 +182,24 @@ class ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
             IconButton(
-              icon: Image.asset(
-                'assets/filter.png',
-                width: 24,
-                height: 24,
-                color: AppColors.blue,
+              icon: ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF0D253F),
+                      Color(0xFF1B3A57),
+                      Color(0xFF12232E),
+                    ],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.srcIn,
+                child: Image.asset(
+                  'assets/filter.png',
+                  width: 24,
+                  height: 24,
+                ),
               ),
               onPressed: _onFilterPressed,
             ),
@@ -546,9 +572,18 @@ class DockSection extends StatelessWidget {
       child: Container(
         height: 70,
         width: containerWidth,
-        decoration: BoxDecoration(
-          color: Colors.black26,
-          borderRadius: const BorderRadius.all(Radius.circular(60)),
+        decoration: const BoxDecoration(
+          // Aquí aplicamos la MISMA decoración con degradado
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0D253F),
+              Color(0xFF1B3A57),
+              Color(0xFF12232E),
+            ],
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(60)),
         ),
         child: Row(
           mainAxisAlignment: mainAxisAlignment,
@@ -610,17 +645,43 @@ class DockSection extends StatelessWidget {
                     ),
                     child: Center(
                       child: asset.endsWith('.svg')
-                          ? SvgPicture.asset(
-                              asset,
-                              color: AppColors.blue,
-                              width: effectiveIconSize,
-                              height: effectiveIconSize,
+                          ? ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF0D253F),
+                                    Color(0xFF1B3A57),
+                                    Color(0xFF12232E),
+                                  ],
+                                ).createShader(bounds);
+                              },
+                              blendMode: BlendMode.srcIn,
+                              child: SvgPicture.asset(
+                                asset,
+                                width: effectiveIconSize,
+                                height: effectiveIconSize,
+                              ),
                             )
-                          : Image.asset(
-                              asset,
-                              color: AppColors.blue,
-                              width: effectiveIconSize,
-                              height: effectiveIconSize,
+                          : ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF0D253F),
+                                    Color(0xFF1B3A57),
+                                    Color(0xFF12232E),
+                                  ],
+                                ).createShader(bounds);
+                              },
+                              blendMode: BlendMode.srcIn,
+                              child: Image.asset(
+                                asset,
+                                width: effectiveIconSize,
+                                height: effectiveIconSize,
+                              ),
                             ),
                     ),
                   )

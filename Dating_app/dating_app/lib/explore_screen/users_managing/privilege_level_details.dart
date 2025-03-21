@@ -127,7 +127,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
 
   // Verifica y actualiza el nivel de privilegios según las condiciones
   Future<void> _checkAndUpdatePrivilegeLevel() async {
-    String newLevel = _privilegeLevel;
+    String newLevel = "premium";//_privilegeLevel;
 
     // Condiciones de ejemplo para subir de nivel
     if (_totalCreatedPlans >= 500 &&

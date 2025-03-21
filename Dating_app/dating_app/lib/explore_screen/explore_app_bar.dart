@@ -50,11 +50,24 @@ class ExploreAppBar extends StatelessWidget {
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    icon: Image.asset(
-                      'assets/menu.png',
-                      color: AppColors.blue,
-                      width: 18,
-                      height: 18,
+                    icon: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF0D253F),
+                            Color(0xFF1B3A57),
+                            Color(0xFF12232E),
+                          ],
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.srcIn,
+                      child: Image.asset(
+                        'assets/menu.png',
+                        width: 18,
+                        height: 18,
+                      ),
                     ),
                     onPressed: onMenuPressed,
                   ),
@@ -102,11 +115,24 @@ class ExploreAppBar extends StatelessWidget {
                           IconButton(
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            icon: Image.asset(
-                              'assets/notificacion.png',
-                              color: AppColors.blue,
-                              width: 20,
-                              height: 20,
+                            icon: ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF0D253F),
+                                    Color(0xFF1B3A57),
+                                    Color(0xFF12232E),
+                                  ],
+                                ).createShader(bounds);
+                              },
+                              blendMode: BlendMode.srcIn,
+                              child: Image.asset(
+                                'assets/notificacion.png',
+                                width: 18,
+                                height: 18,
+                              ),
                             ),
                             onPressed: onNotificationPressed,
                           ),

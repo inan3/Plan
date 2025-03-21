@@ -1,10 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:dating_app/main/colors.dart';
-import 'dart:ui';
-import 'package:flutter_svg/flutter_svg.dart';
 
 // Importaciones de pantallas
 import 'my_plans_screen.dart';
@@ -45,6 +47,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
 
     return Stack(
       children: [
+        // Fondo difuminado cuando el menú está abierto
         if (isOpen)
           GestureDetector(
             onTap: toggleMenu,
@@ -55,6 +58,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
               ),
             ),
           ),
+
+        // Menú lateral con AnimatedPositioned
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           left: isOpen ? 0 : -screenSize.width,
@@ -66,15 +71,27 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
             child: Stack(
               children: [
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.6),
+                  // AQUÍ aplicamos tu degradado
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF0D253F),
+                        Color(0xFF1B3A57),
+                        Color(0xFF12232E),
+                      ],
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding:
-                            const EdgeInsets.only(left: 16.0, top: 40.0, bottom: 16.0),
+                        padding: const EdgeInsets.only(
+                          left: 16.0,
+                          top: 40.0,
+                          bottom: 16.0,
+                        ),
                         child: Row(
                           children: [
                             Image.asset(
@@ -95,7 +112,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                               icon: 'assets/icono-calendario.svg',
                               title: 'Mis Planes',
                               destination: const MyPlansScreen(),
-                              iconColor: AppColors.blue,
+                              iconColor: Colors.white,
                               textColor: Colors.white,
                               stream: FirebaseFirestore.instance
                                   .collection('plans')
@@ -105,8 +122,10 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             _buildMenuItemWithBadge(
                               icon: 'assets/union.svg',
                               title: 'Planes Suscritos',
-                              destination: SubscribedPlansScreen(userId: currentUserId!),
-                              iconColor: AppColors.blue,
+                              destination: SubscribedPlansScreen(
+                                userId: currentUserId!,
+                              ),
+                              iconColor: Colors.white,
                               textColor: Colors.white,
                               stream: FirebaseFirestore.instance
                                   .collection('subscriptions')
@@ -117,26 +136,27 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                               icon: 'assets/icono-corazon.svg',
                               title: 'Favoritos',
                               destination: const FavouritesScreen(),
-                              iconColor: AppColors.blue,
+                              iconColor: Colors.white,
                               textColor: Colors.white,
-                              // Activamos includeMetadataChanges aquí también si se desea
                               stream: FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(currentUserId)
-                                  .snapshots(includeMetadataChanges: true),
+                                  .snapshots(
+                                    includeMetadataChanges: true,
+                                  ),
                             ),
                             _buildMenuItem(
                               icon: 'assets/icono-ajustes.svg',
                               title: 'Ajustes',
                               destination: const SettingsScreen(),
-                              iconColor: AppColors.blue,
+                              iconColor: Colors.white,
                               textColor: Colors.white,
                             ),
                             _buildMenuItem(
                               icon: 'assets/icono-centro-ayuda.svg',
                               title: 'Centro de Ayuda',
                               destination: const HelpCenterScreen(),
-                              iconColor: AppColors.blue,
+                              iconColor: Colors.white,
                               textColor: Colors.white,
                             ),
                             _buildMenuItem(
@@ -152,6 +172,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     ],
                   ),
                 ),
+                // Botón para cerrar el menú lateral
                 Positioned(
                   top: 40,
                   right: 16,
@@ -206,7 +227,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                 builder: (context, snapshot) {
                   String profileImageUrl = "https://via.placeholder.com/150";
                   String userName = "Cargando...";
-                  String userId = currentUserId ?? "Sin ID";
 
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Column(
@@ -229,7 +249,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     );
                   }
 
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data == null) {
                     userName = "Error";
                     return Column(
                       children: [
@@ -250,7 +272,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     );
                   }
 
-                  final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                  final userData =
+                      snapshot.data!.data() as Map<String, dynamic>?;
                   profileImageUrl = userData?['photoUrl'] ?? profileImageUrl;
                   userName = userData?['name'] ?? "Usuario";
 
@@ -270,7 +293,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       Text(
                         userName,
                         style: GoogleFonts.roboto(
-                          color: AppColors.blue,
+                          color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -321,7 +344,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     );
   }
 
-  // Menú con badge
   Widget _buildMenuItemWithBadge({
     required dynamic icon,
     required String title,
@@ -334,12 +356,15 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
       stream: stream,
       builder: (context, AsyncSnapshot snapshot) {
         int count = 0;
+
         if (snapshot.hasData) {
           if (title == 'Favoritos') {
-            final data = (snapshot.data as DocumentSnapshot).data() as Map<String, dynamic>?;
+            // Para favoritos, es un DocumentSnapshot en 'users'
+            final data = (snapshot.data as DocumentSnapshot).data()
+                as Map<String, dynamic>?;
             count = (data?['favourites'] as List<dynamic>?)?.length ?? 0;
           } else {
-            // Planes creados, suscripciones, etc.
+            // Para planes creados, suscripciones, etc. => QuerySnapshot
             count = (snapshot.data as QuerySnapshot).docs.length;
           }
         }
@@ -381,7 +406,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
               : const SizedBox(),
           onTap: () {
             if (title == 'Mis Planes') {
-              // Muestra MyPlansScreen en un dialog
               showDialog(
                 context: context,
                 builder: (context) => Dialog(
@@ -412,7 +436,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20.0),
-                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
                             ),
                             constraints: const BoxConstraints(maxHeight: 500),
                             child: const MyPlansScreen(),
@@ -454,7 +480,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20.0),
-                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
                             ),
                             constraints: const BoxConstraints(maxHeight: 500),
                             child: SubscribedPlansScreen(userId: currentUserId!),
@@ -496,7 +524,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20.0),
-                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                              ),
                             ),
                             constraints: const BoxConstraints(maxHeight: 500),
                             child: const FavouritesScreen(),

@@ -78,8 +78,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       });
 
       print("[_updateStatsBasedOnAllPlans] Usuario=${widget.userId} -> "
-            "total_participants_until_now=$totalParticipantsAcrossAllPlans, "
-            "max_participants_in_one_plan=$maxParticipantsInAnyPlan");
+          "total_participants_until_now=$totalParticipantsAcrossAllPlans, "
+          "max_participants_in_one_plan=$maxParticipantsInAnyPlan");
     } catch (e) {
       print("[_updateStatsBasedOnAllPlans] Error: $e");
     }
@@ -113,8 +113,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       });
 
       print("[_loadUserData] Cargado con éxito. "
-            "profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl, "
-            "level=$_privilegeLevel");
+          "profileImageUrl=$_profileImageUrl, coverImageUrl=$_coverImageUrl, "
+          "level=$_privilegeLevel");
     } catch (e) {
       print("[_loadUserData] Error al cargar datos de usuario: $e");
     }
@@ -376,13 +376,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 90),
-
+                const SizedBox(height: 70),
                 // Botón: "Ver Privilegios"
                 _buildPrivilegeButton(context),
-
-                const SizedBox(height: 20),
                 _buildActionButtons(context, widget.userId),
                 const SizedBox(height: 20),
                 _buildBioAndStats(),
@@ -413,17 +409,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFFB22222), // Rojo sangre
-                Color(0xFF1E90FF), // Azul
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -575,7 +560,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 final followedCount = snapshotFing.data ?? 0;
 
                 print("[_buildBioAndStats] planeCount=$planeCount, "
-                      "followersCount=$followersCount, followedCount=$followedCount");
+                    "followersCount=$followersCount, followedCount=$followedCount");
 
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -611,18 +596,39 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     final String iconPath = (label == "planes activos")
         ? 'assets/icono-calendario.svg'
         : 'assets/icono-seguidores.svg';
-    final Color iconColor = isActive ? AppColors.blue : Colors.grey;
+    // En lugar de un color fijo, usamos ShaderMask para el degradado si está activo.
+    Widget iconWidget = isActive
+        ? ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0D253F),
+                  Color(0xFF1B3A57),
+                  Color(0xFF12232E),
+                ],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.srcIn,
+            child: SvgPicture.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+            ),
+          )
+        : SvgPicture.asset(
+            iconPath,
+            width: 24,
+            height: 24,
+            color: Colors.grey,
+          );
 
     return SizedBox(
       width: 100,
       child: Column(
         children: [
-          SvgPicture.asset(
-            iconPath,
-            width: 24,
-            height: 24,
-            color: iconColor,
-          ),
+          iconWidget,
           const SizedBox(height: 4),
           Text(
             count,
@@ -698,6 +704,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  /// Aquí se aplica el degradado en el fondo de los botones de acción
   Widget _buildActionButton({
     required BuildContext context,
     required String iconPath,
@@ -712,7 +719,18 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            color: const ui.Color.fromARGB(255, 12, 11, 11).withOpacity(0.3),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0D253F),
+                  Color(0xFF1B3A57),
+                  Color(0xFF12232E),
+                ],
+              ),
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
