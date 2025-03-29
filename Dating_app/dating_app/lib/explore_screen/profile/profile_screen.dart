@@ -11,8 +11,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../main/colors.dart';
 import '../../start/login_screen.dart';
-import '../../user_data/user_info_screen.dart';
 import '../users_managing/privilege_level_details.dart';
+import 'memories_calendar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -185,7 +185,7 @@ class ProfileScreenState extends State<ProfileScreen> {
 
       int newLevel;
       if (followersCount < 1000) {
-        newLevel = 0; // Basic
+        newLevel = 0; // Básico
       } else if (followersCount < 10000) {
         newLevel = 1; // Premium
       } else if (followersCount < 100000) {
@@ -194,19 +194,14 @@ class ProfileScreenState extends State<ProfileScreen> {
         newLevel = 3; // VIP
       }
 
-      // ========================
       // EVITAR SOBREESCRITURA
-      // ========================
-      // Convertimos el privilege actual a int:
       final currentLevelInt = _mapPrivilegeStringToInt(_privilegeLevel);
-      // Si es distinto, actualizamos. Si no, evitamos reescritura.
       if (newLevel != currentLevelInt) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update({'privilegeLevel': newLevel});
 
-        // Forzamos refresco en la interfaz
         await _fetchPrivilegeLevel();
       }
     } catch (e) {
@@ -299,9 +294,9 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // =================================
+  // ================================
   //   CAMBIAR FOTO DE PORTADA
-  // =================================
+  // ================================
   Future<void> _changeBackgroundImage() async {
     showModalBottomSheet(
       context: context,
@@ -704,56 +699,52 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // =========================================
-  //   BOTÓN "VER PRIVILEGIOS"
-  // =========================================
+  // BOTÓN "VER PRIVILEGIOS"
   Widget _buildPrivilegeButton(BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      _showPrivilegeLevelDetailsPopup();
-    },
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Mismo icono que en user_info_check
-            Image.asset(
-              _getPrivilegeIcon(_privilegeLevel),
-              width: 52,
-              height: 52,
-            ),
-            const SizedBox(height: 0),
-            // Aquí el texto que muestra el nivel de privilegio en mayúsculas
-            Text(
-              _mapPrivilegeLevelToTitle(_privilegeLevel),
-              style: const TextStyle(
-                fontSize: 14,
-                //fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        _showPrivilegeLevelDetailsPopup();
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                _getPrivilegeIcon(_privilegeLevel),
+                width: 52,
+                height: 52,
               ),
-            ),
-          ],
+              const SizedBox(height: 0),
+              Text(
+                _mapPrivilegeLevelToTitle(_privilegeLevel),
+                style: const TextStyle(
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-String _mapPrivilegeLevelToTitle(String level) {
-  switch (level) {
-    case "basico":
-      return "Básico";	
-    case "premium":
-      return "Premium";
-    case "golden":
-      return "Golden";
-    case "vip":
-      return "VIP";
-    default:
-      return "Básico";
+    );
   }
-}
+
+  String _mapPrivilegeLevelToTitle(String level) {
+    switch (level) {
+      case "basico":
+        return "Básico";
+      case "premium":
+        return "Premium";
+      case "golden":
+        return "Golden";
+      case "vip":
+        return "VIP";
+      default:
+        return "Básico";
+    }
+  }
 
   String _getPrivilegeIcon(String level) {
     switch (level.toLowerCase()) {
@@ -829,8 +820,8 @@ String _mapPrivilegeLevelToTitle(String level) {
     return snapshot.docs.length;
   }
 
-  /// Muestra la bio + las estadísticas (planCount, followersCount, followedCount).
-  /// Quita la llamada directa a _setUserPrivilegeLevel en build para evitar loop.
+  /// Muestra la bio + las estadísticas (planes activos, seguidores, seguidos).
+  /// Evita la llamada directa a `_setUserPrivilegeLevel` en el build.
   Widget _buildBioAndStats() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -858,7 +849,6 @@ String _mapPrivilegeLevelToTitle(String level) {
           );
         }
 
-        // final userData = userDocSnap.data!.data() as Map<String, dynamic>;
         final isOwner = (user.uid == FirebaseAuth.instance.currentUser?.uid);
 
         return FutureBuilder<int>(
@@ -889,13 +879,7 @@ String _mapPrivilegeLevelToTitle(String level) {
                     final followersCount = snapshotFollowers.data ?? 0;
                     final followedCount = snapshotFollowed.data ?? 0;
 
-                    // ========================
-                    // Aquí, en lugar de llamar
-                    // directamente a la función
-                    // dentro del build, hacemos
-                    // el chequeo y actualizamos
-                    // solo si cambia.
-                    // ========================
+                    // Actualizar privilegeLevel si eres el dueño
                     if (isOwner) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _setUserPrivilegeLevel(followersCount);
@@ -937,7 +921,6 @@ String _mapPrivilegeLevelToTitle(String level) {
   Widget _buildStatItem(String label, String count) {
     final isPlans = label == 'planes activos';
     final isFollowers = label == 'seguidores';
-    // final isFollowed = label == 'seguidos';
 
     String iconPath;
     Color iconColor;
@@ -989,9 +972,7 @@ String _mapPrivilegeLevelToTitle(String level) {
     );
   }
 
-  // =====================================================
-  //   VISOR DE FOTOS ADICIONALES (PageView + Dialog)
-  // =====================================================
+  // VISOR DE FOTOS ADICIONALES (PageView + Dialog)
   void _openPhotoViewer(int initialIndex) {
     PageController controller = PageController(initialPage: initialIndex);
     int currentPage = initialIndex;
@@ -1077,11 +1058,14 @@ String _mapPrivilegeLevelToTitle(String level) {
     );
   }
 
-  // =====================================================
+  // =========================================
   //   BUILD PRINCIPAL DE LA PANTALLA
-  // =====================================================
+  // =========================================
   @override
   Widget build(BuildContext context) {
+    // Declara la variable user ANTES de la lista de widgets
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -1131,14 +1115,16 @@ String _mapPrivilegeLevelToTitle(String level) {
               ],
             ),
 
-            // Dejar espacio para el avatar
+            // Espacio para el avatar
             const SizedBox(height: 70),
+
             // Botón "Ver Privilegios"
             _buildPrivilegeButton(context),
-            const SizedBox(height: 0),
+
             // Bio + Stats
             _buildBioAndStats(),
             const SizedBox(height: 20),
+
             // Divider
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1154,35 +1140,12 @@ String _mapPrivilegeLevelToTitle(String level) {
             ),
             const SizedBox(height: 20),
 
-            // "Tu información"
-            ListTile(
-              leading: const Icon(Icons.info, color: Colors.black),
-              title: const Text(
-                'Tu información',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              trailing:
-                  const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
-              onTap: () async {
-                final isUpdated = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const UserInfoScreen()),
-                );
-                if (isUpdated == true) {
-                  setState(() {
-                    _fetchProfileImage();
-                    _fetchCoverImage();
-                    _fetchPrivilegeLevel();
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 10),
+            // Calendario, solo si user != null
+            if (user != null)
+              MemoriesCalendar(userId: user.uid),
+            const SizedBox(height: 20),
 
-            // Cerrar sesión
+            // Botón de Cerrar sesión
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: GestureDetector(

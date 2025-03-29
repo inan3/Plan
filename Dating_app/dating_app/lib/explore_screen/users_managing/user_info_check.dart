@@ -11,9 +11,11 @@ import '../../models/plan_model.dart';
 import 'frosted_plan_dialog_state.dart' as new_frosted;
 import '../special_plans/invite_users_to_plan_screen.dart';
 import 'user_info_inside_chat.dart';
-
-// IMPORTAMOS el fichero de privilegios
 import 'privilege_level_details.dart';
+
+// IMPORTA TU WIDGET DE CALENDARIO
+// OJO: Ajusta la ruta según dónde tengas el archivo memories_calendar.dart
+import '../profile/memories_calendar.dart';
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
@@ -26,7 +28,6 @@ class UserInfoCheck extends StatefulWidget {
 class _UserInfoCheckState extends State<UserInfoCheck> {
   String? _profileImageUrl;
   String? _coverImageUrl;
-  List<String> _additionalPhotos = [];
   bool isFollowing = false;
 
   // Para mostrar el ícono según privilegeLevel
@@ -101,12 +102,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       setState(() {
         _profileImageUrl = data['photoUrl'] ?? '';
         _coverImageUrl = data['coverPhotoUrl'] ?? '';
-        final dynamic photos = data['additionalPhotos'];
-        if (photos is List) {
-          _additionalPhotos = photos.map((e) => e.toString()).toList();
-        } else {
-          _additionalPhotos = [];
-        }
 
         // Leemos el nivel actual para mostrar el ícono correspondiente
         _privilegeLevel = (data['privilegeLevel'] ?? 'basico').toString();
@@ -319,10 +314,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  //////////////////////////////////////////////////////////////////////////////
-  // A PARTIR DE AQUÍ: Construcción de la UI
-  //////////////////////////////////////////////////////////////////////////////
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -388,7 +379,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   child: Divider(color: Colors.grey[400], thickness: 0.5),
                 ),
                 const SizedBox(height: 20),
-                _buildAdditionalPhotosSection(),
+                
+                // AQUÍ mostras el calendario si ya no usas additionalPhotos
+                MemoriesCalendar(userId: widget.userId),
+
                 const SizedBox(height: 40),
               ],
             ),
@@ -756,108 +750,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildAdditionalPhotosSection() {
-    print("[_buildAdditionalPhotosSection] _additionalPhotos.length=${_additionalPhotos.length}");
-    if (_additionalPhotos.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
-        child: Text(
-          'No hay fotos adicionales',
-          style: TextStyle(color: Colors.black87),
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Fotos adicionales:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _additionalPhotos.length,
-            itemBuilder: (context, index) {
-              final imageUrl = _additionalPhotos[index];
-              return GestureDetector(
-                onTap: () {
-                  print("[_buildAdditionalPhotosSection] Pulsada foto adicional index=$index");
-                  _openPhotoViewer(index);
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      image: NetworkImage(imageUrl),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _openPhotoViewer(int initialIndex) {
-    print("[_openPhotoViewer] Mostrando foto en pantalla completa, index=$initialIndex");
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          child: Container(
-            width: double.maxFinite,
-            height: double.maxFinite,
-            color: Colors.black,
-            child: Stack(
-              children: [
-                PageView.builder(
-                  controller: PageController(initialPage: initialIndex),
-                  itemCount: _additionalPhotos.length,
-                  itemBuilder: (context, index) {
-                    final imageUrl = _additionalPhotos[index];
-                    return InteractiveViewer(
-                      child: Center(
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                Positioned(
-                  top: 40,
-                  right: 20,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                    onPressed: () {
-                      print("[_openPhotoViewer] Cerrar el diálogo de fotos");
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

@@ -4,23 +4,26 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:intl/date_symbol_data_local.dart'; // <-- Importante para inicializar localización
 
 // Paquete para leer el Intent ACTION_SEND
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import 'chats_screen.dart';
 import 'welcome_screen.dart';
-import 'plan_detail_screen.dart'; 
+import 'plan_detail_screen.dart';
 import 'models/plan_model.dart';
-
-// (Si usas flutterfire configure, import 'firebase_options.dart' y usa su initialize)
+// import 'firebase_options.dart'; // Si usas FlutterFire
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Inicializa Firebase
   await Firebase.initializeApp();
-  // Si tienes `DefaultFirebaseOptions.currentPlatform` úsalo en su lugar
+  // Si tienes DefaultFirebaseOptions.currentPlatform, úsalo aquí en lugar de la anterior
+
+  // Inicializa la localización para español
+  await initializeDateFormatting('es', null);
 
   runApp(const MyApp());
 }
@@ -67,7 +70,7 @@ class _MyAppState extends State<MyApp> {
 
   void _handleSharedText(String text) {
     setState(() {
-      _sharedText = text; 
+      _sharedText = text;
     });
   }
 
@@ -118,6 +121,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<User?> _getCurrentUser() async {
+    // Pequeña pausa para que Firebase Auth tenga tiempo de leer info
     await Future.delayed(const Duration(milliseconds: 300));
     return FirebaseAuth.instance.currentUser;
   }
