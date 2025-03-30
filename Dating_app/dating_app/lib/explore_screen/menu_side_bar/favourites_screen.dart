@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-// 1) Importamos el archivo con el diálogo FrostedPlanDialog real (p.ej. user_info_check.dart):
+// 1) Importamos el archivo con el diálogo FrostedPlanDialog real:
 import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../users_managing/user_info_check.dart' as profile_readonly;
 
@@ -191,7 +191,7 @@ class FavouritesScreen extends StatelessWidget {
 
   // ------------------------------------------------------------------------
   // Construir una tarjeta de plan (con fondo, avatar, etc.)
-  // Al pulsar, mostramos FrostedPlanDialog (el que viene de user_info_check.dart)
+  // Al pulsar, mostramos FrostedPlanDialog
   // ------------------------------------------------------------------------
   Widget _buildPlanCard(
       BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
@@ -202,8 +202,7 @@ class FavouritesScreen extends StatelessWidget {
     final String caption = plan.description.isNotEmpty
         ? plan.description
         : 'Descripción breve o #hashtags';
-    final String commentsCount = '173';
-    final String sharesCount = '227';
+    const String sharesCount = '227';
 
     return GestureDetector(
       onTap: () {
@@ -219,7 +218,6 @@ class FavouritesScreen extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Material(
                   color: Colors.transparent,
-                  // Usamos la clase importada con alias new_frosted:
                   child: new_frosted.FrostedPlanDialog(
                     plan: plan,
                     fetchParticipants: _fetchAllPlanParticipants,
@@ -257,7 +255,6 @@ class FavouritesScreen extends StatelessWidget {
                     : _buildPlaceholder(),
               ),
               // Avatar + nombre en la esquina superior izquierda.
-
               Positioned(
                 top: 10,
                 left: 10,
@@ -328,96 +325,114 @@ class FavouritesScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-
               // Menú con 3 iconos en la esquina superior derecha
               Positioned(
                 top: 16,
                 right: 16,
                 child: _buildThreeDotsMenu(userData, plan),
               ),
-              // Parte inferior: contadores + descripción
+              // Parte inferior: contadores + descripción (lee commentsCount en tiempo real)
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.5),
-                          ],
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(30),
-                          bottomRight: Radius.circular(30),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              _buildIconText(
-                                icon: Icons.favorite_border,
-                                label: plan.likes.toString(),
-                              ),
-                              const SizedBox(width: 25),
-                              _buildIconText(
-                                icon: Icons.chat_bubble_outline,
-                                label: commentsCount,
-                              ),
-                              const SizedBox(width: 25),
-                              _buildIconText(
-                                icon: Icons.share,
-                                label: sharesCount,
-                              ),
-                              const Spacer(),
-                              Row(
-                                children: [
-                                  const Text(
-                                    '7/10',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  SvgPicture.asset(
-                                    'assets/users.svg',
-                                    color: AppColors.blue,
-                                    width: 20,
-                                    height: 20,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            caption,
-                            style: const TextStyle(fontSize: 13, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('plans')
+                      .doc(plan.id)
+                      .snapshots(),
+                  builder: (context, snap) {
+                    if (!snap.hasData || !snap.data!.exists) {
+                      return _buildBottomStats(
+                        likesValue: plan.likes,
+                        commentsValue: 0,
+                        sharesValue: sharesCount,
+                        caption: caption,
+                      );
+                    }
+                    final data = snap.data!.data() as Map<String, dynamic>;
+                    final comments = data['commentsCount'] ?? 0;
+                    final likes = data['likes'] ?? plan.likes;
+
+                    // Ojo, podrías también leer participants, maxParticipants, etc. si quisieras
+                    return _buildBottomStats(
+                      likesValue: likes,
+                      commentsValue: comments,
+                      sharesValue: sharesCount,
+                      caption: caption,
+                    );
+                  },
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // Muestra la parte inferior con likes, comments, shares y la descripción.
+  // ------------------------------------------------------------------------
+  Widget _buildBottomStats({
+    required int likesValue,
+    required int commentsValue,
+    required String sharesValue,
+    required String caption,
+  }) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(30),
+        bottomRight: Radius.circular(30),
+      ),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withOpacity(0.5),
+              ],
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildIconText(
+                    icon: Icons.favorite_border,
+                    label: likesValue.toString(),
+                  ),
+                  const SizedBox(width: 25),
+                  _buildIconText(
+                    icon: Icons.chat_bubble_outline,
+                    label: commentsValue.toString(),
+                  ),
+                  const SizedBox(width: 25),
+                  _buildIconText(
+                    icon: Icons.share,
+                    label: sharesValue,
+                  ),
+                  const Spacer(),
+                  // Si quisieras mostrar participantes en favoritos, podrías anclar aquí
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                caption,
+                style: const TextStyle(fontSize: 13, color: Colors.white),
               ),
             ],
           ),

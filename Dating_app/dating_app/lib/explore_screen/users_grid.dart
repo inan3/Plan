@@ -1,6 +1,5 @@
 // users_grid.dart
-
-import 'dart:ui'; // Para BackdropFilter, ImageFilter
+import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,8 +7,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../main/colors.dart';
 import '../../models/plan_model.dart';
+import '../../main/colors.dart';
 
 // Revisado: usaremos el nuevo user_info_check.dart
 import 'users_managing/user_info_check.dart';
@@ -59,20 +58,15 @@ class UsersGrid extends StatelessWidget {
     // Filtramos en memoria
     final filteredDocs = snapshot.docs.where((doc) {
       final data = doc.data();
-      // Verificamos special_plan
       final int sp = data['special_plan'] ?? 0;
       if (sp != 0) return false;
 
-      // Verificamos finish_timestamp
-      final Timestamp? finishTs = data['finish_timestamp'] as Timestamp?;
+      final Timestamp? finishTs = data['finish_timestamp'];
       if (finishTs == null) return false;
       final finishDate = finishTs.toDate();
-
-      // Solo planes que acaban en el futuro
       return finishDate.isAfter(now);
     }).toList();
 
-    // Transformamos a PlanModel
     return filteredDocs.map((doc) {
       final data = doc.data();
       return PlanModel.fromMap(data);
@@ -80,7 +74,6 @@ class UsersGrid extends StatelessWidget {
   }
 
   /// Función auxiliar para obtener todos los participantes de un plan.
-  /// Se obtiene primero el creador y luego los suscriptores registrados.
   Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
     List<Map<String, dynamic>> participants = [];
 
@@ -98,7 +91,7 @@ class UsersGrid extends StatelessWidget {
           participants.add({
             'name': cdata['name'] ?? 'Sin nombre',
             'age': cdata['age']?.toString() ?? '',
-            'photoUrl': cdata['photoUrl'] ?? cdata['profilePic'] ?? '',
+            'photoUrl': cdata['photoUrl'] ?? '',
             'isCreator': true,
           });
         }
@@ -113,13 +106,16 @@ class UsersGrid extends StatelessWidget {
     for (var sDoc in subsSnap.docs) {
       final sData = sDoc.data();
       final userId = sData['userId'];
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
       if (userDoc.exists && userDoc.data() != null) {
         final uData = userDoc.data()!;
         participants.add({
           'name': uData['name'] ?? 'Sin nombre',
           'age': uData['age']?.toString() ?? '',
-          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'photoUrl': uData['photoUrl'] ?? '',
           'isCreator': false,
         });
       }
@@ -170,8 +166,7 @@ class UsersGrid extends StatelessWidget {
           // Sin planes
           return _buildNoPlanLayout(context, userData);
         } else {
-          // Con planes: cada tarjeta se envuelve en GestureDetector
-          // para abrir el diálogo de detalles
+          // Con planes
           return Column(
             children: plans.map((plan) {
               return GestureDetector(
@@ -185,9 +180,7 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
   // Layout cuando NO tiene plan
-  // -----------------------------------------------------------------------
   Widget _buildNoPlanLayout(BuildContext context, Map<String, dynamic> userData) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String userHandle = userData['handle']?.toString() ?? '@usuario';
@@ -232,7 +225,7 @@ class UsersGrid extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(36),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -296,7 +289,7 @@ class UsersGrid extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(30),
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             color: const Color.fromARGB(255, 84, 78, 78).withOpacity(0.3),
@@ -329,9 +322,7 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
   // Layout cuando SÍ tiene plan
-  // -----------------------------------------------------------------------
   Widget _buildPlanLayout(
     BuildContext context,
     Map<String, dynamic> userData,
@@ -345,7 +336,7 @@ class UsersGrid extends StatelessWidget {
     final String caption = plan.description.isNotEmpty
         ? plan.description
         : 'Descripción breve o #hashtags';
-    const String commentsCount = '173';
+
     const String sharesCount = '227';
 
     return Center(
@@ -368,7 +359,7 @@ class UsersGrid extends StatelessWidget {
                     )
                   : _buildPlaceholder(),
             ),
-            // Avatar + nombre (tap -> abre NUEVO user_info_check.dart)
+            // Avatar + nombre
             Positioned(
               top: 10,
               left: 10,
@@ -386,7 +377,7 @@ class UsersGrid extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(36),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -486,7 +477,7 @@ class UsersGrid extends StatelessWidget {
 
                       final int participantes = plan.participants?.length ?? 0;
                       final int maxPart = plan.maxParticipants ?? 0;
-                      if (participantes >= maxPart) {
+                      if (maxPart > 0 && participantes >= maxPart) {
                         _showCustomDialog(
                           context,
                           'El cupo máximo de participantes para este plan está cubierto',
@@ -518,7 +509,7 @@ class UsersGrid extends StatelessWidget {
                 ],
               ),
             ),
-            // Parte inferior: likes, comentarios, shares, etc.
+            // Parte inferior: likes, comentariosCount, shares, etc.
             Positioned(
               bottom: 0,
               left: 0,
@@ -529,7 +520,7 @@ class UsersGrid extends StatelessWidget {
                   bottomRight: Radius.circular(30),
                 ),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
@@ -556,17 +547,34 @@ class UsersGrid extends StatelessWidget {
                               label: plan.likes.toString(),
                             ),
                             const SizedBox(width: 25),
-                            _buildIconText(
-                              icon: Icons.chat_bubble_outline,
-                              label: commentsCount,
+                            // Usamos un StreamBuilder para leer 'commentsCount'
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('plans')
+                                  .doc(plan.id)
+                                  .snapshots(),
+                              builder: (context, snap) {
+                                if (!snap.hasData || !snap.data!.exists) {
+                                  return _buildIconText(
+                                    icon: Icons.chat_bubble_outline,
+                                    label: '0',
+                                  );
+                                }
+                                final data = snap.data!.data() as Map<String, dynamic>;
+                                final count = data['commentsCount'] ?? 0;
+                                return _buildIconText(
+                                  icon: Icons.chat_bubble_outline,
+                                  label: count.toString(),
+                                );
+                              },
                             ),
                             const SizedBox(width: 25),
                             _buildIconText(
                               icon: Icons.share,
-                              label: sharesCount,
+                              label: '227', // valor fijo
                             ),
                             const Spacer(),
-                            // Participantes: contador dinámico
+                            // Participantes: contador
                             Row(
                               children: [
                                 StreamBuilder<DocumentSnapshot>(
@@ -628,7 +636,7 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  /// Muestra los detalles del plan en un diálogo FrostedPlanDialog
+  /// Muestra FrostedPlanDialog
   void _openPlanDetails(
       BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
     showGeneralDialog(
@@ -652,9 +660,7 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
   // Botones de acción (Invitar / Chat)
-  // -----------------------------------------------------------------------
   Widget _buildActionButtons(BuildContext context, String? userId) {
     final String safeUserId = userId ?? '';
     return Row(
@@ -710,7 +716,7 @@ class UsersGrid extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             color: const Color.fromARGB(255, 84, 78, 78).withOpacity(0.3),
@@ -741,16 +747,13 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // Helper: iconos frost
-  // -----------------------------------------------------------------------
   Widget _buildFrostedIcon(String assetPath,
       {double size = 40, Color iconColor = Colors.white, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: ClipOval(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
           child: Container(
             width: size,
             height: size,
@@ -772,9 +775,6 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // Helper para el avatar
-  // -----------------------------------------------------------------------
   Widget _buildProfileAvatar(String? photoUrl) {
     if (photoUrl != null && photoUrl.isNotEmpty) {
       return CircleAvatar(
@@ -790,9 +790,6 @@ class UsersGrid extends StatelessWidget {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Placeholder
-  // -----------------------------------------------------------------------
   Widget _buildPlaceholder() {
     return Container(
       color: Colors.grey[200],
@@ -802,9 +799,6 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // Icon + texto (likes, comentarios, etc.)
-  // -----------------------------------------------------------------------
   Widget _buildIconText({required IconData icon, required String label}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -823,9 +817,6 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // Pequeña función para mostrar un diálogo centrado
-  // -----------------------------------------------------------------------
   void _showCustomDialog(BuildContext context, String message, {int durationSeconds = 2}) {
     showGeneralDialog(
       context: context,
@@ -868,7 +859,7 @@ class UsersGrid extends StatelessWidget {
   }
 }
 
-/// LikeButton (se queda igual)
+/// LikeButton
 class LikeButton extends StatefulWidget {
   final PlanModel plan;
   const LikeButton({Key? key, required this.plan}) : super(key: key);
@@ -941,7 +932,7 @@ class _LikeButtonState extends State<LikeButton> {
       onTap: _toggleLike,
       child: ClipOval(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
           child: Container(
             width: 40,
             height: 40,

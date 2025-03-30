@@ -113,6 +113,8 @@ flutter:
     - assets/icono-usuario-golden.png
     - assets/icono-usuario-vip.png
     - assets/icono-tick.svg
+    - assets/icono-fecha-creacion.svg
+    - assets/icono-restriccion-edad.svg
 
   fonts:
     - family: Inter

@@ -255,8 +255,7 @@ class MyPlansScreen extends StatelessWidget {
       final String caption = plan.description.isNotEmpty
           ? plan.description
           : 'Descripción breve o #hashtags';
-      final String commentsCount = '173';
-      final String sharesCount = '227';
+      const String sharesCount = '227';
 
       return GestureDetector(
         onTap: () {
@@ -407,9 +406,27 @@ class MyPlansScreen extends StatelessWidget {
                                   label: plan.likes.toString(),
                                 ),
                                 const SizedBox(width: 25),
-                                _buildIconText(
-                                  icon: Icons.chat_bubble_outline,
-                                  label: commentsCount,
+                                // Usamos un StreamBuilder para leer 'commentsCount' en tiempo real
+                                StreamBuilder<DocumentSnapshot>(
+                                  stream: FirebaseFirestore.instance
+                                      .collection('plans')
+                                      .doc(plan.id)
+                                      .snapshots(),
+                                  builder: (context, snap) {
+                                    if (!snap.hasData ||
+                                        !snap.data!.exists) {
+                                      return _buildIconText(
+                                        icon: Icons.chat_bubble_outline,
+                                        label: '0',
+                                      );
+                                    }
+                                    final data = snap.data!.data() as Map<String, dynamic>;
+                                    final count = data['commentsCount'] ?? 0;
+                                    return _buildIconText(
+                                      icon: Icons.chat_bubble_outline,
+                                      label: count.toString(),
+                                    );
+                                  },
                                 ),
                                 const SizedBox(width: 25),
                                 _buildIconText(

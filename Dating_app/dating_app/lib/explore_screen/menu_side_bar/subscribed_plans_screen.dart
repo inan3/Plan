@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-// Importa la clase real FrostedPlanDialog (y UserInfoCheck, si la necesitas) desde el archivo adecuado.
+// Importa la clase real FrostedPlanDialog desde el archivo adecuado.
 import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 import '../../models/plan_model.dart';
@@ -83,8 +83,7 @@ class SubscribedPlansScreen extends StatelessWidget {
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
     final String? backgroundImage = plan.backgroundImage;
     final String caption = plan.description.isNotEmpty ? plan.description : 'Descripción breve o #hashtags';
-    final String commentsCount = '173';
-    final String sharesCount = '227';
+    const String sharesCount = '227';
 
     // Si es un plan especial, se aplica un estilo específico.
     if (plan.special_plan == 1) {
@@ -201,17 +200,30 @@ class SubscribedPlansScreen extends StatelessWidget {
         },
       );
     } else {
-      // Para un plan normal, usamos un StreamBuilder para actualizar el conteo de participantes en tiempo real.
+      // Para un plan normal, usamos un StreamBuilder para actualizar likes, commentsCount y participants en tiempo real
       return StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
+          if (!snapshot.data!.exists) {
+            return const SizedBox(
+              height: 330,
+              child: Center(
+                child: Text(
+                  'Plan no encontrado',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
           final updatedData = snapshot.data!.data() as Map<String, dynamic>;
           final List<dynamic> updatedParticipants = updatedData['participants'] as List<dynamic>? ?? [];
           final int participantes = updatedParticipants.length;
           final int maxPart = updatedData['maxParticipants'] ?? plan.maxParticipants ?? 0;
+          final int commentsCount = updatedData['commentsCount'] ?? 0;
+          final int likesCount = updatedData['likes'] ?? plan.likes;
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -375,9 +387,9 @@ class SubscribedPlansScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    _buildIconText(icon: Icons.favorite_border, label: plan.likes.toString()),
+                                    _buildIconText(icon: Icons.favorite_border, label: likesCount.toString()),
                                     const SizedBox(width: 25),
-                                    _buildIconText(icon: Icons.chat_bubble_outline, label: commentsCount),
+                                    _buildIconText(icon: Icons.chat_bubble_outline, label: commentsCount.toString()),
                                     const SizedBox(width: 25),
                                     _buildIconText(icon: Icons.share, label: sharesCount),
                                     const Spacer(),
@@ -436,8 +448,8 @@ class SubscribedPlansScreen extends StatelessWidget {
             // Acción para compartir.
           },
         ),
-        //const SizedBox(width: 16),
-        //LikeButton(plan: plan),
+        // Aquí podrías incluir un LikeButton, etc. si quieres
+        // LikeButton(plan: plan),
       ],
     );
   }
@@ -491,7 +503,7 @@ class SubscribedPlansScreen extends StatelessWidget {
     }
   }
 
-  // Popup de confirmación para eliminar o abandonar un plan.
+  // Popup de confirmación para abandonar un plan.
   void _confirmDeletePlan(BuildContext context, PlanModel plan) {
     final String currentUserId = userId; // Id del usuario actual (suscriptor)
     showDialog(
