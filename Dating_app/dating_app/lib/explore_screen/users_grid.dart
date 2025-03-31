@@ -14,6 +14,7 @@ import '../../main/colors.dart';
 import 'users_managing/user_info_check.dart';
 import 'users_managing/user_info_inside_chat.dart';
 import 'special_plans/invite_users_to_plan_screen.dart';
+// Ahora importamos la pantalla completa en lugar de un popup
 import 'users_managing/frosted_plan_dialog_state.dart';
 
 class UsersGrid extends StatelessWidget {
@@ -337,6 +338,7 @@ class UsersGrid extends StatelessWidget {
         ? plan.description
         : 'Descripción breve o #hashtags';
 
+    // Este valor está fijo en el original
     const String sharesCount = '227';
 
     return Center(
@@ -571,7 +573,7 @@ class UsersGrid extends StatelessWidget {
                             const SizedBox(width: 25),
                             _buildIconText(
                               icon: Icons.share,
-                              label: '227', // valor fijo
+                              label: sharesCount, // valor fijo
                             ),
                             const Spacer(),
                             // Participantes: contador
@@ -592,7 +594,8 @@ class UsersGrid extends StatelessWidget {
                                           ));
                                     }
                                     final data = snap.data!.data() as Map<String, dynamic>;
-                                    final updatedList = data['participants'] as List<dynamic>? ?? [];
+                                    final updatedList =
+                                        data['participants'] as List<dynamic>? ?? [];
                                     final updatedCount = updatedList.length;
                                     final updatedMax = data['maxParticipants'] ?? 0;
                                     return Text(
@@ -636,27 +639,21 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  /// Muestra FrostedPlanDialog
+  /// Muestra *pantalla completa* en lugar del popup
   void _openPlanDetails(
-      BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return FrostedPlanDialog(
+    BuildContext context,
+    PlanModel plan,
+    Map<String, dynamic> userData,
+  ) {
+    // En lugar de showGeneralDialog, abrimos una nueva pantalla
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FrostedPlanDialog(
           plan: plan,
           fetchParticipants: _fetchPlanParticipants,
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
+        ),
+      ),
     );
   }
 

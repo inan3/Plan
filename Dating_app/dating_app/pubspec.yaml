@@ -115,6 +115,7 @@ flutter:
     - assets/icono-tick.svg
     - assets/icono-fecha-creacion.svg
     - assets/icono-restriccion-edad.svg
+    - assets/icono-compartir.svg
 
   fonts:
     - family: Inter
