@@ -16,8 +16,8 @@ import 'users_managing/user_info_check.dart';
 import 'map/map_screen.dart';
 import 'profile/profile_screen.dart';
 import 'notification_screen.dart';
+// Se elimina import de plan_join_request.dart
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
-import 'package:dating_app/plan_joining/plan_join_request.dart';
 import 'filter_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -30,7 +30,6 @@ class ExploreScreen extends StatefulWidget {
 class ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   int _selectedIconIndex = 0;
-  bool _showPopup = false;
 
   final double _iconSize = 30.0;
   final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -103,9 +102,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     setState(() {
       _currentIndex = pageIndex;
       _selectedIconIndex = _mapPageIndexToDockIndex(pageIndex);
-      if (_showPopup) {
-        _showPopup = false;
-      }
     });
   }
 
@@ -311,16 +307,12 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  // Se quitan los filtros relacionados con unirse a un plan
   Stream<int> _notificationCountStream() {
+    // Se elimina la parte .where('type', whereIn: [...]) que filtraba join, etc.
     return FirebaseFirestore.instance
         .collection('notifications')
         .where('receiverId', isEqualTo: currentUser?.uid)
-        .where('type', whereIn: [
-          'join_request',
-          'join_accepted',
-          'join_rejected',
-          'invitation',
-        ])
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -332,108 +324,6 @@ class ExploreScreenState extends State<ExploreScreen> {
         .where('isRead', isEqualTo: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
-  }
-
-  Widget _buildPopup() {
-    const double dockBottomMargin = 50.0;
-    const double dockHeight = 70.0;
-    return Positioned(
-      bottom: dockBottomMargin + dockHeight,
-      left: 40,
-      right: 40,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 38, 37, 37).withOpacity(0.6),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _showPopup = false;
-                  });
-                  NewPlanCreationScreen.showPopup(context);
-                },
-                child: Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Transform.scale(
-                        scale: 1.5,
-                        child: SvgPicture.asset(
-                          'assets/anadir.svg',
-                          color: Colors.white,
-                          width: 24,
-                          height: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "Crear Plan",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                height: 1,
-                color: Colors.white,
-              ),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _showPopup = false;
-                  });
-                  JoinPlanRequestScreen.showJoinPlanDialog(context);
-                },
-                child: Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: SvgPicture.asset(
-                          'assets/union.svg',
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "Unirse a un Plan",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   int _mapDockIndexToPageIndex(int dockIndex) {
@@ -451,7 +341,6 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  // Nueva función para mapear el índice de página al índice del dock
   int _mapPageIndexToDockIndex(int pageIndex) {
     switch (pageIndex) {
       case 0:
@@ -469,16 +358,9 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   void _onDockIconTap(int dockIndex) {
     if (dockIndex == 2) {
-      setState(() {
-        _selectedIconIndex = 2;
-        _showPopup = true;
-      });
+      // Ahora, en vez de mostrar un popup, abrimos directamente la creación de plan
+      NewPlanCreationScreen.showPopup(context);
     } else {
-      if (_showPopup) {
-        setState(() {
-          _showPopup = false;
-        });
-      }
       setState(() {
         _currentIndex = _mapDockIndexToPageIndex(dockIndex);
         _selectedIconIndex = dockIndex;
@@ -509,7 +391,6 @@ class ExploreScreenState extends State<ExploreScreen> {
           child: Stack(
             children: [
               _currentIndex == 0 ? _buildExplorePage() : _otherPages[_currentIndex - 1],
-              if (_showPopup) _buildPopup(),
               Positioned(
                 bottom: 20,
                 left: 0,
@@ -527,7 +408,7 @@ class ExploreScreenState extends State<ExploreScreen> {
               MainSideBarScreen(
                 key: _menuKey,
                 onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
-                onPageChange: changePage, // Pasamos la función para cambiar la página
+                onPageChange: changePage,
               ),
             ],
           ),
@@ -573,7 +454,7 @@ class DockSection extends StatelessWidget {
         height: 70,
         width: containerWidth,
         decoration: const BoxDecoration(
-          // Aquí aplicamos la MISMA decoración con degradado
+          // Mismo degradado del dock
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

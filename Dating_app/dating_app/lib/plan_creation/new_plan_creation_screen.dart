@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -5,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:video_player/video_player.dart';
+
 import '../main/colors.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
@@ -33,7 +36,7 @@ Future<BitmapDescriptor> getCustomSvgMarker(
   return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
 }
 
-/// Función para subir la imagen a Firebase Storage y obtener la URL de descarga.
+/// Función para subir una imagen (PNG/JPG) a Firebase Storage y obtener la URL de descarga.
 Future<String?> uploadBackgroundImage(Uint8List imageData, String planId) async {
   try {
     final ref = FirebaseStorage.instance.ref().child('plan_backgrounds/$planId.png');
@@ -42,6 +45,19 @@ Future<String?> uploadBackgroundImage(Uint8List imageData, String planId) async 
     return downloadURL;
   } catch (error) {
     print('Error al subir la imagen: $error');
+    return null;
+  }
+}
+
+/// Función para subir el video a Firebase Storage y obtener la URL.
+Future<String?> uploadVideo(Uint8List videoData, String planId) async {
+  try {
+    final ref = FirebaseStorage.instance.ref().child('plan_backgrounds/$planId.mp4');
+    await ref.putData(videoData, SettableMetadata(contentType: 'video/mp4'));
+    String downloadURL = await ref.getDownloadURL();
+    return downloadURL;
+  } catch (error) {
+    print('Error al subir el video: $error');
     return null;
   }
 }
@@ -111,7 +127,7 @@ class _NewPlanPopupContent extends StatefulWidget {
 }
 
 class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
-  // Paso 1: Elección del tipo de plan
+  // Elección del tipo de plan
   String? _selectedPlan;
   String? _customPlan;
   String? _selectedIconAsset;
@@ -120,7 +136,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
 
-  // Paso 3: Fecha y hora (las variables globales del padre)
+  // Fecha y hora
   bool _allDay = false;
   bool _includeEndDate = false;
   DateTime? _startDate;
@@ -128,38 +144,46 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   DateTime? _endDate;
   TimeOfDay? _endTime;
 
-  // Paso 4: Ubicación
+  // Ubicación
   String? _location;
   double? _latitude;
   double? _longitude;
 
-  // Paso 2: Imagen de fondo
-  Uint8List? _selectedImage;
+  // Sección de "fondo del plan": hasta 3 imágenes + 1 video
+  final List<Uint8List> _selectedImages = [];
+  Uint8List? _selectedVideo;
 
-  // Paso 5: Restricción de edad
+  // Para el carrusel de imágenes + video
+  late PageController _pageController;
+  int _currentPageIndex = 0;
+
+  // Restricción de edad
   RangeValues _ageRange = const RangeValues(18, 60);
 
-  // Paso 6: Máximo número de participantes
+  // Máximo número de participantes
   int? _maxParticipants;
 
-  // Paso 7: Breve descripción del plan
+  // Breve descripción
   String? _planDescription;
 
-  // Paso 8: Visibilidad del plan
+  // Visibilidad
   String? _selectedVisibility;
 
   double headerHorizontalInset = 0;
   double fieldsHorizontalInset = 20;
 
-  // Variable para el ícono del marcador
+  // Marcador en el mapa
   Future<BitmapDescriptor>? _markerIconFuture;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
   }
 
-  /// Función para asignar (o reasignar) el Future del marcador personalizado.
+  // Cantidad total de ítems (imágenes + video)
+  int get totalMedia => _selectedImages.length + (_selectedVideo == null ? 0 : 1);
+
   void _loadMarkerIcon() {
     _markerIconFuture = getCustomSvgMarker(
       context,
@@ -169,31 +193,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       height: 48,
     );
     setState(() {});
-  }
-
-  Widget _buildFrostedGlassContainer({required String text}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              decoration: TextDecoration.none,
-              fontFamily: 'Inter-Regular',
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _toggleDropdown() {
@@ -364,27 +363,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  Future<void> _pickAndCropImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      final imageData = await pickedFile.readAsBytes();
-      final croppedData = await Navigator.push<Uint8List>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ImageCropperScreen(imageData: imageData),
-        ),
-      );
-      if (croppedData != null) {
-        setState(() => _selectedImage = croppedData);
-      }
-    }
-  }
-
-  void _showImageSelectionPopup() {
+  /// Popup para elegir si subimos imagen/video
+  void _showMediaSelectionPopup() {
     showGeneralDialog(
       context: context,
-      barrierLabel: "Selecciona imagen",
+      barrierLabel: "Selecciona medio",
       pageBuilder: (context, anim1, anim2) => Center(
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
@@ -412,7 +395,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                "Selecciona una imagen",
+                "¿Qué deseas subir?",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -424,11 +407,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () {
-                  _pickAndCropImage(ImageSource.gallery);
                   Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
                 },
                 child: const Text(
-                  "Desde la galería",
+                  "Imagen (galería)",
                   style: TextStyle(
                     color: Colors.white,
                     decoration: TextDecoration.none,
@@ -438,11 +421,44 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               ),
               TextButton(
                 onPressed: () {
-                  _pickAndCropImage(ImageSource.camera);
                   Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
                 },
                 child: const Text(
-                  "Tomar una foto",
+                  "Imagen (cámara)",
+                  style: TextStyle(
+                    color: Colors.white,
+                    decoration: TextDecoration.none,
+                    fontFamily: 'Inter-Regular',
+                  ),
+                ),
+              ),
+              const Divider(
+                color: Colors.white54,
+                height: 20,
+                thickness: 0.3,
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _pickVideo(ImageSource.gallery);
+                },
+                child: const Text(
+                  "Video (galería)",
+                  style: TextStyle(
+                    color: Colors.white,
+                    decoration: TextDecoration.none,
+                    fontFamily: 'Inter-Regular',
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _pickVideo(ImageSource.camera);
+                },
+                child: const Text(
+                  "Video (cámara)",
                   style: TextStyle(
                     color: Colors.white,
                     decoration: TextDecoration.none,
@@ -457,13 +473,78 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Llamamos a este método para mostrar el diálogo de fecha/hora.
-  /// Esperamos el resultado y lo asignamos a nuestras variables _startDate, etc.
+  /// Elegir imagen y recortarla
+  Future<void> _pickImage(ImageSource source) async {
+    if (_selectedImages.length >= 3) {
+      _showErrorPopup("Solo se permiten máximo 3 imágenes.");
+      return;
+    }
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      final imageData = await pickedFile.readAsBytes();
+      final croppedData = await Navigator.push<Uint8List>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImageCropperScreen(imageData: imageData),
+        ),
+      );
+      if (croppedData != null) {
+        setState(() {
+          _selectedImages.add(croppedData);
+        });
+      }
+    }
+  }
+
+  /// Elegir video (max 1), revisar duración 15 seg
+  Future<void> _pickVideo(ImageSource source) async {
+    if (_selectedVideo != null) {
+      _showErrorPopup("Ya has seleccionado un video. Máximo 1 video.");
+      return;
+    }
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickVideo(source: source);
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final controller = VideoPlayerController.file(file);
+      await controller.initialize();
+      final duration = controller.value.duration.inSeconds;
+      // Cambiamos a 15 (en lugar de 20)
+      if (duration > 15) {
+        controller.dispose();
+        _showErrorPopup("El video excede los 15 segundos permitidos.");
+        return;
+      }
+      final videoData = await pickedFile.readAsBytes();
+      controller.dispose();
+      setState(() {
+        _selectedVideo = videoData;
+      });
+    }
+  }
+
+  void _showErrorPopup(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Atención"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          )
+        ],
+      ),
+    );
+  }
+
+  /// Fecha/hora
   Future<void> _showDateSelectionPopup() async {
-    // Llamamos al diálogo que crearemos más abajo
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      barrierDismissible: false, // para obligar a elegir o cancelar
+      barrierDismissible: false,
       builder: (_) => DateSelectionDialog(
         initialAllDay: _allDay,
         initialIncludeEndDate: _includeEndDate,
@@ -473,8 +554,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         initialEndTime: _endTime,
       ),
     );
-
-    // Si el usuario pulsó "Aceptar", result != null
     if (result != null) {
       setState(() {
         _allDay = result['allDay'] as bool;
@@ -487,7 +566,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
-  /// Popup de ubicación
+  /// Ubicación
   void _navigateToMeetingLocation() {
     final plan = PlanModel(
       id: '',
@@ -538,8 +617,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           _longitude = updatedPlan.longitude;
         });
         _loadMarkerIcon();
-      } else {
-        print("No se recibió plan actualizado");
       }
     });
   }
@@ -628,11 +705,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                       ),
                     ),
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.transparent,
-                      ),
-                    ),
                   ],
                 )
               : ClipRRect(
@@ -662,99 +734,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  int _countCompletedSteps() {
-    int completed = 0;
-    if (_selectedPlan != null || _customPlan != null) completed++;
-    if (_selectedImage != null) completed++;
-    // Para contar como completado, verificamos si al menos eligió fecha de inicio
-    if (_startDate != null) completed++;
-    if (_location != null && _location!.isNotEmpty) completed++;
-    if (_ageRange != null) completed++;
-    if (_maxParticipants != null && _maxParticipants! > 0) completed++;
-    if (_planDescription != null && _planDescription!.isNotEmpty) completed++;
-    if (_selectedVisibility != null) completed++;
-    return completed;
-  }
-
-  Widget _buildVerticalProgressBar() {
-    int completedSteps = _countCompletedSteps();
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(8, (index) {
-        final isCompleted = (index + 1) <= completedSteps;
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 3),
-          height: 15,
-          width: 5,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: isCompleted
-                ? const LinearGradient(
-                    colors: [Colors.blueAccent, Colors.blue],
-                  )
-                : null,
-            color: isCompleted ? null : Colors.grey[300],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildImageSelectionArea() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 30),
-        const Center(
-          child: Text(
-            "Fondo del plan",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              decoration: TextDecoration.none,
-              fontFamily: 'Inter-Regular',
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: _showImageSelectionPopup,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Container(
-                height: 240,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Center(
-                  child: _selectedImage == null
-                      ? SvgPicture.asset(
-                          'assets/anadir-imagen.svg',
-                          width: 30,
-                          height: 30,
-                          color: Colors.white,
-                        )
-                      : Image.memory(
-                          _selectedImage!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: 240,
-                        ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Formato más legible para la vista previa (ej. “Jueves, 20 de Marzo de 2025”).
+  /// Para formatear fecha en estilo "Lunes, 20 de Enero de 2025"
   String _formatHumanReadableDateOnly(DateTime date) {
     final Map<int, String> weekdays = {
       1: "Lunes",
@@ -779,27 +759,24 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       11: "Noviembre",
       12: "Diciembre",
     };
-
     String weekday = weekdays[date.weekday] ?? "";
     String monthName = months[date.month] ?? "";
-
     return "$weekday, ${date.day} de $monthName de ${date.year}";
   }
 
-  /// Formato más legible para la hora (ej. “17:00”).
+  /// Para formatear hora en estilo "17:00"
   String _formatHumanReadableTime(TimeOfDay time) {
     final String hour = time.hour.toString().padLeft(2, '0');
     final String minute = time.minute.toString().padLeft(2, '0');
     return "$hour:$minute";
   }
 
-  /// Construye el texto con la fecha/hora elegida en formato humano.
   Widget _buildSelectedDatesPreview() {
     if (_startDate == null) return const SizedBox.shrink();
-
     final startDateText = _formatHumanReadableDateOnly(_startDate!);
-    final startTimeText =
-        (_allDay || _startTime == null) ? "todo el día" : "a las ${_formatHumanReadableTime(_startTime!)}";
+    final startTimeText = (_allDay || _startTime == null)
+        ? "todo el día"
+        : "a las ${_formatHumanReadableTime(_startTime!)}";
 
     Widget? endDateWidget;
     if (_includeEndDate && _endDate != null) {
@@ -833,7 +810,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
     return Column(
       children: [
-        // Fecha/Hora de inicio
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
@@ -924,7 +900,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           color: Colors.white,
                         ),
                         const SizedBox(height: 8),
-                        // Aquí se muestra la fecha/hora en formato humano
                         _buildSelectedDatesPreview(),
                       ],
                     ),
@@ -935,6 +910,160 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMediaCarousel() {
+    return Stack(
+      children: [
+        // PageView con imágenes y/o video
+        Positioned.fill(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: totalMedia,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPageIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final isImageSection = (index < _selectedImages.length);
+              if (isImageSection) {
+                final imageData = _selectedImages[index];
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Image.memory(
+                    imageData,
+                    fit: BoxFit.cover,
+                  ),
+                );
+              } else {
+                // Vista previa de video (icono de reproducir)
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+        // Indicadores de páginas
+        if (totalMedia > 1)
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(totalMedia, (i) {
+                final isActive = (i == _currentPageIndex);
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive ? Colors.white : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                );
+              }),
+            ),
+          ),
+        // Botón flotante para añadir más contenido
+        Positioned(
+          top: 10,
+          right: 10,
+          child: _buildAddMediaButton(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddMediaButton() {
+    return GestureDetector(
+      onTap: _showMediaSelectionPopup,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 40,
+            height: 40,
+            color: const ui.Color.fromARGB(255, 96, 94, 94).withOpacity(0.2),
+            child: const Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Sección para mostrar imágenes/video
+  Widget _buildImageAndVideoSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 30),
+        const Center(
+          child: Text(
+            "Contenido multimedia",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              decoration: TextDecoration.none,
+              fontFamily: 'Inter-Regular',
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 240,
+          width: double.infinity,
+          child: (totalMedia == 0)
+              ? Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 124, 120, 120)
+                              .withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/anadir-imagen.svg',
+                            width: 30,
+                            height: 30,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: _buildAddMediaButton(),
+                    ),
+                  ],
+                )
+              : _buildMediaCarousel(),
+        ),
+      ],
     );
   }
 
@@ -964,6 +1093,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                // Contenido principal
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: fieldsHorizontalInset),
                   child: Column(
@@ -981,7 +1112,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Paso 1: Dropdown para seleccionar el tipo de plan
+
+                      // Tipo de plan
                       CompositedTransformTarget(
                         link: _layerLink,
                         child: GestureDetector(
@@ -1050,447 +1182,360 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Contenido adicional si ya se eligió un plan
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: ((_selectedPlan != null) || (_customPlan != null))
-                            ? Column(
-                                key: const ValueKey(1),
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Paso 2: Elegir imagen
-                                  _buildImageSelectionArea(),
-                                  if (_selectedImage != null) ...[
-                                    const SizedBox(height: 20),
-                                    // Paso 3: Seleccionar fecha/hora
-                                    _buildDateSelectionArea(),
-                                  ],
-                                  if (_startDate != null) ...[
-                                    const SizedBox(height: 20),
-                                    // Paso 4: Ubicación
-                                    _buildLocationSelectionArea(),
-                                  ],
-                                  // Paso 5 y siguientes
-                                  if (_location != null && _location!.isNotEmpty) ...[
-                                    const SizedBox(height: 20),
-                                    const Text(
-                                      "Restricción de edad para el plan",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontFamily: 'Inter-Regular',
-                                        decoration: TextDecoration.none,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: const Color.fromARGB(255, 124, 120, 120)
-                                            .withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          SliderTheme(
-                                            data: SliderTheme.of(context).copyWith(
-                                              activeTrackColor: AppColors.blue,
-                                              inactiveTrackColor:
-                                                  const Color.fromARGB(235, 225, 225, 234)
-                                                      .withOpacity(0.3),
-                                              trackHeight: 1,
-                                              thumbColor: AppColors.blue,
-                                              overlayColor:
-                                                  AppColors.blue.withOpacity(0.2),
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                      enabledThumbRadius: 8),
-                                              overlayShape:
-                                                  const RoundSliderOverlayShape(
-                                                      overlayRadius: 24),
-                                            ),
-                                            child: RangeSlider(
-                                              values: _ageRange,
-                                              min: 0,
-                                              max: 100,
-                                              divisions: 100,
-                                              labels: RangeLabels(
-                                                "${_ageRange.start.round()}",
-                                                "${_ageRange.end.round()}",
-                                              ),
-                                              onChanged: (newRange) {
-                                                setState(() {
-                                                  _ageRange = newRange;
-                                                });
-                                              },
-                                            ),
-                                          ),
-                                          const SizedBox(height: 5),
-                                          Text(
-                                            "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
-                                            style: const TextStyle(
-                                              color: Color.fromARGB(255, 223, 199, 199),
-                                              fontSize: 14,
-                                              decoration: TextDecoration.none,
-                                              fontFamily: 'Inter-Regular',
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    const Text(
-                                      "Máximo número de participantes",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontFamily: 'Inter-Regular',
-                                        decoration: TextDecoration.none,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 18, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: const Color.fromARGB(255, 124, 120, 120)
-                                            .withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/icono-max-participantes.svg',
-                                            width: 28,
-                                            height: 28,
-                                            color: Colors.white,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: TextField(
-                                              keyboardType: TextInputType.number,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  _maxParticipants = int.tryParse(value);
-                                                });
-                                              },
-                                              decoration: const InputDecoration(
-                                                isDense: true,
-                                                contentPadding:
-                                                    EdgeInsets.symmetric(vertical: 8),
-                                                hintText: "Ingresa un número...",
-                                                hintStyle: TextStyle(
-                                                  color: Colors.white70,
-                                                  fontFamily: 'Inter-Regular',
-                                                  decoration: TextDecoration.none,
-                                                ),
-                                                border: InputBorder.none,
-                                              ),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontFamily: 'Inter-Regular',
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    const Text(
-                                      "Breve descripción del plan",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontFamily: 'Inter-Regular',
-                                        decoration: TextDecoration.none,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: const Color.fromARGB(255, 124, 120, 120)
-                                            .withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: TextField(
-                                        maxLines: 3,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _planDescription = value;
-                                          });
-                                        },
-                                        decoration: const InputDecoration(
-                                          hintText: "Describe brevemente tu plan...",
-                                          hintStyle: TextStyle(
-                                            color: Colors.white70,
-                                            fontFamily: 'Inter-Regular',
-                                            decoration: TextDecoration.none,
-                                          ),
-                                          border: InputBorder.none,
-                                        ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontFamily: 'Inter-Regular',
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    const Text(
-                                      "Este plan es:",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontFamily: 'Inter-Regular',
-                                        decoration: TextDecoration.none,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Column(
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedVisibility = "Publico";
-                                            });
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 12),
-                                            decoration: BoxDecoration(
-                                              color: _selectedVisibility == "Publico"
-                                                  ? AppColors.blue
-                                                  : const Color.fromARGB(
-                                                          255, 124, 120, 120)
-                                                      .withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(30),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                SvgPicture.asset(
-                                                  'assets/icono-plan-publico.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  color: Colors.white,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  "Público",
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Inter-Regular',
-                                                    decoration: TextDecoration.none,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedVisibility = "Privado";
-                                            });
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 12),
-                                            decoration: BoxDecoration(
-                                              color: _selectedVisibility == "Privado"
-                                                  ? AppColors.blue
-                                                  : const Color.fromARGB(
-                                                          255, 124, 120, 120)
-                                                      .withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(30),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                SvgPicture.asset(
-                                                  'assets/icono-plan-privado.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  color: Colors.white,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  "Privado",
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Inter-Regular',
-                                                    decoration: TextDecoration.none,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedVisibility =
-                                                  "Solo para mis seguidores";
-                                            });
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 12),
-                                            decoration: BoxDecoration(
-                                              color: _selectedVisibility ==
-                                                      "Solo para mis seguidores"
-                                                  ? AppColors.blue
-                                                  : const Color.fromARGB(
-                                                          255, 124, 120, 120)
-                                                      .withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(30),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                SvgPicture.asset(
-                                                  'assets/icono-plan-seguidores.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  color: Colors.white,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  "Solo para mis seguidores",
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Inter-Regular',
-                                                    decoration: TextDecoration.none,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              )
-                            : const SizedBox.shrink(),
-                      ),
+
+                      // Sección imágenes/video
+                      _buildImageAndVideoSection(),
+
                       const SizedBox(height: 20),
-                      // Botón de Finalizar Plan (si ya completamos 8 pasos)
-                      if (_countCompletedSteps() == 8)
-                        ElevatedButton(
-                          onPressed: () async {
-                            try {
-                              String? backgroundImageUrl;
-                              // Si existe una imagen seleccionada, súbela a Firebase Storage
-                              if (_selectedImage != null) {
-                                final planId =
-                                    DateTime.now().millisecondsSinceEpoch.toString();
-                                backgroundImageUrl =
-                                    await uploadBackgroundImage(_selectedImage!, planId);
-                              }
 
-                              // ================================
-                              // LÓGICA PARA start_timestamp y finish_timestamp
-                              // ================================
-                              // Aseguramos fecha/hora de inicio
-                              DateTime finalStartDateTime;
-                              if (_startDate != null) {
-                                finalStartDateTime = DateTime(
-                                  _startDate!.year,
-                                  _startDate!.month,
-                                  _startDate!.day,
-                                  // Si _allDay, asumimos 00:00
-                                  _allDay ? 0 : (_startTime?.hour ?? 0),
-                                  _allDay ? 0 : (_startTime?.minute ?? 0),
-                                );
-                              } else {
-                                // En caso extremo de que no haya elegido nada
-                                // asumimos "ahora" como la fecha de inicio
-                                final now = DateTime.now();
-                                finalStartDateTime =
-                                    DateTime(now.year, now.month, now.day, 0, 0);
-                              }
+                      // Fecha/hora
+                      _buildDateSelectionArea(),
 
-                              // Aseguramos fecha/hora de fin
-                              DateTime finalFinishDateTime;
-                              if (_includeEndDate && _endDate != null) {
-                                finalFinishDateTime = DateTime(
-                                  _endDate!.year,
-                                  _endDate!.month,
-                                  _endDate!.day,
-                                  _allDay ? 0 : (_endTime?.hour ?? 0),
-                                  _allDay ? 0 : (_endTime?.minute ?? 0),
-                                );
-                              } else {
-                                // Si no incluyó fecha/hora final,
-                                // ponemos 00:00 del siguiente día
-                                finalFinishDateTime = DateTime(
-                                  finalStartDateTime.year,
-                                  finalStartDateTime.month,
-                                  finalStartDateTime.day + 1,
-                                  0,
-                                  0,
-                                );
-                              }
+                      const SizedBox(height: 20),
 
-                              // Creamos el plan en Firestore (o donde corresponda)
-                              await PlanModel.createPlan(
-                                type: _customPlan ?? _selectedPlan!,
-                                description: _planDescription ?? '',
-                                minAge: _ageRange.start.round(),
-                                maxAge: _ageRange.end.round(),
-                                maxParticipants: _maxParticipants,
-                                location: _location ?? '',
-                                latitude: _latitude,
-                                longitude: _longitude,
-                                startTimestamp: finalStartDateTime,
-                                finishTimestamp: finalFinishDateTime,
-                                backgroundImage: backgroundImageUrl,
-                                visibility: _selectedVisibility,
-                                iconAsset: _selectedIconAsset,
-                                special_plan: 0, // Ejemplo: plan normal
-                              );
-                              Navigator.pop(context);
-                            } catch (error) {
-                              print("Error al crear el plan: $error");
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(235, 17, 19, 135),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                      // Ubicación
+                      _buildLocationSelectionArea(),
+
+                      const SizedBox(height: 20),
+
+                      // Restricción de edad
+                      const Text(
+                        "Restricción de edad para el plan",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Inter-Regular',
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 124, 120, 120)
+                              .withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Column(
+                          children: [
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: AppColors.blue,
+                                inactiveTrackColor:
+                                    const Color.fromARGB(235, 225, 225, 234)
+                                        .withOpacity(0.3),
+                                trackHeight: 1,
+                                thumbColor: AppColors.blue,
+                                overlayColor: AppColors.blue.withOpacity(0.2),
+                                thumbShape:
+                                    const RoundSliderThumbShape(enabledThumbRadius: 8),
+                                overlayShape:
+                                    const RoundSliderOverlayShape(overlayRadius: 24),
+                              ),
+                              child: RangeSlider(
+                                values: _ageRange,
+                                min: 0,
+                                max: 100,
+                                divisions: 100,
+                                labels: RangeLabels(
+                                  "${_ageRange.start.round()}",
+                                  "${_ageRange.end.round()}",
+                                ),
+                                onChanged: (newRange) {
+                                  setState(() {
+                                    _ageRange = newRange;
+                                  });
+                                },
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text(
-                            "Finalizar Plan",
-                            style: TextStyle(
+                            const SizedBox(height: 5),
+                            Text(
+                              "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
+                              style: const TextStyle(
+                                color: Color.fromARGB(255, 223, 199, 199),
+                                fontSize: 14,
+                                decoration: TextDecoration.none,
+                                fontFamily: 'Inter-Regular',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Máximo participantes
+                      const Text(
+                        "Máximo número de participantes",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Inter-Regular',
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 124, 120, 120)
+                              .withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icono-max-participantes.svg',
+                              width: 28,
+                              height: 28,
                               color: Colors.white,
-                              fontSize: 16,
-                              decoration: TextDecoration.none,
-                              fontFamily: 'Inter-Regular',
                             ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _maxParticipants = int.tryParse(value);
+                                  });
+                                },
+                                decoration: const InputDecoration(
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                  hintText: "Ingresa un número...",
+                                  hintStyle: TextStyle(
+                                    color: Colors.white70,
+                                    fontFamily: 'Inter-Regular',
+                                    decoration: TextDecoration.none,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Inter-Regular',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Descripción
+                      const Text(
+                        "Breve descripción del plan",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Inter-Regular',
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: TextField(
+                          maxLines: 3,
+                          onChanged: (value) {
+                            setState(() {
+                              _planDescription = value;
+                            });
+                          },
+                          decoration: const InputDecoration(
+                            hintText: "Describe brevemente tu plan...",
+                            hintStyle: TextStyle(
+                              color: Colors.white70,
+                              fontFamily: 'Inter-Regular',
+                              decoration: TextDecoration.none,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Inter-Regular',
                           ),
                         ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Visibilidad
+                      const Text(
+                        "Este plan es:",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Inter-Regular',
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedVisibility = "Publico";
+                              });
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedVisibility == "Publico"
+                                    ? AppColors.blue
+                                    : const Color.fromARGB(255, 124, 120, 120)
+                                        .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/icono-plan-publico.svg',
+                                    width: 24,
+                                    height: 24,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    "Público",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Inter-Regular',
+                                      decoration: TextDecoration.none,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedVisibility = "Privado";
+                              });
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedVisibility == "Privado"
+                                    ? AppColors.blue
+                                    : const Color.fromARGB(255, 124, 120, 120)
+                                        .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/icono-plan-privado.svg',
+                                    width: 24,
+                                    height: 24,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    "Privado",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Inter-Regular',
+                                      decoration: TextDecoration.none,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedVisibility = "Solo para mis seguidores";
+                              });
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedVisibility ==
+                                        "Solo para mis seguidores"
+                                    ? AppColors.blue
+                                    : const Color.fromARGB(255, 124, 120, 120)
+                                        .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/icono-plan-seguidores.svg',
+                                    width: 24,
+                                    height: 24,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    "Solo para mis seguidores",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Inter-Regular',
+                                      decoration: TextDecoration.none,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Botón de Finalizar
+                      ElevatedButton(
+                        onPressed: _onCreatePlanPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(235, 17, 19, 135),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          "Finalizar Plan",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            decoration: TextDecoration.none,
+                            fontFamily: 'Inter-Regular',
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
+
           // Botón de cerrar
           Positioned(
             top: 0,
@@ -1512,25 +1557,99 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               ),
             ),
           ),
-          // Barra de progreso lateral
-          Positioned(
-            top: 0,
-            bottom: 0,
-            right: 0,
-            child: Container(
-              width: 2,
-              alignment: Alignment.center,
-              child: _buildVerticalProgressBar(),
-            ),
-          ),
         ],
       ),
     );
   }
+
+  /// Lógica al pulsar "Finalizar Plan"
+  Future<void> _onCreatePlanPressed() async {
+    try {
+      final planId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Subir imágenes
+      final List<String> uploadedImages = [];
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final url = await uploadBackgroundImage(_selectedImages[i], "${planId}_img_$i");
+        if (url != null) {
+          uploadedImages.add(url);
+        }
+      }
+
+      // Subir video
+      String? uploadedVideo;
+      if (_selectedVideo != null) {
+        final videoUrl = await uploadVideo(_selectedVideo!, "${planId}_vid");
+        if (videoUrl != null) {
+          uploadedVideo = videoUrl;
+        }
+      }
+
+      // Fecha/hora de inicio
+      DateTime finalStartDateTime;
+      if (_startDate != null) {
+        finalStartDateTime = DateTime(
+          _startDate!.year,
+          _startDate!.month,
+          _startDate!.day,
+          _allDay ? 0 : (_startTime?.hour ?? 0),
+          _allDay ? 0 : (_startTime?.minute ?? 0),
+        );
+      } else {
+        final now = DateTime.now();
+        finalStartDateTime = DateTime(now.year, now.month, now.day, 0, 0);
+      }
+
+      // Fecha/hora de fin
+      DateTime finalFinishDateTime;
+      if (_includeEndDate && _endDate != null) {
+        finalFinishDateTime = DateTime(
+          _endDate!.year,
+          _endDate!.month,
+          _endDate!.day,
+          _allDay ? 0 : (_endTime?.hour ?? 0),
+          _allDay ? 0 : (_endTime?.minute ?? 0),
+        );
+      } else {
+        finalFinishDateTime = DateTime(
+          finalStartDateTime.year,
+          finalStartDateTime.month,
+          finalStartDateTime.day + 1,
+          0,
+          0,
+        );
+      }
+
+      // Creamos el plan en Firestore
+      await PlanModel.createPlan(
+        type: _customPlan ?? _selectedPlan ?? '',
+        description: _planDescription ?? '',
+        minAge: _ageRange.start.round(),
+        maxAge: _ageRange.end.round(),
+        maxParticipants: _maxParticipants,
+        location: _location ?? '',
+        latitude: _latitude,
+        longitude: _longitude,
+        startTimestamp: finalStartDateTime,
+        finishTimestamp: finalFinishDateTime,
+        backgroundImage: uploadedImages.isNotEmpty ? uploadedImages.first : null,
+        visibility: _selectedVisibility,
+        iconAsset: _selectedIconAsset,
+        special_plan: 0,
+        // Ahora SÍ pasamos las imágenes y el video
+        images: uploadedImages,
+        videoUrl: uploadedVideo,
+      );
+
+      Navigator.pop(context);
+    } catch (error) {
+      print("Error al crear el plan: $error");
+      _showErrorPopup("Ocurrió un error al crear el plan.");
+    }
+  }
 }
 
-/// Este widget es el diálogo que sale al pulsar sobre fecha/hora.
-/// Muestra en formato numérico (dd/mm/yyyy hh:mm:ss) y devuelve la selección.
+/// Diálogo para seleccionar fecha/hora
 class DateSelectionDialog extends StatefulWidget {
   final bool initialAllDay;
   final bool initialIncludeEndDate;
@@ -1570,6 +1689,189 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
     startTime = widget.initialStartTime;
     endDate = widget.initialEndDate;
     endTime = widget.initialEndTime;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Todo el día
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Todo el día",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            allDay = !allDay;
+                            if (allDay) {
+                              startTime = null;
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Incluir fecha final
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Incluir fecha final",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            includeEndDate = !includeEndDate;
+                            if (!includeEndDate) {
+                              endDate = null;
+                              endTime = null;
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: includeEndDate
+                                ? AppColors.blue
+                                : Colors.grey.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Fecha de inicio
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Fecha de inicio",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _pickStartDate,
+                            child: _buildFrostedGlassContainer(
+                              startDate == null
+                                  ? "dd/mm/yyyy"
+                                  : _formatNumericDateOnly(startDate!),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          if (!allDay)
+                            GestureDetector(
+                              onTap: _pickStartTime,
+                              child: _buildFrostedGlassContainer(
+                                startTime == null
+                                    ? "hh:mm:ss"
+                                    : _formatNumericTime(startTime!),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Fecha final
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Fecha final",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      includeEndDate
+                          ? Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: _pickEndDate,
+                                  child: _buildFrostedGlassContainer(
+                                    endDate == null
+                                        ? "dd/mm/yyyy"
+                                        : _formatNumericDateOnly(endDate!),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: _pickEndTime,
+                                  child: _buildFrostedGlassContainer(
+                                    endTime == null
+                                        ? "hh:mm:ss"
+                                        : _formatNumericTime(endTime!),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _buildFrostedGlassContainer("Sin elegir"),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context, {
+                        'allDay': allDay,
+                        'includeEndDate': includeEndDate,
+                        'startDate': startDate,
+                        'startTime': startTime,
+                        'endDate': endDate,
+                        'endTime': endTime,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue,
+                    ),
+                    child: const Text(
+                      "Aceptar",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, null),
+                    child: const Text(
+                      "Cancelar",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Formato dd/mm/yyyy
@@ -1664,9 +1966,13 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
       if (startDate != null && endDate != null) {
         final startDateTime = (allDay || startTime == null)
             ? DateTime(startDate!.year, startDate!.month, startDate!.day)
-            : DateTime(startDate!.year, startDate!.month, startDate!.day,
-                startTime!.hour, startTime!.minute);
-
+            : DateTime(
+                startDate!.year,
+                startDate!.month,
+                startDate!.day,
+                startTime!.hour,
+                startTime!.minute,
+              );
         final endDateTime = DateTime(
           endDate!.year,
           endDate!.month,
@@ -1674,7 +1980,6 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
           pickedTime.hour,
           pickedTime.minute,
         );
-
         if (!endDateTime.isAfter(startDateTime)) {
           showDialog(
             context: context,
@@ -1698,189 +2003,5 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
         endTime = pickedTime;
       });
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Opción 1: Todo el día
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Todo el día",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            allDay = !allDay;
-                            if (allDay) {
-                              startTime = null;
-                            }
-                          });
-                        },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Opción 2: Incluir fecha final
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Incluir fecha final",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            includeEndDate = !includeEndDate;
-                            if (!includeEndDate) {
-                              endDate = null;
-                              endTime = null;
-                            }
-                          });
-                        },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: includeEndDate
-                                ? AppColors.blue
-                                : Colors.grey.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Opción 3: Fecha de inicio (fecha y hora)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Fecha de inicio",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: _pickStartDate,
-                            child: _buildFrostedGlassContainer(
-                              (startDate == null)
-                                  ? "dd/mm/yyyy"
-                                  : _formatNumericDateOnly(startDate!),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          if (!allDay)
-                            GestureDetector(
-                              onTap: _pickStartTime,
-                              child: _buildFrostedGlassContainer(
-                                (startTime == null)
-                                    ? "hh:mm:ss"
-                                    : _formatNumericTime(startTime!),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Opción 4: Fecha final (fecha y hora)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Fecha final",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                      includeEndDate
-                          ? Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: _pickEndDate,
-                                  child: _buildFrostedGlassContainer(
-                                    (endDate == null)
-                                        ? "dd/mm/yyyy"
-                                        : _formatNumericDateOnly(endDate!),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                GestureDetector(
-                                  onTap: _pickEndTime,
-                                  child: _buildFrostedGlassContainer(
-                                    (endTime == null)
-                                        ? "hh:mm:ss"
-                                        : _formatNumericTime(endTime!),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : _buildFrostedGlassContainer("Sin elegir"),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Al pulsar Aceptar, devolvemos los datos seleccionados
-                      Navigator.pop(context, {
-                        'allDay': allDay,
-                        'includeEndDate': includeEndDate,
-                        'startDate': startDate,
-                        'startTime': startTime,
-                        'endDate': endDate,
-                        'endTime': endTime,
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue,
-                    ),
-                    child: const Text(
-                      "Aceptar",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, null),
-                    child: const Text(
-                      "Cancelar",
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

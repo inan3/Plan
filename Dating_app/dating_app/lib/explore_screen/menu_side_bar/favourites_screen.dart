@@ -191,7 +191,7 @@ class FavouritesScreen extends StatelessWidget {
 
   // ------------------------------------------------------------------------
   // Construir una tarjeta de plan (con fondo, avatar, etc.)
-  // Al pulsar, mostramos FrostedPlanDialog
+  // Al pulsar, mostramos FrostedPlanDialog A PANTALLA COMPLETA
   // ------------------------------------------------------------------------
   Widget _buildPlanCard(
       BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
@@ -206,32 +206,18 @@ class FavouritesScreen extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        // Al pulsar, mostramos el diálogo frosted real
-        showGeneralDialog(
-          context: context,
-          barrierDismissible: true,
-          barrierLabel: 'Cerrar',
-          transitionDuration: const Duration(milliseconds: 300),
-          pageBuilder: (ctx, animation, secondaryAnimation) {
-            return SafeArea(
-              child: Align(
-                alignment: Alignment.center,
-                child: Material(
-                  color: Colors.transparent,
-                  child: new_frosted.FrostedPlanDialog(
-                    plan: plan,
-                    fetchParticipants: _fetchAllPlanParticipants,
-                  ),
-                ),
+        // Abre los detalles del plan a pantalla completa
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              backgroundColor: Colors.transparent,
+              body: new_frosted.FrostedPlanDialog(
+                plan: plan,
+                fetchParticipants: _fetchAllPlanParticipants,
               ),
-            );
-          },
-          transitionBuilder: (context, anim1, anim2, child) {
-            return FadeTransition(
-              opacity: anim1,
-              child: child,
-            );
-          },
+            ),
+          ),
         );
       },
       child: Center(
@@ -354,7 +340,6 @@ class FavouritesScreen extends StatelessWidget {
                     final comments = data['commentsCount'] ?? 0;
                     final likes = data['likes'] ?? plan.likes;
 
-                    // Ojo, podrías también leer participants, maxParticipants, etc. si quisieras
                     return _buildBottomStats(
                       likesValue: likes,
                       commentsValue: comments,
@@ -371,9 +356,7 @@ class FavouritesScreen extends StatelessWidget {
     );
   }
 
-  // ------------------------------------------------------------------------
   // Muestra la parte inferior con likes, comments, shares y la descripción.
-  // ------------------------------------------------------------------------
   Widget _buildBottomStats({
     required int likesValue,
     required int commentsValue,
@@ -426,7 +409,6 @@ class FavouritesScreen extends StatelessWidget {
                     label: sharesValue,
                   ),
                   const Spacer(),
-                  // Si quisieras mostrar participantes en favoritos, podrías anclar aquí
                 ],
               ),
               const SizedBox(height: 8),
@@ -441,9 +423,7 @@ class FavouritesScreen extends StatelessWidget {
     );
   }
 
-  // ------------------------------------------------------------------------
   // Menú de 3 iconos (compartir, like, unión)
-  // ------------------------------------------------------------------------
   Widget _buildThreeDotsMenu(Map<String, dynamic> userData, PlanModel plan) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -542,7 +522,11 @@ class FavouritesScreen extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );

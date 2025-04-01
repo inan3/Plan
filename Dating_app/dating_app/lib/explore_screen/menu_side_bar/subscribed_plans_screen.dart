@@ -113,7 +113,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                   radius: 20,
                 )
               : const CircleAvatar(radius: 20);
-          final Widget participantAvatar = participants.length > 1 && (participants[1]['photoUrl'] ?? '').isNotEmpty
+          final Widget participantAvatar = (participants.length > 1 && (participants[1]['photoUrl'] ?? '').isNotEmpty)
               ? CircleAvatar(
                   backgroundImage: NetworkImage(participants[1]['photoUrl']),
                   radius: 20,
@@ -129,28 +129,18 @@ class SubscribedPlansScreen extends StatelessWidget {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
-              showGeneralDialog(
-                context: context,
-                barrierDismissible: true,
-                barrierLabel: 'Cerrar',
-                transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return SafeArea(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: new_frosted.FrostedPlanDialog(
-                          plan: plan,
-                          fetchParticipants: _fetchAllPlanParticipants,
-                        ),
-                      ),
+              // Cambiamos showGeneralDialog a un Navigator.push a pantalla completa
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: new_frosted.FrostedPlanDialog(
+                      plan: plan,
+                      fetchParticipants: _fetchAllPlanParticipants,
                     ),
-                  );
-                },
-                transitionBuilder: (context, anim1, anim2, child) {
-                  return FadeTransition(opacity: anim1, child: child);
-                },
+                  ),
+                ),
               );
             },
             child: Center(
@@ -228,28 +218,18 @@ class SubscribedPlansScreen extends StatelessWidget {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
-              showGeneralDialog(
-                context: context,
-                barrierDismissible: true,
-                barrierLabel: 'Cerrar',
-                transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return SafeArea(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: new_frosted.FrostedPlanDialog(
-                          plan: plan,
-                          fetchParticipants: _fetchAllPlanParticipants,
-                        ),
-                      ),
+              // Pantalla completa
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: new_frosted.FrostedPlanDialog(
+                      plan: plan,
+                      fetchParticipants: _fetchAllPlanParticipants,
                     ),
-                  );
-                },
-                transitionBuilder: (context, anim1, anim2, child) {
-                  return FadeTransition(opacity: anim1, child: child);
-                },
+                  ),
+                ),
               );
             },
             child: Center(
@@ -326,7 +306,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Botones en la esquina superior derecha: menú y botón de abandonar.
+                    // Botones en la esquina superior derecha
                     Positioned(
                       top: 16,
                       right: 16,
@@ -334,6 +314,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                         children: [
                           _buildThreeDotsMenu(userData, plan),
                           const SizedBox(width: 16),
+                          // Botón "abandonar" plan
                           GestureDetector(
                             onTap: () => _confirmDeletePlan(context, plan),
                             child: ClipOval(
@@ -393,7 +374,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                                     const SizedBox(width: 25),
                                     _buildIconText(icon: Icons.share, label: sharesCount),
                                     const Spacer(),
-                                    // Aquí se muestra el número actual de participantes y el máximo permitido.
+                                    // Número actual de participantes vs max
                                     Row(
                                       children: [
                                         Text(
@@ -436,7 +417,7 @@ class SubscribedPlansScreen extends StatelessWidget {
     }
   }
 
-  // Menú de opciones (fila de 3 iconos frosted).
+  // Menú de opciones (fila de iconos frosted).
   Widget _buildThreeDotsMenu(Map<String, dynamic> userData, PlanModel plan) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -448,8 +429,7 @@ class SubscribedPlansScreen extends StatelessWidget {
             // Acción para compartir.
           },
         ),
-        // Aquí podrías incluir un LikeButton, etc. si quieres
-        // LikeButton(plan: plan),
+        // Podrías incluir LikeButton u otros iconos
       ],
     );
   }

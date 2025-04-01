@@ -22,12 +22,21 @@ class PlanModel {
   String? creatorName;
   String? creatorProfilePic;
   DateTime? createdAt;
+
+  /// (Opcional) Si antes usabas solo 1 imagen
   String? backgroundImage;
+
   String? visibility;
   String? iconAsset;
   List<String>? participants;
   int likes;
   int special_plan;
+
+  /// Array con varias URLs de imágenes
+  List<String>? images;
+
+  /// Campo con la URL del video (si se subió)
+  String? videoUrl;
 
   // Constructor
   PlanModel({
@@ -52,11 +61,14 @@ class PlanModel {
     this.participants,
     this.likes = 0,
     this.special_plan = 0,
+    this.images,
+    this.videoUrl,
   });
 
   // Genera un ID único de 10 caracteres alfanuméricos
   static Future<String> generateUniqueId() async {
-    const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const String chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     final Random random = Random();
     String id;
     do {
@@ -84,7 +96,6 @@ class PlanModel {
       'latitude': latitude,
       'longitude': longitude,
 
-      /// Guardamos como Timestamp de Firestore
       'start_timestamp': startTimestamp != null
           ? Timestamp.fromDate(startTimestamp!)
           : null,
@@ -102,6 +113,10 @@ class PlanModel {
       'participants': participants ?? [],
       'likes': likes,
       'special_plan': special_plan,
+
+      // Nuevos campos
+      'images': images ?? [],
+      'videoUrl': videoUrl ?? '',
     };
   }
 
@@ -135,6 +150,10 @@ class PlanModel {
           : <String>[],
       likes: map['likes'] ?? 0,
       special_plan: map['special_plan'] ?? 0,
+      images: map['images'] != null
+          ? List<String>.from(map['images'] as List)
+          : <String>[],
+      videoUrl: map['videoUrl'] ?? '',
     );
   }
 
@@ -161,7 +180,6 @@ class PlanModel {
   // Método auxiliar para formatear fechas en tu UI
   String formattedDate(DateTime? d) {
     if (d == null) return 'Sin fecha';
-    // Por ejemplo: dd/MM/yyyy HH:mm
     return '${d.day.toString().padLeft(2, '0')}/'
            '${d.month.toString().padLeft(2, '0')}/'
            '${d.year} '
@@ -185,6 +203,10 @@ class PlanModel {
     String? visibility,
     String? iconAsset,
     int special_plan = 0,
+
+    // Par de campos nuevos para el array de imágenes y el video
+    List<String>? images,
+    String? videoUrl,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -202,7 +224,7 @@ class PlanModel {
     // Genera un ID único de 10 caracteres
     final String uniqueId = await generateUniqueId();
 
-    // Construimos el plan
+    // Construimos el plan con todos los campos
     final plan = PlanModel(
       id: uniqueId,
       type: type,
@@ -225,9 +247,11 @@ class PlanModel {
       participants: [],
       likes: 0,
       special_plan: special_plan,
+      images: images ?? [],
+      videoUrl: videoUrl ?? '',
     );
 
-    // Guardar en la colección 'plans'
+    // Guardar en la colección 'plans' (se crea un doc con ID = uniqueId)
     await FirebaseFirestore.instance
         .collection('plans')
         .doc(plan.id)

@@ -25,8 +25,10 @@ class MyPlansScreen extends StatelessWidget {
   ) async {
     final List<Map<String, dynamic>> participants = [];
 
-    final planDoc =
-        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
+    final planDoc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
     if (planDoc.exists) {
       final planData = planDoc.data();
       final creatorId = planData?['createdBy'];
@@ -99,8 +101,10 @@ class MyPlansScreen extends StatelessWidget {
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-              child: Text('No tienes planes aún.',
-                  style: TextStyle(color: Colors.black)),
+              child: Text(
+                'No tienes planes aún.',
+                style: TextStyle(color: Colors.black),
+              ),
             );
           }
 
@@ -122,7 +126,7 @@ class MyPlansScreen extends StatelessWidget {
   }
 
   // --------------------------------------------------------------------------
-  // Construye cada tarjeta de plan. Al pulsar, se muestra el diálogo.
+  // Construye cada tarjeta de plan. Al pulsar, abre la pantalla de detalles.
   // --------------------------------------------------------------------------
   Widget _buildPlanCard(BuildContext context, PlanModel plan, int index) {
     // Si es plan especial -> estilo específico para la tarjeta
@@ -156,13 +160,14 @@ class MyPlansScreen extends StatelessWidget {
                 )
               : const CircleAvatar(radius: 20);
 
-          final Widget participantAvatar = participants.length > 1 &&
-                  (participants[1]['photoUrl'] ?? '').toString().isNotEmpty
-              ? CircleAvatar(
-                  backgroundImage: NetworkImage(participants[1]['photoUrl']),
-                  radius: 20,
-                )
-              : const SizedBox();
+          final Widget participantAvatar =
+              (participants.length > 1 &&
+                      (participants[1]['photoUrl'] ?? '').toString().isNotEmpty)
+                  ? CircleAvatar(
+                      backgroundImage: NetworkImage(participants[1]['photoUrl']),
+                      radius: 20,
+                    )
+                  : const SizedBox();
 
           // Encontrar el icono desde tu lista local
           String iconPath = plan.iconAsset ?? '';
@@ -175,28 +180,19 @@ class MyPlansScreen extends StatelessWidget {
 
           return GestureDetector(
             onTap: () {
-              showGeneralDialog(
-                context: context,
-                barrierDismissible: true,
-                barrierLabel: 'Cerrar',
-                transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return SafeArea(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: new_frosted.FrostedPlanDialog(
-                          plan: plan,
-                          fetchParticipants: _fetchAllPlanParticipants,
-                        ),
-                      ),
+              // En lugar de showGeneralDialog, usamos un Navigator.push
+              // para que ocupe toda la pantalla.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: new_frosted.FrostedPlanDialog(
+                      plan: plan,
+                      fetchParticipants: _fetchAllPlanParticipants,
                     ),
-                  );
-                },
-                transitionBuilder: (context, anim1, anim2, child) {
-                  return FadeTransition(opacity: anim1, child: child);
-                },
+                  ),
+                ),
               );
             },
             child: Center(
@@ -248,9 +244,8 @@ class MyPlansScreen extends StatelessWidget {
           );
         },
       );
-
-      // Si NO es especial, también se usa el NUEVO diálogo (frosted_plan_dialog_state.dart)
     } else {
+      // Si NO es especial, construimos la tarjeta "normal"
       final String? backgroundImage = plan.backgroundImage;
       final String caption = plan.description.isNotEmpty
           ? plan.description
@@ -259,31 +254,18 @@ class MyPlansScreen extends StatelessWidget {
 
       return GestureDetector(
         onTap: () {
-          showGeneralDialog(
-            context: context,
-            barrierDismissible: true,
-            barrierLabel: 'Cerrar',
-            transitionDuration: const Duration(milliseconds: 300),
-            pageBuilder: (ctx, animation, secondaryAnimation) {
-              return SafeArea(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: new_frosted.FrostedPlanDialog(
-                      plan: plan,
-                      fetchParticipants: _fetchAllPlanParticipants,
-                    ),
-                  ),
+          // Reemplazamos showGeneralDialog por un push a pantalla completa
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => Scaffold(
+                backgroundColor: Colors.transparent,
+                body: new_frosted.FrostedPlanDialog(
+                  plan: plan,
+                  fetchParticipants: _fetchAllPlanParticipants,
                 ),
-              );
-            },
-            transitionBuilder: (context, anim1, anim2, child) {
-              return FadeTransition(
-                opacity: anim1,
-                child: child,
-              );
-            },
+              ),
+            ),
           );
         },
         child: Center(
@@ -306,7 +288,7 @@ class MyPlansScreen extends StatelessWidget {
                         )
                       : _buildPlaceholder(),
                 ),
-                // Botón eliminar
+                // Botón eliminar y compartir
                 Positioned(
                   top: 16,
                   right: 16,
@@ -365,7 +347,7 @@ class MyPlansScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Parte inferior: contadores
+                // Parte inferior: contadores + descripción
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -406,21 +388,21 @@ class MyPlansScreen extends StatelessWidget {
                                   label: plan.likes.toString(),
                                 ),
                                 const SizedBox(width: 25),
-                                // Usamos un StreamBuilder para leer 'commentsCount' en tiempo real
+                                // Usamos un StreamBuilder para leer 'commentsCount'
                                 StreamBuilder<DocumentSnapshot>(
                                   stream: FirebaseFirestore.instance
                                       .collection('plans')
                                       .doc(plan.id)
                                       .snapshots(),
                                   builder: (context, snap) {
-                                    if (!snap.hasData ||
-                                        !snap.data!.exists) {
+                                    if (!snap.hasData || !snap.data!.exists) {
                                       return _buildIconText(
                                         icon: Icons.chat_bubble_outline,
                                         label: '0',
                                       );
                                     }
-                                    final data = snap.data!.data() as Map<String, dynamic>;
+                                    final data =
+                                        snap.data!.data() as Map<String, dynamic>;
                                     final count = data['commentsCount'] ?? 0;
                                     return _buildIconText(
                                       icon: Icons.chat_bubble_outline,
@@ -462,11 +444,15 @@ class MyPlansScreen extends StatelessWidget {
                                         ],
                                       );
                                     }
-                                    final updatedData = snapshot.data!.data() as Map<String, dynamic>;
+                                    final updatedData =
+                                        snapshot.data!.data() as Map<String, dynamic>;
                                     final List<dynamic> updatedParticipants =
-                                        updatedData['participants'] as List<dynamic>? ?? [];
+                                        updatedData['participants'] as List<dynamic>? ??
+                                            [];
                                     final int participantes = updatedParticipants.length;
-                                    final int maxPart = updatedData['maxParticipants'] ?? plan.maxParticipants ?? 0;
+                                    final int maxPart = updatedData['maxParticipants'] ??
+                                        plan.maxParticipants ??
+                                        0;
                                     return Row(
                                       children: [
                                         Text(
@@ -520,8 +506,7 @@ class MyPlansScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text("¿Eliminar este plan?"),
           content: Text("Esta acción eliminará el plan ${plan.type}."),
           actions: [

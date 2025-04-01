@@ -31,12 +31,19 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   bool _liked = false;
   int _likeCount = 0;
 
+  // Controladores y estados para el carrusel de imágenes+video
+  late PageController _pageController;
+  int _currentPageIndex = 0;
+
   @override
   void initState() {
     super.initState();
     _futureParticipants = widget.fetchParticipants(widget.plan);
-    _likeCount = widget.plan.likes; // Inicializa el contador con el valor del plan
+    _likeCount = widget.plan.likes; // Carga inicial del número de 'likes'
     _checkIfLiked();
+
+    // Inicializamos el PageController para el carrusel
+    _pageController = PageController();
   }
 
   /// Convierte un Timestamp a String "HH:mm"
@@ -220,7 +227,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
   // ---------------------------------------------------------------------------
   // CONTENEDOR DE ACCIÓN (icono y número) con fondo sombreado
-  // Se agregó el parámetro iconColor para modificar el color (rojo al dar like)
   // ---------------------------------------------------------------------------
   Widget _buildActionButton({
     required String iconPath,
@@ -263,7 +269,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón de like (pinta de rojo cuando está activo)
+  // Botón de like
   // ---------------------------------------------------------------------------
   Widget _buildLikeButton() {
     return _buildActionButton(
@@ -275,7 +281,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón de mensaje que abre el chat en popup (ya no se muestra en pantalla principal)
+  // Botón de mensaje -> abre popup de chat
   // ---------------------------------------------------------------------------
   Widget _buildMessageButton(PlanModel plan) {
     return StreamBuilder<DocumentSnapshot>(
@@ -333,23 +339,20 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // FILA DE ACCIONES: like, mensaje y compartir
   // ---------------------------------------------------------------------------
   Widget _buildActionButtonsRow(PlanModel plan) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          _buildLikeButton(),
-          const SizedBox(width: 16),
-          _buildMessageButton(plan),
-          const SizedBox(width: 16),
-          _buildShareButton(plan),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildLikeButton(),
+        const SizedBox(width: 16),
+        _buildMessageButton(plan),
+        const SizedBox(width: 16),
+        _buildShareButton(plan),
+      ],
     );
   }
 
   // ---------------------------------------------------------------------------
-  // NUEVA FUNCIÓN: Chat popup (sin fondo transparente, con header y campo de texto en la parte inferior)
+  // Popup de Chat
   // ---------------------------------------------------------------------------
   Widget _buildChatPopup(PlanModel plan) {
     return Column(
@@ -360,10 +363,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
                   "Chat del Plan",
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -420,7 +423,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   return ListTile(
                     leading: CircleAvatar(
                       radius: 20,
-                      backgroundImage: senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+                      backgroundImage:
+                          senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
                       backgroundColor: Colors.blueGrey[100],
                     ),
                     title: Text(
@@ -444,7 +448,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             },
           ),
         ),
-        // Campo de introducción de texto (barra de chat en la parte inferior)
+        // Barra inferior para escribir nuevo mensaje
         Container(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -491,7 +495,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       'text': text,
                       'timestamp': FieldValue.serverTimestamp(),
                     });
-                    final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
+                    final planRef = FirebaseFirestore.instance
+                        .collection('plans')
+                        .doc(plan.id);
                     await planRef.update({
                       'commentsCount': FieldValue.increment(1),
                     }).catchError((_) {
@@ -509,7 +515,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // PARTICIPANTES (CREADOR Y RESTO)
+  // AVATAR + NOMBRE + EDAD de un participante en un ListTile (para el modal)
   // ---------------------------------------------------------------------------
   Widget _buildParticipantTile(Map<String, dynamic> participant) {
     final pic = participant['photoUrl'] ?? '';
@@ -531,13 +537,401 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // ENCABEZADO SUPERIOR: Avatar e información del creador a la izquierda, flecha back a la derecha
+  // VENTANA (modal) MOSTRANDO TODOS LOS PARTICIPANTES
+  // ---------------------------------------------------------------------------
+  void _showParticipantsModal(List<Map<String, dynamic>> participants) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: EdgeInsets.only(
+            top: MediaQuery.of(context).size.height * 0.25,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          ),
+          backgroundColor: Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              // Título
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        "Participantes",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.white38),
+              // Lista de participantes
+              Expanded(
+                child: ListView.builder(
+                  itemCount: participants.length,
+                  itemBuilder: (context, index) {
+                    final participant = participants[index];
+                    return _buildParticipantTile(participant);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // WIDGET PARA MOSTRAR AVATARES DE LOS PARTICIPANTES
+  // ---------------------------------------------------------------------------
+  Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
+    final count = participants.length;
+    if (count == 0) {
+      // Si no hay participantes, no mostramos nada
+      return const SizedBox.shrink();
+    }
+
+    if (count == 1) {
+      // Un participante: mostrar avatar, nombre y edad (sin apertura de modal)
+      final p = participants[0];
+      final pic = p['photoUrl'] ?? '';
+      final name = p['name'] ?? 'Usuario';
+      final age = p['age']?.toString() ?? '';
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+              backgroundColor: Colors.blueGrey[400],
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$name, $age',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // 2 o más participantes: se muestran avatares solapados, y si se pulsa -> modal
+      final p1 = participants[0];
+      final p2 = participants[1];
+
+      final pic1 = p1['photoUrl'] ?? '';
+      final pic2 = p2['photoUrl'] ?? '';
+
+      // Para el tamaño y solapamiento
+      const double avatarSize = 40;
+      const double overlapOffset = 30; 
+      final int extras = count - 2;
+      final bool hasExtras = extras > 0;
+
+      return GestureDetector(
+        onTap: () {
+          // Al pulsar, se abre la ventana con la lista completa
+          _showParticipantsModal(participants);
+        },
+        child: SizedBox(
+          width: hasExtras ? 90 : 70, // Ajustar según sea necesario
+          height: avatarSize,
+          child: Stack(
+            children: [
+              // Primer avatar (parcialmente solapado)
+              Positioned(
+                left: 0,
+                child: CircleAvatar(
+                  radius: avatarSize / 2,
+                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundColor: Colors.blueGrey[400],
+                ),
+              ),
+              // Segundo avatar (encima del primero)
+              Positioned(
+                left: overlapOffset,
+                child: CircleAvatar(
+                  radius: avatarSize / 2,
+                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundColor: Colors.blueGrey[400],
+                ),
+              ),
+              // Si hay extras, un tercer "avatar" con +X
+              if (hasExtras)
+                Positioned(
+                  left: overlapOffset * 2,
+                  child: CircleAvatar(
+                    radius: avatarSize / 2,
+                    backgroundColor: Colors.deepPurple,
+                    child: Text(
+                      '+$extras',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // CARRUSEL DE IMÁGENES + VIDEO
+  // ---------------------------------------------------------------------------
+  Widget _buildMediaCarousel({
+    required List<String> images,
+    required String? videoUrl,
+  }) {
+    final totalMedia = images.length + ((videoUrl?.isNotEmpty ?? false) ? 1 : 0);
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.95,
+      height: 300,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: totalMedia,
+        onPageChanged: (index) {
+          setState(() {
+            _currentPageIndex = index;
+          });
+        },
+        itemBuilder: (context, index) {
+          // Si el índice está en el rango de imágenes, mostramos la imagen
+          if (index < images.length) {
+            final imageUrl = images[index];
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            );
+          } else {
+            // Vista previa del video
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: Icon(
+                    Icons.play_circle_fill,
+                    color: Colors.white,
+                    size: 64,
+                  ),
+                ),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SECCIÓN MULTIMEDIA + (BOTONES & AVATARES) DEBAJO DE LA IMAGEN
+  // ---------------------------------------------------------------------------
+  Widget _buildMediaSection(PlanModel plan, List<Map<String, dynamic>> participants) {
+    final images = plan.images ?? [];
+    final video = plan.videoUrl ?? '';
+    final totalMedia = images.length + (video.isNotEmpty ? 1 : 0);
+
+    // Contenido del carrusel (o placeholder si no hay media)
+    Widget mediaContent;
+    if (totalMedia == 0) {
+      mediaContent = Container(
+        width: MediaQuery.of(context).size.width * 0.95,
+        height: 300,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          color: Colors.black54,
+        ),
+        child: const Center(
+          child: Text(
+            'Sin contenido multimedia',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    } else {
+      mediaContent = _buildMediaCarousel(images: images, videoUrl: video);
+    }
+
+    // Indicadores de página (puntitos) - solo si hay más de 1 medio
+    Widget pageIndicator = const SizedBox.shrink();
+    if (totalMedia > 1) {
+      pageIndicator = Padding(
+        padding: const EdgeInsets.only(top: 5, bottom: 5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(totalMedia, (i) {
+            final isActive = (i == _currentPageIndex);
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: isActive ? Colors.white : Colors.grey,
+                shape: BoxShape.circle,
+              ),
+            );
+          }),
+        ),
+      );
+    }
+
+    // Retornamos un Column donde:
+    // 1. Va el carrusel o placeholder
+    // 2. Indicadores de página (si aplica)
+    // 3. Una fila con los botones a la izquierda y participantes a la derecha
+    return Column(
+      children: [
+        // Carrusel (o placeholder)
+        mediaContent,
+        // Indicadores
+        pageIndicator,
+        // Fila de botones y avatares por debajo
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          child: Row(
+            children: [
+              // Botones de acción a la izquierda
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _buildActionButtonsRow(plan),
+                ),
+              ),
+              // Avatares a la derecha
+              _buildParticipantsCorner(participants),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CONSTRUCCIÓN PRINCIPAL
+  // ---------------------------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
+    final plan = widget.plan;
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D253F),
+      body: SafeArea(
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _futureParticipants,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
+            }
+            final allParts = snapshot.data ?? [];
+            final creator = allParts.firstWhere(
+              (p) => p['isCreator'] == true,
+              orElse: () => <String, dynamic>{},
+            );
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // Header (avatar creador + back)
+                  _buildHeaderRow(
+                    creator.isNotEmpty ? creator as Map<String, dynamic> : null,
+                  ),
+
+                  // Sección MULTIMEDIA (carrusel o placeholder) + fila de botones y avatares debajo
+                  if (plan.special_plan != 1)
+                    _buildMediaSection(plan, allParts)
+                  else
+                    // Si es un plan especial (1), no mostramos la sección multimedia
+                    Container(
+                      height: 10,
+                    ),
+
+                  // Tipo y descripción
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "${plan.type}: ${plan.description}",
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 151, 121, 215),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+
+                  // ID del plan
+                  _buildPlanIDArea(plan),
+                  const SizedBox(height: 10),
+
+                  // Restricción de edad (si no es plan especial)
+                  if (plan.special_plan != 1) ...[
+                    _buildAgeRestrictionArea(plan),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Fecha del evento
+                  _buildEventDateArea(plan),
+                  const SizedBox(height: 10),
+
+                  // Ubicación
+                  _buildLocationArea(plan),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ENCABEZADO SUPERIOR: avatar del creador + botón back
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow(Map<String, dynamic>? creator) {
     final pic = creator?['photoUrl'] ?? '';
     final name = creator?['name'] ?? 'Usuario';
     final age = creator?['age']?.toString() ?? '';
     final fullName = age.isNotEmpty ? '$name, $age' : name;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -567,140 +961,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       ),
     );
   }
-
-  Widget _buildParticipantsSection(List<Map<String, dynamic>> all) {
-    if (all.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text(
-          'No hay participantes en este plan.',
-          style: TextStyle(
-            color: Color.fromARGB(255, 151, 121, 215),
-          ),
-        ),
-      );
-    }
-    final participants = all.where((p) => p['isCreator'] != true).toList();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Participantes",
-            style: TextStyle(color: Colors.white),
-          ),
-          const SizedBox(height: 8),
-          if (participants.isEmpty)
-            const Text(
-              "No hay participantes en este plan.",
-              style: TextStyle(
-                color: Colors.amber,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          else
-            ...participants.map((p) => _buildParticipantTile(p as Map<String, dynamic>)),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // CONSTRUCCIÓN PRINCIPAL DE LA PANTALLA (Todo se desplaza)
-  // Se eliminó el contenedor de chat (se accede vía popup) y también "Máx. Participantes" y "Creado el"
-  // Además, se muestra el tipo y la descripción en un contenedor único debajo de los botones de acción
-  // ---------------------------------------------------------------------------
-  @override
-  Widget build(BuildContext context) {
-    final plan = widget.plan;
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D253F),
-      body: SafeArea(
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _futureParticipants,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.red),
-                ),
-              );
-            }
-            final allParts = snapshot.data ?? [];
-            final creator = allParts.firstWhere(
-              (p) => p['isCreator'] == true,
-              orElse: () => <String, dynamic>{},
-            );
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // 1) Header (avatar e info + botón back)
-                  _buildHeaderRow(
-                    creator.isNotEmpty ? creator as Map<String, dynamic> : null,
-                  ),
-                  // 2) Imagen de fondo del plan
-                  if (plan.special_plan != 1 &&
-                      plan.backgroundImage != null &&
-                      plan.backgroundImage!.isNotEmpty)
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.95,
-                      height: 300,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        image: DecorationImage(
-                          image: NetworkImage(plan.backgroundImage!),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  // 3) Fila de botones de acción (like, mensaje y compartir)
-                  _buildActionButtonsRow(plan),
-                  // 4) Tipo y descripción (concatenados en un solo contenedor, alineados a la izquierda)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "${plan.type}: ${plan.description}",
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 151, 121, 215),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  // 5) Participantes
-                  _buildParticipantsSection(allParts),
-                  const SizedBox(height: 10),
-                  // 6) ID del plan
-                  _buildPlanIDArea(plan),
-                  const SizedBox(height: 10),
-                  // 7) Restricción de edad (se elimina "Máx. Participantes")
-                  if (plan.special_plan != 1) ...[
-                    _buildAgeRestrictionArea(plan),
-                    const SizedBox(height: 10),
-                  ],
-                  // 8) Fecha del evento (se elimina "Creado el")
-                  _buildEventDateArea(plan),
-                  const SizedBox(height: 10),
-                  _buildLocationArea(plan),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 }
 
-/// Lógica de like integrada en este widget
+// ---------------------------------------------------------------------------
+// Lógica de Like
+// ---------------------------------------------------------------------------
 extension LikeLogic on _FrostedPlanDialogState {
   Future<void> _checkIfLiked() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -723,6 +988,7 @@ extension LikeLogic on _FrostedPlanDialogState {
     if (user == null) return;
     final planRef = FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
     final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(planRef);
       if (!snapshot.exists) return;
@@ -737,6 +1003,7 @@ extension LikeLogic on _FrostedPlanDialogState {
         _likeCount = currentLikes;
       });
     });
+
     if (!_liked) {
       await userRef.update({
         'favourites': FieldValue.arrayUnion([widget.plan.id])
