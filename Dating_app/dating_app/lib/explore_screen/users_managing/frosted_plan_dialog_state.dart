@@ -31,7 +31,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   bool _liked = false;
   int _likeCount = 0;
 
-  // Controladores y estados para el carrusel de imágenes+video
+  // Controladores y estados para el carrusel de imágenes + video
   late PageController _pageController;
   int _currentPageIndex = 0;
 
@@ -39,7 +39,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   void initState() {
     super.initState();
     _futureParticipants = widget.fetchParticipants(widget.plan);
-    _likeCount = widget.plan.likes; // Carga inicial del número de 'likes'
+    _likeCount = widget.plan.likes; // Carga inicial de 'likes'
     _checkIfLiked();
 
     // Inicializamos el PageController para el carrusel
@@ -107,7 +107,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // BLOQUES DE DETALLE (ID, Restricción, etc.)
+  // ID del plan
   // ---------------------------------------------------------------------------
   Widget _buildPlanIDArea(PlanModel plan) {
     return _buildFrostedDetailBox(
@@ -119,13 +119,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           Text(
             plan.id,
             style: const TextStyle(
-              color: Color.fromARGB(255, 151, 121, 215),
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.copy, color: Color.fromARGB(255, 151, 121, 215)),
+            icon: const Icon(Icons.copy, color: ui.Color.fromARGB(255, 203, 202, 206)),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: plan.id));
               ScaffoldMessenger.of(context).showSnackBar(
@@ -138,6 +138,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Restricción de edad
+  // ---------------------------------------------------------------------------
   Widget _buildAgeRestrictionArea(PlanModel plan) {
     return _buildFrostedDetailBox(
       iconPath: 'assets/icono-restriccion-edad.svg',
@@ -146,7 +149,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         "${plan.minAge} - ${plan.maxAge} años",
         textAlign: TextAlign.center,
         style: const TextStyle(
-          color: Color.fromARGB(255, 151, 121, 215),
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -154,76 +157,207 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  Widget _buildEventDateArea(PlanModel plan) {
-    return _buildFrostedDetailBox(
-      iconPath: 'assets/icono-calendario.svg',
-      title: "Fecha del Evento",
-      child: Text(
-        plan.formattedDate(plan.startTimestamp),
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Color.fromARGB(255, 151, 121, 215),
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Ubicación
+  // ---------------------------------------------------------------------------
+Widget _buildLocationArea(PlanModel plan) {
+  return Center(
+    child: Container(
+      width: MediaQuery.of(context).size.width * 0.95,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              // Sin color de fondo
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Encabezado "Ubicación"
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icono-ubicacion.svg',
+                      width: 18,
+                      height: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "Ubicación",
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-  Widget _buildLocationArea(PlanModel plan) {
-    return _buildFrostedDetailBox(
-      iconPath: 'assets/icono-ubicacion.svg',
-      title: "Ubicación",
-      child: Column(
-        children: [
-          Text(
-            plan.location,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color.fromARGB(255, 151, 121, 215),
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+                // Dirección / descripción de la ubicación
+                Text(
+                  plan.location,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Mapa
+                if (plan.latitude != null && plan.longitude != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      height: 240,
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(plan.latitude!, plan.longitude!),
+                          zoom: 16,
+                        ),
+                        markers: {
+                          Marker(
+                            markerId: const MarkerId('plan_location'),
+                            position: LatLng(plan.latitude!, plan.longitude!),
+                            icon: BitmapDescriptor.defaultMarkerWithHue(
+                              BitmapDescriptor.hueBlue,
+                            ),
+                          ),
+                        },
+                        zoomControlsEnabled: false,
+                        myLocationButtonEnabled: false,
+                        liteModeEnabled: true,
+                      ),
+                    ),
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      "Ubicación no disponible",
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 151, 121, 215),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          if (plan.latitude != null && plan.longitude != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                height: 240,
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(plan.latitude!, plan.longitude!),
-                    zoom: 16,
-                  ),
-                  markers: {
-                    Marker(
-                      markerId: const MarkerId('plan_location'),
-                      position: LatLng(plan.latitude!, plan.longitude!),
-                      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-                    ),
-                  },
-                  zoomControlsEnabled: false,
-                  myLocationButtonEnabled: false,
-                  liteModeEnabled: true,
-                ),
-              ),
-            )
-          else
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text(
-                "Ubicación no disponible",
-                style: TextStyle(
-                  color: Color.fromARGB(255, 151, 121, 215),
-                  fontWeight: FontWeight.bold,
-                ),
+        ),
+      ),
+    ),
+  );
+}
+
+  // ---------------------------------------------------------------------------
+  // NUEVO: Información adicional (un solo contenedor que agrupa ID y Restricción)
+  // ---------------------------------------------------------------------------
+Widget _buildAdditionalInfoBox(PlanModel plan) {
+  return Center(
+    child: Container(
+      width: MediaQuery.of(context).size.width * 0.95,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              // Sin color de fondo
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
               ),
             ),
-        ],
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título de la sección (opcional)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icono-id-plan.svg',
+                      width: 18,
+                      height: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        "Información adicional",
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Fila para "ID del Plan" + Botón copiar a la derecha
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "ID del Plan: ${plan.id}",
+                        style: const TextStyle(
+                          color: Color.fromARGB(255, 212, 211, 211),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                        textAlign: TextAlign.start,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.copy,
+                        color: Color.fromARGB(255, 203, 202, 206),
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: plan.id));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('ID copiado al portapapeles'),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Restricción de edad (si no es plan especial)
+                if (plan.special_plan != 1)
+                  Text(
+                    "Restricción de edad: ${plan.minAge} - ${plan.maxAge} años",
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 212, 211, 211),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.start,
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // ---------------------------------------------------------------------------
   // CONTENEDOR DE ACCIÓN (icono y número) con fondo sombreado
@@ -307,7 +441,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     right: 0,
                     bottom: 0,
                   ),
-                  backgroundColor: Colors.black,
+                  backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   child: _buildChatPopup(plan),
                 );
@@ -423,8 +557,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   return ListTile(
                     leading: CircleAvatar(
                       radius: 20,
-                      backgroundImage:
-                          senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+                      backgroundImage: senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
                       backgroundColor: Colors.blueGrey[100],
                     ),
                     title: Text(
@@ -495,9 +628,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       'text': text,
                       'timestamp': FieldValue.serverTimestamp(),
                     });
-                    final planRef = FirebaseFirestore.instance
-                        .collection('plans')
-                        .doc(plan.id);
+                    final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
                     await planRef.update({
                       'commentsCount': FieldValue.increment(1),
                     }).catchError((_) {
@@ -515,7 +646,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // AVATAR + NOMBRE + EDAD de un participante en un ListTile (para el modal)
+  // AVATAR + NOMBRE + EDAD de un participante (modal)
   // ---------------------------------------------------------------------------
   Widget _buildParticipantTile(Map<String, dynamic> participant) {
     final pic = participant['photoUrl'] ?? '';
@@ -537,7 +668,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // VENTANA (modal) MOSTRANDO TODOS LOS PARTICIPANTES
+  // MODAL PARTICIPANTES
   // ---------------------------------------------------------------------------
   void _showParticipantsModal(List<Map<String, dynamic>> participants) {
     showDialog(
@@ -550,7 +681,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             right: 0,
             bottom: 0,
           ),
-          backgroundColor: Colors.black,
+          backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -597,7 +728,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // WIDGET PARA MOSTRAR AVATARES DE LOS PARTICIPANTES
+  // AVATARES DE PARTICIPANTES
   // ---------------------------------------------------------------------------
   Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
     final count = participants.length;
@@ -607,7 +738,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     }
 
     if (count == 1) {
-      // Un participante: mostrar avatar, nombre y edad (sin apertura de modal)
+      // Un participante
       final p = participants[0];
       final pic = p['photoUrl'] ?? '';
       final name = p['name'] ?? 'Usuario';
@@ -636,30 +767,28 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         ),
       );
     } else {
-      // 2 o más participantes: se muestran avatares solapados, y si se pulsa -> modal
+      // 2 o más participantes
       final p1 = participants[0];
       final p2 = participants[1];
 
       final pic1 = p1['photoUrl'] ?? '';
       final pic2 = p2['photoUrl'] ?? '';
 
-      // Para el tamaño y solapamiento
       const double avatarSize = 40;
-      const double overlapOffset = 30; 
+      const double overlapOffset = 30;
       final int extras = count - 2;
       final bool hasExtras = extras > 0;
 
       return GestureDetector(
         onTap: () {
-          // Al pulsar, se abre la ventana con la lista completa
           _showParticipantsModal(participants);
         },
         child: SizedBox(
-          width: hasExtras ? 90 : 70, // Ajustar según sea necesario
+          width: hasExtras ? 90 : 70,
           height: avatarSize,
           child: Stack(
             children: [
-              // Primer avatar (parcialmente solapado)
+              // Primer avatar
               Positioned(
                 left: 0,
                 child: CircleAvatar(
@@ -668,7 +797,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
-              // Segundo avatar (encima del primero)
+              // Segundo avatar
               Positioned(
                 left: overlapOffset,
                 child: CircleAvatar(
@@ -677,7 +806,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
-              // Si hay extras, un tercer "avatar" con +X
+              // +X si hay más
               if (hasExtras)
                 Positioned(
                   left: overlapOffset * 2,
@@ -718,7 +847,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           });
         },
         itemBuilder: (context, index) {
-          // Si el índice está en el rango de imágenes, mostramos la imagen
           if (index < images.length) {
             final imageUrl = images[index];
             return ClipRRect(
@@ -754,14 +882,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // SECCIÓN MULTIMEDIA + (BOTONES & AVATARES) DEBAJO DE LA IMAGEN
+  // SECCIÓN MULTIMEDIA + BOTONES & AVATARES
   // ---------------------------------------------------------------------------
   Widget _buildMediaSection(PlanModel plan, List<Map<String, dynamic>> participants) {
     final images = plan.images ?? [];
     final video = plan.videoUrl ?? '';
     final totalMedia = images.length + (video.isNotEmpty ? 1 : 0);
 
-    // Contenido del carrusel (o placeholder si no hay media)
     Widget mediaContent;
     if (totalMedia == 0) {
       mediaContent = Container(
@@ -782,7 +909,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       mediaContent = _buildMediaCarousel(images: images, videoUrl: video);
     }
 
-    // Indicadores de página (puntitos) - solo si hay más de 1 medio
+    // Indicadores de página
     Widget pageIndicator = const SizedBox.shrink();
     if (totalMedia > 1) {
       pageIndicator = Padding(
@@ -806,29 +933,20 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       );
     }
 
-    // Retornamos un Column donde:
-    // 1. Va el carrusel o placeholder
-    // 2. Indicadores de página (si aplica)
-    // 3. Una fila con los botones a la izquierda y participantes a la derecha
     return Column(
       children: [
-        // Carrusel (o placeholder)
         mediaContent,
-        // Indicadores
         pageIndicator,
-        // Fila de botones y avatares por debajo
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           child: Row(
             children: [
-              // Botones de acción a la izquierda
               Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: _buildActionButtonsRow(plan),
                 ),
               ),
-              // Avatares a la derecha
               _buildParticipantsCorner(participants),
             ],
           ),
@@ -844,7 +962,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   Widget build(BuildContext context) {
     final plan = widget.plan;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D253F),
+      backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
       body: SafeArea(
         child: FutureBuilder<List<Map<String, dynamic>>>(
           future: _futureParticipants,
@@ -875,44 +993,99 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     creator.isNotEmpty ? creator as Map<String, dynamic> : null,
                   ),
 
-                  // Sección MULTIMEDIA (carrusel o placeholder) + fila de botones y avatares debajo
+                  // Sección MULTIMEDIA
                   if (plan.special_plan != 1)
                     _buildMediaSection(plan, allParts)
                   else
-                    // Si es un plan especial (1), no mostramos la sección multimedia
-                    Container(
-                      height: 10,
-                    ),
+                    Container(height: 10),
 
-                  // Tipo y descripción
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "${plan.type}: ${plan.description}",
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 151, 121, 215),
-                        fontSize: 16,
+                  // Contenedor frosted con tipo y descripción
+                  Center(
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.95,
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              //color: Colors.white.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Título del plan (centrado)
+                                Center(
+                                  child: Text(
+                                    plan.type,
+                                    style: const TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                // Descripción (alineada a la izquierda)
+                                Text(
+                                  plan.description,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.normal,
+                                    height: 1.3,
+                                  ),
+                                  textAlign: TextAlign.start,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
 
-                  // ID del plan
-                  _buildPlanIDArea(plan),
-                  const SizedBox(height: 10),
+                  // Fecha del plan con icono a la izquierda
+                  Container(
+                    alignment: Alignment.centerLeft,
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icono-calendario.svg',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Fecha del plan: ${plan.formattedDate(plan.startTimestamp)}",
+                          style: const TextStyle(
+                            color: ui.Color.fromARGB(255, 219, 218, 218),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
-                  // Restricción de edad (si no es plan especial)
-                  if (plan.special_plan != 1) ...[
-                    _buildAgeRestrictionArea(plan),
-                    const SizedBox(height: 10),
-                  ],
-
-                  // Fecha del evento
-                  _buildEventDateArea(plan),
-                  const SizedBox(height: 10),
-
-                  // Ubicación
+                  // Ubicación (debajo de fecha del plan)
                   _buildLocationArea(plan),
+                  const SizedBox(height: 16),
+
+                  // Información adicional (ID + Restricción de edad)
+                  _buildAdditionalInfoBox(plan),
                   const SizedBox(height: 30),
                 ],
               ),
@@ -924,7 +1097,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // ENCABEZADO SUPERIOR: avatar del creador + botón back
+  // ENCABEZADO SUPERIOR: avatar creador + botón back
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow(Map<String, dynamic>? creator) {
     final pic = creator?['photoUrl'] ?? '';
@@ -964,7 +1137,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 }
 
 // ---------------------------------------------------------------------------
-// Lógica de Like
+// Lógica de 'Like' (extensión)
 // ---------------------------------------------------------------------------
 extension LikeLogic on _FrostedPlanDialogState {
   Future<void> _checkIfLiked() async {
@@ -1004,6 +1177,7 @@ extension LikeLogic on _FrostedPlanDialogState {
       });
     });
 
+    // Actualizamos la lista de favoritos del usuario
     if (!_liked) {
       await userRef.update({
         'favourites': FieldValue.arrayUnion([widget.plan.id])
