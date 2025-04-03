@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
-  final String? sharedText; // Texto que llega si la app se selecciona en el panel de compartir.
+  final String? sharedText;
 
   const ChatsScreen({Key? key, this.sharedText}) : super(key: key);
 
@@ -27,8 +27,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  /// Muestra un diálogo que contiene el texto compartido.
-  /// Desde aquí el usuario puede cerrar el diálogo o decidir enviarlo a un contacto.
+  /// Muestra un diálogo con el texto compartido.
   void _showSharedTextDialog(String text) {
     showDialog(
       context: context,
@@ -43,14 +42,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
             ),
             TextButton(
               onPressed: () {
-                // Por ejemplo, podrías abrir una pantalla
-                // para seleccionar el contacto al que enviar.
-                // O podrías enviar directamente a un ChatScreen predefinido.
                 Navigator.pop(context);
-
                 // EJEMPLO: envía el texto a un chat con un ID "destUserId"
-                // En un caso real, mostrarías una lista de contactos
-                // y al elegir uno, harías algo así:
                 String destUserId = "123456"; // Ejemplo
                 Navigator.push(
                   context,
@@ -59,8 +52,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       chatPartnerId: destUserId,
                       chatPartnerName: "Contacto Ejemplo",
                       chatPartnerPhoto: "",
-                      // Podrías añadir un parámetro extra en ChatScreen para mandar el texto inicial
-                      // Ej: initialMessage: text,
                     ),
                   ),
                 );
@@ -73,7 +64,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Método de ejemplo para eliminar un chat, si tuvieras esa lógica.
+  /// Elimina el chat (ejemplo)
   Future<void> _deleteChat(String otherUserId) async {
     try {
       await FirebaseFirestore.instance
@@ -92,10 +83,37 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  /// Convierte un [Timestamp] a un string con la hora para mostrar en la lista
+  /// Convierte un Timestamp a String "HH:mm"
   String _formatTimestamp(Timestamp? timestamp) {
-    final date = timestamp?.toDate() ?? DateTime.now();
-    return "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+    if (timestamp == null) return "";
+    final date = timestamp.toDate();
+    final hh = date.hour.toString().padLeft(2, '0');
+    final mm = date.minute.toString().padLeft(2, '0');
+    return "$hh:$mm";
+  }
+
+  /// Lógica para la previa de mensaje.
+  String _buildMessagePreview(Map<String, dynamic> data) {
+    final type = data['type'] ?? 'text';
+    if (type == 'shared_plan') {
+      return "Plan compartido";
+    } else if (type == 'text') {
+      final text = data['text'] as String? ?? '';
+      if (text.startsWith('http') || text.startsWith('www')) {
+        return "Enlace: ${_truncate(text, maxLen: 20)}";
+      } else {
+        return _truncate(text, maxLen: 30);
+      }
+    } else {
+      // Otros tipos (imagen, video, etc.)
+      return "Mensaje multimedia";
+    }
+  }
+
+  /// Truncar un string
+  String _truncate(String text, {int maxLen = 30}) {
+    if (text.length <= maxLen) return text;
+    return "${text.substring(0, maxLen)}...";
   }
 
   @override
@@ -111,11 +129,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Ejemplo de widget que muestra la lista de chats
-  /// Tu lógica puede ser distinta según cómo guardes tus mensajes.
+  /// Muestra la lista de últimos chats
   Widget _buildChatList() {
     return StreamBuilder<QuerySnapshot>(
-      // Suponiendo que guardas la lista de mensajes en 'messages'
       stream: FirebaseFirestore.instance
           .collection('messages')
           .where('participants', arrayContains: currentUserId)
@@ -129,20 +145,20 @@ class _ChatsScreenState extends State<ChatsScreen> {
         }
 
         final docs = snapshot.data!.docs;
-        // Lógica de ejemplo para agrupar por último mensaje
-        // (depende de cómo implementes tu base de datos)
-        Map<String, Map<String, dynamic>> lastMessages = {};
+        // Map: otherUserId -> lastMessageData
+        final Map<String, Map<String, dynamic>> lastMessages = {};
+
         for (var doc in docs) {
           final data = doc.data() as Map<String, dynamic>;
-          final Timestamp? ts = data['timestamp'];
+          final ts = data['timestamp'] as Timestamp?;
           if (ts == null) continue;
 
-          // Quien es el "otro" usuario
+          // Determinamos el "otro" usuario
           final String otherUserId = (data['senderId'] == currentUserId)
               ? data['receiverId']
               : data['senderId'];
 
-          // Si ya existe, chequea si este mensaje es más reciente
+          // Nos quedamos con el mensaje más reciente
           if (!lastMessages.containsKey(otherUserId)) {
             lastMessages[otherUserId] = data;
           } else {
@@ -153,7 +169,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           }
         }
 
-        // Ordenar por fecha descendente
+        // Ordenamos por fecha descendente
         final entries = lastMessages.entries.toList()
           ..sort((a, b) {
             final tA = a.value['timestamp'] as Timestamp;
@@ -183,44 +199,89 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 final userName = userData['name'] ?? 'Usuario';
                 final userPhoto = userData['photoUrl'] ?? '';
 
-                return Dismissible(
-                  key: Key(otherUserId),
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.delete, color: Colors.white, size: 32),
-                  ),
-                  direction: DismissDirection.endToStart,
-                  onDismissed: (_) => _deleteChat(otherUserId),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: userPhoto.isNotEmpty ? NetworkImage(userPhoto) : null,
-                      backgroundColor: Colors.grey[300],
-                    ),
-                    title: Text(
-                      userName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(lastMsgData['text'] ?? ''),
-                    trailing: Text(
-                      _formatTimestamp(lastMsgData['timestamp'] as Timestamp?),
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    onTap: () {
-                      // Navega a la pantalla de chat individual
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatScreen(
-                            chatPartnerId: otherUserId,
-                            chatPartnerName: userName,
-                            chatPartnerPhoto: userPhoto,
-                          ),
+                // Mensajes no leídos (sender=otherUserId => receiver=currentUserId => isRead=false)
+                return FutureBuilder<QuerySnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('messages')
+                      .where('senderId', isEqualTo: otherUserId)
+                      .where('receiverId', isEqualTo: currentUserId)
+                      .where('isRead', isEqualTo: false)
+                      .get(),
+                  builder: (ctx2, unreadSnap) {
+                    int unreadCount = 0;
+                    if (unreadSnap.hasData) {
+                      unreadCount = unreadSnap.data!.docs.length;
+                    }
+
+                    return Dismissible(
+                      key: Key(otherUserId),
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: const Icon(Icons.delete, color: Colors.white, size: 32),
+                      ),
+                      direction: DismissDirection.endToStart,
+                      onDismissed: (_) => _deleteChat(otherUserId),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage:
+                              userPhoto.isNotEmpty ? NetworkImage(userPhoto) : null,
+                          backgroundColor: Colors.grey[300],
                         ),
-                      );
-                    },
-                  ),
+                        title: Text(
+                          userName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        // PREVIA del mensaje
+                        subtitle: Text(
+                          _buildMessagePreview(lastMsgData),
+                          style: unreadCount > 0
+                              ? const TextStyle(color: Colors.blue)
+                              : null,
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Hora
+                            Text(
+                              _formatTimestamp(lastMsgData['timestamp'] as Timestamp?),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 4),
+                            // Si hay mensajes no leídos, mostramos el número
+                            if (unreadCount > 0)
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  unreadCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(
+                                chatPartnerId: otherUserId,
+                                chatPartnerName: userName,
+                                chatPartnerPhoto: userPhoto,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             );
