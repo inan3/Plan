@@ -154,9 +154,9 @@ class ExploreScreenState extends State<ExploreScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF0D253F),
-                      Color(0xFF1B3A57),
-                      Color(0xFF12232E),
+                      Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
                     ],
                   ).createShader(bounds);
                 },
@@ -184,9 +184,9 @@ class ExploreScreenState extends State<ExploreScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF0D253F),
-                      Color(0xFF1B3A57),
-                      Color(0xFF12232E),
+                      Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
                     ],
                   ).createShader(bounds);
                 },
@@ -459,9 +459,9 @@ class DockSection extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF0D253F),
-              Color(0xFF1B3A57),
-              Color(0xFF12232E),
+              Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
             ],
           ),
           borderRadius: BorderRadius.all(Radius.circular(60)),
@@ -532,9 +532,9 @@ class DockSection extends StatelessWidget {
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    Color(0xFF0D253F),
-                                    Color(0xFF1B3A57),
-                                    Color(0xFF12232E),
+                                    Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
                                   ],
                                 ).createShader(bounds);
                               },
@@ -551,9 +551,9 @@ class DockSection extends StatelessWidget {
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    Color(0xFF0D253F),
-                                    Color(0xFF1B3A57),
-                                    Color(0xFF12232E),
+                                    Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
                                   ],
                                 ).createShader(bounds);
                               },

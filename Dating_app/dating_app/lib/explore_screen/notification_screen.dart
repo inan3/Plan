@@ -8,9 +8,13 @@ import 'package:intl/intl.dart';
 import '../../models/plan_model.dart';
 import '../main/colors.dart';
 
+// IMPORTA TU PANTALLA DE PERFIL
+import 'users_managing/user_info_check.dart';
+
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;
-  const NotificationScreen({Key? key, required this.currentUserId}) : super(key: key);
+  const NotificationScreen({Key? key, required this.currentUserId})
+      : super(key: key);
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -19,16 +23,20 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Trae todas las notificaciones (join_request, invitation, join_accepted, join_rejected)
+  /// Trae todas las notificaciones de interés
   Stream<QuerySnapshot> _getAllNotifications() {
     return _firestore
         .collection('notifications')
         .where('receiverId', isEqualTo: widget.currentUserId)
         .where('type', whereIn: [
+          // Agregamos también los tipos de follow
           'join_request',
           'invitation',
           'join_accepted',
           'join_rejected',
+          'follow_request',
+          'follow_accepted',
+          'follow_rejected',
         ])
         .snapshots();
   }
@@ -202,12 +210,93 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  /// Eliminar una notificación (join_accepted o join_rejected)
+  /// Eliminar una notificación (join_accepted, join_rejected, follow_accepted, follow_rejected)
   Future<void> _handleDeleteNotification(DocumentSnapshot doc) async {
     await doc.reference.delete();
   }
 
-  /// Ver detalles del plan
+  /// ===========================
+  /// SECCIÓN: FOLLOW REQUEST
+  /// ===========================
+  Future<void> _handleAcceptFollowRequest(DocumentSnapshot doc) async {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      final senderId = data['senderId'] as String;
+      final receiverId = data['receiverId'] as String;
+
+      // Elimina la notificación de follow_request
+      await doc.reference.delete();
+
+      // Agrega el sender a la lista de 'followers' del receiver
+      // y el receiver a la lista de 'followed' del sender
+      // Esto simboliza que "ahora A sigue a B" (donde B = receiver)
+      await _firestore.collection('followers').add({
+        'userId': receiverId, // B
+        'followerId': senderId, // A
+      });
+      await _firestore.collection('followed').add({
+        'userId': senderId, // A
+        'followedId': receiverId, // B
+      });
+
+      // Notifica al sender que ha sido aceptado
+      final acceptorDoc =
+          await _firestore.collection('users').doc(receiverId).get();
+      String acceptorPhoto =
+          acceptorDoc.exists ? (acceptorDoc.data()!['photoUrl'] ?? '') : '';
+      String acceptorName =
+          acceptorDoc.exists ? (acceptorDoc.data()!['name'] ?? '') : '';
+
+      await _firestore.collection('notifications').add({
+        'type': 'follow_accepted',
+        'receiverId': senderId,
+        'senderId': receiverId,
+        'senderProfilePic': acceptorPhoto,
+        'senderName': acceptorName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al aceptar solicitud de follow: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleRejectFollowRequest(DocumentSnapshot doc) async {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      final senderId = data['senderId'] as String;
+      final receiverId = data['receiverId'] as String;
+
+      // Elimina la notificación de follow_request
+      await doc.reference.delete();
+
+      // Notifica al que pidió follow que fue rechazado
+      final rejectorDoc =
+          await _firestore.collection('users').doc(receiverId).get();
+      String rejectorPhoto =
+          rejectorDoc.exists ? (rejectorDoc.data()!['photoUrl'] ?? '') : '';
+      String rejectorName =
+          rejectorDoc.exists ? (rejectorDoc.data()!['name'] ?? '') : '';
+
+      await _firestore.collection('notifications').add({
+        'type': 'follow_rejected',
+        'receiverId': senderId,
+        'senderId': receiverId,
+        'senderProfilePic': rejectorPhoto,
+        'senderName': rejectorName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al rechazar solicitud de follow: $e')),
+      );
+    }
+  }
+
+  /// Ver detalles del plan (para join/invitations)
   Future<void> _showPlanDetails(BuildContext context, String planId) async {
     final planDoc = await _firestore.collection('plans').doc(planId).get();
     if (!planDoc.exists) {
@@ -230,8 +319,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             bottom: 20,
           ),
           backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             "Detalles del Plan: ${plan.type}",
             style: const TextStyle(color: Colors.black),
@@ -279,7 +367,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ],
         ),
         const SizedBox(height: 10),
-
         Text("Descripción: ${plan.description}",
             style: const TextStyle(color: Colors.black)),
         const SizedBox(height: 10),
@@ -288,7 +375,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _buildReadOnlyLocationMap(plan),
         const SizedBox(height: 10),
 
-        // Aquí se cambió a startTimestamp
         Text(
           "Fecha del Evento: ${plan.formattedDate(plan.startTimestamp)}",
           style: const TextStyle(color: Colors.black),
@@ -431,83 +517,83 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // Usamos Stack o un AppBar manual para poner el botón atrás a la derecha
+        child: Stack(
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Notificaciones",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _getAllNotifications(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) return _buildErrorWidget();
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return _buildLoading();
-                  }
-                  final docs = snapshot.data?.docs ?? [];
-                  if (docs.isEmpty) {
-                    return _buildEmpty("No tienes notificaciones nuevas");
-                  }
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Encabezado con Título
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Notificaciones",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios,
+                            color: Colors.black),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _getAllNotifications(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) return _buildErrorWidget();
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return _buildLoading();
+                      }
+                      final docs = snapshot.data?.docs ?? [];
+                      if (docs.isEmpty) {
+                        return _buildEmpty("No tienes notificaciones nuevas");
+                      }
 
-                  // Ordenar manualmente por timestamp descendente
-                  docs.sort((a, b) {
-                    final dataA = a.data() as Map<String, dynamic>;
-                    final dataB = b.data() as Map<String, dynamic>;
-                    final Timestamp tA =
-                        dataA['timestamp'] as Timestamp? ?? Timestamp(0, 0);
-                    final Timestamp tB =
-                        dataB['timestamp'] as Timestamp? ?? Timestamp(0, 0);
-                    return tB.compareTo(tA);
-                  });
+                      // Ordenar manualmente por timestamp descendente
+                      docs.sort((a, b) {
+                        final dataA = a.data() as Map<String, dynamic>;
+                        final dataB = b.data() as Map<String, dynamic>;
+                        final Timestamp tA =
+                            dataA['timestamp'] as Timestamp? ?? Timestamp(0, 0);
+                        final Timestamp tB =
+                            dataB['timestamp'] as Timestamp? ?? Timestamp(0, 0);
+                        return tB.compareTo(tA);
+                      });
 
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final doc = docs[index];
-                      final data = doc.data() as Map<String, dynamic>;
-                      final planType =
-                          data['planType'] ?? data['planName'] ?? 'Plan';
-                      final planId = data['planId'] ?? '';
-                      final senderId = data['senderId'] ?? '';
-                      final senderPhoto = data['senderProfilePic'] ?? '';
-                      final type = data['type'] as String? ?? '';
-                      final timestamp = data['timestamp'];
-                      final timeString = _formatTimestamp(timestamp);
+                      return ListView.builder(
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final doc = docs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final planType =
+                              data['planType'] ?? data['planName'] ?? 'Plan';
+                          final planId = data['planId'] ?? '';
+                          final senderId = data['senderId'] ?? '';
+                          final senderPhoto = data['senderProfilePic'] ?? '';
+                          final senderName = data['senderName'] ?? ''; // Para follow
+                          final type = data['type'] as String? ?? '';
+                          final timestamp = data['timestamp'];
+                          final timeString = _formatTimestamp(timestamp);
 
-                      return FutureBuilder<DocumentSnapshot>(
-                        future:
-                            _firestore.collection('users').doc(senderId).get(),
-                        builder: (context, snap) {
-                          String userName = "Desconocido";
-                          String userPhoto = senderPhoto;
-                          if (snap.connectionState == ConnectionState.done &&
-                              snap.hasData) {
-                            final userData =
-                                snap.data?.data() as Map<String, dynamic>?;
-                            if (userData != null) {
-                              userName = userData['name'] ?? 'Desconocido';
-                              if (userPhoto.isEmpty) {
-                                userPhoto = userData['photoUrl'] ?? '';
-                              }
-                            }
-                          }
-
+                          // Almacena en un widget la parte de subtítulo + hora
                           Widget buildSubtitle(String primaryText) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   primaryText,
-                                  style:
-                                      const TextStyle(color: AppColors.blue),
+                                  style: const TextStyle(color: AppColors.blue),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -519,131 +605,213 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             );
                           }
 
-                          switch (type) {
-                            case 'join_request':
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  radius: 25,
-                                  backgroundImage: userPhoto.isNotEmpty
-                                      ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
+                          // Iconos para Aceptar/Rechazar
+                          Widget acceptRejectButtons({
+                            required VoidCallback onAccept,
+                            required VoidCallback onReject,
+                          }) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.close,
+                                      color: Colors.red),
+                                  onPressed: onReject,
                                 ),
-                                title: Text(
-                                  "¡$userName se quiere unir a un plan tuyo!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                                IconButton(
+                                  icon: const Icon(Icons.check,
+                                      color: Colors.green),
+                                  onPressed: onAccept,
                                 ),
-                                subtitle: buildSubtitle("Plan: $planType"),
-                                onTap: () => _showPlanDetails(context, planId),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.close,
-                                          color: Colors.red),
-                                      onPressed: () =>
-                                          _handleRejectJoinRequest(doc),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.check,
-                                          color: Colors.green),
-                                      onPressed: () =>
-                                          _handleAcceptJoinRequest(doc),
-                                    ),
-                                  ],
+                              ],
+                            );
+                          }
+
+                          // Avatar del sender (con onTap para ir al perfil)
+                          Widget leadingAvatar = GestureDetector(
+                            onTap: () {
+                              // Navegar al perfil del sender
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      UserInfoCheck(userId: senderId),
                                 ),
                               );
-                            case 'invitation':
+                            },
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundImage: senderPhoto.isNotEmpty
+                                  ? NetworkImage(senderPhoto)
+                                  : const NetworkImage(
+                                      'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
+                            ),
+                          );
+
+                          switch (type) {
+                            // =============== JOIN REQUESTS ================
+                            case 'join_request':
                               return ListTile(
-                                leading: CircleAvatar(
-                                  radius: 25,
-                                  backgroundImage: userPhoto.isNotEmpty
-                                      ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
-                                ),
+                                leading: leadingAvatar,
                                 title: Text(
-                                  "$userName te ha invitado a un plan especial de $planType",
+                                  "¡$senderName se quiere unir a un plan tuyo!",
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.close,
-                                          color: Colors.red),
-                                      onPressed: () =>
-                                          _handleRejectInvitation(doc),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.check,
-                                          color: Colors.green),
-                                      onPressed: () =>
-                                          _handleAcceptInvitation(doc),
-                                    ),
-                                  ],
+                                trailing: acceptRejectButtons(
+                                  onAccept: () =>
+                                      _handleAcceptJoinRequest(doc),
+                                  onReject: () =>
+                                      _handleRejectJoinRequest(doc),
                                 ),
                               );
                             case 'join_accepted':
                               return ListTile(
-                                leading: CircleAvatar(
-                                  radius: 25,
-                                  backgroundImage: userPhoto.isNotEmpty
-                                      ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
-                                ),
+                                leading: leadingAvatar,
                                 title: Text(
-                                  "¡$userName ha aceptado que te unas a su plan!",
+                                  "¡$senderName ha aceptado que te unas a su plan!",
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
-                                  icon:
-                                      const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
                                   onPressed: () =>
                                       _handleDeleteNotification(doc),
                                 ),
                               );
                             case 'join_rejected':
                               return ListTile(
-                                leading: CircleAvatar(
-                                  radius: 25,
-                                  backgroundImage: userPhoto.isNotEmpty
-                                      ? NetworkImage(userPhoto)
-                                      : const NetworkImage(
-                                          'https://cdn-icons-png.flaticon.com/512/847/847969.png'),
-                                ),
+                                leading: leadingAvatar,
                                 title: Text(
-                                  "¡$userName ha rechazado tu solicitud para unirte a su plan!",
+                                  "¡$senderName ha rechazado tu solicitud para unirte!",
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
-                                  icon:
-                                      const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
                                   onPressed: () =>
                                       _handleDeleteNotification(doc),
                                 ),
                               );
+
+                            // =============== INVITATIONS ================
+                            case 'invitation':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "$senderName te ha invitado a un plan especial de $planType",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: acceptRejectButtons(
+                                  onAccept: () =>
+                                      _handleAcceptInvitation(doc),
+                                  onReject: () =>
+                                      _handleRejectInvitation(doc),
+                                ),
+                              );
+
+                            // =============== FOLLOW REQUESTS ================
+                            case 'follow_request':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "¡$senderName quiere seguirte!",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: buildSubtitle("Solicitud de Follow"),
+                                onTap: () {
+                                  // Ir al perfil del sender
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          UserInfoCheck(userId: senderId),
+                                    ),
+                                  );
+                                },
+                                trailing: acceptRejectButtons(
+                                  onAccept: () =>
+                                      _handleAcceptFollowRequest(doc),
+                                  onReject: () =>
+                                      _handleRejectFollowRequest(doc),
+                                ),
+                              );
+                            case 'follow_accepted':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "¡$senderName ha aceptado tu solicitud de seguimiento!",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle:
+                                    buildSubtitle("Ahora puedes ver su perfil"),
+                                onTap: () {
+                                  // Ir al perfil de quien te aceptó
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          UserInfoCheck(userId: senderId),
+                                    ),
+                                  );
+                                },
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'follow_rejected':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "¡$senderName ha rechazado tu solicitud de seguimiento!",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: buildSubtitle("Perfil privado"),
+                                onTap: () {
+                                  // Ir al perfil de quien te rechazó
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          UserInfoCheck(userId: senderId),
+                                    ),
+                                  );
+                                },
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+
                             default:
                               return const SizedBox();
                           }
                         },
                       );
                     },
-                  );
-                },
-              ),
-            )
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

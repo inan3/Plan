@@ -371,9 +371,9 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF0D253F),
-                  Color(0xFF1B3A57),
-                  Color(0xFF12232E),
+                  Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
                 ],
               ),
             ),

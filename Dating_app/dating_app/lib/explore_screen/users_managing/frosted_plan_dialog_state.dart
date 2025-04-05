@@ -910,18 +910,33 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // MODAL PARTICIPANTES
   // ---------------------------------------------------------------------------
   void _showParticipantsModal(List<Map<String, dynamic>> participants) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          insetPadding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.25,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          ),
-          backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
-          shape: RoundedRectangleBorder(
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        insetPadding: EdgeInsets.only(
+          top: MediaQuery.of(context).size.height * 0.25,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        ),
+        // Dejamos transparente para que no sobrescriba nuestro contenedor con degradado
+        backgroundColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          // Aquí aplicamos el mismo degradado que usas de fondo
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 13, 32, 53),
+                Color.fromARGB(255, 72, 38, 38),
+                Color(0xFF12232E),
+              ],
+            ),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -961,10 +976,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   // AVATAR + NOMBRE + EDAD de un participante (en el modal) + Navegación a perfil
   Widget _buildParticipantTile(Map<String, dynamic> participant) {
@@ -1236,105 +1252,120 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         (_currentUser != null && _currentUser!.uid == plan.createdBy);
 
     return Scaffold(
-      backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
-      body: SafeArea(
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _futureParticipants,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.red),
-                ),
-              );
-            }
-            final allParts = snapshot.data ?? [];
+      // Dejamos transparente para poner abajo el Container con el gradient
+      backgroundColor: Colors.transparent,
+      body: Container(
+        // Aquí aplicamos el gradiente que pediste
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.fromARGB(255, 13, 32, 53),
+              Color.fromARGB(255, 72, 38, 38),
+              Color(0xFF12232E),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _futureParticipants,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+              final allParts = snapshot.data ?? [];
 
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // Header (avatar creador + nombre + edad + back)
-                  _buildHeaderRow(),
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Header (avatar creador + nombre + edad + back)
+                    _buildHeaderRow(),
 
-                  // Sección MULTIMEDIA (si no es plan especial)
-                  if (plan.special_plan != 1)
-                    _buildMediaSection(
-                      plan,
-                      allParts,
-                      isUserCreator: isUserCreator,
-                    )
-                  else
-                    const SizedBox(height: 10),
+                    // Sección MULTIMEDIA (si no es plan especial)
+                    if (plan.special_plan != 1)
+                      _buildMediaSection(
+                        plan,
+                        allParts,
+                        isUserCreator: isUserCreator,
+                      )
+                    else
+                      const SizedBox(height: 10),
 
-                  // Contenedor frosted con tipo y descripción
-                  Center(
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.95,
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 1,
+                    // Contenedor frosted con tipo y descripción
+                    Center(
+                      child: Container(
+                        width: MediaQuery.of(context).size.width * 0.95,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1,
+                                ),
                               ),
-                            ),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Título del plan (centrado)
-                                Center(
-                                  child: Text(
-                                    plan.type,
-                                    style: const TextStyle(
-                                      color: Colors.amber,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Título del plan (centrado)
+                                  Center(
+                                    child: Text(
+                                      plan.type,
+                                      style: const TextStyle(
+                                        color: Colors.amber,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                // Descripción
-                                Text(
-                                  plan.description,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.normal,
-                                    height: 1.3,
+                                  const SizedBox(height: 12),
+                                  // Descripción
+                                  Text(
+                                    plan.description,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.normal,
+                                      height: 1.3,
+                                    ),
+                                    textAlign: TextAlign.start,
                                   ),
-                                  textAlign: TextAlign.start,
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Ubicación
-                  _buildLocationArea(plan),
-                  const SizedBox(height: 16),
+                    // Ubicación
+                    _buildLocationArea(plan),
+                    const SizedBox(height: 16),
 
-                  // Información adicional (ID + Restricción + Fechas)
-                  _buildAdditionalInfoBox(plan),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            );
-          },
+                    // Información adicional (ID + Restricción + Fechas)
+                    _buildAdditionalInfoBox(plan),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

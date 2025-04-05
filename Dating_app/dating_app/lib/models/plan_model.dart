@@ -1,3 +1,5 @@
+// plan_model.dart
+
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -41,6 +43,10 @@ class PlanModel {
   // Campo con la URL del video (si se subió)
   String? videoUrl;
 
+  // NUEVO: si quieres almacenar la privacidad del creador en el plan
+  // (0 = público, 1 = privado). Esto es opcional.
+  int? creatorProfilePrivacy;
+
   // Constructor
   PlanModel({
     required this.id,
@@ -67,6 +73,8 @@ class PlanModel {
     this.images,
     this.originalImages,
     this.videoUrl,
+    // Nuevo
+    this.creatorProfilePrivacy,
   });
 
   // Genera un ID único de 10 caracteres alfanuméricos
@@ -118,9 +126,9 @@ class PlanModel {
       'special_plan': special_plan,
       // Nuevos campos
       'images': images ?? [],
-      'videoUrl': videoUrl ?? '',
-      // Si quieres guardar también originalImages:
       'originalImages': originalImages ?? [],
+      'videoUrl': videoUrl ?? '',
+      'creatorProfilePrivacy': creatorProfilePrivacy ?? 0,
     };
   }
 
@@ -161,6 +169,7 @@ class PlanModel {
           ? List<String>.from(map['originalImages'] as List)
           : <String>[],
       videoUrl: map['videoUrl'] ?? '',
+      creatorProfilePrivacy: map['creatorProfilePrivacy'] ?? 0,
     );
   }
 
@@ -231,6 +240,11 @@ class PlanModel {
     // Genera un ID único de 10 caracteres
     final String uniqueId = await generateUniqueId();
 
+    // Leemos también la privacidad del creador (0 o 1)
+    final int? privacy = userData['profile_privacy'] is int
+        ? userData['profile_privacy'] as int
+        : 0;
+
     // Construimos el plan con todos los campos
     final plan = PlanModel(
       id: uniqueId,
@@ -257,6 +271,7 @@ class PlanModel {
       images: images ?? [],
       originalImages: originalImages ?? [],
       videoUrl: videoUrl ?? '',
+      creatorProfilePrivacy: privacy,
     );
 
     // Guardar en la colección 'plans' (se crea un doc con ID = uniqueId)

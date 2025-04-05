@@ -68,9 +68,9 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF0D253F),
-                ui.Color.fromARGB(255, 0, 0, 0),
-                Color(0xFF12232E),
+                Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
               ],
             ),
             boxShadow: const [
@@ -351,9 +351,9 @@ void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF0D253F),
-                  Color(0xFF1B3A57),
-                  Color(0xFF12232E),
+                  Color.fromARGB(255, 13, 32, 53),
+                        Color.fromARGB(255, 72, 38, 38),
+                        Color(0xFF12232E),
                 ],
               ),
               boxShadow: const [
