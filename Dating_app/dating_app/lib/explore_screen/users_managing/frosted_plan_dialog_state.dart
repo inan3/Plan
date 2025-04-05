@@ -7,10 +7,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 
+// Asegúrate de tener estas importaciones:
 import '../../models/plan_model.dart';
+import '../../explore_screen/users_managing/user_info_check.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
+
+  /// Aquí le pasas una función que, dado un PlanModel, regresa
+  /// la lista de participantes (con uid, name, age, photoUrl, etc.)
   final Future<List<Map<String, dynamic>>> Function(PlanModel plan)
       fetchParticipants;
 
@@ -42,7 +47,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   @override
   void initState() {
     super.initState();
+
+    // Ejecutamos la función que nos pasa el padre para obtener participantes
+    // Asegúrate de que en esos participantes venga 'uid' para que funcione la navegación
     _futureParticipants = widget.fetchParticipants(widget.plan);
+
     _likeCount = widget.plan.likes; // Carga inicial de 'likes'
     _checkIfLiked();
 
@@ -66,7 +75,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
-        
+
         // Si en Firestore guardas la edad en 'age'
         final String ageCreador = data['age']?.toString() ?? '';
 
@@ -126,8 +135,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     Flexible(
                       child: Text(
                         title,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 14),
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -448,8 +456,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // ---------------------------------------------------------------------------
   Widget _buildMessageButton(PlanModel plan) {
     return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(plan.id)
+          .snapshots(),
       builder: (context, snap) {
         String countText = '0';
         if (snap.hasData && snap.data!.exists) {
@@ -547,7 +557,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         IconButton(
                           icon: const Icon(Icons.share, color: Colors.white),
                           onPressed: () {
-                            // Comparte el plan en otras apps
                             final String shareUrl =
                                 'https://plan-social-app.web.app/plan?planId=${plan.id}';
                             final shareText =
@@ -862,7 +871,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage:
+                      pic1.isNotEmpty ? NetworkImage(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -871,7 +881,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage:
+                      pic2.isNotEmpty ? NetworkImage(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -955,12 +966,25 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // AVATAR + NOMBRE + EDAD de un participante (en el modal)
+  // AVATAR + NOMBRE + EDAD de un participante (en el modal) + Navegación a perfil
   Widget _buildParticipantTile(Map<String, dynamic> participant) {
     final pic = participant['photoUrl'] ?? '';
     final name = participant['name'] ?? 'Usuario';
     final age = participant['age'] ?? '';
+    final uid = participant['uid'] ?? '';
+
     return ListTile(
+      onTap: () {
+        if (uid.isNotEmpty) {
+          // No cerramos el diálogo. 
+          // Así el `Dialog` de participantes se queda 'detrás' en la pila de rutas.
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => UserInfoCheck(userId: uid)),
+          );
+        }
+      },
       leading: CircleAvatar(
         backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
         backgroundColor: Colors.blueGrey[100],
@@ -982,8 +1006,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     required List<String> images,
     required String? videoUrl,
   }) {
-    final totalMedia =
-        images.length + ((videoUrl?.isNotEmpty ?? false) ? 1 : 0);
+    // Contamos cuántos elementos en total (imágenes + posible 1 video)
+    final totalMedia = images.length + ((videoUrl?.isNotEmpty ?? false) ? 1 : 0);
+
+    // Usaremos originalImages si existen, en caso contrario, las mismas images
+    final originalImages = widget.plan.originalImages?.isNotEmpty == true
+        ? widget.plan.originalImages!
+        : images;
 
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.95,
@@ -997,15 +1026,30 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           });
         },
         itemBuilder: (context, index) {
+          // Hasta 'images.length' serán fotos; el resto (si index >= images.length) es video
           if (index < images.length) {
             final imageUrl = images[index];
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
+            return GestureDetector(
+              onTap: () {
+                // Al hacer tap en la imagen, abrimos pantalla completa con todas las imágenes
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FullScreenGalleryPage(
+                      images: originalImages,
+                      initialIndex: index,
+                    ),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -1128,42 +1172,55 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow() {
     final String name = widget.plan.creatorName ?? 'Creador';
-    // Usamos la variable local _creatorAge en vez de plan.creatorAge
-    final String age = _creatorAge ?? '';
+    final String age = _creatorAge ?? ''; // Usamos la variable local
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          // Avatar del creador
-          CircleAvatar(
-            radius: 20,
-            backgroundImage: (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
-                ? NetworkImage(widget.plan.creatorProfilePic!)
-                : null,
-            backgroundColor: Colors.blueGrey[400],
-          ),
-          const SizedBox(width: 8),
-
-          // Nombre + Edad (igual que participantes)
-          Expanded(
-            child: Text(
-              age.isNotEmpty ? '$name, $age' : name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              overflow: TextOverflow.ellipsis,
+    // Hacemos clic en toda la fila (avatar + nombre) para ir al perfil
+    return GestureDetector(
+      onTap: () {
+        // Ir a la pantalla de perfil del creador
+        if (widget.plan.createdBy.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UserInfoCheck(userId: widget.plan.createdBy),
             ),
-          ),
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            // Avatar del creador
+            CircleAvatar(
+              radius: 20,
+              backgroundImage: (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
+                  ? NetworkImage(widget.plan.creatorProfilePic!)
+                  : null,
+              backgroundColor: Colors.blueGrey[400],
+            ),
+            const SizedBox(width: 8),
 
-          // Botón "Atrás"
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+            // Nombre + Edad
+            Expanded(
+              child: Text(
+                age.isNotEmpty ? '$name, $age' : name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            // Botón "Atrás"
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1174,7 +1231,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
-
     // Determinamos si el usuario actual es el creador
     final bool isUserCreator =
         (_currentUser != null && _currentUser!.uid == plan.createdBy);
@@ -1207,8 +1263,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
                   // Sección MULTIMEDIA (si no es plan especial)
                   if (plan.special_plan != 1)
-                    _buildMediaSection(plan, allParts,
-                        isUserCreator: isUserCreator)
+                    _buildMediaSection(
+                      plan,
+                      allParts,
+                      isUserCreator: isUserCreator,
+                    )
                   else
                     const SizedBox(height: 10),
 
@@ -1634,6 +1693,67 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Visor de imágenes a pantalla completa
+// ---------------------------------------------------------------------------
+class FullScreenGalleryPage extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const FullScreenGalleryPage({
+    Key? key,
+    required this.images,
+    this.initialIndex = 0,
+  }) : super(key: key);
+
+  @override
+  State<FullScreenGalleryPage> createState() => _FullScreenGalleryPageState();
+}
+
+class _FullScreenGalleryPageState extends State<FullScreenGalleryPage> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // PageView para deslizar entre las imágenes
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.images.length,
+            itemBuilder: (context, index) {
+              final url = widget.images[index];
+              return Center(
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
+          ),
+          // Botón de cierre
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 10,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

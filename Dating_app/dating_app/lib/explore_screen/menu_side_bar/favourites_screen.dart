@@ -18,53 +18,62 @@ class FavouritesScreen extends StatelessWidget {
   // Obtener todos los participantes (creador + suscriptores) de un plan
   // ------------------------------------------------------------------------
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-      PlanModel plan) async {
-    final List<Map<String, dynamic>> participants = [];
+  PlanModel plan,
+) async {
+  final List<Map<String, dynamic>> participants = [];
 
-    final planDoc =
-        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
-    if (planDoc.exists) {
-      final planData = planDoc.data();
-      final creatorId = planData?['createdBy'];
-      if (creatorId != null) {
-        final creatorUserDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(creatorId)
-            .get();
-        if (creatorUserDoc.exists) {
-          final cdata = creatorUserDoc.data()!;
-          participants.add({
-            'name': cdata['name'] ?? 'Sin nombre',
-            'age': cdata['age']?.toString() ?? '',
-            'photoUrl': cdata['photoUrl'] ?? cdata['profilePic'] ?? '',
-            'isCreator': true,
-          });
-        }
-      }
-    }
-
-    final subsSnap = await FirebaseFirestore.instance
-        .collection('subscriptions')
-        .where('id', isEqualTo: plan.id)
-        .get();
-    for (var sDoc in subsSnap.docs) {
-      final sData = sDoc.data();
-      final uid = sData['userId'];
-      if (uid == null) continue;
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (userDoc.exists) {
-        final uData = userDoc.data()!;
+  // 1) Datos del plan
+  final planDoc = await FirebaseFirestore.instance
+      .collection('plans')
+      .doc(plan.id)
+      .get();
+  if (planDoc.exists) {
+    final planData = planDoc.data();
+    final creatorId = planData?['createdBy'];
+    if (creatorId != null) {
+      final creatorUserDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(creatorId)
+          .get();
+      if (creatorUserDoc.exists) {
+        final cdata = creatorUserDoc.data()!;
         participants.add({
-          'name': uData['name'] ?? 'Sin nombre',
-          'age': uData['age']?.toString() ?? '',
-          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
-          'isCreator': false,
+          'uid': creatorId,  // <--- MUY IMPORTANTE
+          'name': cdata['name'] ?? 'Sin nombre',
+          'age': cdata['age']?.toString() ?? '',
+          'photoUrl': cdata['photoUrl'] ?? cdata['profilePic'] ?? '',
+          'isCreator': true,
         });
       }
     }
-    return participants;
   }
+
+  // 2) Datos de subscripciones
+  final subsSnap = await FirebaseFirestore.instance
+      .collection('subscriptions')
+      .where('id', isEqualTo: plan.id)
+      .get();
+  for (var sDoc in subsSnap.docs) {
+    final sData = sDoc.data();
+    final userId = sData['userId'];
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    if (userDoc.exists) {
+      final uData = userDoc.data()!;
+      participants.add({
+        'uid': userId,  // <--- TAMBIÉN AQUÍ
+        'name': uData['name'] ?? 'Sin nombre',
+        'age': uData['age']?.toString() ?? '',
+        'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+        'isCreator': false,
+      });
+    }
+  }
+
+  return participants;
+}
 
   // ------------------------------------------------------------------------
   // Pantalla principal: planes marcados como favoritos

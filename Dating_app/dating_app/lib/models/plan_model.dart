@@ -14,7 +14,7 @@ class PlanModel {
   double? latitude;
   double? longitude;
 
-  /// Usamos dos campos en vez de 'date':
+  // Usamos dos campos en vez de 'date'
   DateTime? startTimestamp;
   DateTime? finishTimestamp;
 
@@ -23,7 +23,7 @@ class PlanModel {
   String? creatorProfilePic;
   DateTime? createdAt;
 
-  /// (Opcional) Si antes usabas solo 1 imagen
+  // (Opcional) Si antes usabas solo 1 imagen
   String? backgroundImage;
 
   String? visibility;
@@ -32,10 +32,13 @@ class PlanModel {
   int likes;
   int special_plan;
 
-  /// Array con varias URLs de imágenes
+  // Array con varias URLs de imágenes (baja/media resolución)
   List<String>? images;
 
-  /// Campo con la URL del video (si se subió)
+  // Array con varias URLs de imágenes en resolución original
+  List<String>? originalImages;
+
+  // Campo con la URL del video (si se subió)
   String? videoUrl;
 
   // Constructor
@@ -62,6 +65,7 @@ class PlanModel {
     this.likes = 0,
     this.special_plan = 0,
     this.images,
+    this.originalImages,
     this.videoUrl,
   });
 
@@ -72,7 +76,8 @@ class PlanModel {
     final Random random = Random();
     String id;
     do {
-      id = List.generate(10, (index) => chars[random.nextInt(chars.length)]).join();
+      id = List.generate(10, (index) => chars[random.nextInt(chars.length)])
+          .join();
     } while (await _idExistsInFirebase(id));
     return id;
   }
@@ -95,14 +100,12 @@ class PlanModel {
       'location': location,
       'latitude': latitude,
       'longitude': longitude,
-
       'start_timestamp': startTimestamp != null
           ? Timestamp.fromDate(startTimestamp!)
           : null,
       'finish_timestamp': finishTimestamp != null
           ? Timestamp.fromDate(finishTimestamp!)
           : null,
-
       'createdBy': createdBy,
       'creatorName': creatorName,
       'creatorProfilePic': creatorProfilePic,
@@ -113,10 +116,11 @@ class PlanModel {
       'participants': participants ?? [],
       'likes': likes,
       'special_plan': special_plan,
-
       // Nuevos campos
       'images': images ?? [],
       'videoUrl': videoUrl ?? '',
+      // Si quieres guardar también originalImages:
+      'originalImages': originalImages ?? [],
     };
   }
 
@@ -153,6 +157,9 @@ class PlanModel {
       images: map['images'] != null
           ? List<String>.from(map['images'] as List)
           : <String>[],
+      originalImages: map['originalImages'] != null
+          ? List<String>.from(map['originalImages'] as List)
+          : <String>[],
       videoUrl: map['videoUrl'] ?? '',
     );
   }
@@ -181,10 +188,10 @@ class PlanModel {
   String formattedDate(DateTime? d) {
     if (d == null) return 'Sin fecha';
     return '${d.day.toString().padLeft(2, '0')}/'
-           '${d.month.toString().padLeft(2, '0')}/'
-           '${d.year} '
-           '${d.hour.toString().padLeft(2, '0')}:'
-           '${d.minute.toString().padLeft(2, '0')}';
+        '${d.month.toString().padLeft(2, '0')}/'
+        '${d.year} '
+        '${d.hour.toString().padLeft(2, '0')}:'
+        '${d.minute.toString().padLeft(2, '0')}';
   }
 
   // Crea y guarda un plan en Firestore
@@ -203,9 +210,9 @@ class PlanModel {
     String? visibility,
     String? iconAsset,
     int special_plan = 0,
-
     // Par de campos nuevos para el array de imágenes y el video
     List<String>? images,
+    List<String>? originalImages,
     String? videoUrl,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -248,6 +255,7 @@ class PlanModel {
       likes: 0,
       special_plan: special_plan,
       images: images ?? [],
+      originalImages: originalImages ?? [],
       videoUrl: videoUrl ?? '',
     );
 

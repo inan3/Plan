@@ -41,7 +41,7 @@ class _ImageCropperScreenState extends State<ImageCropperScreen> {
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
       uiSettings: [
         AndroidUiSettings(
-          toolbarTitle: 'Recortar Imagen',
+          toolbarTitle: 'Ajustar a la cuadrícula',
           toolbarColor: Colors.deepOrange,
           toolbarWidgetColor: Colors.white,
           activeControlsWidgetColor: Colors.deepOrange,

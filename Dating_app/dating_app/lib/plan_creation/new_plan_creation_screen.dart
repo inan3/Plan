@@ -36,10 +36,11 @@ Future<BitmapDescriptor> getCustomSvgMarker(
   return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
 }
 
-/// Función para subir una imagen (PNG/JPG) a Firebase Storage y obtener la URL de descarga.
-Future<String?> uploadBackgroundImage(Uint8List imageData, String planId) async {
+/// Función para subir imagen (PNG/JPG) a Firebase Storage y obtener la URL de descarga.
+/// [fileName] es el path/archivo dentro del Storage (ej: 'plan_backgrounds/...')
+Future<String?> uploadImageToFirebase(Uint8List imageData, String fileName) async {
   try {
-    final ref = FirebaseStorage.instance.ref().child('plan_backgrounds/$planId.png');
+    final ref = FirebaseStorage.instance.ref().child(fileName);
     await ref.putData(imageData);
     String downloadURL = await ref.getDownloadURL();
     return downloadURL;
@@ -150,7 +151,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   double? _longitude;
 
   // Sección de "fondo del plan": hasta 3 imágenes + 1 video
-  final List<Uint8List> _selectedImages = [];
+  // Guardamos DOS listas: la recortada y la original (para permitir recorte posterior).
+  final List<Uint8List> _selectedCroppedImages = [];
+  final List<Uint8List> _selectedOriginalImages = [];
+
   Uint8List? _selectedVideo;
 
   // Para el carrusel de imágenes + video
@@ -182,7 +186,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   }
 
   // Cantidad total de ítems (imágenes + video)
-  int get totalMedia => _selectedImages.length + (_selectedVideo == null ? 0 : 1);
+  int get totalMedia =>
+      _selectedCroppedImages.length + (_selectedVideo == null ? 0 : 1);
 
   void _loadMarkerIcon() {
     _markerIconFuture = getCustomSvgMarker(
@@ -473,25 +478,28 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Elegir imagen y recortarla
+  /// Elegir imagen y recortarla (guardando original y recortada).
   Future<void> _pickImage(ImageSource source) async {
-    if (_selectedImages.length >= 3) {
+    if (_selectedCroppedImages.length >= 3) {
       _showErrorPopup("Solo se permiten máximo 3 imágenes.");
       return;
     }
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
     if (pickedFile != null) {
-      final imageData = await pickedFile.readAsBytes();
+      final originalImageData = await pickedFile.readAsBytes();
+      // Ir a recortar
       final croppedData = await Navigator.push<Uint8List>(
         context,
         MaterialPageRoute(
-          builder: (context) => ImageCropperScreen(imageData: imageData),
+          builder: (context) => ImageCropperScreen(imageData: originalImageData),
         ),
       );
       if (croppedData != null) {
         setState(() {
-          _selectedImages.add(croppedData);
+          // Guardamos ambas versiones: la recortada y la original
+          _selectedCroppedImages.add(croppedData);
+          _selectedOriginalImages.add(originalImageData);
         });
       }
     }
@@ -510,7 +518,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       final controller = VideoPlayerController.file(file);
       await controller.initialize();
       final duration = controller.value.duration.inSeconds;
-      // Cambiamos a 15 (en lugar de 20)
+      // Máx 15s
       if (duration > 15) {
         controller.dispose();
         _showErrorPopup("El video excede los 15 segundos permitidos.");
@@ -913,6 +921,26 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Cuando el usuario toca una imagen recortada, abrimos la pantalla donde
+  /// se ve la imagen original y se puede recortar de nuevo.
+  void _onTapCroppedImage(int index) async {
+    final result = await Navigator.push<Uint8List?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _PreviewAndRecropScreen(
+          originalImage: _selectedOriginalImages[index],
+          croppedImage: _selectedCroppedImages[index],
+        ),
+      ),
+    );
+    if (result != null) {
+      // El usuario recortó de nuevo
+      setState(() {
+        _selectedCroppedImages[index] = result;
+      });
+    }
+  }
+
   Widget _buildMediaCarousel() {
     return Stack(
       children: [
@@ -927,14 +955,17 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               });
             },
             itemBuilder: (context, index) {
-              final isImageSection = (index < _selectedImages.length);
+              final isImageSection = (index < _selectedCroppedImages.length);
               if (isImageSection) {
-                final imageData = _selectedImages[index];
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: Image.memory(
-                    imageData,
-                    fit: BoxFit.cover,
+                final croppedImageData = _selectedCroppedImages[index];
+                return GestureDetector(
+                  onTap: () => _onTapCroppedImage(index),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: Image.memory(
+                      croppedImageData,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 );
               } else {
@@ -1567,12 +1598,24 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     try {
       final planId = DateTime.now().millisecondsSinceEpoch.toString();
 
-      // Subir imágenes
-      final List<String> uploadedImages = [];
-      for (int i = 0; i < _selectedImages.length; i++) {
-        final url = await uploadBackgroundImage(_selectedImages[i], "${planId}_img_$i");
-        if (url != null) {
-          uploadedImages.add(url);
+      // Subir imágenes (recortadas y originales)
+      final List<String> uploadedCroppedImages = [];
+      final List<String> uploadedOriginalImages = [];
+
+      for (int i = 0; i < _selectedCroppedImages.length; i++) {
+        final croppedName = 'plan_backgrounds/${planId}_cropped_$i.png';
+        final originalName = 'plan_backgrounds/${planId}_original_$i.png';
+
+        final croppedUrl = await uploadImageToFirebase(
+            _selectedCroppedImages[i], croppedName);
+        final originalUrl = await uploadImageToFirebase(
+            _selectedOriginalImages[i], originalName);
+
+        if (croppedUrl != null) {
+          uploadedCroppedImages.add(croppedUrl);
+        }
+        if (originalUrl != null) {
+          uploadedOriginalImages.add(originalUrl);
         }
       }
 
@@ -1620,7 +1663,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         );
       }
 
-      // Creamos el plan en Firestore
+      // Creamos el plan en Firestore (ver PlanModel.createPlan).
+      // Pasamos las imágenes recortadas y las originales:
       await PlanModel.createPlan(
         type: _customPlan ?? _selectedPlan ?? '',
         description: _planDescription ?? '',
@@ -1632,12 +1676,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         longitude: _longitude,
         startTimestamp: finalStartDateTime,
         finishTimestamp: finalFinishDateTime,
-        backgroundImage: uploadedImages.isNotEmpty ? uploadedImages.first : null,
+        backgroundImage:
+            uploadedCroppedImages.isNotEmpty ? uploadedCroppedImages.first : null,
         visibility: _selectedVisibility,
         iconAsset: _selectedIconAsset,
         special_plan: 0,
-        // Ahora SÍ pasamos las imágenes y el video
-        images: uploadedImages,
+        images: uploadedCroppedImages,
+        originalImages: uploadedOriginalImages, // <-- nuevo
         videoUrl: uploadedVideo,
       );
 
@@ -2003,5 +2048,118 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
         endTime = pickedTime;
       });
     }
+  }
+}
+
+/// ---------------------------------------------------------------------------
+/// Pantalla interna para mostrar la imagen original y permitir recortar de nuevo
+/// ---------------------------------------------------------------------------
+class _PreviewAndRecropScreen extends StatefulWidget {
+  final Uint8List originalImage;
+  final Uint8List croppedImage;
+
+  const _PreviewAndRecropScreen({
+    Key? key,
+    required this.originalImage,
+    required this.croppedImage,
+  }) : super(key: key);
+
+  @override
+  State<_PreviewAndRecropScreen> createState() => _PreviewAndRecropScreenState();
+}
+
+class _PreviewAndRecropScreenState extends State<_PreviewAndRecropScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text("Vista previa"),
+        backgroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.crop),
+            onPressed: () async {
+              // Reabrir el cropper con la imagen original
+              final newCropped = await Navigator.push<Uint8List>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ImageCropperScreen(imageData: widget.originalImage),
+                ),
+              );
+              if (newCropped != null) {
+                Navigator.pop(context, newCropped);
+              }
+            },
+          )
+        ],
+      ),
+      body: InteractiveViewer(
+        child: Center(
+          child: Image.memory(widget.originalImage, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+}
+
+/// ---------------------------------------------------------------------------
+/// Pantalla para visualizar **varias** imágenes originales en fullscreen con swipe
+/// (Se usará desde el FrostedPlanDialog)
+/// ---------------------------------------------------------------------------
+class _FullScreenImageViewer extends StatefulWidget {
+  final List<String> originalImages;
+  final int initialIndex;
+
+  const _FullScreenImageViewer({
+    Key? key,
+    required this.originalImages,
+    required this.initialIndex,
+  }) : super(key: key);
+
+  @override
+  State<_FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black54,
+        title: Text(
+          "${_currentIndex + 1} / ${widget.originalImages.length}",
+        ),
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: widget.originalImages.length,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        itemBuilder: (context, index) {
+          final imageUrl = widget.originalImages[index];
+          return InteractiveViewer(
+            child: Center(
+              child: Image.network(imageUrl, fit: BoxFit.contain),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
