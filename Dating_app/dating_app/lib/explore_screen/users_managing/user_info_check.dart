@@ -288,29 +288,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 content: Text('¡Has comenzado a seguir a este usuario!')),
           );
 
-          // (Opcional) Si quieres que el usuario seguido reciba una notificación
-          // de que alguien lo sigue (en caso de perfil público),
-          // puedes crear un documento en 'notifications' con type='follow_new'
-          // o similar, y adjuntar los datos del seguidor:
-          /*
-          final senderDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-          final senderData = senderDoc.data() ?? {};
-          final senderName = senderData['name'] ?? '';
-          final senderPhoto = senderData['photoUrl'] ?? '';
-
-          await FirebaseFirestore.instance.collection('notifications').add({
-            'type': 'follow_new', // <--- un nuevo tipo para tu notificación
-            'receiverId': widget.userId,
-            'senderId': user.uid,
-            'senderName': senderName,
-            'senderProfilePic': senderPhoto,
-            'timestamp': FieldValue.serverTimestamp(),
-            'read': false,
-          });
-          */
+          // (Opcional) notificación "follow_new" aquí si deseas
 
         } else {
           // Perfil privado => follow_request
@@ -500,7 +478,21 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  // Botón: "Ver Privilegios"
+  // Mapeamos el string del nivel a un título amigable:
+  String _mapPrivilegeLevelToTitle(String level) {
+    switch (level.toLowerCase()) {
+      case "premium":
+        return "Premium";
+      case "golden":
+        return "Golden";
+      case "vip":
+        return "VIP";
+      default:
+        return "Básico";
+    }
+  }
+
+  // Botón: "Ver Privilegios" (con el texto debajo del ícono)
   Widget _buildPrivilegeButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -511,13 +503,20 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.asset(
                 _getPrivilegeIcon(_privilegeLevel),
                 width: 52,
                 height: 52,
+              ),
+              const SizedBox(height: 0),
+              Text(
+                _mapPrivilegeLevelToTitle(_privilegeLevel),
+                style: const TextStyle(
+                  fontSize: 14,
+                ),
               ),
             ],
           ),

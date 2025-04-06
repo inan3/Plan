@@ -118,6 +118,7 @@ flutter:
     - assets/icono-restriccion-edad.svg
     - assets/icono-compartir.svg
     - assets/icono-candado.svg
+    - assets/icono-informacion.svg
 
   fonts:
     - family: Inter
