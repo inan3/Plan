@@ -119,6 +119,8 @@ flutter:
     - assets/icono-compartir.svg
     - assets/icono-candado.svg
     - assets/icono-informacion.svg
+    - assets/icono-escribir.svg
+    - assets/icono-imagen.svg
 
   fonts:
     - family: Inter

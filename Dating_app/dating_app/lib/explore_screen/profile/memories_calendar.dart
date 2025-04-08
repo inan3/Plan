@@ -104,7 +104,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(formattedDate),
-          content: const Text("El usuario no tiene memorias para este día en concreto."),
+          content: const Text(
+              "El usuario no tiene memorias para este día en concreto."),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -127,7 +128,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   }
 
   /// Popup para planes futuros (aún no celebrados).
-  void _showUpcomingPlanPopup(DateTime date, List<Map<String, dynamic>> dayPlans) {
+  void _showUpcomingPlanPopup(
+      DateTime date, List<Map<String, dynamic>> dayPlans) {
     final String formattedDate = DateFormat.yMMMMd('es').format(date);
     showDialog(
       context: context,
@@ -158,96 +160,97 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   /// Popup para planes caducados: se mostrará una UI similar a la de my_plans_screen.dart,
   /// donde se presentarán fotos y videos subidos desde la fecha de inicio del plan.
-  void _showExpiredPlanPopup(DateTime date, List<Map<String, dynamic>> dayPlans) {
-  final String formattedDate = DateFormat.yMMMMd('es').format(date);
+  void _showExpiredPlanPopup(
+      DateTime date, List<Map<String, dynamic>> dayPlans) {
+    final String formattedDate = DateFormat.yMMMMd('es').format(date);
 
-  showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      // Color transparente para permitir ver el difuminado
-      backgroundColor: const Color.fromARGB(0, 255, 255, 255),
-      // Margen alrededor del diálogo
-      insetPadding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Título
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Memorias', // Texto superior
-              style: GoogleFonts.roboto(
-                color: AppColors.white,
-                fontSize: 26,
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        // Color transparente para permitir ver el difuminado
+        backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+        // Margen alrededor del diálogo
+        insetPadding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Título
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Memorias', // Texto superior
+                style: GoogleFonts.roboto(
+                  color: AppColors.white,
+                  fontSize: 26,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Efecto Frosted Glass
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20.0),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20.0),
-                  border: Border.all(
+            // Efecto Frosted Glass
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20.0),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20.0),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
+                  constraints: const BoxConstraints(maxHeight: 500),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Aquí, tu lista de fotos y videos
+                      Text(
+                        "$formattedDate",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Placeholder donde colocarás tus items multimedia
+                      Container(
+                        height: 150,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Text(
+                            "Fotos y videos subidos...",
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Botón "Cerrar"
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text("Cerrar"),
+                      ),
+                    ],
                   ),
                 ),
-                constraints: const BoxConstraints(maxHeight: 500),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Aquí, tu lista de fotos y videos
-                    Text(
-                      "$formattedDate",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Placeholder donde colocarás tus items multimedia
-                    Container(
-                      height: 150,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Text(
-                          "Fotos y videos subidos...",
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Botón "Cerrar"
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.blue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text("Cerrar"),
-                    ),
-                  ],
-                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildHeader() {
     if (!_localeInitialized) return const SizedBox.shrink();
@@ -305,9 +308,11 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     if (!_localeInitialized) {
       return const Expanded(child: SizedBox.shrink());
     }
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final firstDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month, 1);
     final firstWeekday = firstDayOfMonth.weekday;
-    final daysInMonth = DateUtils.getDaysInMonth(_currentMonth.year, _currentMonth.month);
+    final daysInMonth =
+        DateUtils.getDaysInMonth(_currentMonth.year, _currentMonth.month);
 
     List<Widget> dayWidgets = [];
     for (int i = 1; i < firstWeekday; i++) {
@@ -430,8 +435,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
             end: Alignment.bottomRight,
             colors: [
               Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+              Color.fromARGB(255, 72, 38, 38),
+              Color(0xFF12232E),
             ],
           ),
         ),
