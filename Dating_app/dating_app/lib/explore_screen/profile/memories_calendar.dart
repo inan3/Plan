@@ -6,13 +6,19 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../main/colors.dart';
+import '../../models/plan_model.dart';
 
 class MemoriesCalendar extends StatefulWidget {
   final String userId;
 
+  /// Callback opcional que se llama cuando se pulsa un día con al menos un plan.
+  /// Ahora recibe directamente un PlanModel en lugar de un Map.
+  final void Function(PlanModel plan)? onPlanSelected;
+
   const MemoriesCalendar({
     Key? key,
     required this.userId,
+    this.onPlanSelected,
   }) : super(key: key);
 
   @override
@@ -23,10 +29,15 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   late DateTime _currentMonth;
   bool _localeInitialized = false;
 
-  /// Mapa que guarda, para cada fecha (YYYY-MM-DD), la lista de planes.
+  /// Mapa que guarda, para cada fecha (YYYY-MM-DD), la lista de [PlanModel].
   /// Ejemplo:
-  /// { "2023-09-15": [ {"planId": "xxx", "iconAsset": "assets/icono-cafe.svg", "planDate": DateTime(...)}, ... ] }
-  Map<String, List<Map<String, dynamic>>> _plansByDate = {};
+  /// { 
+  ///   "2023-09-15": [
+  ///       PlanModel(id: "xxx", iconAsset: "assets/icono-cafe.svg", ...),
+  ///       ...
+  ///   ] 
+  /// }
+  Map<String, List<PlanModel>> _plansByDate = {};
 
   @override
   void initState() {
@@ -41,6 +52,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   }
 
   /// Carga los planes en Firestore filtrando por 'createdBy' = widget.userId.
+  /// Luego convierte cada doc en un PlanModel y lo guarda en _plansByDate.
   Future<void> _fetchUserPlans() async {
     try {
       final querySnap = await FirebaseFirestore.instance
@@ -48,7 +60,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           .where('createdBy', isEqualTo: widget.userId)
           .get();
 
-      final Map<String, List<Map<String, dynamic>>> tempMap = {};
+      final Map<String, List<PlanModel>> tempMap = {};
 
       for (final doc in querySnap.docs) {
         final data = doc.data();
@@ -56,20 +68,21 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         // Usamos "start_timestamp" como campo de fecha
         if (data['start_timestamp'] == null) continue;
 
-        final Timestamp timestamp = data['start_timestamp'] as Timestamp;
-        final DateTime planDate = timestamp.toDate();
+        // Convertimos a PlanModel
+        PlanModel plan = PlanModel.fromMap(data);
+
+        // Si el doc no trae id en 'map', forzamos a que plan.id sea doc.id.
+        if (plan.id.isEmpty) {
+          plan = _copyPlanWithNewId(plan, doc.id);
+        }
+
+        final DateTime? planDate = plan.startTimestamp;
+        if (planDate == null) continue;
 
         final String dateKey = DateFormat('yyyy-MM-dd').format(planDate);
-        final String? iconAsset = data['iconAsset'];
-
-        final planInfo = {
-          'planId': doc.id,
-          'iconAsset': iconAsset ?? '',
-          'planDate': planDate,
-        };
 
         tempMap.putIfAbsent(dateKey, () => []);
-        tempMap[dateKey]!.add(planInfo);
+        tempMap[dateKey]!.add(plan);
       }
 
       setState(() {
@@ -78,6 +91,40 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     } catch (e) {
       debugPrint("[_fetchUserPlans] Error: $e");
     }
+  }
+
+  /// Crea un nuevo PlanModel con el mismo contenido que [original],
+  /// pero con el id sobreescrito por [newId].
+  ///
+  /// Así evitamos modificar plan_model.dart ni usar copyWith().
+  PlanModel _copyPlanWithNewId(PlanModel original, String newId) {
+    return PlanModel(
+      id: newId,
+      type: original.type,
+      description: original.description,
+      minAge: original.minAge,
+      maxAge: original.maxAge,
+      maxParticipants: original.maxParticipants,
+      location: original.location,
+      latitude: original.latitude,
+      longitude: original.longitude,
+      startTimestamp: original.startTimestamp,
+      finishTimestamp: original.finishTimestamp,
+      createdBy: original.createdBy,
+      creatorName: original.creatorName,
+      creatorProfilePic: original.creatorProfilePic,
+      createdAt: original.createdAt,
+      backgroundImage: original.backgroundImage,
+      visibility: original.visibility,
+      iconAsset: original.iconAsset,
+      participants: original.participants,
+      likes: original.likes,
+      special_plan: original.special_plan,
+      images: original.images,
+      originalImages: original.originalImages,
+      videoUrl: original.videoUrl,
+      creatorProfilePrivacy: original.creatorProfilePrivacy,
+    );
   }
 
   void _previousMonth() {
@@ -92,7 +139,9 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     });
   }
 
-  /// Al pulsar un día, se decide qué popup mostrar según si el plan ya pasó o no.
+  /// Al pulsar un día, revisamos si hay planes. Si no, popup "sin memorias".
+  /// Si sí hay planes, se distingue entre planes futuros y planes caducados.
+  /// Si [widget.onPlanSelected] no es null, se llama pasando el primer plan.
   void _onDayTapped(DateTime date) {
     final dateKey = DateFormat('yyyy-MM-dd').format(date);
     final dayPlans = _plansByDate[dateKey];
@@ -105,7 +154,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         builder: (_) => AlertDialog(
           title: Text(formattedDate),
           content: const Text(
-              "El usuario no tiene memorias para este día en concreto."),
+            "El usuario no tiene memorias para este día en concreto."
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -115,21 +165,28 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         ),
       );
     } else {
-      // Usamos el primer plan para determinar si es futuro o ya pasado.
-      final DateTime planDate = dayPlans.first['planDate'] as DateTime;
+      // Tomamos el primer plan del día como representativo
+      final PlanModel plan = dayPlans.first;
+
+      // 1) Si hay un callback en la pantalla padre, se lo pasamos directamente.
+      if (widget.onPlanSelected != null) {
+        widget.onPlanSelected!(plan);
+        return; // <-- Evitamos mostrar popups aquí si queremos delegar completamente.
+      }
+
+      // 2) Si no hay callback, seguimos con la lógica antigua:
+      //    Verificamos si el plan es futuro o caducado.
+      final DateTime planDate = plan.startTimestamp ?? date;
       if (planDate.isAfter(DateTime.now())) {
-        // Plan futuro: mostramos el popup de plan por venir.
         _showUpcomingPlanPopup(date, dayPlans);
       } else {
-        // Plan caducado: mostramos el popup con la UI de memorias.
         _showExpiredPlanPopup(date, dayPlans);
       }
     }
   }
 
   /// Popup para planes futuros (aún no celebrados).
-  void _showUpcomingPlanPopup(
-      DateTime date, List<Map<String, dynamic>> dayPlans) {
+  void _showUpcomingPlanPopup(DateTime date, List<PlanModel> dayPlans) {
     final String formattedDate = DateFormat.yMMMMd('es').format(date);
     showDialog(
       context: context,
@@ -139,10 +196,10 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: dayPlans.map((plan) {
-              final String icon = plan['iconAsset'] as String? ?? '';
-              final String planId = plan['planId'] as String? ?? '';
+              final String planId = plan.id;
+              final String? icon = plan.iconAsset; // plan.iconAsset no es parte oficial, agrégalo a tu PlanModel si deseas
               return ListTile(
-                leading: _buildPlanIcon(icon, plan['planDate'] as DateTime),
+                leading: _buildPlanIcon(icon ?? '', plan.startTimestamp),
                 title: Text("Plan ID: $planId"),
               );
             }).toList(),
@@ -158,30 +215,22 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     );
   }
 
-  /// Popup para planes caducados: se mostrará una UI similar a la de my_plans_screen.dart,
-  /// donde se presentarán fotos y videos subidos desde la fecha de inicio del plan.
-  void _showExpiredPlanPopup(
-      DateTime date, List<Map<String, dynamic>> dayPlans) {
+  /// Popup para planes caducados
+  void _showExpiredPlanPopup(DateTime date, List<PlanModel> dayPlans) {
     final String formattedDate = DateFormat.yMMMMd('es').format(date);
 
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        // Color transparente para permitir ver el difuminado
         backgroundColor: const Color.fromARGB(0, 255, 255, 255),
-        // Margen alrededor del diálogo
         insetPadding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Título
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-              ),
               child: Text(
-                'Memorias', // Texto superior
+                'Memorias',
                 style: GoogleFonts.roboto(
                   color: AppColors.white,
                   fontSize: 26,
@@ -189,8 +238,6 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Efecto Frosted Glass
             ClipRRect(
               borderRadius: BorderRadius.circular(20.0),
               child: BackdropFilter(
@@ -208,16 +255,14 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Aquí, tu lista de fotos y videos
                       Text(
-                        "$formattedDate",
+                        formattedDate,
                         style: const TextStyle(
                           fontSize: 18,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      // Placeholder donde colocarás tus items multimedia
                       Container(
                         height: 150,
                         color: Colors.grey.shade200,
@@ -229,8 +274,6 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Botón "Cerrar"
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.blue,
@@ -265,6 +308,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
             icon: const Icon(Icons.chevron_left, color: Colors.white),
           ),
           Text(
+            // Capitaliza la primera letra
             monthYear[0].toUpperCase() + monthYear.substring(1),
             style: const TextStyle(
               fontSize: 20,
@@ -315,9 +359,11 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         DateUtils.getDaysInMonth(_currentMonth.year, _currentMonth.month);
 
     List<Widget> dayWidgets = [];
+    // Rellenar huecos de la primera semana (si el mes no empieza en lunes)
     for (int i = 1; i < firstWeekday; i++) {
       dayWidgets.add(Container());
     }
+    // Agregar los días del mes
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(_currentMonth.year, _currentMonth.month, day);
       dayWidgets.add(_buildDayCell(day, date));
@@ -339,12 +385,12 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     final dayPlans = _plansByDate[dateKey];
     final bool hasPlans = (dayPlans != null && dayPlans.isNotEmpty);
 
-    String firstIcon = '';
+    String iconPath = '';
     DateTime? planDate;
     if (hasPlans) {
-      final planInfo = dayPlans.first;
-      firstIcon = planInfo['iconAsset'] as String? ?? '';
-      planDate = planInfo['planDate'] as DateTime?;
+      final PlanModel plan = dayPlans.first;
+      iconPath = plan.iconAsset ?? '';
+      planDate = plan.startTimestamp;
     }
 
     return GestureDetector(
@@ -374,8 +420,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                   ),
                   // Icono centrado con color según si ya pasó o no
                   Center(
-                    child: (firstIcon.isNotEmpty)
-                        ? _buildPlanIcon(firstIcon, planDate)
+                    child: (iconPath.isNotEmpty)
+                        ? _buildPlanIcon(iconPath, planDate)
                         : const Icon(Icons.event),
                   ),
                 ],

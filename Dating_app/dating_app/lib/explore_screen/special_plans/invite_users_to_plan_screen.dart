@@ -1,4 +1,4 @@
-import 'dart:ui' as ui; // Asegúrate de incluir esta línea
+import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,15 +6,31 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-// Si usas una lista de planes predefinidos
-import '../../../utils/plans_list.dart'; 
+import '../../../utils/plans_list.dart';
 import '../../../models/plan_model.dart';
 import '../../plan_creation/meeting_location_screen.dart';
 import '../../../main/colors.dart';
 
-/// ---------------------------------------------------------------------------
-/// PANTALLA DE INVITAR USUARIOS A UN PLAN
-/// ---------------------------------------------------------------------------
+/// ***************************************************************************
+/// CONSTANTES DE ANCHOS Y ALTOS FIJOS (SIN MEDIAQUERY)
+/// ***************************************************************************
+const double kMainPopupWidth = 500; 
+const double kMainPopupPadding = 20;
+
+const double kNewPlanPopupWidth = 380; 
+const double kNewPlanPopupHeight = 750; 
+const double kNewPlanPadding = 20;
+
+const double kPlanTypeSectionWidth   = 320;
+const double kPlanTypeDropdownWidth  = 310;
+const double kPlanTypeDropdownHeight = 365;
+
+const double kDateTimeSectionWidth   = 300;
+const double kLocationContainerHeight = 160;
+
+/// ***************************************************************************
+/// CLASE PRINCIPAL InviteUsersToPlanScreen
+/// ***************************************************************************
 class InviteUsersToPlanScreen {
   static void showPopup(BuildContext context, String invitedUserId) {
     showGeneralDialog(
@@ -42,6 +58,9 @@ class InviteUsersToPlanScreen {
   }
 }
 
+/// ***************************************************************************
+/// _InvitePlanPopup: Popup con botones "Existente" / "Nuevo"
+/// ***************************************************************************
 class _InvitePlanPopup extends StatefulWidget {
   final String invitedUserId;
   const _InvitePlanPopup({Key? key, required this.invitedUserId})
@@ -54,14 +73,12 @@ class _InvitePlanPopup extends StatefulWidget {
 class _InvitePlanPopupState extends State<_InvitePlanPopup> {
   @override
   Widget build(BuildContext context) {
-    final double popupWidth = MediaQuery.of(context).size.width * 0.66;
-
     return Center(
       child: Material(
         type: MaterialType.transparency,
         child: Container(
-          width: popupWidth,
-          padding: const EdgeInsets.all(20),
+          width: 300,
+          padding: EdgeInsets.all(kMainPopupPadding),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
             gradient: const LinearGradient(
@@ -69,8 +86,8 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               end: Alignment.bottomRight,
               colors: [
                 Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+                Color.fromARGB(255, 72, 38, 38),
+                Color(0xFF12232E),
               ],
             ),
             boxShadow: const [
@@ -93,7 +110,6 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                 ),
               ),
               const SizedBox(height: 20),
-              // BOTÓN 1: PLAN YA EXISTENTE
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.blue,
@@ -113,7 +129,6 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                 ),
               ),
               const SizedBox(height: 16),
-              // BOTÓN 2: PLAN NUEVO
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.blue,
@@ -143,7 +158,6 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    // Se obtienen únicamente los planes creados por el usuario invitador
     final activePlans = await _fetchActivePlans(currentUser.uid);
     if (activePlans.isEmpty) {
       _showNoPlansPopup();
@@ -188,106 +202,97 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
       pageBuilder: (_, __, ___) {
         return Center(
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.85,
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: ClipRRect(
+            width: 600,
+            height: 400,
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Material(
-                  color: Colors.white.withOpacity(0.3),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 12),
-                        const Text(
-                          "Selecciona uno de tus planes",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const Divider(color: Colors.white54),
-                        Expanded(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: activePlans.length,
-                            itemBuilder: (context, index) {
-                              final plan = activePlans[index];
-                              return Container(
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: BackdropFilter(
-                                    filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                                    child: Container(
-                                      color: Colors.white.withOpacity(0.15),
-                                      child: ListTile(
-                                        title: Text(
-                                          plan.type,
-                                          style: const TextStyle(color: Colors.white),
-                                        ),
-                                        subtitle: Text(
-                                          "Creado el: ${plan.formattedDate(plan.createdAt)}",
-                                          style: const TextStyle(color: Colors.white70),
-                                        ),
-                                        onTap: () {
-                                          // Lanza el popup de confirmación frosted
-                                          showGeneralDialog(
-                                            context: context,
-                                            barrierDismissible: false,
-                                            barrierLabel: "Confirmar invitación",
-                                            barrierColor: Colors.black54,
-                                            transitionDuration: const Duration(milliseconds: 300),
-                                            pageBuilder: (context, animation, secondaryAnimation) {
-                                              return const SizedBox();
-                                            },
-                                            transitionBuilder: (context, anim1, anim2, child) {
-                                              return FadeTransition(
-                                                opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-                                                child: ScaleTransition(
-                                                  scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
-                                                  child: Center(
-                                                    child: _FrostedConfirmDialog(
-                                                      plan: plan,
-                                                      onConfirm: () {
-                                                        // Cierra el diálogo y el popup de lista, luego invita
-                                                        Navigator.pop(context);
-                                                        Navigator.pop(context);
-                                                        _inviteUserToExistingPlan(plan);
-                                                      },
-                                                      onCancel: () {
-                                                        Navigator.pop(context);
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+              color: Colors.white.withOpacity(0.3),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                const Text(
+                  "Selecciona uno de tus planes",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-              ),
+                const Divider(color: Colors.white54),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: activePlans.length,
+                    itemBuilder: (context, index) {
+                      final plan = activePlans[index];
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(
+                              color: Colors.white.withOpacity(0.15),
+                              child: ListTile(
+                                title: Text(
+                                  plan.type,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                subtitle: Text(
+                                  "Creado el: ${plan.formattedDate(plan.createdAt)}",
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                onTap: () {
+                                  showGeneralDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    barrierLabel: "Confirmar invitación",
+                                    barrierColor: Colors.black54,
+                                    transitionDuration:
+                                        const Duration(milliseconds: 300),
+                                    pageBuilder: (context, animation, secondaryAnimation) {
+                                      return const SizedBox();
+                                    },
+                                    transitionBuilder: (context, anim1, anim2, child) {
+                                      return FadeTransition(
+                                        opacity: CurvedAnimation(
+                                          parent: anim1,
+                                          curve: Curves.easeOut,
+                                        ),
+                                        child: ScaleTransition(
+                                          scale: CurvedAnimation(
+                                            parent: anim1,
+                                            curve: Curves.easeOutBack,
+                                          ),
+                                          child: Center(
+                                            child: _FrostedConfirmDialog(
+                                              plan: plan,
+                                              onConfirm: () {
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                                _inviteUserToExistingPlan(plan);
+                                              },
+                                              onCancel: () {
+                                                Navigator.pop(context);
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -309,7 +314,6 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     if (currentUser == null) return;
     final invitedUid = widget.invitedUserId;
 
-    // Envía notificación. Se usa "invitation" para que aparezca en NotificationScreen.
     await _sendInvitationNotification(
       senderUid: currentUser.uid,
       receiverUid: invitedUid,
@@ -329,7 +333,9 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
   }
 }
 
-/// POPUP DE CREACIÓN DE PLAN PRIVADO (4 pasos: tipo, fecha/hora, ubicación, descripción)
+/// ***************************************************************************
+/// POPUP DE CREACIÓN DE PLAN PRIVADO (SIN MEDIAQUERY)
+/// ***************************************************************************
 void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
   showGeneralDialog(
     context: context,
@@ -337,36 +343,46 @@ void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
     barrierDismissible: true,
     barrierColor: Colors.black.withOpacity(0.5),
     transitionDuration: const Duration(milliseconds: 500),
-    pageBuilder: (context, anim1, anim2) {
-      return Material(
-        type: MaterialType.transparency,
-        child: Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.85,
-            height: MediaQuery.of(context).size.height * 0.75,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.fromARGB(255, 13, 32, 53),
+    // CAMBIO PRINCIPAL: Usamos SafeArea + Align + AnimatedPadding en vez de Center.
+    pageBuilder: (ctx, anim1, anim2) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.center,
+          child: Material(
+            type: MaterialType.transparency,
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              // Este padding se ajusta cuando aparece el teclado
+              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              child: SingleChildScrollView(
+                child: Container(
+                  // OJO: Quitamos el alto fijo
+                  width: kNewPlanPopupWidth,
+                  // height: kNewPlanPopupHeight, // <-- Eliminado
+                  padding: const EdgeInsets.all(kNewPlanPadding),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.fromARGB(255, 13, 32, 53),
                         Color.fromARGB(255, 72, 38, 38),
                         Color(0xFF12232E),
-                ],
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black54,
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
+                      ],
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: _NewPlanInviteContent(invitedUserId: invitedUserId),
                 ),
-              ],
-            ),
-            child: Material(
-              type: MaterialType.transparency,
-              child: _NewPlanInviteContent(invitedUserId: invitedUserId),
+              ),
             ),
           ),
         ),
@@ -387,6 +403,9 @@ void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
   );
 }
 
+/// ***************************************************************************
+/// _NewPlanInviteContent: Contiene la lógica de creación de plan
+/// ***************************************************************************
 class _NewPlanInviteContent extends StatefulWidget {
   final String invitedUserId;
   const _NewPlanInviteContent({Key? key, required this.invitedUserId})
@@ -397,7 +416,7 @@ class _NewPlanInviteContent extends StatefulWidget {
 }
 
 class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
-  // Paso 1: Tipo de plan
+  // ========= Tipo de plan =========
   String? _selectedPlan;
   String? _customPlan;
   String? _selectedIconAsset;
@@ -406,55 +425,156 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
 
-  // Paso 2: Fecha/hora
+  // ========= Fecha/hora =========
   bool _allDay = false;
   bool _includeEndDate = false;
   DateTime? _startDate;
   TimeOfDay? _startTime;
   DateTime? _endDate;
   TimeOfDay? _endTime;
-  DateTime? _selectedDateTime; // se marca al confirmar fecha/hora
 
-  // Paso 3: Ubicación
+  // ========= Ubicación =========
   String? _location;
   double? _latitude;
   double? _longitude;
+  Future<BitmapDescriptor>? _markerIconFuture;
 
-  // Paso 4: Descripción
+  // ========= Descripción =========
   String? _planDescription;
 
-  // Para la barra de progreso (4 pasos)
-  int _countCompletedSteps() {
-    int completed = 0;
-    if (_selectedPlan != null || _customPlan != null) completed++; // Tipo
-    if (_selectedDateTime != null) completed++; // Fecha/hora
-    if (_location != null && _location!.isNotEmpty) completed++; // Ubicación
-    if (_planDescription != null && _planDescription!.isNotEmpty) completed++; // Descripción
-    return completed;
-  }
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Image.asset('assets/plan-sin-fondo.png', height: 70),
+            ),
+            const SizedBox(height: 20),
+            const Center(
+              child: Text(
+                "¡Crea tu Plan Privado e Invita!",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
-  Widget _buildProgressBar4Steps() {
-    final completed = _countCompletedSteps();
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (index) {
-        final isDone = (index + 1) <= completed;
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 3),
-          height: 15,
-          width: 5,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: isDone ? Colors.blue : Colors.grey[300],
+            // ===== TIPO DE PLAN =====
+            _buildTypeOfPlan(),
+
+            const SizedBox(height: 20),
+
+            // ===== FECHA Y HORA =====
+            _buildDateTimeSection(),
+
+            const SizedBox(height: 20),
+
+            // ===== UBICACIÓN =====
+            _buildLocationSelectionArea(),
+
+            const SizedBox(height: 20),
+
+            // ===== DESCRIPCIÓN =====
+            _buildDescriptionSection(),
+
+            const SizedBox(height: 20),
+
+            // ===== BOTÓN FINALIZAR =====
+            ElevatedButton(
+              onPressed: _onFinishPlan,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(235, 17, 19, 135),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text(
+                "Finalizar Plan",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+
+        // Botón de cerrar
+        Positioned(
+          top: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 35,
+              height: 35,
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: AppColors.blue),
+            ),
           ),
-        );
-      }),
+        ),
+      ],
     );
   }
 
-  // -------------------------------------------------------------------------
-  // UI: Dropdown para Tipo de Plan
-  // -------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------
+  // ---------------------- TIPO DE PLAN (dropdown + custom) --------------------------
+  // ----------------------------------------------------------------------------------
+  Widget _buildTypeOfPlan() {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: GestureDetector(
+        onTap: _toggleDropdown,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                border: Border.all(
+                  color: const Color.fromARGB(255, 151, 121, 215),
+                ),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                children: [
+                  if (_selectedIconAsset != null)
+                    SvgPicture.asset(
+                      _selectedIconAsset!,
+                      width: 28,
+                      height: 28,
+                      color: Colors.white,
+                    ),
+                  if (_selectedIconData != null)
+                    Icon(_selectedIconData, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _customPlan ?? _selectedPlan ?? "Elige un plan",
+                      style: const TextStyle(color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Colors.white),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _toggleDropdown() {
     if (_isDropdownOpen) {
       _closeDropdown();
@@ -499,8 +619,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.white.withOpacity(0.1),
                     child: Container(
-                      width: 265,
-                      height: 300,
+                      width: kPlanTypeDropdownWidth,
+                      height: kPlanTypeDropdownHeight,
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 165, 159, 159)
                             .withOpacity(0.2),
@@ -508,6 +628,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                       ),
                       child: Column(
                         children: [
+                          // Campo de texto para plan personalizado
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: TextField(
@@ -526,22 +647,22 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                                   decoration: TextDecoration.none,
                                 ),
                                 border: OutlineInputBorder(
-                                  borderSide:
-                                      BorderSide(color: Colors.white.withOpacity(0.8)),
+                                  borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.8)),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide:
-                                      BorderSide(color: Colors.white.withOpacity(0.8)),
+                                  borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.8)),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide:
-                                      const BorderSide(color: Colors.white, width: 1.5),
+                                  borderSide: const BorderSide(
+                                      color: Colors.white, width: 1.5),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                             ),
                           ),
@@ -550,6 +671,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                             thickness: 0.3,
                             height: 0,
                           ),
+                          // Listado de planes predefinidos
                           Expanded(
                             child: ListView.builder(
                               itemCount: plans.length,
@@ -603,276 +725,268 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Selección de Fecha/Hora
-  // -------------------------------------------------------------------------
-  void _showDateSelectionPopup() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(20),
+  // ----------------------------------------------------------------------------------
+  // -------------------------- FECHA/HORA (igual que 2do snippet) --------------------
+  // ----------------------------------------------------------------------------------
+  Widget _buildDateTimeSection() {
+    return GestureDetector(
+      onTap: _showDateSelectionPopup,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Center(
+            child: Text(
+              "Fecha y hora del Plan",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icono-calendario.svg',
+                      width: 30,
+                      height: 30,
+                      color: Colors.white,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Opción: Todo el día
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Todo el día", style: TextStyle(color: Colors.white)),
-                            GestureDetector(
-                              onTap: () {
-                                setDialogState(() {
-                                  _allDay = !_allDay;
-                                  if (_allDay) _startTime = null;
-                                });
-                              },
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: _allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Opción: Incluir fecha final
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Incluir fecha final", style: TextStyle(color: Colors.white)),
-                            GestureDetector(
-                              onTap: () {
-                                setDialogState(() {
-                                  _includeEndDate = !_includeEndDate;
-                                  if (!_includeEndDate) {
-                                    _endDate = null;
-                                    _endTime = null;
-                                  }
-                                });
-                              },
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: _includeEndDate ? AppColors.blue : Colors.grey.withOpacity(0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Fecha de inicio
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Fecha de inicio", style: TextStyle(color: Colors.white)),
-                            Row(
-                              children: [
-                                _buildSimpleButton(
-                                  label: _startDate == null
-                                      ? "Seleccionar"
-                                      : _startDate!.toLocal().toString().split(' ')[0],
-                                  onTap: () async {
-                                    DateTime now = DateTime.now();
-                                    final DateTime? picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: _startDate == null || _startDate!.isBefore(now)
-                                          ? now
-                                          : _startDate!,
-                                      firstDate: now,
-                                      lastDate: DateTime(2100),
-                                    );
-                                    if (picked != null) {
-                                      setDialogState(() {
-                                        _startDate = picked;
-                                      });
-                                    }
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                if (!_allDay)
-                                  _buildSimpleButton(
-                                    label: _startTime == null
-                                        ? "Seleccionar"
-                                        : _startTime!.format(context),
-                                    onTap: () async {
-                                      final t = await showTimePicker(
-                                        context: context,
-                                        initialTime: _startTime ?? TimeOfDay.now(),
-                                      );
-                                      if (t != null) {
-                                        setDialogState(() {
-                                          _startTime = t;
-                                        });
-                                      }
-                                    },
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Fecha final
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Fecha final", style: TextStyle(color: Colors.white)),
-                            _includeEndDate
-                                ? Row(
-                                    children: [
-                                      _buildSimpleButton(
-                                        label: _endDate == null
-                                            ? "Seleccionar"
-                                            : _endDate!.toLocal().toString().split(' ')[0],
-                                        onTap: () async {
-                                          DateTime firstPossible = _startDate ?? DateTime.now();
-                                          if (firstPossible.isBefore(DateTime.now())) {
-                                            firstPossible = DateTime.now();
-                                          }
-                                          final picked = await showDatePicker(
-                                            context: context,
-                                            initialDate: _endDate == null || _endDate!.isBefore(firstPossible)
-                                                ? firstPossible
-                                                : _endDate!,
-                                            firstDate: firstPossible,
-                                            lastDate: DateTime(2100),
-                                          );
-                                          if (picked != null) {
-                                            setDialogState(() {
-                                              _endDate = picked;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _buildSimpleButton(
-                                        label: _endTime == null
-                                            ? "Seleccionar"
-                                            : _endTime!.format(context),
-                                        onTap: () async {
-                                          final t = await showTimePicker(
-                                            context: context,
-                                            initialTime: _endTime ?? TimeOfDay.now(),
-                                          );
-                                          if (t != null) {
-                                            if (_startDate != null) {
-                                              final startDt = DateTime(
-                                                _startDate!.year,
-                                                _startDate!.month,
-                                                _startDate!.day,
-                                                _startTime?.hour ?? 0,
-                                                _startTime?.minute ?? 0,
-                                              );
-                                              final endDt = DateTime(
-                                                _endDate!.year,
-                                                _endDate!.month,
-                                                _endDate!.day,
-                                                t.hour,
-                                                t.minute,
-                                              );
-                                              if (!endDt.isAfter(startDt)) {
-                                                _showError("La fecha/hora final debe ser posterior a la inicial.");
-                                                return;
-                                              }
-                                            }
-                                            setDialogState(() {
-                                              _endTime = t;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  )
-                                : _buildSimpleButton(label: "Sin elegir", onTap: () {}),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (_startDate != null) {
-                              DateTime finalDateTime;
-                              if (!_allDay && _startTime != null) {
-                                finalDateTime = DateTime(
-                                  _startDate!.year,
-                                  _startDate!.month,
-                                  _startDate!.day,
-                                  _startTime!.hour,
-                                  _startTime!.minute,
-                                );
-                              } else {
-                                finalDateTime = _startDate!;
-                              }
-                              setState(() {
-                                _selectedDateTime = finalDateTime;
-                              });
-                              Navigator.pop(context);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.blue),
-                          child: const Text("Aceptar", style: TextStyle(color: Colors.white)),
-                        )
-                      ],
-                    ),
-                  ),
+                    const SizedBox(height: 8),
+                    _buildSelectedDatesPreview(),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSimpleButton({required String label, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(label, style: const TextStyle(color: Colors.white)),
-      ),
-    );
-  }
-
-  void _showError(String msg) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Error"),
-        content: Text(msg),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Ubicación
-  // -------------------------------------------------------------------------
+  Widget _buildSelectedDatesPreview() {
+    if (_startDate == null) {
+      return const Text(
+        "Haz clic para seleccionar fecha/hora",
+        style: TextStyle(color: Colors.white70),
+      );
+    }
+    final startDateText = _formatHumanReadableDateOnly(_startDate!);
+    final startTimeText = (_allDay || _startTime == null)
+        ? "todo el día"
+        : "a las ${_formatHumanReadableTime(_startTime!)}";
+
+    Widget? endDateWidget;
+    if (_includeEndDate && _endDate != null) {
+      final endDateText = _formatHumanReadableDateOnly(_endDate!);
+      final endTimeText = (_allDay || _endTime == null)
+          ? ""
+          : " a las ${_formatHumanReadableTime(_endTime!)}";
+      endDateWidget = Text(
+        "Hasta $endDateText$endTimeText",
+        style: const TextStyle(color: Colors.white),
+        textAlign: TextAlign.center,
+      );
+    }
+
+    return Column(
+      children: [
+        Text(
+          "$startDateText${_allDay ? ' (todo el día)' : ''}"
+          "${(!_allDay && _startTime != null) ? ' $startTimeText' : ''}",
+          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+        if (endDateWidget != null) ...[
+          const SizedBox(height: 6),
+          endDateWidget,
+        ],
+      ],
+    );
+  }
+
+  String _formatHumanReadableDateOnly(DateTime date) {
+    final Map<int, String> weekdays = {
+      1: "Lunes",
+      2: "Martes",
+      3: "Miércoles",
+      4: "Jueves",
+      5: "Viernes",
+      6: "Sábado",
+      7: "Domingo",
+    };
+    final Map<int, String> months = {
+      1: "Enero",
+      2: "Febrero",
+      3: "Marzo",
+      4: "Abril",
+      5: "Mayo",
+      6: "Junio",
+      7: "Julio",
+      8: "Agosto",
+      9: "Septiembre",
+      10: "Octubre",
+      11: "Noviembre",
+      12: "Diciembre",
+    };
+    String weekday = weekdays[date.weekday] ?? "";
+    String monthName = months[date.month] ?? "";
+    return "$weekday, ${date.day} de $monthName de ${date.year}";
+  }
+
+  String _formatHumanReadableTime(TimeOfDay time) {
+    final String hour = time.hour.toString().padLeft(2, '0');
+    final String minute = time.minute.toString().padLeft(2, '0');
+    return "$hour:$minute";
+  }
+
+  void _showDateSelectionPopup() {
+    showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => DateSelectionDialog(
+        initialAllDay: _allDay,
+        initialIncludeEndDate: _includeEndDate,
+        initialStartDate: _startDate,
+        initialStartTime: _startTime,
+        initialEndDate: _endDate,
+        initialEndTime: _endTime,
+      ),
+    ).then((result) {
+      if (result != null) {
+        setState(() {
+          _allDay = result['allDay'] as bool;
+          _includeEndDate = result['includeEndDate'] as bool;
+          _startDate = result['startDate'] as DateTime?;
+          _startTime = result['startTime'] as TimeOfDay?;
+          _endDate = result['endDate'] as DateTime?;
+          _endTime = result['endTime'] as TimeOfDay?;
+        });
+      }
+    });
+  }
+
+  // ----------------------------------------------------------------------------------
+  // ----------------------------- UBICACIÓN (Mapa) ------------------------------------
+  // ----------------------------------------------------------------------------------
+  Widget _buildLocationSelectionArea() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Center(
+          child: Text(
+            "Punto de encuentro del Plan",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: _navigateToMeetingLocation,
+          child: (_location != null && _location!.isNotEmpty)
+              ? _buildLocationPreview()
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Container(
+                      height: kLocationContainerHeight,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Text(
+                        "Toca aquí para eleccionar ubicación",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationPreview() {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: SizedBox(
+            height: kLocationContainerHeight,
+            width: double.infinity,
+            child: FutureBuilder<BitmapDescriptor>(
+              future: _markerIconFuture,
+              builder: (context, snapshot) {
+                final icon = snapshot.data ?? BitmapDescriptor.defaultMarker;
+                if (_latitude == null || _longitude == null) {
+                  return Container(color: Colors.white.withOpacity(0.2));
+                }
+                return GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(_latitude!, _longitude!),
+                    zoom: 16,
+                  ),
+                  markers: {
+                    Marker(
+                      markerId: const MarkerId('selected'),
+                      position: LatLng(_latitude!, _longitude!),
+                      icon: icon,
+                      anchor: const Offset(0.5, 1.0),
+                    ),
+                  },
+                  zoomControlsEnabled: false,
+                  myLocationButtonEnabled: false,
+                  liteModeEnabled: false,
+                );
+              },
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  _location!,
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   void _navigateToMeetingLocation() async {
-    // La línea conflictiva era 'date: DateTime.now()'. Se quita y se usan startTimestamp, finishTimestamp, o se deja nulo
-    final planTemp = PlanModel(
+    final tempPlan = PlanModel(
       id: '',
       type: _customPlan ?? _selectedPlan ?? '',
       description: _planDescription ?? '',
@@ -881,8 +995,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       location: _location ?? '',
       latitude: _latitude ?? 0.0,
       longitude: _longitude ?? 0.0,
-      // date: DateTime.now(), // <-- Se elimina
-      // Usamos startTimestamp y finishTimestamp, aunque aquí realmente no se usan para la ubicación
       startTimestamp: DateTime.now(),
       finishTimestamp: DateTime.now().add(const Duration(days: 1)),
       createdBy: '',
@@ -897,9 +1009,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       pageBuilder: (context, anim1, anim2) {
         return Center(
           child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.9,
-            height: MediaQuery.of(context).size.height * 0.6,
-            child: MeetingLocationPopup(plan: planTemp),
+            width: 600,
+            height: 400,
+            child: MeetingLocationPopup(plan: tempPlan),
           ),
         );
       },
@@ -923,17 +1035,51 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         _latitude = updatedPlan.latitude;
         _longitude = updatedPlan.longitude;
       });
+      _loadMarkerIcon();
     }
   }
 
-  Widget _buildLocationSelectionArea() {
+  void _loadMarkerIcon() {
+    _markerIconFuture = _getCustomSvgMarker(
+      'assets/icono-ubicacion-interno.svg',
+      AppColors.blue,
+      width: 48,
+      height: 48,
+    );
+    setState(() {});
+  }
+
+  Future<BitmapDescriptor> _getCustomSvgMarker(
+    String assetPath,
+    Color color, {
+    double width = 48,
+    double height = 48,
+  }) async {
+    // Carga el SVG como String
+    final svgString = await DefaultAssetBundle.of(context).loadString(assetPath);
+    // Reemplazamos fill por el color deseado
+    final coloredSvgString = svgString.replaceAll(
+      RegExp(r'fill="[^"]*"'),
+      'fill="#${color.value.toRadixString(16).padLeft(8, "0")}"',
+    );
+    final svgDrawableRoot =
+        await svg.fromSvgString(coloredSvgString, assetPath);
+    final picture = svgDrawableRoot.toPicture(size: Size(width, height));
+    final image = await picture.toImage(width.toInt(), height.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+  }
+
+  // ----------------------------------------------------------------------------------
+  // ------------------------------ DESCRIPCIÓN ---------------------------------------
+  // ----------------------------------------------------------------------------------
+  Widget _buildDescriptionSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 5),
         const Center(
           child: Text(
-            "Punto de encuentro del Plan",
+            "Breve descripción del Plan",
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -942,282 +1088,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
           ),
         ),
         const SizedBox(height: 10),
-        GestureDetector(
-          onTap: _navigateToMeetingLocation,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-              height: 160,
-              color: Colors.white.withOpacity(0.2),
-              alignment: Alignment.center,
-              child: _location == null || _location!.isEmpty
-                  ? const Text(
-                      "Seleccionar ubicación",
-                      style: TextStyle(color: Colors.white70),
-                    )
-                  : Text(
-                      _location!,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // Finalizar Plan (Crea doc y envía notificación)
-  // -------------------------------------------------------------------------
-  bool get _areStepsComplete => _countCompletedSteps() == 4;
-
-  Future<void> _onFinishPlan() async {
-    if (!_areStepsComplete) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Faltan campos por completar.")),
-      );
-      return;
-    }
-
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-
-    try {
-      // Ejemplo simple: guardamos en "plans" con un doc autogenerado
-      final startTime = _startTime ?? const TimeOfDay(hour: 0, minute: 0);
-      final dateTime = DateTime(
-        _startDate!.year,
-        _startDate!.month,
-        _startDate!.day,
-        !_allDay && _startTime != null ? _startTime!.hour : 0,
-        !_allDay && _startTime != null ? _startTime!.minute : 0,
-      );
-
-      final planDoc = FirebaseFirestore.instance.collection('plans').doc();
-      final planId = planDoc.id;
-
-      final dataToSave = {
-        "id": planId,
-        "createdBy": currentUser.uid,
-        // Si definiste plan.type en la BD, o usas "type" con tu valor
-        "type": _customPlan?.isNotEmpty == true ? _customPlan : _selectedPlan,
-        "description": _planDescription ?? '',
-        "location": _location ?? '',
-        "latitude": _latitude ?? 0.0,
-        "longitude": _longitude ?? 0.0,
-
-        // Podrías manejar start_timestamp y finish_timestamp, en lugar de "date"
-        "date": dateTime.toIso8601String(), // Lo usas si así lo deseas
-        "createdAt": DateTime.now().toIso8601String(),
-        "privateInvite": true,
-        "likes": 0,
-        "special_plan": 1,
-      };
-
-      await planDoc.set(dataToSave);
-
-      // Envía notificación de "invitation"
-      await _sendInvitationNotification(
-        senderUid: currentUser.uid,
-        receiverUid: widget.invitedUserId,
-        planId: planId,
-        planType: (dataToSave["type"] ?? "Plan").toString(),
-      );
-
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("¡Plan creado! Has invitado al usuario.")),
-      );
-    } catch (err) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al crear el plan: $err")),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final stepsCompleted = _countCompletedSteps();
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Image.asset('assets/plan-sin-fondo.png', height: 70),
-              ),
-              const SizedBox(height: 20),
-              const Center(
-                child: Text(
-                  "¡Crea tu Plan Privado e Invita!",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildTypeOfPlanSection(),
-              const SizedBox(height: 20),
-              if (_selectedPlan != null ||
-                  (_customPlan != null && _customPlan!.isNotEmpty)) ...[
-                _buildDateTimeSection(),
-                const SizedBox(height: 20),
-                if (_selectedDateTime != null) ...[
-                  _buildLocationSelectionArea(),
-                  const SizedBox(height: 20),
-                  _buildDescriptionSection(),
-                ],
-              ],
-              const SizedBox(height: 20),
-              if (stepsCompleted == 4)
-                ElevatedButton(
-                  onPressed: _onFinishPlan,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(235, 17, 19, 135),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text(
-                    "Finalizar Plan",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 35,
-              height: 35,
-              decoration: const BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.close, color: AppColors.blue),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 0,
-          child: Container(
-            width: 2,
-            alignment: Alignment.center,
-            child: _buildProgressBar4Steps(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTypeOfPlanSection() {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: GestureDetector(
-        onTap: _toggleDropdown,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              width: 260,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 151, 121, 215),
-                ),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                children: [
-                  if (_selectedIconAsset != null)
-                    SvgPicture.asset(
-                      _selectedIconAsset!,
-                      width: 28,
-                      height: 28,
-                      color: Colors.white,
-                    ),
-                  if (_selectedIconData != null)
-                    Icon(_selectedIconData, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      _customPlan ?? _selectedPlan ?? "Elige un plan",
-                      style: const TextStyle(color: Colors.white),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.arrow_drop_down, color: Colors.white),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateTimeSection() {
-    return GestureDetector(
-      onTap: _showDateSelectionPopup,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white.withOpacity(0.2),
-            child: Column(
-              children: [
-                SvgPicture.asset(
-                  'assets/icono-calendario.svg',
-                  width: 30,
-                  height: 30,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _selectedDateTime == null
-                      ? "Seleccionar fecha/hora"
-                      : "Fecha/hora seleccionada",
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Breve descripción del plan",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            decoration: TextDecoration.none,
-          ),
-        ),
-        const SizedBox(height: 10),
         Container(
+          width: 400,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
@@ -1225,11 +1097,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
           ),
           child: TextField(
             maxLines: 3,
-            onChanged: (value) {
-              setState(() {
-                _planDescription = value;
-              });
-            },
+            onChanged: (value) => _planDescription = value,
             decoration: const InputDecoration(
               hintText: "Describe brevemente tu plan...",
               hintStyle: TextStyle(color: Colors.white70),
@@ -1241,17 +1109,418 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       ],
     );
   }
+
+  // ----------------------------------------------------------------------------------
+  // -------------------------- AL CREAR EL PLAN ("Finish") ---------------------------
+  // ----------------------------------------------------------------------------------
+  Future<void> _onFinishPlan() async {
+    if (_selectedPlan == null && (_customPlan == null || _customPlan!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Falta elegir tipo de plan.")),
+      );
+      return;
+    }
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Falta elegir la fecha/hora del plan.")),
+      );
+      return;
+    }
+    if (_location == null || _location!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Falta elegir ubicación del plan.")),
+      );
+      return;
+    }
+    if (_planDescription == null || _planDescription!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Falta la breve descripción del plan.")),
+      );
+      return;
+    }
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Armamos la fecha/hora con lo seleccionado
+      DateTime dateTime;
+      if (_allDay) {
+        dateTime = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+      } else {
+        dateTime = DateTime(
+          _startDate!.year,
+          _startDate!.month,
+          _startDate!.day,
+          _startTime?.hour ?? 0,
+          _startTime?.minute ?? 0,
+        );
+      }
+
+      final planDoc = FirebaseFirestore.instance.collection('plans').doc();
+      final planId = planDoc.id;
+
+      final dataToSave = {
+        "id": planId,
+        "createdBy": currentUser.uid,
+        "type": _customPlan?.isNotEmpty == true ? _customPlan : _selectedPlan,
+        "description": _planDescription ?? '',
+        "location": _location ?? '',
+        "latitude": _latitude ?? 0.0,
+        "longitude": _longitude ?? 0.0,
+        "date": dateTime.toIso8601String(),
+        "createdAt": DateTime.now().toIso8601String(),
+        "privateInvite": true,
+        "likes": 0,
+        "special_plan": 1,
+      };
+
+      await planDoc.set(dataToSave);
+
+      // Enviamos notificación
+      await _sendInvitationNotification(
+        senderUid: currentUser.uid,
+        receiverUid: widget.invitedUserId,
+        planId: planId,
+        planType: (dataToSave["type"] ?? "Plan").toString(),
+      );
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("¡Plan creado! Has invitado al usuario.")),
+      );
+    } catch (err) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al crear el plan: $err")),
+      );
+    }
+  }
 }
 
-/// ----------------------------------------------------------------------------
-/// MÉTODOS AUXILIARES GLOBALES
-/// ----------------------------------------------------------------------------
+// ***************************************************************************
+// Dialogo para seleccionar fecha/hora (copiado del 2do snippet)
+// ***************************************************************************
+class DateSelectionDialog extends StatefulWidget {
+  final bool initialAllDay;
+  final bool initialIncludeEndDate;
+  final DateTime? initialStartDate;
+  final TimeOfDay? initialStartTime;
+  final DateTime? initialEndDate;
+  final TimeOfDay? initialEndTime;
 
-/// Obtiene los planes creados por [userId].
+  const DateSelectionDialog({
+    Key? key,
+    required this.initialAllDay,
+    required this.initialIncludeEndDate,
+    required this.initialStartDate,
+    required this.initialStartTime,
+    required this.initialEndDate,
+    required this.initialEndTime,
+  }) : super(key: key);
+
+  @override
+  _DateSelectionDialogState createState() => _DateSelectionDialogState();
+}
+
+class _DateSelectionDialogState extends State<DateSelectionDialog> {
+  late bool allDay;
+  late bool includeEndDate;
+  DateTime? startDate;
+  TimeOfDay? startTime;
+  DateTime? endDate;
+  TimeOfDay? endTime;
+
+  @override
+  void initState() {
+    super.initState();
+    allDay = widget.initialAllDay;
+    includeEndDate = widget.initialIncludeEndDate;
+    startDate = widget.initialStartDate;
+    startTime = widget.initialStartTime;
+    endDate = widget.initialEndDate;
+    endTime = widget.initialEndTime;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Todo el día
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Todo el día", style: TextStyle(color: Colors.white)),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            allDay = !allDay;
+                            if (allDay) startTime = null;
+                          });
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Incluir fecha final
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Incluir fecha final", style: TextStyle(color: Colors.white)),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            includeEndDate = !includeEndDate;
+                            if (!includeEndDate) {
+                              endDate = null;
+                              endTime = null;
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: includeEndDate
+                                ? AppColors.blue
+                                : Colors.grey.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Fecha de inicio
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Fecha de inicio", style: TextStyle(color: Colors.white)),
+                      Row(
+                        children: [
+                          _buildButton(
+                            label: (startDate == null) ? "Seleccionar"
+                                : _numericDate(startDate!),
+                            onTap: _pickStartDate,
+                          ),
+                          const SizedBox(width: 8),
+                          if (!allDay)
+                            _buildButton(
+                              label: (startTime == null)
+                                  ? "Hora"
+                                  : _numericTime(startTime!),
+                              onTap: _pickStartTime,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Fecha final
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Fecha final", style: TextStyle(color: Colors.white)),
+                      includeEndDate
+                          ? Row(
+                              children: [
+                                _buildButton(
+                                  label: (endDate == null)
+                                      ? "Seleccionar"
+                                      : _numericDate(endDate!),
+                                  onTap: _pickEndDate,
+                                ),
+                                const SizedBox(width: 8),
+                                _buildButton(
+                                  label: (endTime == null)
+                                      ? "Hora"
+                                      : _numericTime(endTime!),
+                                  onTap: _pickEndTime,
+                                ),
+                              ],
+                            )
+                          : _buildButton(
+                              label: "Sin elegir",
+                              onTap: () {},
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context, {
+                        'allDay': allDay,
+                        'includeEndDate': includeEndDate,
+                        'startDate': startDate,
+                        'startTime': startTime,
+                        'endDate': endDate,
+                        'endTime': endTime,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.blue),
+                    child: const Text("Aceptar", style: TextStyle(color: Colors.white)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, null),
+                    child: const Text(
+                      "Cancelar",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(label, style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  Future<void> _pickStartDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: (startDate == null || startDate!.isBefore(now)) ? now : startDate!,
+      firstDate: now,
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        startDate = picked;
+      });
+    }
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: startTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        startTime = picked;
+      });
+    }
+  }
+
+  Future<void> _pickEndDate() async {
+    final now = DateTime.now();
+    final minDate = (startDate != null && startDate!.isAfter(now)) ? startDate! : now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: (endDate == null || endDate!.isBefore(minDate)) ? minDate : endDate!,
+      firstDate: minDate,
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        endDate = picked;
+      });
+    }
+  }
+
+  Future<void> _pickEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: endTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) {
+      if (startDate != null && endDate != null) {
+        final st = (allDay || startTime == null)
+            ? DateTime(startDate!.year, startDate!.month, startDate!.day)
+            : DateTime(
+                startDate!.year,
+                startDate!.month,
+                startDate!.day,
+                startTime!.hour,
+                startTime!.minute,
+              );
+        final et = DateTime(
+          endDate!.year,
+          endDate!.month,
+          endDate!.day,
+          picked.hour,
+          picked.minute,
+        );
+        if (!et.isAfter(st)) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text("Error"),
+              content: const Text(
+                "La fecha final debe ser posterior a la fecha/hora de inicio.",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Aceptar"),
+                )
+              ],
+            ),
+          );
+          return;
+        }
+      }
+      setState(() {
+        endTime = picked;
+      });
+    }
+  }
+
+  String _numericDate(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final y = date.year.toString();
+    return "$d/$m/$y";
+  }
+
+  String _numericTime(TimeOfDay time) {
+    final h = time.hour.toString().padLeft(2, '0');
+    final mm = time.minute.toString().padLeft(2, '0');
+    return "$h:$mm";
+  }
+}
+
+// ***************************************************************************
+// MÉTODOS AUXILIARES GLOBALES (idénticos al original)
+// ***************************************************************************
 Future<List<PlanModel>> _fetchActivePlans(String userId) async {
   final List<PlanModel> activePlans = [];
-
-  // Solo se obtienen los planes creados por el usuario
   final createdSnap = await FirebaseFirestore.instance
       .collection('plans')
       .where('createdBy', isEqualTo: userId)
@@ -1261,15 +1530,12 @@ Future<List<PlanModel>> _fetchActivePlans(String userId) async {
     final plan = PlanModel.fromMap(data);
     activePlans.add(plan);
   }
-
-  // Ordena por fecha de creación
   activePlans.sort(
     (a, b) => (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()),
   );
   return activePlans;
 }
 
-/// Envía una notificación de "invitation".
 Future<void> _sendInvitationNotification({
   required String senderUid,
   required String receiverUid,
@@ -1289,9 +1555,9 @@ Future<void> _sendInvitationNotification({
   });
 }
 
-/// ---------------------------------------------------------------------------
-/// Diálogo simple con fondo frosted para confirmar la invitación a un plan.
-/// ---------------------------------------------------------------------------
+/// ***************************************************************************
+/// DIALOGO DE CONFIRMACIÓN CON FONDO FROSTED (igual al original)
+/// ***************************************************************************
 class _FrostedConfirmDialog extends StatelessWidget {
   final PlanModel plan;
   final VoidCallback onConfirm;
@@ -1313,7 +1579,7 @@ class _FrostedConfirmDialog extends StatelessWidget {
         child: Material(
           color: Colors.white.withOpacity(0.2),
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.8,
+            width: 400,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white30),
@@ -1334,13 +1600,9 @@ class _FrostedConfirmDialog extends StatelessWidget {
                 const Text(
                   "¿Confirmas invitarle a este plan?",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                // Muestra el plan.type
                 ClipRRect(
                   borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(
@@ -1348,7 +1610,8 @@ class _FrostedConfirmDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const ui.Color.fromARGB(255, 222, 219, 219).withOpacity(0.2),
+                        color: const ui.Color.fromARGB(255, 222, 219, 219)
+                            .withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -1377,10 +1640,7 @@ class _FrostedConfirmDialog extends StatelessWidget {
                       onPressed: onCancel,
                       child: const Text(
                         "No",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
                     ElevatedButton(
@@ -1393,10 +1653,7 @@ class _FrostedConfirmDialog extends StatelessWidget {
                       onPressed: onConfirm,
                       child: const Text(
                         "Sí",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
                   ],

@@ -9,10 +9,17 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../main/colors.dart';
-import '../../start/login_screen.dart';
+// Importa tu FrostedPlanDialog y tu PlanModel
+import '../../models/plan_model.dart';
 import '../users_managing/privilege_level_details.dart';
 import 'memories_calendar.dart';
+import '../../main/colors.dart';
+import '../../start/login_screen.dart';
+// ^ Ajusta estas rutas según tu estructura real
+
+// Importa, si es necesario, tu frosted_plan_dialog_state.dart
+import '../users_managing/frosted_plan_dialog_state.dart'; 
+// Ajusta la ruta a donde tengas tu FrostedPlanDialog
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -90,7 +97,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      print("[_fetchPrivilegeLevel] Error: $e");
+      debugPrint("[_fetchPrivilegeLevel] Error: $e");
     }
   }
 
@@ -205,13 +212,68 @@ class ProfileScreenState extends State<ProfileScreen> {
         await _fetchPrivilegeLevel();
       }
     } catch (e) {
-      print('Error al actualizar privilegeLevel: $e');
+      debugPrint('Error al actualizar privilegeLevel: $e');
     }
+  }
+
+  // =================================================
+  //   LÓGICA PARA MOSTRAR FrostedPlanDialog
+  // =================================================
+
+  /// Función que invoca el FrostedPlanDialog **a pantalla completa**.
+  void _showPlanDialog(PlanModel plan) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      useSafeArea: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          // color de fondo transparente (por si usas blur, etc.)
+          backgroundColor: Colors.transparent,
+          // sin padding lateral/superior/inferior
+          insetPadding: EdgeInsets.zero,
+          child: SizedBox(
+            // ocupa toda la pantalla
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            child: FrostedPlanDialog(
+              plan: plan,
+              fetchParticipants: _fetchParticipants,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Función para cargar los participantes dado un plan
+  /// (usada por FrostedPlanDialog)
+  Future<List<Map<String, dynamic>>> _fetchParticipants(PlanModel plan) async {
+    final List<Map<String, dynamic>> participantsList = [];
+
+    final participantUids = plan.participants ?? [];
+    for (String uid in participantUids) {
+      final docUser = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      if (docUser.exists && docUser.data() != null) {
+        final userData = docUser.data()!;
+        participantsList.add({
+          'uid': uid,
+          'name': userData['name'] ?? 'Usuario',
+          'age': userData['age']?.toString() ?? '',
+          'photoUrl': userData['photoUrl'] ?? '',
+        });
+      }
+    }
+    return participantsList;
   }
 
   // =============================
   //   CAMBIAR FOTO DE PERFIL
   // =============================
+
   Future<void> _showAvatarSourceActionSheet() async {
     showModalBottomSheet(
       context: context,
@@ -702,9 +764,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   // BOTÓN "VER PRIVILEGIOS"
   Widget _buildPrivilegeButton(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        _showPrivilegeLevelDetailsPopup();
-      },
+      onTap: _showPrivilegeLevelDetailsPopup,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Container(
@@ -861,8 +921,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                   future: _getFollowedCount(user.uid),
                   builder: (context, snapshotFollowed) {
                     if (snapshotPlans.connectionState == ConnectionState.waiting ||
-                        snapshotFollowers.connectionState == ConnectionState.waiting ||
-                        snapshotFollowed.connectionState == ConnectionState.waiting) {
+                        snapshotFollowers.connectionState ==
+                            ConnectionState.waiting ||
+                        snapshotFollowed.connectionState ==
+                            ConnectionState.waiting) {
                       return _buildStatsRow('...', '...', '...');
                     }
 
@@ -930,7 +992,8 @@ class ProfileScreenState extends State<ProfileScreen> {
     } else {
       iconPath = 'assets/icono-seguidores.svg';
       if (isFollowers) {
-        iconColor = (count != '0' && count != '...') ? AppColors.blue : Colors.grey;
+        iconColor =
+            (count != '0' && count != '...') ? AppColors.blue : Colors.grey;
       } else {
         iconColor = (count != '0' && count != '...')
             ? const Color.fromARGB(235, 84, 87, 228)
@@ -1141,8 +1204,17 @@ class ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
 
             // Calendario, solo si user != null
+            // NOTA: Aquí le pasamos la función para que el calendario
+            // nos devuelva el plan a mostrar.
             if (user != null)
-              MemoriesCalendar(userId: user.uid),
+              MemoriesCalendar(
+                userId: user.uid,
+                onPlanSelected: (PlanModel plan) {
+                  // <<--- LLAMAMOS A FROSTEDPLANDIALOG (full screen)
+                  _showPlanDialog(plan);
+                },
+              ),
+
             const SizedBox(height: 20),
 
             // Botón de Cerrar sesión

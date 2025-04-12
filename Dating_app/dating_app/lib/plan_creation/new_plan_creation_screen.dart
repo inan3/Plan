@@ -76,8 +76,8 @@ class NewPlanCreationScreen {
           type: MaterialType.transparency,
           child: Center(
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.85,
-              height: MediaQuery.of(context).size.height * 0.75,
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.9,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
@@ -248,7 +248,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           color: Colors.white.withOpacity(0.1),
           child: Container(
             width: 265,
-            height: 300,
+            height: 320,
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
@@ -1415,7 +1415,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           GestureDetector(
                             onTap: () {
                               setState(() {
-                                _selectedVisibility = "Publico";
+                                _selectedVisibility = "Público";
                               });
                             },
                             child: Container(
@@ -1423,7 +1423,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 12),
                               decoration: BoxDecoration(
-                                color: _selectedVisibility == "Publico"
+                                color: _selectedVisibility == "Público"
                                     ? AppColors.blue
                                     : const Color.fromARGB(255, 124, 120, 120)
                                         .withOpacity(0.2),

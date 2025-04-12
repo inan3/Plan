@@ -4,86 +4,104 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-// Importa la clase real FrostedPlanDialog desde el archivo adecuado.
-import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
+import 'package:share_plus/share_plus.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
+// Importa tu FrostedPlanDialog (alias si gustas)
+import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
+// ---------------------------------------------------------------------------
+// Pantalla donde se listan los planes a los que un usuario se ha suscrito
+// ---------------------------------------------------------------------------
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId;
-  const SubscribedPlansScreen({Key? key, required this.userId}) : super(key: key);
 
-  // Método para obtener todos los participantes de un plan (creador + suscriptores).
+  const SubscribedPlansScreen({Key? key, required this.userId})
+      : super(key: key);
+
+  // --------------------------------------------------------------------------
+  // Mostrar el FrostedPlanDialog a pantalla completa al pulsar la tarjeta
+  // --------------------------------------------------------------------------
+  void _showFrostedPlanDialog(BuildContext context, PlanModel plan) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      useSafeArea: false,
+      builder: (BuildContext ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: SizedBox(
+            width: MediaQuery.of(ctx).size.width,
+            height: MediaQuery.of(ctx).size.height,
+            child: new_frosted.FrostedPlanDialog(
+              plan: plan,
+              fetchParticipants: _fetchAllPlanParticipants, // <-- usamos abajo
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Obtener todos los participantes leyendo el campo 'participants' del plan
+  // --------------------------------------------------------------------------
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-  PlanModel plan,
-) async {
-  final List<Map<String, dynamic>> participants = [];
+    PlanModel plan,
+  ) async {
+    final List<Map<String, dynamic>> participants = [];
 
-  // 1) Datos del plan
-  final planDoc = await FirebaseFirestore.instance
-      .collection('plans')
-      .doc(plan.id)
-      .get();
-  if (planDoc.exists) {
-    final planData = planDoc.data();
-    final creatorId = planData?['createdBy'];
-    if (creatorId != null) {
-      final creatorUserDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(creatorId)
-          .get();
-      if (creatorUserDoc.exists) {
-        final cdata = creatorUserDoc.data()!;
+    // 1) Traemos el documento del plan
+    final planDoc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+
+    if (!planDoc.exists) {
+      // Si el plan ya no existe, devolvemos vacío
+      return participants;
+    }
+
+    final planData = planDoc.data()!;
+    // Este campo 'participants' debe ser una lista de UIDs (strings)
+    final participantUids = List<String>.from(planData['participants'] ?? []);
+
+    // 2) Por cada UID en participants, cargamos datos del usuario
+    for (String uid in participantUids) {
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data() != null) {
+        final uData = userDoc.data()!;
         participants.add({
-          'uid': creatorId,  // <--- MUY IMPORTANTE
-          'name': cdata['name'] ?? 'Sin nombre',
-          'age': cdata['age']?.toString() ?? '',
-          'photoUrl': cdata['photoUrl'] ?? cdata['profilePic'] ?? '',
-          'isCreator': true,
+          'uid': uid,
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          // Marcamos si este UID es el creador
+          'isCreator': (plan.createdBy == uid),
         });
       }
     }
+    return participants;
   }
 
-  // 2) Datos de subscripciones
-  final subsSnap = await FirebaseFirestore.instance
-      .collection('subscriptions')
-      .where('id', isEqualTo: plan.id)
-      .get();
-  for (var sDoc in subsSnap.docs) {
-    final sData = sDoc.data();
-    final userId = sData['userId'];
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
-    if (userDoc.exists) {
-      final uData = userDoc.data()!;
-      participants.add({
-        'uid': userId,  // <--- TAMBIÉN AQUÍ
-        'name': uData['name'] ?? 'Sin nombre',
-        'age': uData['age']?.toString() ?? '',
-        'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
-        'isCreator': false,
-      });
-    }
-  }
-
-  return participants;
-}
-
-  // Método auxiliar para obtener los planes completos desde la colección 'plans'
+  // --------------------------------------------------------------------------
+  // Obtener los PlanModel completos a partir de IDs
+  // --------------------------------------------------------------------------
   Future<List<PlanModel>> _fetchPlansFromIds(List<String> planIds) async {
     if (planIds.isEmpty) return [];
     final List<PlanModel> plans = [];
     for (String planId in planIds) {
-      final planDoc = await FirebaseFirestore.instance.collection('plans').doc(planId).get();
+      final planDoc = await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(planId)
+          .get();
       if (planDoc.exists) {
         final planData = planDoc.data() as Map<String, dynamic>;
+        // Ponemos 'id' manualmente porque no vendrá dentro de data()
         planData['id'] = planDoc.id;
         plans.add(PlanModel.fromMap(planData));
       }
@@ -91,16 +109,24 @@ class SubscribedPlansScreen extends StatelessWidget {
     return plans;
   }
 
-  // Construye cada tarjeta de plan.
-  Widget _buildPlanCard(BuildContext context, Map<String, dynamic> userData, PlanModel plan) {
+  // --------------------------------------------------------------------------
+  // Construye la tarjeta del plan
+  // --------------------------------------------------------------------------
+  Widget _buildPlanCard(
+    BuildContext context,
+    Map<String, dynamic> userData,
+    PlanModel plan,
+  ) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String userHandle = userData['handle']?.toString() ?? '@usuario';
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
     final String? backgroundImage = plan.backgroundImage;
-    final String caption = plan.description.isNotEmpty ? plan.description : 'Descripción breve o #hashtags';
-    const String sharesCount = '227';
+    final String caption = plan.description.isNotEmpty
+        ? plan.description
+        : 'Descripción breve o #hashtags';
+    const String sharesCount = '227'; // Hardcodeado por ahora
 
-    // Si es un plan especial, se aplica un estilo específico.
+    // Plan especial
     if (plan.special_plan == 1) {
       return FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchAllPlanParticipants(plan),
@@ -122,18 +148,21 @@ class SubscribedPlansScreen extends StatelessWidget {
             );
           }
           final participants = snapshot.data!;
-          final Widget creatorAvatar = participants.isNotEmpty && (participants[0]['photoUrl'] ?? '').isNotEmpty
+          final Widget creatorAvatar = participants.isNotEmpty &&
+                  (participants[0]['photoUrl'] ?? '').isNotEmpty
               ? CircleAvatar(
                   backgroundImage: NetworkImage(participants[0]['photoUrl']),
                   radius: 20,
                 )
               : const CircleAvatar(radius: 20);
-          final Widget participantAvatar = (participants.length > 1 && (participants[1]['photoUrl'] ?? '').isNotEmpty)
+          final Widget participantAvatar = (participants.length > 1 &&
+                  (participants[1]['photoUrl'] ?? '').isNotEmpty)
               ? CircleAvatar(
                   backgroundImage: NetworkImage(participants[1]['photoUrl']),
                   radius: 20,
                 )
               : const SizedBox();
+          // Buscamos el icono si existe en tu lista
           String iconPath = plan.iconAsset ?? '';
           for (var item in plansData.plans) {
             if (plan.iconAsset == item['icon']) {
@@ -141,23 +170,10 @@ class SubscribedPlansScreen extends StatelessWidget {
               break;
             }
           }
+
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
-              // Cambiamos showGeneralDialog a un Navigator.push a pantalla completa
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    backgroundColor: Colors.transparent,
-                    body: new_frosted.FrostedPlanDialog(
-                      plan: plan,
-                      fetchParticipants: _fetchAllPlanParticipants,
-                    ),
-                  ),
-                ),
-              );
-            },
+            onTap: () => _showFrostedPlanDialog(context, plan),
             child: Center(
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.95,
@@ -171,7 +187,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // Lado izquierdo: icono + tipo de plan
+                    // Icono + tipo de plan
                     Row(
                       children: [
                         if (iconPath.isNotEmpty)
@@ -184,12 +200,15 @@ class SubscribedPlansScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           plan.type,
-                          style: const TextStyle(fontSize: 20, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
                     const Spacer(),
-                    // Lado derecho: avatares de participantes
+                    // Avatares
                     Row(
                       children: [
                         creatorAvatar,
@@ -204,10 +223,15 @@ class SubscribedPlansScreen extends StatelessWidget {
           );
         },
       );
-    } else {
-      // Para un plan normal, usamos un StreamBuilder para actualizar likes, commentsCount y participants en tiempo real
+    }
+
+    // Plan normal
+    else {
       return StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('plans')
+            .doc(plan.id)
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -224,29 +248,17 @@ class SubscribedPlansScreen extends StatelessWidget {
             );
           }
           final updatedData = snapshot.data!.data() as Map<String, dynamic>;
-          final List<dynamic> updatedParticipants = updatedData['participants'] as List<dynamic>? ?? [];
+          final List<dynamic> updatedParticipants =
+              updatedData['participants'] as List<dynamic>? ?? [];
           final int participantes = updatedParticipants.length;
-          final int maxPart = updatedData['maxParticipants'] ?? plan.maxParticipants ?? 0;
+          final int maxPart =
+              updatedData['maxParticipants'] ?? plan.maxParticipants ?? 0;
           final int commentsCount = updatedData['commentsCount'] ?? 0;
           final int likesCount = updatedData['likes'] ?? plan.likes;
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
-              // Pantalla completa
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    backgroundColor: Colors.transparent,
-                    body: new_frosted.FrostedPlanDialog(
-                      plan: plan,
-                      fetchParticipants: _fetchAllPlanParticipants,
-                    ),
-                  ),
-                ),
-              );
-            },
+            onTap: () => _showFrostedPlanDialog(context, plan),
             child: Center(
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.95,
@@ -254,10 +266,11 @@ class SubscribedPlansScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 15),
                 child: Stack(
                   children: [
-                    // Imagen de fondo.
+                    // Imagen de fondo
                     ClipRRect(
                       borderRadius: BorderRadius.circular(30),
-                      child: (backgroundImage != null && backgroundImage.isNotEmpty)
+                      child: (backgroundImage != null &&
+                              backgroundImage.isNotEmpty)
                           ? Image.network(
                               backgroundImage,
                               fit: BoxFit.cover,
@@ -267,7 +280,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                             )
                           : _buildPlaceholder(),
                     ),
-                    // Avatar + nombre en la esquina superior izquierda.
+
+                    // Avatar + nombre (esquina sup izq)
                     Positioned(
                       top: 10,
                       left: 10,
@@ -276,8 +290,10 @@ class SubscribedPlansScreen extends StatelessWidget {
                         child: BackdropFilter(
                           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            color:
+                                const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -311,7 +327,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                                     ),
                                     Text(
                                       userHandle,
-                                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.white),
                                     ),
                                   ],
                                 ),
@@ -321,15 +338,17 @@ class SubscribedPlansScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Botones en la esquina superior derecha
+
+                    // Botones (esquina sup der): compartir y abandonar
                     Positioned(
                       top: 16,
                       right: 16,
                       child: Row(
                         children: [
-                          _buildThreeDotsMenu(userData, plan),
+                          // Icono compartir
+                          _buildThreeDotsMenu(context, userData, plan),
                           const SizedBox(width: 16),
-                          // Botón "abandonar" plan
+                          // Botón "Abandonar"
                           GestureDetector(
                             onTap: () => _confirmDeletePlan(context, plan),
                             child: ClipOval(
@@ -342,7 +361,10 @@ class SubscribedPlansScreen extends StatelessWidget {
                                     color: Colors.red.withOpacity(0.3),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.exit_to_app, color: Colors.white),
+                                  child: const Icon(
+                                    Icons.exit_to_app,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -350,7 +372,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Parte inferior: contadores e información adicional.
+
+                    // Parte inferior: contadores
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -363,7 +386,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                         child: BackdropFilter(
                           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
@@ -383,13 +407,22 @@ class SubscribedPlansScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    _buildIconText(icon: Icons.favorite_border, label: likesCount.toString()),
+                                    _buildIconText(
+                                      icon: Icons.favorite_border,
+                                      label: likesCount.toString(),
+                                    ),
                                     const SizedBox(width: 25),
-                                    _buildIconText(icon: Icons.chat_bubble_outline, label: commentsCount.toString()),
+                                    _buildIconText(
+                                      icon: Icons.chat_bubble_outline,
+                                      label: commentsCount.toString(),
+                                    ),
                                     const SizedBox(width: 25),
-                                    _buildIconText(icon: Icons.share, label: sharesCount),
+                                    _buildIconText(
+                                      icon: Icons.share,
+                                      label: sharesCount,
+                                    ),
                                     const Spacer(),
-                                    // Número actual de participantes vs max
+                                    // Participantes / máx
                                     Row(
                                       children: [
                                         Text(
@@ -414,7 +447,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 Text(
                                   caption,
-                                  style: const TextStyle(fontSize: 13, color: Colors.white),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Colors.white),
                                 ),
                               ],
                             ),
@@ -432,24 +466,107 @@ class SubscribedPlansScreen extends StatelessWidget {
     }
   }
 
-  // Menú de opciones (fila de iconos frosted).
-  Widget _buildThreeDotsMenu(Map<String, dynamic> userData, PlanModel plan) {
+  // --------------------------------------------------------------------------
+  // Menú / icono para "compartir"
+  // --------------------------------------------------------------------------
+  Widget _buildThreeDotsMenu(
+    BuildContext context,
+    Map<String, dynamic> userData,
+    PlanModel plan,
+  ) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // Icono compartir (SVG)
         _buildFrostedIcon(
           'assets/compartir.svg',
           size: 40,
           onTap: () {
-            // Acción para compartir.
+            _openCustomShareModal(context, plan);
           },
         ),
-        // Podrías incluir LikeButton u otros iconos
       ],
     );
   }
 
-  // Helper para construir un icono con efecto frosted.
+  // --------------------------------------------------------------------------
+  // Abre el BottomSheet para compartir
+  // --------------------------------------------------------------------------
+  void _openCustomShareModal(BuildContext context, PlanModel plan) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color.fromARGB(255, 35, 57, 80),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Handle para arrastrar
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white54,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Botón "Compartir con otras apps"
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Text(
+                          "Compartir con otras apps",
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.share, color: Colors.white),
+                          onPressed: () {
+                            final String shareUrl =
+                                'https://plan-social-app.web.app/plan?planId=${plan.id}';
+                            final shareText =
+                                '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
+                            Share.share(shareText);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Sección para compartir dentro de la app
+                  Expanded(
+                    child: _CustomShareDialogContent(
+                      plan: plan,
+                      scrollController: scrollController,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Widget icónico con blur (para iconos en la esquina)
+  // --------------------------------------------------------------------------
   Widget _buildFrostedIcon(
     String assetPath, {
     double size = 40,
@@ -482,7 +599,98 @@ class SubscribedPlansScreen extends StatelessWidget {
     );
   }
 
-  // Helper para construir el avatar de perfil.
+  // --------------------------------------------------------------------------
+  // Confirmación para "abandonar" plan
+  // --------------------------------------------------------------------------
+  void _confirmDeletePlan(BuildContext context, PlanModel plan) {
+    final String currentUserId = userId;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("¿Quieres abandonar este plan?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("No"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                // 1) Elimina el doc de 'subscriptions'
+                final subs = await FirebaseFirestore.instance
+                    .collection('subscriptions')
+                    .where('userId', isEqualTo: currentUserId)
+                    .where('id', isEqualTo: plan.id)
+                    .get();
+                for (var doc in subs.docs) {
+                  await doc.reference.delete();
+                }
+                // 2) Remueve al usuario del array 'participants' en 'plans'
+                await FirebaseFirestore.instance
+                    .collection('plans')
+                    .doc(plan.id)
+                    .update({
+                  'participants': FieldValue.arrayRemove([currentUserId])
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Has abandonado el plan ${plan.type}.'),
+                  ),
+                );
+                Navigator.pop(context); // Cierra el alert
+              },
+              child: const Text("Sí"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Placeholder de imagen
+  // --------------------------------------------------------------------------
+  Widget _buildPlaceholder() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        color: Colors.grey[200],
+        height: 350,
+        width: double.infinity,
+        child: const Center(
+          child: Icon(Icons.image, size: 40, color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Icono + Texto (likes, comentarios, etc.)
+  // --------------------------------------------------------------------------
+  Widget _buildIconText({required IconData icon, required String label}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: Colors.white),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Construye el avatar (si hay fotoUrl)
+  // --------------------------------------------------------------------------
   Widget _buildProfileAvatar(String? photoUrl) {
     if (photoUrl != null && photoUrl.isNotEmpty) {
       return CircleAvatar(
@@ -498,85 +706,10 @@ class SubscribedPlansScreen extends StatelessWidget {
     }
   }
 
-  // Popup de confirmación para abandonar un plan.
-  void _confirmDeletePlan(BuildContext context, PlanModel plan) {
-    final String currentUserId = userId; // Id del usuario actual (suscriptor)
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("¿Quieres abandonar este plan?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("No"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () async {
-                // Se elimina solo el registro de suscripción para abandonar el plan.
-                final subs = await FirebaseFirestore.instance
-                    .collection('subscriptions')
-                    .where('userId', isEqualTo: currentUserId)
-                    .where('id', isEqualTo: plan.id)
-                    .get();
-                for (var doc in subs.docs) {
-                  await doc.reference.delete();
-                }
-                // Actualiza el documento del plan removiendo al usuario de 'participants'
-                await FirebaseFirestore.instance
-                    .collection('plans')
-                    .doc(plan.id)
-                    .update({
-                  'participants': FieldValue.arrayRemove([currentUserId])
-                });
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Has abandonado el plan ${plan.type}.'),
-                  ),
-                );
-                Navigator.pop(context);
-              },
-              child: const Text("Si"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Placeholder para cuando no hay imagen o falla la carga.
-  Widget _buildPlaceholder() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        color: Colors.grey[200],
-        height: 350,
-        width: double.infinity,
-        child: const Center(
-          child: Icon(Icons.image, size: 40, color: Colors.grey),
-        ),
-      ),
-    );
-  }
-
-  // Helper para mostrar un icono junto a un texto.
-  Widget _buildIconText({required IconData icon, required String label}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: Colors.white),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
-        ),
-      ],
-    );
-  }
-
+  // --------------------------------------------------------------------------
+  // Build principal: muestra la lista de planes a los que estoy suscrito
+  // (lee los IDs desde 'subscriptions' -> planId, y luego obtiene su info)
+  // --------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -584,7 +717,7 @@ class SubscribedPlansScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('subscriptions')
-            .where('userId', isEqualTo: userId)
+            .where('userId', isEqualTo: userId) // <--- IMPORTANTE
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -598,6 +731,8 @@ class SubscribedPlansScreen extends StatelessWidget {
               ),
             );
           }
+
+          // Recopilamos todos los IDs de plan a los que el usuario está suscrito
           final planIds = snapshot.data!.docs
               .map((doc) {
                 final data = doc.data() as Map<String, dynamic>;
@@ -621,6 +756,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                   ),
                 );
               }
+              // Mostramos cada plan
               return ListView.builder(
                 padding: const EdgeInsets.all(8),
                 itemCount: plans.length,
@@ -632,7 +768,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                         .doc(plan.createdBy)
                         .get(),
                     builder: (context, userSnapshot) {
-                      if (userSnapshot.connectionState == ConnectionState.waiting) {
+                      if (userSnapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return const SizedBox(
                           height: 330,
                           child: Center(child: CircularProgressIndicator()),
@@ -651,7 +788,9 @@ class SubscribedPlansScreen extends StatelessWidget {
                           ),
                         );
                       }
-                      final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                      final userData =
+                          userSnapshot.data!.data() as Map<String, dynamic>;
+                      // Construimos la tarjeta final del plan
                       return _buildPlanCard(context, userData, plan);
                     },
                   );
@@ -661,6 +800,302 @@ class SubscribedPlansScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Contenido del BottomSheet para compartir el plan dentro de la app
+// ---------------------------------------------------------------------------
+class _CustomShareDialogContent extends StatefulWidget {
+  final PlanModel plan;
+  final ScrollController scrollController;
+
+  const _CustomShareDialogContent({
+    Key? key,
+    required this.plan,
+    required this.scrollController,
+  }) : super(key: key);
+
+  @override
+  State<_CustomShareDialogContent> createState() =>
+      _CustomShareDialogContentState();
+}
+
+class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
+  final TextEditingController _searchController = TextEditingController();
+  final User? _currentUser = FirebaseAuth.instance.currentUser;
+
+  // Listas de usuarios (followers / following)
+  List<Map<String, dynamic>> _followers = [];
+  List<Map<String, dynamic>> _following = [];
+
+  // Conjunto de UIDs seleccionados
+  final Set<String> _selectedUsers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFollowersAndFollowing();
+  }
+
+  /// Carga "followers" y "followed" desde Firestore.
+  Future<void> _fetchFollowersAndFollowing() async {
+    if (_currentUser == null) return;
+    try {
+      // 1) Followers => docs donde userId = mi UID
+      final snapFollowers = await FirebaseFirestore.instance
+          .collection('followers')
+          .where('userId', isEqualTo: _currentUser!.uid)
+          .get();
+
+      final followerUids = <String>[];
+      for (var doc in snapFollowers.docs) {
+        final data = doc.data();
+        final fid = data['followerId'] as String?;
+        if (fid != null) followerUids.add(fid);
+      }
+
+      // 2) Following => docs donde userId = mi UID
+      final snapFollowing = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: _currentUser!.uid)
+          .get();
+
+      final followedUids = <String>[];
+      for (var doc in snapFollowing.docs) {
+        final data = doc.data();
+        final fid = data['followedId'] as String?;
+        if (fid != null) followedUids.add(fid);
+      }
+
+      // 3) Cargar info de cada uno
+      _followers = await _fetchUsersData(followerUids);
+      _following = await _fetchUsersData(followedUids);
+
+      setState(() {});
+    } catch (e) {
+      debugPrint("Error al cargar followers/following: $e");
+    }
+  }
+
+  /// Retorna la info de cada UID en 'users'
+  Future<List<Map<String, dynamic>>> _fetchUsersData(List<String> uids) async {
+    if (uids.isEmpty) return [];
+    final List<Map<String, dynamic>> usersData = [];
+    for (String uid in uids) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        usersData.add({
+          'uid': uid,
+          'name': data['name'] ?? 'Usuario',
+          'age': data['age']?.toString() ?? '',
+          'photoUrl': data['photoUrl'] ?? '',
+        });
+      }
+    }
+    return usersData;
+  }
+
+  /// Envía el plan a los usuarios seleccionados (creando docs en "messages", por ejemplo)
+  Future<void> _sendPlanToSelectedUsers() async {
+    if (_currentUser == null || _selectedUsers.isEmpty) {
+      Navigator.pop(context); // No hay nada que enviar
+      return;
+    }
+
+    final String shareUrl =
+        'https://plan-social-app.web.app/plan?planId=${widget.plan.id}';
+    final String planId = widget.plan.id;
+    final String planTitle = widget.plan.type;
+    final String planDesc = widget.plan.description;
+    final String? planImage = widget.plan.backgroundImage;
+
+    // Guardar un doc en 'messages' para cada usuario seleccionado
+    for (String uidDestino in _selectedUsers) {
+      await FirebaseFirestore.instance.collection('messages').add({
+        'senderId': _currentUser!.uid,
+        'receiverId': uidDestino,
+        'participants': [_currentUser!.uid, uidDestino],
+        'type': 'shared_plan',
+        'planId': planId,
+        'planTitle': planTitle,
+        'planDescription': planDesc,
+        'planImage': planImage ?? '',
+        'planLink': shareUrl,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+    }
+
+    Navigator.pop(context); // Cerrar bottom sheet
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Barra sup: "Cancelar" - "Enviar"
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Text(
+                  "Cancelar",
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _sendPlanToSelectedUsers,
+                child: const Text(
+                  "Enviar",
+                  style: TextStyle(color: Colors.green, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Cuadro de búsqueda
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: TextField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "Buscar usuario...",
+              hintStyle: const TextStyle(color: Colors.white60),
+              prefixIcon: const Icon(Icons.search, color: Colors.white60),
+              filled: true,
+              fillColor: Colors.white10,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (_) {
+              setState(() {}); // refresca el filtrado
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        Expanded(
+          child: SingleChildScrollView(
+            controller: widget.scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // "Mis seguidores"
+                const SizedBox(height: 6),
+                const Text(
+                  "Mis seguidores",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _buildUserList(_filterUsers(_followers)),
+
+                const SizedBox(height: 12),
+
+                // "A quienes sigo"
+                const Text(
+                  "A quienes sigo",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _buildUserList(_filterUsers(_following)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Filtra por texto
+  List<Map<String, dynamic>> _filterUsers(List<Map<String, dynamic>> users) {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return users;
+    return users.where((u) {
+      final name = (u['name'] ?? '').toLowerCase();
+      return name.contains(query);
+    }).toList();
+  }
+
+  // Lista con "checkbox" circular
+  Widget _buildUserList(List<Map<String, dynamic>> userList) {
+    if (userList.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          "No hay usuarios en esta sección.",
+          style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic),
+        ),
+      );
+    }
+
+    return Column(
+      children: userList.map((user) {
+        final uid = user['uid'] ?? '';
+        final name = user['name'] ?? 'Usuario';
+        final age = user['age'] ?? '';
+        final photo = user['photoUrl'] ?? '';
+        final isSelected = _selectedUsers.contains(uid);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.blueGrey,
+              backgroundImage: (photo.isNotEmpty) ? NetworkImage(photo) : null,
+            ),
+            title: Text(
+              "$name, $age",
+              style: const TextStyle(color: Colors.white),
+            ),
+            trailing: GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedUsers.remove(uid);
+                  } else {
+                    _selectedUsers.add(uid);
+                  }
+                });
+              },
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? Colors.green : Colors.white54,
+                    width: 2,
+                  ),
+                  color: isSelected ? Colors.green : Colors.transparent,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

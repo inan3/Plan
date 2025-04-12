@@ -49,10 +49,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     super.initState();
 
     // Ejecutamos la función que nos pasa el padre para obtener participantes
-    // Asegúrate de que en esos participantes venga 'uid' para que funcione la navegación
     _futureParticipants = widget.fetchParticipants(widget.plan);
 
-    _likeCount = widget.plan.likes; // Carga inicial de 'likes'
+    // Carga inicial de 'likes'
+    _likeCount = widget.plan.likes;
     _checkIfLiked();
 
     // Intentamos cargar la info del creador (nombre, foto, EDAD) por si no vino en el plan
@@ -82,8 +82,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         setState(() {
           widget.plan.creatorName = data['name'] ?? 'Creador';
           widget.plan.creatorProfilePic = data['photoUrl'] ?? '';
-          // Guardamos la edad localmente, no en el PlanModel
-          _creatorAge = ageCreador;
+          _creatorAge = ageCreador; // Guardamos la edad local, no en el PlanModel
         });
       }
     } catch (e) {
@@ -483,7 +482,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   ),
                   backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: _buildChatPopup(plan),
                 );
               },
@@ -500,7 +500,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   Widget _buildShareButton(PlanModel plan) {
     return _buildActionButton(
       iconPath: 'assets/icono-compartir.svg',
-      countText: "",
+      countText: "Compartir",
       onTap: () {
         _openCustomShareModal(plan);
       },
@@ -601,12 +601,61 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón "Únete ahora"
+  // Botón "Únete ahora" (LOGICA DE UNIÓN A PLAN)
   // ---------------------------------------------------------------------------
   Widget _buildJoinButton(PlanModel plan) {
     return GestureDetector(
-      onTap: () {
-        // TODO: lógica de unirse al plan (guardar en Firestore, etc.)
+      onTap: () async {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return; // No hay usuario logueado
+
+        // 1) Comprobar si es su propio plan
+        if (plan.createdBy == user.uid) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No puedes unirte a tu propio plan')),
+          );
+          return;
+        }
+
+        // 2) Comprobar si ya está suscrito (participants)
+        if (plan.participants?.contains(user.uid) ?? false) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('¡Ya estás suscrito a este plan!')),
+          );
+          return;
+        }
+
+        // 3) Verificar cupo máximo (si maxParticipants > 0)
+        final int participantes = plan.participants?.length ?? 0;
+        final int maxPart = plan.maxParticipants ?? 0;
+        if (maxPart > 0 && participantes >= maxPart) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('El cupo máximo de participantes para este plan está cubierto'),
+            ),
+          );
+          return;
+        }
+
+        // 4) Crear notificación de solicitud de unión
+        final String planType = plan.type.isNotEmpty ? plan.type : 'Plan';
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'join_request',
+          'receiverId': plan.createdBy,
+          'senderId': user.uid,
+          'planId': plan.id,
+          'planType': planType,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+
+        // 5) Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Tu solicitud de unión se ha enviado correctamente!'),
+          ),
+        );
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
@@ -808,94 +857,122 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // ---------------------------------------------------------------------------
   // AVATARES DE PARTICIPANTES
   // ---------------------------------------------------------------------------
-  Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
+    Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
     final count = participants.length;
+
+    // Si no hay participantes, no mostramos nada.
     if (count == 0) {
-      // Si no hay participantes, no mostramos nada
       return const SizedBox.shrink();
     }
 
-    if (count == 1) {
-      // Un participante
-      final p = participants[0];
-      final pic = p['photoUrl'] ?? '';
-      final name = p['name'] ?? 'Usuario';
-      final age = p['age']?.toString() ?? '';
+    // -----------------------------------------------------------------------
+// CASO 1: SOLO HAY 1 PARTICIPANTE
+// -----------------------------------------------------------------------
+if (count == 1) {
+  final p = participants[0];
+  final pic = p['photoUrl'] ?? '';
+  String name = p['name'] ?? 'Usuario';
+  final age = p['age']?.toString() ?? '';
 
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-              backgroundColor: Colors.blueGrey[400],
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$name, $age',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-      );
-    } else {
-      // 2 o más participantes
+  // Construimos un string con "name, age"
+  String displayText = '$name, $age';
+
+  // Limitamos a 10 caracteres si excede
+  if (displayText.length > 10) {
+    displayText = displayText.substring(0, 10) + '...';
+  }
+
+  return GestureDetector(
+    onTap: () => _showParticipantsModal(participants),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+            backgroundColor: Colors.blueGrey[400],
+          ),
+          const SizedBox(width: 8),
+          Text(
+            displayText,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+    // -----------------------------------------------------------------------
+    // CASO 2: HAY 2 O MÁS PARTICIPANTES
+    // -----------------------------------------------------------------------
+    else {
       final p1 = participants[0];
       final p2 = participants[1];
-
       final pic1 = p1['photoUrl'] ?? '';
       final pic2 = p2['photoUrl'] ?? '';
 
       const double avatarSize = 40;
-      const double overlapOffset = 30;
+      const double overlapOffset = 24;
       final int extras = count - 2;
       final bool hasExtras = extras > 0;
 
+      final double containerWidth = hasExtras
+          ? (avatarSize + overlapOffset * 2)
+          : (avatarSize + overlapOffset);
+
       return GestureDetector(
-        onTap: () {
-          _showParticipantsModal(participants);
-        },
+        onTap: () => _showParticipantsModal(participants),
         child: SizedBox(
-          width: hasExtras ? 90 : 70,
+          width: containerWidth,
           height: avatarSize,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              // Primer avatar
               Positioned(
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
-              // Segundo avatar
               Positioned(
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
-              // +X si hay más
               if (hasExtras)
                 Positioned(
                   left: overlapOffset * 2,
-                  child: CircleAvatar(
-                    radius: avatarSize / 2,
-                    backgroundColor: Colors.deepPurple,
-                    child: Text(
-                      '+$extras',
-                      style: const TextStyle(color: Colors.white),
+                  child: SizedBox(
+                    width: avatarSize,
+                    height: avatarSize,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(avatarSize / 2),
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.4),
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '+$extras',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -910,77 +987,77 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // MODAL PARTICIPANTES
   // ---------------------------------------------------------------------------
   void _showParticipantsModal(List<Map<String, dynamic>> participants) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return Dialog(
-        insetPadding: EdgeInsets.only(
-          top: MediaQuery.of(context).size.height * 0.25,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        ),
-        // Dejamos transparente para que no sobrescriba nuestro contenedor con degradado
-        backgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          // Aquí aplicamos el mismo degradado que usas de fondo
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.fromARGB(255, 13, 32, 53),
-                Color.fromARGB(255, 72, 38, 38),
-                Color(0xFF12232E),
-              ],
-            ),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: EdgeInsets.only(
+            top: MediaQuery.of(context).size.height * 0.25,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          ),
+          // Dejamos transparente para que no sobrescriba nuestro contenedor con degradado
+          backgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Column(
-            children: [
-              // Título
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        "Participantes",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+          child: Container(
+            // Aquí aplicamos el mismo degradado que usas de fondo
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 13, 32, 53),
+                  Color.fromARGB(255, 72, 38, 38),
+                  Color(0xFF12232E),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                // Título
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          "Participantes",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(color: Colors.white38),
-              // Lista de participantes
-              Expanded(
-                child: ListView.builder(
-                  itemCount: participants.length,
-                  itemBuilder: (context, index) {
-                    final participant = participants[index];
-                    return _buildParticipantTile(participant);
-                  },
+                const Divider(color: Colors.white38),
+                // Lista de participantes
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: participants.length,
+                    itemBuilder: (context, index) {
+                      final participant = participants[index];
+                      return _buildParticipantTile(participant);
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   // AVATAR + NOMBRE + EDAD de un participante (en el modal) + Navegación a perfil
   Widget _buildParticipantTile(Map<String, dynamic> participant) {
@@ -991,15 +1068,15 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
     return ListTile(
       onTap: () {
-        if (uid.isNotEmpty) {
-          // No cerramos el diálogo. 
-          // Así el `Dialog` de participantes se queda 'detrás' en la pila de rutas.
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => UserInfoCheck(userId: uid)),
-          );
+        // Si es mi propio perfil o no hay UID, no hago nada
+        if (uid.isEmpty || uid == _currentUser?.uid) {
+          return;
         }
+        // En caso contrario, navegamos
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => UserInfoCheck(userId: uid)),
+        );
       },
       leading: CircleAvatar(
         backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
@@ -1188,7 +1265,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow() {
     final String name = widget.plan.creatorName ?? 'Creador';
-    final String age = _creatorAge ?? ''; // Usamos la variable local
+    final String age = _creatorAge ?? '';
 
     // Hacemos clic en toda la fila (avatar + nombre) para ir al perfil
     return GestureDetector(
@@ -1252,10 +1329,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         (_currentUser != null && _currentUser!.uid == plan.createdBy);
 
     return Scaffold(
-      // Dejamos transparente para poner abajo el Container con el gradient
       backgroundColor: Colors.transparent,
       body: Container(
-        // Aquí aplicamos el gradiente que pediste
+        // Gradiente de fondo
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -1379,8 +1455,7 @@ extension LikeLogic on _FrostedPlanDialogState {
   Future<void> _checkIfLiked() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final userRef =
-        FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snapshot = await userRef.get();
     if (snapshot.exists && snapshot.data() != null) {
       final data = snapshot.data() as Map<String, dynamic>;
@@ -1627,9 +1702,10 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
                 const Text(
                   "Mis seguidores",
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _buildUserList(_filterUsers(_followers)),
@@ -1639,9 +1715,10 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
                 const Text(
                   "A quienes sigo",
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _buildUserList(_filterUsers(_following)),

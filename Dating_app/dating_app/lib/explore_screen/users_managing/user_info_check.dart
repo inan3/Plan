@@ -9,13 +9,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
+// Importamos el FrostedPlanDialog con alias 'new_frosted'
 import 'frosted_plan_dialog_state.dart' as new_frosted;
 import '../special_plans/invite_users_to_plan_screen.dart';
 import 'user_info_inside_chat.dart';
 import 'privilege_level_details.dart';
 
 // IMPORTA TU WIDGET DE CALENDARIO
-// OJO: Ajusta la ruta según dónde tengas el archivo memories_calendar.dart
+// Ajusta la ruta según dónde tengas el archivo memories_calendar.dart
 import '../profile/memories_calendar.dart';
 
 class UserInfoCheck extends StatefulWidget {
@@ -34,15 +35,14 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   // Para mostrar el ícono según privilegeLevel
   String _privilegeLevel = "basico";
 
-  // Nuevo: para saber si el perfil del usuario es privado (1) o público (0)
+  // Para saber si el perfil del usuario es privado (1) o público (0)
   bool _isPrivate = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData().then((_) {
-      // Después de cargar los datos del usuario,
-      // refrescamos las estadísticas basadas en todos sus planes
+      // Después de cargar los datos del usuario, refrescamos estadísticas
       _updateStatsBasedOnAllPlans();
     });
     _checkIfFollowing();
@@ -112,7 +112,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         _privilegeLevel = (data['privilegeLevel'] ?? 'basico').toString();
 
         // Leemos la privacidad (0 = público, 1 = privado)
-        // Si no existe el campo, asumimos público (0).
         _isPrivate = (data['profile_privacy'] ?? 0) == 1;
       });
 
@@ -125,8 +124,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<void> _checkIfFollowing() async {
-    print(
-        "[_checkIfFollowing] Revisando si el usuario actual sigue a ${widget.userId}");
+    print("[_checkIfFollowing] Revisando si el usuario actual sigue a ${widget.userId}");
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       print("[_checkIfFollowing] No hay usuario logueado, no se puede seguir.");
@@ -145,8 +143,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
   /// Devuelve cuántos planes activos ha creado este usuario
   Future<int> _getActivePlanCount() async {
-    print("[_getActivePlanCount] Buscando planes activos (special_plan=0) "
-        "creados por ${widget.userId}");
+    print("[_getActivePlanCount] Buscando planes activos (special_plan=0) creados por ${widget.userId}");
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: widget.userId)
@@ -155,11 +152,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snapshot.docs.length;
   }
 
-  /// Busca todos los planes activos (special_plan=0)
-  /// y devuelve una lista de PlanModel
+  /// Busca todos los planes activos (special_plan=0) y devuelve una lista de PlanModel
   Future<List<PlanModel>> _fetchActivePlans() async {
-    print("[_fetchActivePlans] Buscando planes activos creados por "
-        "${widget.userId}");
+    print("[_fetchActivePlans] Buscando planes activos creados por ${widget.userId}");
     final snapshot = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: widget.userId)
@@ -172,34 +167,37 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     print("[_fetchActivePlans] Se encontraron ${snapshot.docs.length} planes.");
     return snapshot.docs.map((doc) {
       final data = doc.data();
-      data['id'] = doc.id;
+      data['id'] = doc.id; // forzamos a inyectar el doc.id en data
       return PlanModel.fromMap(data);
     }).toList();
   }
 
-  /// Carga datos de los participantes del plan (si quisieras mostrarlos).
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-      PlanModel plan) async {
-    print("[_fetchAllPlanParticipants] Cargando participantes del plan "
-        "con ID=${plan.id}");
-    final List<Map<String, dynamic>> participants = [];
+  /// Carga datos de los participantes del plan
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
+  //print("[_fetchAllPlanParticipants] Cargando participantes del plan con ID=${plan.id}");
+  final List<Map<String, dynamic>> participants = [];
 
-    final creatorDoc = await FirebaseFirestore.instance
+  final participantUids = plan.participants ?? [];
+  for (String uid in participantUids) {
+    final docUser = await FirebaseFirestore.instance
         .collection('users')
-        .doc(plan.createdBy)
+        .doc(uid)
         .get();
-    if (creatorDoc.exists) {
-      final cdata = creatorDoc.data() ?? {};
+    if (docUser.exists && docUser.data() != null) {
+      final userData = docUser.data()!;
       participants.add({
-        'name': cdata['name'] ?? 'Sin nombre',
-        'age': (cdata['age'] ?? '').toString(),
-        'photoUrl': cdata['photoUrl'] ?? '',
-        'isCreator': true,
+        'uid': uid,
+        'name': userData['name'] ?? 'Usuario',
+        'age': userData['age']?.toString() ?? '',
+        'photoUrl': userData['photoUrl'] ?? '',
+        'isCreator': uid == plan.createdBy,
       });
     }
-    print("[_fetchAllPlanParticipants] Participantes: ${participants.length}");
-    return participants;
   }
+
+  //print("[_fetchAllPlanParticipants] Participantes encontrados: ${participants.length}");
+  return participants;
+}
 
   Future<int> _getFollowersCount(String userId) async {
     print("[_getFollowersCount] Contando followers de userId=$userId");
@@ -220,9 +218,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   /// Botón para seguir/dejar de seguir a este usuario
-  ///
-  /// Si el perfil es privado ([_isPrivate]) y NO se está siguiendo,
-  /// en lugar de seguir directamente, se envía "solicitud de seguimiento".
   Future<void> _toggleFollow() async {
     print("[_toggleFollow] isFollowing=$isFollowing, userId=${widget.userId}");
     final user = FirebaseAuth.instance.currentUser;
@@ -240,8 +235,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }
 
     try {
-      // Si ya seguimos, permitimos "Unfollow" normal (incluso en privado).
       if (isFollowing) {
+        // Proceder con Unfollow
         print("[_toggleFollow] Procediendo a Unfollow");
         final followedSnap = await FirebaseFirestore.instance
             .collection('followed')
@@ -266,35 +261,27 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           const SnackBar(content: Text('Has dejado de seguir a este usuario.')),
         );
       } else {
-        // El usuario NO está siguiendo
-        // Si el perfil es público => follow al instante
-        // Si el perfil es privado => mandar solicitud
+        // No está siguiendo
         if (!_isPrivate) {
-          // Perfil público => follow
-          print("[_toggleFollow] Perfil público. Procediendo a Follow directo");
+          // Perfil público => Follow directo
+          print("[_toggleFollow] Perfil público => Follow");
           await FirebaseFirestore.instance.collection('followers').add({
-            'userId': widget.userId, // la persona a quien seguimos
-            'followerId': user.uid,  // nosotros
+            'userId': widget.userId,
+            'followerId': user.uid,
           });
           await FirebaseFirestore.instance.collection('followed').add({
-            'userId': user.uid,      // nosotros
-            'followedId': widget.userId, // a quién seguimos
+            'userId': user.uid,
+            'followedId': widget.userId,
           });
           setState(() {
             isFollowing = true;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('¡Has comenzado a seguir a este usuario!')),
+            const SnackBar(content: Text('¡Has comenzado a seguir a este usuario!')),
           );
-
-          // (Opcional) notificación "follow_new" aquí si deseas
-
         } else {
-          // Perfil privado => follow_request
-          print("[_toggleFollow] Perfil privado. Enviando solicitud de seguimiento.");
-
-          // Obtenemos el nombre y foto del usuario que envía la solicitud
+          // Perfil privado => Solicitud de seguimiento
+          print("[_toggleFollow] Perfil privado => Solicitud");
           final senderDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -303,7 +290,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           final senderName = senderData['name'] ?? 'SinNombre';
           final senderPhoto = senderData['photoUrl'] ?? '';
 
-          // 1) Creamos el documento en follow_requests
+          // 1) Document en follow_requests
           await FirebaseFirestore.instance.collection('follow_requests').add({
             'requesterId': user.uid,
             'targetId': widget.userId,
@@ -311,11 +298,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             'status': 'pending',
           });
 
-          // 2) Creamos la notificación en la colección 'notifications'
+          // 2) Notificación
           await FirebaseFirestore.instance.collection('notifications').add({
             'type': 'follow_request',
-            'receiverId': widget.userId,  // Quien recibe la solicitud
-            'senderId': user.uid,         // Quien la envía
+            'receiverId': widget.userId,
+            'senderId': user.uid,
             'senderName': senderName,
             'senderProfilePic': senderPhoto,
             'timestamp': FieldValue.serverTimestamp(),
@@ -323,9 +310,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('Solicitud de seguimiento enviada (perfil privado).')),
+            const SnackBar(content: Text('Solicitud de seguimiento enviada (perfil privado).')),
           );
         }
       }
@@ -347,10 +332,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     final planDocRef =
         FirebaseFirestore.instance.collection('plans').doc(plan.id);
 
-    // Añadimos el usuario a 'participants' (si no está)
+    // Añadimos el usuario a 'participants'
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(planDocRef);
-      if (!snapshot.exists) return; // El plan se borró
+      if (!snapshot.exists) return;
 
       final data = snapshot.data() as Map<String, dynamic>;
       final participants = List<String>.from(data['participants'] ?? []);
@@ -361,14 +346,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       }
     });
 
-    // Leemos cuántos hay ahora
+    // Leer cuántos hay ahora
     final updatedSnap = await planDocRef.get();
     final updatedData = updatedSnap.data() ?? {};
-    final newParticipants =
-        List<String>.from(updatedData['participants'] ?? []);
+    final newParticipants = List<String>.from(updatedData['participants'] ?? []);
     final newCount = newParticipants.length;
 
-    // Actualiza estadísticas manualmente si procede
+    // Actualizar estadísticas
     await PrivilegeLevelDetails.updateSubscriptionStats(
       plan.createdBy,
       newCount,
@@ -376,19 +360,178 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-            "Te uniste al plan ${plan.type}. Participantes ahora: $newCount"),
+        content: Text("Te uniste al plan ${plan.type}. Participantes ahora: $newCount"),
       ),
     );
   }
 
+  // =================================================
+  //   MOSTRAR FrostedPlanDialog A PANTALLA COMPLETA
+  // =================================================
+  void _showFrostedPlanDialog(PlanModel plan) {
+    print("[_showFrostedPlanDialog] plan=${plan.id}");
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      useSafeArea: false, // Quita SafeArea => ocupa toda la pantalla
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            child: new_frosted.FrostedPlanDialog(
+              plan: plan,
+              fetchParticipants: _fetchAllPlanParticipants,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Popup para mostrar planes activos del usuario
+  /// (Lo mantenemos con showGeneralDialog para tu diseño. 
+  /// Si quieres fullscreen también aquí, podrías cambiar a showDialog
+  /// con useSafeArea: false, etc.)
+  void _showActivePlansPopup() {
+    print("[_showActivePlansPopup] Mostrando popup con los planes activos");
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, anim, _, child) {
+        return FadeTransition(
+          opacity: anim,
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.center,
+              child: Material(
+                color: Colors.transparent,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      height: 300,
+                      color: Colors.black.withOpacity(0.3),
+                      padding: const EdgeInsets.all(16),
+                      child: FutureBuilder<List<PlanModel>>(
+                        future: _fetchActivePlans(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'No hay planes activos',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            );
+                          }
+                          final plans = snapshot.data!;
+                          return ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: plans.length,
+                            itemBuilder: (context, index) {
+                              final plan = plans[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  print("[_showActivePlansPopup] Pulsó plan ID=${plan.id}");
+                                  Navigator.of(context).pop();
+                                  _showFrostedPlanDialog(plan);
+                                },
+                                child: _buildPlanCard(plan),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlanCard(PlanModel plan) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        image: (plan.backgroundImage != null && plan.backgroundImage!.isNotEmpty)
+            ? DecorationImage(
+                image: NetworkImage(plan.backgroundImage!),
+                fit: BoxFit.cover,
+              )
+            : null,
+        color: Colors.grey[300],
+      ),
+      child: Stack(
+        children: [
+          // Imagen y título del plan
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(15),
+                  bottomRight: Radius.circular(15),
+                ),
+              ),
+              child: Text(
+                plan.type,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          // Botón para unirse
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IconButton(
+              icon: const Icon(Icons.add, color: Colors.white),
+              onPressed: () {
+                // Al pulsar, nos unimos al plan
+                _joinPlan(plan);
+              },
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // ========================================================
+  //   WIDGETS PRINCIPALES DEL BUILD
+  // ========================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: FutureBuilder<DocumentSnapshot>(
-        future:
-            FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -403,6 +546,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           return SingleChildScrollView(
             child: Column(
               children: [
+                // CABECERA CON LA PORTADA + BOTÓN ATRÁS + AVATAR
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -414,12 +558,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                         child: Container(
                           color: Colors.black.withOpacity(0.4),
                           child: IconButton(
-                            icon: const Icon(Icons.arrow_back,
-                                color: Colors.white),
-                            onPressed: () {
-                              print("[UserInfoCheck] Botón atrás pulsado, pop()");
-                              Navigator.pop(context);
-                            },
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
                           ),
                         ),
                       ),
@@ -435,24 +575,30 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   ],
                 ),
                 const SizedBox(height: 70),
-                // Botón: "Ver Privilegios"
+
+                // ICONO DE NIVEL DE PRIVILEGIO
                 _buildPrivilegeButton(context),
+
+                // BOTONES DE ACCION (Invitar, Mensaje, Seguir)
                 _buildActionButtons(context, widget.userId),
                 const SizedBox(height: 20),
+
+                // STATS (planes activos, seguidores, seguidos)
                 _buildBioAndStats(),
                 const SizedBox(height: 20),
+
+                // Divider
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Divider(color: Colors.grey[400], thickness: 0.5),
                 ),
                 const SizedBox(height: 20),
 
-                // Si el perfil es privado y NO seguimos => mostramos el candado y texto
-                // Si no => mostramos el calendario
+                // Si el perfil es privado y NO seguimos => candado
+                // Sino => mostramos su calendario con onPlanSelected
                 if (_isPrivate && !isFollowing)
                   Column(
                     children: [
-                      // Icono de candado encima del mensaje
                       SvgPicture.asset(
                         "assets/icono-candado.svg",
                         width: 40,
@@ -467,7 +613,14 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     ],
                   )
                 else
-                  MemoriesCalendar(userId: widget.userId),
+                  // Calendario con callback
+                  MemoriesCalendar(
+                    userId: widget.userId,
+                    onPlanSelected: (PlanModel plan) {
+                      // ¡Abrimos el FrostedPlanDialog a pantalla completa!
+                      _showFrostedPlanDialog(plan);
+                    },
+                  ),
 
                 const SizedBox(height: 40),
               ],
@@ -478,27 +631,69 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  // Mapeamos el string del nivel a un título amigable:
-  String _mapPrivilegeLevelToTitle(String level) {
-    switch (level.toLowerCase()) {
-      case "premium":
-        return "Premium";
-      case "golden":
-        return "Golden";
-      case "vip":
-        return "VIP";
-      default:
-        return "Básico";
+  Widget _buildCoverImage() {
+    final bool hasCover =
+        (_coverImageUrl != null && _coverImageUrl!.isNotEmpty);
+    if (hasCover) {
+      print("[_buildCoverImage] coverImageUrl=$_coverImageUrl");
+    } else {
+      print("[_buildCoverImage] El usuario no tiene coverPhotoUrl");
     }
+
+    return Container(
+      height: 300,
+      width: double.infinity,
+      color: Colors.grey[300],
+      child: hasCover
+          ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
+          : Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.image, size: 30, color: Colors.black54),
+                  SizedBox(width: 8),
+                  Text("Sin portada", style: TextStyle(color: Colors.black54)),
+                ],
+              ),
+            ),
+    );
   }
 
-  // Botón: "Ver Privilegios" (con el texto debajo del ícono)
+  Widget _buildAvatarAndName(String userName) {
+    final fallbackAvatar = "https://via.placeholder.com/150";
+    final avatarUrl =
+        (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+            ? _profileImageUrl!
+            : fallbackAvatar;
+
+    print("[_buildAvatarAndName] avatarUrl=$avatarUrl, userName=$userName");
+
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 45,
+          backgroundColor: Colors.white,
+          child: CircleAvatar(
+            radius: 42,
+            backgroundImage: NetworkImage(avatarUrl),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          userName,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPrivilegeButton(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        print("[_buildPrivilegeButton] Botón 'Ver Privilegios' pulsado");
-        _showPrivilegeLevelDetailsPopup();
-      },
+      onTap: _showPrivilegeLevelDetailsPopup,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Container(
@@ -553,62 +748,140 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  Widget _buildCoverImage() {
-    final bool hasCover =
-        (_coverImageUrl != null && _coverImageUrl!.isNotEmpty);
-    if (hasCover) {
-      print("[_buildCoverImage] Mostrando coverImageUrl=$_coverImageUrl");
-    } else {
-      print("[_buildCoverImage] El usuario no tiene coverPhotoUrl");
-    }
+  Widget _buildActionButtons(BuildContext context, String otherUserId) {
+    print("[_buildActionButtons] userId=$otherUserId, isFollowing=$isFollowing, isPrivate=$_isPrivate");
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // 1) Invitar a un Plan
+        _buildActionButton(
+          context: context,
+          iconPath: 'assets/union.svg',
+          label: 'Invítale a un Plan',
+          onTap: (_isPrivate && !isFollowing)
+              ? () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Este usuario es privado. Debes seguirle y ser '
+                          'aceptado para invitarle a un plan.'),
+                    ),
+                  );
+                }
+              : () {
+                  print("[_buildActionButtons] Botón 'Invítale a un Plan'");
+                  if (otherUserId.isNotEmpty) {
+                    InviteUsersToPlanScreen.showPopup(context, otherUserId);
+                  }
+                },
+        ),
+        const SizedBox(width: 12),
 
-    return Container(
-      height: 300,
-      width: double.infinity,
-      color: Colors.grey[300],
-      child: hasCover
-          ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
-          : Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.image, size: 30, color: Colors.black54),
-                  SizedBox(width: 8),
-                  Text("Sin portada", style: TextStyle(color: Colors.black54)),
-                ],
-              ),
-            ),
+        // 2) Enviar Mensaje
+        _buildActionButton(
+          context: context,
+          iconPath: 'assets/mensaje.svg',
+          label: 'Enviar Mensaje',
+          onTap: (_isPrivate && !isFollowing)
+              ? () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Este usuario es privado. Debes seguirle y ser '
+                          'aceptado para enviarle mensajes.'),
+                    ),
+                  );
+                }
+              : () {
+                  print("[_buildActionButtons] Botón 'Mensaje' pulsado");
+                  showGeneralDialog(
+                    context: context,
+                    barrierDismissible: true,
+                    barrierLabel: 'Cerrar',
+                    barrierColor: Colors.transparent,
+                    transitionDuration: const Duration(milliseconds: 300),
+                    pageBuilder: (_, __, ___) => const SizedBox(),
+                    transitionBuilder: (ctx, anim1, anim2, child) {
+                      return FadeTransition(
+                        opacity: CurvedAnimation(
+                          parent: anim1,
+                          curve: Curves.easeOut,
+                        ),
+                        child: UserInfoInsideChat(
+                          key: ValueKey(otherUserId),
+                          chatPartnerId: otherUserId,
+                        ),
+                      );
+                    },
+                  );
+                },
+        ),
+        const SizedBox(width: 12),
+
+        // 3) Seguir / Siguiendo
+        _buildActionButton(
+          context: context,
+          iconPath: isFollowing
+              ? 'assets/icono-tick.svg'
+              : 'assets/agregar-usuario.svg',
+          label: isFollowing ? 'Siguiendo' : 'Seguir',
+          onTap: _toggleFollow,
+        ),
+      ],
     );
   }
 
-  Widget _buildAvatarAndName(String userName) {
-    final fallbackAvatar = "https://via.placeholder.com/150";
-    final avatarUrl = (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
-        ? _profileImageUrl!
-        : fallbackAvatar;
-
-    print("[_buildAvatarAndName] avatarUrl=$avatarUrl, userName=$userName");
-
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 45,
-          backgroundColor: Colors.white,
-          child: CircleAvatar(
-            radius: 42,
-            backgroundImage: NetworkImage(avatarUrl),
+  Widget _buildActionButton({
+    required BuildContext context,
+    required String iconPath,
+    String? label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 13, 32, 53),
+                  Color.fromARGB(255, 72, 38, 38),
+                  Color(0xFF12232E),
+                ],
+              ),
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 24,
+                  height: 24,
+                  color: Colors.white,
+                ),
+                if (label != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          userName,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -659,8 +932,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 final followersCount = snapshotFol.data ?? 0;
                 final followedCount = snapshotFing.data ?? 0;
 
-                print("[_buildBioAndStats] planeCount=$planeCount, "
-                    "followersCount=$followersCount, followedCount=$followedCount");
+                print("[_buildBioAndStats] planeCount=$planeCount, followersCount=$followersCount, followedCount=$followedCount");
 
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -748,305 +1020,19 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, String otherUserId) {
-    print("[_buildActionButtons] userId=$otherUserId, "
-        "isFollowing=$isFollowing, isPrivate=$_isPrivate");
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // 1) Invitar a un Plan
-        _buildActionButton(
-          context: context,
-          iconPath: 'assets/union.svg',
-          label: 'Invítale a un Plan',
-          onTap: (_isPrivate && !isFollowing)
-              ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Este usuario es privado. Debes seguirle y ser '
-                          'aceptado para invitarle a un plan.'),
-                    ),
-                  );
-                }
-              : () {
-                  print("[_buildActionButtons] Botón 'Invítale a un Plan'");
-                  if (otherUserId.isNotEmpty) {
-                    InviteUsersToPlanScreen.showPopup(context, otherUserId);
-                  }
-                },
-        ),
-        const SizedBox(width: 12),
-
-        // 2) Enviar Mensaje
-        _buildActionButton(
-          context: context,
-          iconPath: 'assets/mensaje.svg',
-          label: 'Enviar Mensaje',
-          onTap: (_isPrivate && !isFollowing)
-              ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Este usuario es privado. Debes seguirle y ser '
-                          'aceptado para enviarle mensajes.'),
-                    ),
-                  );
-                }
-              : () {
-                  print("[_buildActionButtons] Botón 'Mensaje' pulsado");
-                  showGeneralDialog(
-                    context: context,
-                    barrierDismissible: true,
-                    barrierLabel: 'Cerrar',
-                    barrierColor: Colors.transparent,
-                    transitionDuration: const Duration(milliseconds: 300),
-                    pageBuilder: (_, __, ___) => const SizedBox(),
-                    transitionBuilder: (ctx, anim1, anim2, child) {
-                      return FadeTransition(
-                        opacity:
-                            CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-                        child: UserInfoInsideChat(
-                          key: ValueKey(otherUserId),
-                          chatPartnerId: otherUserId,
-                        ),
-                      );
-                    },
-                  );
-                },
-        ),
-        const SizedBox(width: 12),
-
-        // 3) Seguir / Siguiendo (o Solicitud de seguimiento si es privado)
-        _buildActionButton(
-          context: context,
-          iconPath: isFollowing
-              ? 'assets/icono-tick.svg'
-              : 'assets/agregar-usuario.svg',
-          label: isFollowing ? 'Siguiendo' : 'Seguir',
-          onTap: () {
-            print("[_buildActionButtons] Botón 'Seguir/Siguiendo' pulsado");
-            _toggleFollow();
-          },
-        ),
-      ],
-    );
+  String _mapPrivilegeLevelToTitle(String level) {
+    switch (level.toLowerCase()) {
+      case "premium":
+        return "Premium";
+      case "golden":
+        return "Golden";
+      case "vip":
+        return "VIP";
+      default:
+        return "Básico";
+    }
   }
 
-  /// Se aplica el degradado en el fondo de los botones de acción
-  Widget _buildActionButton({
-    required BuildContext context,
-    required String iconPath,
-    String? label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.fromARGB(255, 13, 32, 53),
-                  Color.fromARGB(255, 72, 38, 38),
-                  Color(0xFF12232E),
-                ],
-              ),
-              borderRadius: BorderRadius.all(Radius.circular(20)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  iconPath,
-                  width: 24,
-                  height: 24,
-                  color: Colors.white,
-                ),
-                if (label != null) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Popup para mostrar planes activos del usuario
-  void _showActivePlansPopup() {
-    print("[_showActivePlansPopup] Mostrando popup con los planes activos");
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
-      transitionBuilder: (ctx, anim, _, child) {
-        return FadeTransition(
-          opacity: anim,
-          child: SafeArea(
-            child: Align(
-              alignment: Alignment.center,
-              child: Material(
-                color: Colors.transparent,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      height: 300,
-                      color: Colors.black.withOpacity(0.3),
-                      padding: const EdgeInsets.all(16),
-                      child: FutureBuilder<List<PlanModel>>(
-                        future: _fetchActivePlans(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                'No hay planes activos',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            );
-                          }
-                          final plans = snapshot.data!;
-                          return ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: plans.length,
-                            itemBuilder: (context, index) {
-                              final plan = plans[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  print("[_showActivePlansPopup] Pulsó plan ID=${plan.id}");
-                                  Navigator.of(context).pop();
-                                  _showFrostedPlanDialog(plan);
-                                },
-                                child: _buildPlanCard(plan),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Muestra un dialog especial con info del plan y la opción de unirse
-  void _showFrostedPlanDialog(PlanModel plan) {
-    print("[_showFrostedPlanDialog] Mostrando frostedPlanDialog plan=${plan.id}");
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) => const SizedBox.shrink(),
-      transitionBuilder: (ctx, anim, _, child) {
-        return FadeTransition(
-          opacity: anim,
-          child: SafeArea(
-            child: Align(
-              alignment: Alignment.center,
-              child: Material(
-                color: Colors.transparent,
-                child: new_frosted.FrostedPlanDialog(
-                  plan: plan,
-                  fetchParticipants: _fetchAllPlanParticipants,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPlanCard(PlanModel plan) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        image: (plan.backgroundImage != null &&
-                plan.backgroundImage!.isNotEmpty)
-            ? DecorationImage(
-                image: NetworkImage(plan.backgroundImage!),
-                fit: BoxFit.cover,
-              )
-            : null,
-        color: Colors.grey[300],
-      ),
-      child: Stack(
-        children: [
-          // Imagen y título del plan
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(15),
-                  bottomRight: Radius.circular(15),
-                ),
-              ),
-              child: Text(
-                plan.type,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          // Botón para unirse
-          Positioned(
-            top: 4,
-            right: 4,
-            child: IconButton(
-              icon: const Icon(Icons.add, color: Colors.white),
-              onPressed: () {
-                // Al pulsar, nos unimos al plan
-                _joinPlan(plan);
-              },
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  // Selecciona el ícono según el nivel de privilegio
   String _getPrivilegeIcon(String level) {
     switch (level.toLowerCase()) {
       case "premium":

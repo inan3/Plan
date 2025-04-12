@@ -7,26 +7,23 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- Importante
 import 'package:flutter/scheduler.dart';
 
-// Paquete para escoger imágenes
 import 'package:image_picker/image_picker.dart';
-
-// Paquete para ubicación (si usas geolocator)
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+import 'package:flutter_svg/flutter_svg.dart';
+
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
-import '../users_managing/frosted_plan_dialog_state.dart'; // Ajusta la ruta a tu ubicación real
+import '../users_managing/frosted_plan_dialog_state.dart'; 
 import '../users_managing/user_info_check.dart';
-
-// IMPORTAMOS LA PANTALLA DE SELECCIÓN DE PLANES
-import 'select_plan_screen.dart'; // <-- Este es el nuevo widget que verás más abajo
+import 'select_plan_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
   final String? chatPartnerPhoto;
-  final Timestamp? deletedAt; // Si el usuario eliminó el chat, se almacenará el timestamp
+  final Timestamp? deletedAt; 
 
   const ChatScreen({
     Key? key,
@@ -45,28 +42,22 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  // Para controlar si la localización de fechas ya fue inicializada:
   bool _localeInitialized = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Inicializamos la localización de fechas en español localmente
     initializeDateFormatting('es', null).then((_) {
       setState(() {
         _localeInitialized = true;
       });
     });
-
-    // Marcamos los mensajes como leídos al entrar al chat
     _markMessagesAsRead();
   }
 
-  /// Marca como leídos todos los mensajes recibidos en este chat.
+  /// Marca como leídos todos los mensajes recibidos en este chat
   Future<void> _markMessagesAsRead() async {
     try {
-      // Mensajes enviados por el chatPartner que no han sido leídos
       QuerySnapshot unreadMessages = await FirebaseFirestore.instance
           .collection('messages')
           .where('senderId', isEqualTo: widget.chatPartnerId)
@@ -79,7 +70,6 @@ class _ChatScreenState extends State<ChatScreen> {
         batch.update(doc.reference, {'isRead': true});
       }
       await batch.commit();
-      // Mensajes marcados como leídos
     } catch (e) {
       print("❌ Error al marcar mensajes como leídos: $e");
     }
@@ -91,19 +81,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [
-            // Encabezado superior
             _buildChatHeader(context),
-
-            // Lista de mensajes, expandida para ocupar todo el espacio sobrante
-            Expanded(
-              child: _buildMessagesList(),
-            ),
-
-            // Área de entrada de mensaje en la parte inferior
+            Expanded(child: _buildMessagesList()),
             _buildMessageInput(),
           ],
         ),
@@ -111,13 +93,12 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Construye el encabezado (barra superior) del chat
+  /// Encabezado superior (con foto, nombre, botón back y menú)
   Widget _buildChatHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          // Botón de retroceso
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -140,7 +121,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Info del chat: foto + nombre (expandido)
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -158,7 +138,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               child: GestureDetector(
                 onTap: () {
-                  // Al pulsar en cualquier parte, abrimos la pantalla del usuario:
+                  // Al pulsar, abrimos UserInfoCheck
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -194,7 +174,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Botón menú (3 puntos)
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -211,7 +190,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: IconButton(
               icon: const Icon(Icons.more_vert, color: AppColors.blue),
               onPressed: () {
-                // Acciones extra si quieres
+                // Acciones extra (en desarrollo)
               },
             ),
           ),
@@ -220,7 +199,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Lista de mensajes con separadores de fecha y auto-scroll
+  /// Lista de mensajes
   Widget _buildMessagesList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -233,33 +212,28 @@ class _ChatScreenState extends State<ChatScreen> {
           return const SizedBox();
         }
 
-        // Antes de filtrar, marcamos como 'delivered' los mensajes que lo necesiten
         _markAllMessagesAsDelivered(snapshot.data!.docs);
 
-        // Filtramos solo los mensajes entre currentUserId y chatPartnerId,
-        // además de descartar los anteriores a deletedAt, si existe.
+        // Filtramos mensajes entre currentUserId <-> widget.chatPartnerId
+        // y que sean posteriores a deletedAt
         var filteredDocs = snapshot.data!.docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
           if (data['timestamp'] is! Timestamp) return false;
           Timestamp timestamp = data['timestamp'];
           DateTime messageTime = timestamp.toDate();
 
-          // Si hay un deletedAt, no mostramos los mensajes anteriores a ese momento
           if (widget.deletedAt != null &&
               messageTime.isBefore(widget.deletedAt!.toDate())) {
             return false;
           }
 
-          // Verificar que son mensajes con sender/receiver correctos
           bool case1 = (data['senderId'] == currentUserId &&
               data['receiverId'] == widget.chatPartnerId);
           bool case2 = (data['senderId'] == widget.chatPartnerId &&
               data['receiverId'] == currentUserId);
-
           return case1 || case2;
         }).toList();
 
-        // Si no hay mensajes tras filtrar:
         if (filteredDocs.isEmpty) {
           return const Center(
             child: Text(
@@ -269,36 +243,29 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }
 
-        // Creamos una lista "chatItems" donde insertamos
-        // los separadores de fecha y los mensajes.
+        // Insertamos separadores de fecha en la lista final
         List<dynamic> chatItems = [];
         String? lastDate;
 
         for (var doc in filteredDocs) {
           var data = doc.data() as Map<String, dynamic>;
-          // Obtenemos la fecha del mensaje
           final timestamp = data['timestamp'] as Timestamp;
           final dateTime = timestamp.toDate();
 
-          // Formateamos la fecha en el estilo deseado (solo si Intl está inicializado)
           String dayString;
           if (_localeInitialized) {
             dayString = DateFormat('d MMM yyyy', 'es').format(dateTime);
           } else {
-            // Si Intl no está listo, usamos un formateo sencillo
             dayString = "${dateTime.day}/${dateTime.month}/${dateTime.year}";
           }
 
-          // Si es un día distinto al último que registramos, insertamos separador
           if (lastDate == null || dayString != lastDate) {
             chatItems.add({'dayMarker': dayString});
             lastDate = dayString;
           }
-          // Insertamos el propio documento del mensaje
           chatItems.add(doc);
         }
 
-        // Hacemos auto-scroll al final después de dibujar (post-frame).
         SchedulerBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
@@ -309,13 +276,9 @@ class _ChatScreenState extends State<ChatScreen> {
           itemCount: chatItems.length,
           itemBuilder: (context, index) {
             final item = chatItems[index];
-
-            // Si es un separador de fecha (un mapa con 'dayMarker')
             if (item is Map<String, dynamic> && item.containsKey('dayMarker')) {
               return _buildDayMarker(item['dayMarker']);
             }
-
-            // Si es un DocumentSnapshot con datos del mensaje
             if (item is DocumentSnapshot) {
               var data = item.data() as Map<String, dynamic>;
               bool isMe = data['senderId'] == currentUserId;
@@ -328,11 +291,10 @@ class _ChatScreenState extends State<ChatScreen> {
               } else if (type == 'location') {
                 return _buildLocationBubble(data, isMe);
               } else {
-                // Caso texto normal
+                // texto
                 return _buildTextBubble(data, isMe);
               }
             }
-
             return const SizedBox.shrink();
           },
         );
@@ -340,7 +302,29 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Pequeño widget que muestra la fecha en el centro del chat, estilo WhatsApp
+  /// Marca mensajes como 'delivered'
+  Future<void> _markAllMessagesAsDelivered(List<DocumentSnapshot> docs) async {
+    final undeliveredDocs = docs.where((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+      bool isReceiver = data['receiverId'] == currentUserId;
+      bool delivered = data['delivered'] ?? false;
+      return isReceiver && !delivered;
+    }).toList();
+
+    if (undeliveredDocs.isEmpty) return;
+
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+    for (var doc in undeliveredDocs) {
+      batch.update(doc.reference, {'delivered': true});
+    }
+
+    try {
+      await batch.commit();
+    } catch (e) {
+      print("❌ Error al marcar mensajes como entregados: $e");
+    }
+  }
+
   Widget _buildDayMarker(String dayString) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -366,43 +350,17 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Marca como 'delivered' todos los mensajes nuevos que el usuario actual ha recibido.
-  Future<void> _markAllMessagesAsDelivered(List<DocumentSnapshot> docs) async {
-    final undeliveredDocs = docs.where((doc) {
-      var data = doc.data() as Map<String, dynamic>;
-      bool isReceiver = data['receiverId'] == currentUserId;
-      bool delivered = data['delivered'] ?? false;
-      return isReceiver && !delivered; // si soy receptor y no está entregado
-    }).toList();
-
-    if (undeliveredDocs.isEmpty) return;
-
-    WriteBatch batch = FirebaseFirestore.instance.batch();
-    for (var doc in undeliveredDocs) {
-      batch.update(doc.reference, {'delivered': true});
-    }
-
-    try {
-      await batch.commit();
-    } catch (e) {
-      print("❌ Error al marcar mensajes como entregados: $e");
-    }
-  }
-
-  /// Burbuja para mensajes de texto
   Widget _buildTextBubble(Map<String, dynamic> data, bool isMe) {
     DateTime messageTime = DateTime.now();
     if (data['timestamp'] is Timestamp) {
       messageTime = (data['timestamp'] as Timestamp).toDate();
     }
-
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
 
-    // Color crema para el emisor, lila crema para el receptor
     final bubbleColor = isMe
-        ? const Color(0xFFF9E4D5) // Crema
-        : const Color.fromARGB(255, 247, 237, 250); // Lila
+        ? const Color(0xFFF9E4D5)
+        : const Color.fromARGB(255, 247, 237, 250);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -467,7 +425,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Burbuja para mensajes que comparten un plan
   Widget _buildSharedPlanBubble(Map<String, dynamic> data, bool isMe) {
     final String planId = data['planId'] ?? '';
     final String planTitle = data['planTitle'] ?? 'Título';
@@ -505,7 +462,6 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment:
               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            // Imagen / preview del plan
             GestureDetector(
               onTap: () => _openPlanDetails(planId),
               child: Container(
@@ -529,7 +485,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     : null,
               ),
             ),
-            // Texto del plan
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
@@ -551,7 +506,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: const TextStyle(color: Colors.black),
                   ),
                   const SizedBox(height: 8),
-                  // Enlace (si existe)
                   if (planLink.isNotEmpty)
                     InkWell(
                       onTap: () => _openPlanDetails(planId),
@@ -599,7 +553,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Burbuja para mensajes de imagen
   Widget _buildImageBubble(Map<String, dynamic> data, bool isMe) {
     final String imageUrl = data['imageUrl'] ?? '';
 
@@ -607,7 +560,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (data['timestamp'] is Timestamp) {
       messageTime = (data['timestamp'] as Timestamp).toDate();
     }
-
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
 
@@ -633,7 +585,6 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment:
               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            // Imagen
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
@@ -656,10 +607,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ),
             ),
-            // Hora + checks
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment:
@@ -693,7 +642,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Burbuja para mensajes de ubicación
   Widget _buildLocationBubble(Map<String, dynamic> data, bool isMe) {
     final double? lat = data['latitude'];
     final double? lng = data['longitude'];
@@ -702,7 +650,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (data['timestamp'] is Timestamp) {
       messageTime = (data['timestamp'] as Timestamp).toDate();
     }
-
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
 
@@ -726,8 +673,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         child: InkWell(
           onTap: () {
-            // Aquí podrías abrir Google Maps, o una pantalla con un Map widget
-            // Por ejemplo: openMap(lat, lng);
+            // Ir a mapa, etc.
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -737,7 +683,7 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 const Icon(Icons.location_on, color: Colors.red, size: 40),
                 Text(
-                  lat != null && lng != null
+                  (lat != null && lng != null)
                       ? 'Ubicación: ($lat, $lng)'
                       : 'Ubicación no disponible',
                   style: const TextStyle(color: Colors.black),
@@ -777,7 +723,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Abre el plan con un FrostedPlanDialog
+  /// Aquí es donde OBTENEMOS el plan y luego abrimos un FrostedPlanDialog
   void _openPlanDetails(String planId) async {
     try {
       final planDoc = await FirebaseFirestore.instance
@@ -800,7 +746,8 @@ class _ChatScreenState extends State<ChatScreen> {
         MaterialPageRoute(
           builder: (ctx) => FrostedPlanDialog(
             plan: plan,
-            fetchParticipants: _fetchPlanParticipants,
+            // Ojo: AÑADIMOS 'uid' para cada participante
+            fetchParticipants: _fetchPlanParticipantsWithUid,
           ),
         ),
       );
@@ -809,14 +756,19 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
+  /// IMPORTANTE:
+  /// Incluir 'uid' en cada participante para que, al pulsar en el popup
+  /// de Participantes dentro de FrostedPlanDialog, navegue a UserInfoCheck.
+  Future<List<Map<String, dynamic>>> _fetchPlanParticipantsWithUid(
+    PlanModel plan,
+  ) async {
     final List<Map<String, dynamic>> participants = [];
 
-    // 1) Cargamos creador
     final docPlan = await FirebaseFirestore.instance
         .collection('plans')
         .doc(plan.id)
         .get();
+
     if (docPlan.exists) {
       final planMap = docPlan.data();
       final creatorId = planMap?['createdBy'];
@@ -828,6 +780,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (creatorDoc.exists && creatorDoc.data() != null) {
           final cdata = creatorDoc.data()!;
           participants.add({
+            'uid': creatorId, //<-- AÑADIMOS 'uid'
             'name': cdata['name'] ?? 'Sin nombre',
             'age': cdata['age']?.toString() ?? '',
             'photoUrl': cdata['photoUrl'] ?? '',
@@ -837,7 +790,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
-    // 2) Suscritos
+    // Suscriptores
     final subsSnap = await FirebaseFirestore.instance
         .collection('subscriptions')
         .where('id', isEqualTo: plan.id)
@@ -850,11 +803,12 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(uid)
           .get();
       if (userDoc.exists && userDoc.data() != null) {
-        final udata = userDoc.data()!;
+        final uData = userDoc.data()!;
         participants.add({
-          'name': udata['name'] ?? 'Sin nombre',
-          'age': udata['age']?.toString() ?? '',
-          'photoUrl': udata['photoUrl'] ?? '',
+          'uid': uid, //<-- AÑADIMOS 'uid'
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? '',
           'isCreator': false,
         });
       }
@@ -863,13 +817,12 @@ class _ChatScreenState extends State<ChatScreen> {
     return participants;
   }
 
-  /// Área de entrada de mensaje
+  /// Área inferior para escribir mensaje + botón de envío
   Widget _buildMessageInput() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          // Botón "+"
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -885,11 +838,10 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: IconButton(
               icon: const Icon(Icons.add, color: AppColors.blue),
-              onPressed: _showAttachmentOptions, // <-- Aquí la nueva función
+              onPressed: _showAttachmentOptions,
             ),
           ),
           const SizedBox(width: 8),
-          // Campo de texto
           Expanded(
             child: Container(
               height: 48,
@@ -918,7 +870,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Botón "Send"
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -942,7 +893,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Muestra el bottom sheet con las 3 opciones: Ubicación, Plan, Foto
   void _showAttachmentOptions() {
     showModalBottomSheet(
       context: context,
@@ -960,7 +910,7 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // OPCIÓN 1: Ubicación
+              // Ubicación
               _buildFloatingOption(
                 svgPath: 'assets/icono-ubicacion.svg',
                 label: 'Ubicación',
@@ -969,7 +919,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   await _handleSendLocation();
                 },
               ),
-              // OPCIÓN 2: Plan
+              // Plan
               _buildFloatingOption(
                 svgPath: 'assets/plan-sin-fondo.png',
                 label: 'Plan',
@@ -978,7 +928,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   _showPlanSelection();
                 },
               ),
-              // OPCIÓN 3: Foto
+              // Foto
               _buildFloatingOption(
                 svgPath: 'assets/icono-imagen.svg',
                 label: 'Foto',
@@ -994,7 +944,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Botón circular con ícono y texto debajo
   Widget _buildFloatingOption({
     required String svgPath,
     required String label,
@@ -1020,14 +969,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ],
             ),
-            // Ajusta para svg:
-            // child: Center(child: SvgPicture.asset(svgPath, width: 30, height: 30)),
             child: Center(
-              child: Image.asset(
-                svgPath,
-                width: 30,
-                height: 30,
-              ),
+              child: svgPath.toLowerCase().endsWith('.svg')
+                  ? SvgPicture.asset(
+                      svgPath,
+                      width: 30,
+                      height: 30,
+                      color: AppColors.blue,
+                    )
+                  : Image.asset(
+                      svgPath,
+                      width: 50,
+                      height: 50,
+                    ),
             ),
           ),
         ),
@@ -1040,29 +994,22 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Envía la ubicación actual (tipo 'location')
   Future<void> _handleSendLocation() async {
     try {
-      // Pide permisos y obtén posición con geolocator, por ejemplo:
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // No hay GPS habilitado
         return;
       }
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          // El usuario denegó permisos
           return;
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        // El usuario denegó permanente
         return;
       }
-
-      // Ahora sí obten la posición
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -1083,7 +1030,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Abre la pantalla de selección de planes
   void _showPlanSelection() async {
     final selectedPlans = await Navigator.push<Set<String>>(
       context,
@@ -1091,10 +1037,8 @@ class _ChatScreenState extends State<ChatScreen> {
         builder: (_) => const SelectPlanScreen(),
       ),
     );
-
     if (selectedPlans == null || selectedPlans.isEmpty) return;
 
-    // Enviamos cada plan como 'shared_plan'
     for (String planId in selectedPlans) {
       final planDoc = await FirebaseFirestore.instance
           .collection('plans')
@@ -1111,7 +1055,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'participants': [currentUserId, widget.chatPartnerId],
         'type': 'shared_plan',
         'planId': plan.id,
-        'planTitle': plan.type, // o lo que quieras mostrar
+        'planTitle': plan.type,
         'planDescription': plan.description,
         'planImage': plan.backgroundImage ?? '',
         'planLink': '',
@@ -1122,7 +1066,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Escoger imagen (cámara o galería)
   Future<void> _handleSelectImage() async {
     final picker = ImagePicker();
 
@@ -1163,7 +1106,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Sube la imagen a Firebase Storage y envía el mensaje
   Future<void> _uploadAndSendImage(XFile imageFile) async {
     try {
       final storageRef = FirebaseStorage.instance
@@ -1189,7 +1131,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Enviar mensaje de texto
   void _sendMessage() async {
     String messageText = _messageController.text.trim();
     if (messageText.isEmpty) return;
@@ -1213,7 +1154,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Auto-scroll al final del ListView
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
