@@ -8,22 +8,27 @@ import 'package:intl/date_symbol_data_local.dart'; // <-- Importante
 import 'package:flutter/scheduler.dart';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart'; // Si lo usas en tu app
 import 'package:firebase_storage/firebase_storage.dart';
-
 import 'package:flutter_svg/flutter_svg.dart';
+// Añade tu plugin de Google Maps
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
-import '../users_managing/frosted_plan_dialog_state.dart'; 
+import '../users_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 import 'select_plan_screen.dart';
+import 'location_pick_screen.dart';
+
+// 1) Importa tu nueva función de open_location (para abrir la ubicación externamente)
+import 'inner_chat_utils/open_location.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
   final String? chatPartnerPhoto;
-  final Timestamp? deletedAt; 
+  final Timestamp? deletedAt;
 
   const ChatScreen({
     Key? key,
@@ -44,15 +49,38 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _localeInitialized = false;
 
+  // (Opcional) Si quieres un marcador custom para el GoogleMap de la burbuja:
+  // Preparamos un Future<BitmapDescriptor> para no recargar en cada burbuja
+  late Future<BitmapDescriptor> _markerIconFuture;
+
   @override
   void initState() {
     super.initState();
+
+    // Inicializa formato local “es”
     initializeDateFormatting('es', null).then((_) {
       setState(() {
         _localeInitialized = true;
       });
     });
+
+    // Marca como leídos los mensajes
     _markMessagesAsRead();
+
+    // Carga icono custom si deseas. Si no, puedes usar default:
+    // _markerIconFuture = Future.value(BitmapDescriptor.defaultMarker);
+    _markerIconFuture = _loadMarkerIcon();
+  }
+
+  // Ejemplo de función que carga un icono de marcador (puede ser SVG, PNG, etc.)
+  Future<BitmapDescriptor> _loadMarkerIcon() async {
+    try {
+      // Retorna un marcador por defecto, o personaliza si quieres
+      return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    } catch (e) {
+      print("Error al cargar icono del marcador: $e");
+      return BitmapDescriptor.defaultMarker;
+    }
   }
 
   /// Marca como leídos todos los mensajes recibidos en este chat
@@ -215,7 +243,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _markAllMessagesAsDelivered(snapshot.data!.docs);
 
         // Filtramos mensajes entre currentUserId <-> widget.chatPartnerId
-        // y que sean posteriores a deletedAt
+        // y que sean posteriores a deletedAt (si existe).
         var filteredDocs = snapshot.data!.docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
           if (data['timestamp'] is! Timestamp) return false;
@@ -266,6 +294,7 @@ class _ChatScreenState extends State<ChatScreen> {
           chatItems.add(doc);
         }
 
+        // Desplazamos el scroll al final cuando hay nuevos mensajes
         SchedulerBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
@@ -425,18 +454,16 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildSharedPlanBubble(Map<String, dynamic> data, bool isMe) {
-    final String planId = data['planId'] ?? '';
-    final String planTitle = data['planTitle'] ?? 'Título';
-    final String planDesc = data['planDescription'] ?? 'Descripción';
-    final String planImage = data['planImage'] ?? '';
-    final String planLink = data['planLink'] ?? '';
+  /// Aquí incrustamos un GoogleMap en modo lite, con un marcador y la dirección
+  Widget _buildLocationBubble(Map<String, dynamic> data, bool isMe) {
+    final double? lat = data['latitude'];
+    final double? lng = data['longitude'];
+    final String? address = data['address'];
 
     DateTime messageTime = DateTime.now();
     if (data['timestamp'] is Timestamp) {
       messageTime = (data['timestamp'] as Timestamp).toDate();
     }
-
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
 
@@ -458,100 +485,271 @@ class _ChatScreenState extends State<ChatScreen> {
             bottomRight: isMe ? Radius.zero : const Radius.circular(16),
           ),
         ),
-        child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () => _openPlanDetails(planId),
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
+        // Al pulsar, abrimos la ubicación en Maps externamente
+        child: InkWell(
+          onTap: () {
+            if (lat != null && lng != null) {
+              openLocation(lat: lat, lng: lng, address: address);
+            }
+          },
+          child: Column(
+            crossAxisAlignment:
+                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              // Mapa en modo lite, con un solo marcador
+              if (lat != null && lng != null)
+                ClipRRect(
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
-                  image: planImage.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(planImage),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
+                  child: SizedBox(
+                    height: 150,
+                    width: double.infinity,
+                    child: FutureBuilder<BitmapDescriptor>(
+                      future: _markerIconFuture,
+                      builder: (ctx, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        final icon = snapshot.data!;
+                        return GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(lat, lng),
+                            zoom: 14,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('location-marker'),
+                              position: LatLng(lat, lng),
+                              icon: icon,
+                            ),
+                          },
+                          zoomControlsEnabled: false,
+                          scrollGesturesEnabled: false,
+                          rotateGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                          liteModeEnabled: true, // Mapa estático
+                        );
+                      },
+                    ),
+                  ),
+                )
+              else
+                // Si no hay coords
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.map, size: 50, color: Colors.grey),
                 ),
-                child: planImage.isEmpty
-                    ? const Center(
-                        child: Icon(Icons.image, size: 40, color: Colors.grey),
-                      )
-                    : null,
+
+              // Texto de la dirección
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  (address != null && address.isNotEmpty)
+                      ? address
+                      : 'Ubicación compartida',
+                  style: const TextStyle(color: Colors.black, fontSize: 14),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    planTitle,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
+
+              // Hora y checkmarks
+              Padding(
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 6),
+                child: Row(
+                  mainAxisAlignment:
+                      isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('HH:mm').format(messageTime),
+                      style: const TextStyle(color: Colors.black54, fontSize: 12),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    planDesc,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const SizedBox(height: 8),
-                  if (planLink.isNotEmpty)
-                    InkWell(
-                      onTap: () => _openPlanDetails(planId),
-                      child: Text(
-                        planLink,
-                        style: TextStyle(
-                          color: isMe ? Colors.blue : Colors.blueAccent,
-                          decoration: TextDecoration.underline,
-                        ),
+                    if (isMe) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        isRead
+                            ? Icons.done_all
+                            : (delivered ? Icons.done_all : Icons.done),
+                        size: 16,
+                        color: isRead
+                            ? Colors.green
+                            : (delivered ? Colors.grey : Colors.grey),
                       ),
-                    ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment:
-                        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        DateFormat('HH:mm').format(messageTime),
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          isRead
-                              ? Icons.done_all
-                              : (delivered ? Icons.done_all : Icons.done),
-                          size: 16,
-                          color: isRead
-                              ? Colors.green
-                              : (delivered ? Colors.grey : Colors.grey),
-                        ),
-                      ],
                     ],
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildSharedPlanBubble(Map<String, dynamic> data, bool isMe) {
+  final String planId = data['planId'] ?? '';
+  final String planTitle = data['planTitle'] ?? 'Título';
+  final String planDesc = data['planDescription'] ?? 'Descripción';
+  final String planImage = data['planImage'] ?? '';
+  final String planLink = data['planLink'] ?? '';
+  
+  // Recuperamos la fecha de inicio formateada:
+  final String planStartDate = data['planStartDate'] ?? '';
+
+  DateTime messageTime = DateTime.now();
+  if (data['timestamp'] is Timestamp) {
+    messageTime = (data['timestamp'] as Timestamp).toDate();
+  }
+  bool delivered = data['delivered'] ?? false;
+  bool isRead = data['isRead'] ?? false;
+
+  final bubbleColor = isMe
+      ? const Color(0xFFF9E4D5)
+      : const Color(0xFFEBD6F2);
+
+  return Align(
+    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+    child: Container(
+      width: MediaQuery.of(context).size.width * 0.65,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+          bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: 
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          // Gestor del tap en la imagen
+          GestureDetector(
+            onTap: () => _openPlanDetails(planId),
+            child: Container(
+              height: 150,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                image: planImage.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(planImage),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: planImage.isEmpty
+                  ? const Center(
+                      child: Icon(Icons.image, size: 40, color: Colors.grey),
+                    )
+                  : null,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                // --- Mensaje de “¡Échale un vistazo...” ---
+                const Text(
+                  "¡Échale un vistazo a este plan!",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // --- Título del plan ---
+                Text(
+                  planTitle,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                
+                // --- Descripción ---
+                Text(
+                  planDesc,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.black),
+                ),
+                const SizedBox(height: 4),
+
+                // --- Fecha de inicio si la hay ---
+                if (planStartDate.isNotEmpty)
+                  Text(
+                    "Fecha de inicio: $planStartDate",
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 13,
+                    ),
+                  ),
+                
+                const SizedBox(height: 8),
+
+                // (Opcional) Link o un "Ver más"
+                if (planLink.isNotEmpty)
+                  InkWell(
+                    onTap: () => _openPlanDetails(planId),
+                    child: Text(
+                      planLink,
+                      style: TextStyle(
+                        color: isMe ? Colors.blue : Colors.blueAccent,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+
+                // --- Hora del mensaje y checks ---
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment:
+                      isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('HH:mm').format(messageTime),
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        isRead
+                            ? Icons.done_all
+                            : (delivered ? Icons.done_all : Icons.done),
+                        size: 16,
+                        color: isRead
+                            ? Colors.green
+                            : (delivered ? Colors.grey : Colors.grey),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
   Widget _buildImageBubble(Map<String, dynamic> data, bool isMe) {
     final String imageUrl = data['imageUrl'] ?? '';
@@ -642,88 +840,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildLocationBubble(Map<String, dynamic> data, bool isMe) {
-    final double? lat = data['latitude'];
-    final double? lng = data['longitude'];
-
-    DateTime messageTime = DateTime.now();
-    if (data['timestamp'] is Timestamp) {
-      messageTime = (data['timestamp'] as Timestamp).toDate();
-    }
-    bool delivered = data['delivered'] ?? false;
-    bool isRead = data['isRead'] ?? false;
-
-    final bubbleColor = isMe
-        ? const Color(0xFFF9E4D5)
-        : const Color(0xFFEBD6F2);
-
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.65,
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-          ),
-        ),
-        child: InkWell(
-          onTap: () {
-            // Ir a mapa, etc.
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.location_on, color: Colors.red, size: 40),
-                Text(
-                  (lat != null && lng != null)
-                      ? 'Ubicación: ($lat, $lng)'
-                      : 'Ubicación no disponible',
-                  style: const TextStyle(color: Colors.black),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment:
-                      isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('HH:mm').format(messageTime),
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (isMe) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        isRead
-                            ? Icons.done_all
-                            : (delivered ? Icons.done_all : Icons.done),
-                        size: 16,
-                        color: isRead
-                            ? Colors.green
-                            : (delivered ? Colors.grey : Colors.grey),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Aquí es donde OBTENEMOS el plan y luego abrimos un FrostedPlanDialog
+  /// Abre detalles del plan
   void _openPlanDetails(String planId) async {
     try {
       final planDoc = await FirebaseFirestore.instance
@@ -746,7 +863,6 @@ class _ChatScreenState extends State<ChatScreen> {
         MaterialPageRoute(
           builder: (ctx) => FrostedPlanDialog(
             plan: plan,
-            // Ojo: AÑADIMOS 'uid' para cada participante
             fetchParticipants: _fetchPlanParticipantsWithUid,
           ),
         ),
@@ -756,9 +872,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// IMPORTANTE:
-  /// Incluir 'uid' en cada participante para que, al pulsar en el popup
-  /// de Participantes dentro de FrostedPlanDialog, navegue a UserInfoCheck.
+  /// Incluir 'uid' en cada participante
   Future<List<Map<String, dynamic>>> _fetchPlanParticipantsWithUid(
     PlanModel plan,
   ) async {
@@ -780,7 +894,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (creatorDoc.exists && creatorDoc.data() != null) {
           final cdata = creatorDoc.data()!;
           participants.add({
-            'uid': creatorId, //<-- AÑADIMOS 'uid'
+            'uid': creatorId,
             'name': cdata['name'] ?? 'Sin nombre',
             'age': cdata['age']?.toString() ?? '',
             'photoUrl': cdata['photoUrl'] ?? '',
@@ -805,7 +919,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (userDoc.exists && userDoc.data() != null) {
         final uData = userDoc.data()!;
         participants.add({
-          'uid': uid, //<-- AÑADIMOS 'uid'
+          'uid': uid,
           'name': uData['name'] ?? 'Sin nombre',
           'age': uData['age']?.toString() ?? '',
           'photoUrl': uData['photoUrl'] ?? '',
@@ -916,7 +1030,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 label: 'Ubicación',
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _handleSendLocation();
+                  await _handleSendLocationWithPicker();
                 },
               ),
               // Plan
@@ -994,77 +1108,82 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _handleSendLocation() async {
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return;
-      }
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return;
-        }
-      }
-      if (permission == LocationPermission.deniedForever) {
-        return;
-      }
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+  /// Muestra LocationPickScreen para elegir la ubicación
+  Future<void> _handleSendLocationWithPicker() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LocationPickScreen(),
+      ),
+    );
 
-      await FirebaseFirestore.instance.collection('messages').add({
-        'senderId': currentUserId,
-        'receiverId': widget.chatPartnerId,
-        'participants': [currentUserId, widget.chatPartnerId],
-        'type': 'location',
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'delivered': false,
-      });
-    } catch (e) {
-      print("Error al obtener/enviar ubicación: $e");
+    if (result != null) {
+      final lat = result['latitude'] as double?;
+      final lng = result['longitude'] as double?;
+      final address = result['address'] as String?;
+
+      if (lat != null && lng != null) {
+        // Envía el mensaje con 'type': 'location'
+        await FirebaseFirestore.instance.collection('messages').add({
+          'senderId': currentUserId,
+          'receiverId': widget.chatPartnerId,
+          'participants': [currentUserId, widget.chatPartnerId],
+          'type': 'location',
+          'latitude': lat,
+          'longitude': lng,
+          'address': address ?? '',
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'delivered': false,
+        });
+      }
     }
   }
 
   void _showPlanSelection() async {
-    final selectedPlans = await Navigator.push<Set<String>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const SelectPlanScreen(),
-      ),
-    );
-    if (selectedPlans == null || selectedPlans.isEmpty) return;
+  final selectedPlans = await Navigator.push<Set<String>>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const SelectPlanScreen(),
+    ),
+  );
+  if (selectedPlans == null || selectedPlans.isEmpty) return;
 
-    for (String planId in selectedPlans) {
-      final planDoc = await FirebaseFirestore.instance
-          .collection('plans')
-          .doc(planId)
-          .get();
-      if (!planDoc.exists) continue;
+  for (String planId in selectedPlans) {
+    final planDoc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(planId)
+        .get();
+    if (!planDoc.exists) continue;
 
-      final planData = planDoc.data() as Map<String, dynamic>;
-      final plan = PlanModel.fromMap(planData);
+    final planData = planDoc.data() as Map<String, dynamic>;
+    final plan = PlanModel.fromMap(planData);
 
-      await FirebaseFirestore.instance.collection('messages').add({
-        'senderId': currentUserId,
-        'receiverId': widget.chatPartnerId,
-        'participants': [currentUserId, widget.chatPartnerId],
-        'type': 'shared_plan',
-        'planId': plan.id,
-        'planTitle': plan.type,
-        'planDescription': plan.description,
-        'planImage': plan.backgroundImage ?? '',
-        'planLink': '',
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'delivered': false,
-      });
+    // Si plan.startTimestamp existe, lo formateas en una cadena:
+    String planStartDateString = '';
+    if (plan.startTimestamp != null) {
+      final date = plan.startTimestamp!;
+      planStartDateString = DateFormat('d MMM yyyy, HH:mm', 'es').format(date);
     }
+
+    await FirebaseFirestore.instance.collection('messages').add({
+      'senderId': currentUserId,
+      'receiverId': widget.chatPartnerId,
+      'participants': [currentUserId, widget.chatPartnerId],
+      'type': 'shared_plan',
+      'planId': plan.id,
+      'planTitle': plan.type,
+      'planDescription': plan.description,
+      'planImage': plan.backgroundImage ?? '',
+      'planLink': '',
+      // Nuevo campo con la fecha de inicio formateada:
+      'planStartDate': planStartDateString, 
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'delivered': false,
+    });
   }
+}
 
   Future<void> _handleSelectImage() async {
     final picker = ImagePicker();

@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
+import 'plan_memories_screen.dart'; // Asegúrate de importar tu pantalla de memorias
 
 class MemoriesCalendar extends StatefulWidget {
   final String userId;
@@ -143,47 +144,70 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   /// Si sí hay planes, se distingue entre planes futuros y planes caducados.
   /// Si [widget.onPlanSelected] no es null, se llama pasando el primer plan.
   void _onDayTapped(DateTime date) {
-    final dateKey = DateFormat('yyyy-MM-dd').format(date);
-    final dayPlans = _plansByDate[dateKey];
-    final String formattedDate = DateFormat.yMMMMd('es').format(date);
+  final dateKey = DateFormat('yyyy-MM-dd').format(date);
+  final dayPlans = _plansByDate[dateKey];
+  final String formattedDate = DateFormat.yMMMMd('es').format(date);
 
-    if (dayPlans == null || dayPlans.isEmpty) {
-      // No hay planes para ese día.
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text(formattedDate),
-          content: const Text(
-            "El usuario no tiene memorias para este día en concreto."
+  if (dayPlans == null || dayPlans.isEmpty) {
+    // No hay planes => popup "sin memorias".
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(formattedDate),
+        content: const Text("No hay memorias para este día."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cerrar"),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
-            ),
-          ],
+        ],
+      ),
+    );
+  } else {
+    // Tomamos el primer plan de ese día (o podrías mostrar lista)
+    final PlanModel plan = dayPlans.first;
+
+    // En lugar de callback o popup => abrimos la nueva pantalla:
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlanMemoriesScreen(
+          plan: plan,
+          fetchParticipants: (PlanModel p) async {
+            // O la misma lógica que usas en SubscribedPlansScreen / MyPlansScreen
+            // Para ejemplo:
+            final List<Map<String, dynamic>> participants = [];
+            final subsSnap = await FirebaseFirestore.instance
+                .collection('subscriptions')
+                .where('id', isEqualTo: p.id)
+                .get();
+
+            for (var sDoc in subsSnap.docs) {
+              final sData = sDoc.data();
+              final userId = sData['userId'];
+              final userDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(userId)
+                  .get();
+              if (userDoc.exists && userDoc.data() != null) {
+                final uData = userDoc.data()!;
+                participants.add({
+                  'uid': userId,
+                  'name': uData['name'] ?? 'Sin nombre',
+                  'age': uData['age']?.toString() ?? '',
+                  'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+                  'isCreator': (p.createdBy == userId),
+                });
+              }
+            }
+            return participants;
+          },
         ),
-      );
-    } else {
-      // Tomamos el primer plan del día como representativo
-      final PlanModel plan = dayPlans.first;
-
-      // 1) Si hay un callback en la pantalla padre, se lo pasamos directamente.
-      if (widget.onPlanSelected != null) {
-        widget.onPlanSelected!(plan);
-        return; // <-- Evitamos mostrar popups aquí si queremos delegar completamente.
-      }
-
-      // 2) Si no hay callback, seguimos con la lógica antigua:
-      //    Verificamos si el plan es futuro o caducado.
-      final DateTime planDate = plan.startTimestamp ?? date;
-      if (planDate.isAfter(DateTime.now())) {
-        _showUpcomingPlanPopup(date, dayPlans);
-      } else {
-        _showExpiredPlanPopup(date, dayPlans);
-      }
-    }
+      ),
+    );
   }
+}
+
 
   /// Popup para planes futuros (aún no celebrados).
   void _showUpcomingPlanPopup(DateTime date, List<PlanModel> dayPlans) {

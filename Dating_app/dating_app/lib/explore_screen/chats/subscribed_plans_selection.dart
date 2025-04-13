@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/plan_model.dart';
+// IMPORTA plan_card.dart
+import '../users_grid/plan_card.dart';
 
 class SubscribedPlansSelection extends StatelessWidget {
   final Set<String> selectedIds;
@@ -14,7 +16,26 @@ class SubscribedPlansSelection extends StatelessWidget {
     required this.onToggleSelected,
   }) : super(key: key);
 
-  // Método auxiliar para obtener PlanModel a partir de ID
+  // Busca datos (nombre/foto) del creador del plan para pasar a PlanCard
+  Future<Map<String, dynamic>> _fetchCreatorUserData(String creatorUid) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(creatorUid)
+        .get();
+    if (doc.exists && doc.data() != null) {
+      final data = doc.data()!;
+      return {
+        'name': data['name'] ?? 'Sin nombre',
+        'photoUrl': data['photoUrl'] ?? '',
+      };
+    }
+    return {
+      'name': 'Usuario',
+      'photoUrl': '',
+    };
+  }
+
+  // Obtiene PlanModel de la lista de IDs
   Future<List<PlanModel>> _fetchPlansFromIds(List<String> planIds) async {
     if (planIds.isEmpty) return [];
     final List<PlanModel> plans = [];
@@ -30,6 +51,36 @@ class SubscribedPlansSelection extends StatelessWidget {
       }
     }
     return plans;
+  }
+
+  // Para si PlanCard requiere participantes
+  Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
+    final List<Map<String, dynamic>> participants = [];
+    final docPlan = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+
+    if (docPlan.exists && docPlan.data() != null) {
+      final data = docPlan.data()!;
+      final List<dynamic> partList = data['participants'] ?? [];
+      for (var uid in partList) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+        if (userDoc.exists && userDoc.data() != null) {
+          final uData = userDoc.data()!;
+          participants.add({
+            'uid': uid,
+            'name': uData['name'] ?? 'Usuario',
+            'photoUrl': uData['photoUrl'] ?? '',
+            'age': uData['age']?.toString() ?? '',
+          });
+        }
+      }
+    }
+    return participants;
   }
 
   @override
@@ -58,6 +109,7 @@ class SubscribedPlansSelection extends StatelessWidget {
             ),
           );
         }
+        // Extraemos la lista de IDs de planes suscritos
         final planIds = snapshot.data!.docs
             .map((doc) {
               final data = doc.data() as Map<String, dynamic>;
@@ -66,13 +118,14 @@ class SubscribedPlansSelection extends StatelessWidget {
             .where((id) => id.isNotEmpty)
             .toList();
 
+        // Obtenemos la lista de PlanModels
         return FutureBuilder<List<PlanModel>>(
           future: _fetchPlansFromIds(planIds),
           builder: (context, planSnapshot) {
-            if (!planSnapshot.hasData) {
+            if (planSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            final plans = planSnapshot.data!;
+            final plans = planSnapshot.data ?? [];
             if (plans.isEmpty) {
               return const Center(
                 child: Text(
@@ -89,49 +142,57 @@ class SubscribedPlansSelection extends StatelessWidget {
                 final plan = plans[index];
                 final bool isSelected = selectedIds.contains(plan.id);
 
-                return GestureDetector(
-                  onTap: () {
-                    onToggleSelected(plan.id!);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.only(bottom: 15),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: plan.special_plan == 1
-                          ? Colors.blue.withOpacity(0.1)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(
-                          plan.special_plan == 1 ? 60 : 20),
-                      border: Border.all(
-                        color: isSelected ? Colors.blue : Colors.transparent,
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        if (isSelected)
-                          const BoxShadow(
-                            color: Colors.blueAccent,
-                            blurRadius: 10,
-                            spreadRadius: 2,
+                return FutureBuilder<Map<String, dynamic>>(
+                  future: _fetchCreatorUserData(plan.createdBy),
+                  builder: (ctx, userSnap) {
+                    final creatorData = userSnap.data ?? {
+                      'name': 'Usuario',
+                      'photoUrl': '',
+                    };
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 15),
+                      decoration: const BoxDecoration(),
+                      child: Stack(
+                        children: [
+                          // La PlanCard
+                          PlanCard(
+                            plan: plan,
+                            userData: creatorData,
+                            fetchParticipants: _fetchPlanParticipants,
+                            hideJoinButton: true, 
                           ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            plan.type,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.black,
+
+                          // Círculo en la esquina sup. derecha
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (plan.id != null) {
+                                  onToggleSelected(plan.id!);
+                                }
+                              },
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected 
+                                    ? Colors.blue // relleno azul si seleccionado
+                                    : Colors.white70, // hueco "blanco" si no
+                                  border: Border.all(
+                                    color: isSelected ? Colors.blue : Colors.grey,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                        if (isSelected)
-                          const Icon(Icons.check_circle, color: Colors.blue),
-                      ],
-                    ),
-                  ),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             );

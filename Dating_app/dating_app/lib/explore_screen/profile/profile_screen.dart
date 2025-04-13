@@ -20,6 +20,7 @@ import '../../start/login_screen.dart';
 // Importa, si es necesario, tu frosted_plan_dialog_state.dart
 import '../users_managing/frosted_plan_dialog_state.dart'; 
 // Ajusta la ruta a donde tengas tu FrostedPlanDialog
+import 'plan_memories_screen.dart'; // Ajusta la ruta a donde tengas tu PlanMemoriesScreen
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -220,7 +221,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   //   LÓGICA PARA MOSTRAR FrostedPlanDialog
   // =================================================
 
-  /// Función que invoca el FrostedPlanDialog **a pantalla completa**.
+  /// Función que invoca el FrostedPlanDialog a pantalla completa.
   void _showPlanDialog(PlanModel plan) {
     showDialog(
       context: context,
@@ -228,17 +229,14 @@ class ProfileScreenState extends State<ProfileScreen> {
       useSafeArea: false,
       builder: (BuildContext context) {
         return Dialog(
-          // color de fondo transparente (por si usas blur, etc.)
           backgroundColor: Colors.transparent,
-          // sin padding lateral/superior/inferior
           insetPadding: EdgeInsets.zero,
           child: SizedBox(
-            // ocupa toda la pantalla
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
             child: FrostedPlanDialog(
               plan: plan,
-              fetchParticipants: _fetchParticipants,
+              fetchParticipants: _fetchParticipants, // Ver método abajo
             ),
           ),
         );
@@ -246,28 +244,36 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Función para cargar los participantes dado un plan
-  /// (usada por FrostedPlanDialog)
-  Future<List<Map<String, dynamic>>> _fetchParticipants(PlanModel plan) async {
-    final List<Map<String, dynamic>> participantsList = [];
+  /// Método privado que retorna los participantes de un plan.
+  /// Lo usará FrostedPlanDialog y también PlanMemoriesScreen si hace falta.
+  Future<List<Map<String, dynamic>>> _fetchParticipants(PlanModel p) async {
+    final List<Map<String, dynamic>> participants = [];
 
-    final participantUids = plan.participants ?? [];
-    for (String uid in participantUids) {
-      final docUser = await FirebaseFirestore.instance
+    final subsSnap = await FirebaseFirestore.instance
+        .collection('subscriptions')
+        .where('id', isEqualTo: p.id)
+        .get();
+
+    for (var sDoc in subsSnap.docs) {
+      final sData = sDoc.data();
+      final userId = sData['userId'];
+      final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(uid)
+          .doc(userId)
           .get();
-      if (docUser.exists && docUser.data() != null) {
-        final userData = docUser.data()!;
-        participantsList.add({
-          'uid': uid,
-          'name': userData['name'] ?? 'Usuario',
-          'age': userData['age']?.toString() ?? '',
-          'photoUrl': userData['photoUrl'] ?? '',
+      if (userDoc.exists && userDoc.data() != null) {
+        final uData = userDoc.data()!;
+        participants.add({
+          'uid': userId,
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'isCreator': (p.createdBy == userId),
         });
       }
     }
-    return participantsList;
+
+    return participants;
   }
 
   // =============================
@@ -1126,7 +1132,6 @@ class ProfileScreenState extends State<ProfileScreen> {
   // =========================================
   @override
   Widget build(BuildContext context) {
-    // Declara la variable user ANTES de la lista de widgets
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
@@ -1204,14 +1209,21 @@ class ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
 
             // Calendario, solo si user != null
-            // NOTA: Aquí le pasamos la función para que el calendario
-            // nos devuelva el plan a mostrar.
             if (user != null)
               MemoriesCalendar(
                 userId: user.uid,
                 onPlanSelected: (PlanModel plan) {
-                  // <<--- LLAMAMOS A FROSTEDPLANDIALOG (full screen)
-                  _showPlanDialog(plan);
+                  // En lugar de _showPlanDialog, abrimos la pantalla de memorias
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PlanMemoriesScreen(
+                        plan: plan,
+                        // Reutilizamos la lógica de participantes
+                        fetchParticipants: _fetchParticipants,
+                      ),
+                    ),
+                  );
                 },
               ),
 
