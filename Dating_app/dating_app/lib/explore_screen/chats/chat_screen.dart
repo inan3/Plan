@@ -1,5 +1,6 @@
 import 'dart:ui'; // Para ImageFilter (frosted glass)
 import 'dart:io'; // Para File al subir imagen
+import 'dart:async'; // Para Completer usado en _getImageSize
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart'; // Si lo usas en tu app
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-// Añade tu plugin de Google Maps
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../main/colors.dart';
@@ -20,9 +20,12 @@ import '../users_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 import 'select_plan_screen.dart';
 import 'location_pick_screen.dart';
-
-// 1) Importa tu nueva función de open_location (para abrir la ubicación externamente)
+// Importamos nuestra función para abrir la imagen a pantalla completa
+import 'inner_chat_utils/picture_managing.dart';
+// Importamos nuestra función para abrir la ubicación
 import 'inner_chat_utils/open_location.dart';
+// Importamos el mixin para manejar la respuesta a un mensaje
+import 'inner_chat_utils/answer_a_message.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
@@ -42,15 +45,15 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+// Mezclamos con el mixin AnswerAMessageMixin para la funcionalidad de responder
+class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   bool _localeInitialized = false;
 
-  // (Opcional) Si quieres un marcador custom para el GoogleMap de la burbuja:
-  // Preparamos un Future<BitmapDescriptor> para no recargar en cada burbuja
+  // Cargamos un Future con el icono del marcador si lo usas en ubicaciones
   late Future<BitmapDescriptor> _markerIconFuture;
 
   @override
@@ -67,15 +70,13 @@ class _ChatScreenState extends State<ChatScreen> {
     // Marca como leídos los mensajes
     _markMessagesAsRead();
 
-    // Carga icono custom si deseas. Si no, puedes usar default:
-    // _markerIconFuture = Future.value(BitmapDescriptor.defaultMarker);
+    // Carga icono custom si deseas. Si no, usa default:
     _markerIconFuture = _loadMarkerIcon();
   }
 
-  // Ejemplo de función que carga un icono de marcador (puede ser SVG, PNG, etc.)
+  // Ejemplo de función que carga un icono de marcador
   Future<BitmapDescriptor> _loadMarkerIcon() async {
     try {
-      // Retorna un marcador por defecto, o personaliza si quieres
       return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
     } catch (e) {
       print("Error al cargar icono del marcador: $e");
@@ -114,6 +115,15 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             _buildChatHeader(context),
             Expanded(child: _buildMessagesList()),
+
+            // Si estamos respondiendo a algo, mostramos la vista previa arriba del input
+            if (isReplying)
+              buildReplyPreview(
+                onCancelReply: () {
+                  cancelReply();
+                },
+              ),
+
             _buildMessageInput(),
           ],
         ),
@@ -148,7 +158,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -170,7 +179,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => UserInfoCheck(userId: widget.chatPartnerId),
+                      builder: (_) =>
+                          UserInfoCheck(userId: widget.chatPartnerId),
                     ),
                   );
                 },
@@ -201,7 +211,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -218,7 +227,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: IconButton(
               icon: const Icon(Icons.more_vert, color: AppColors.blue),
               onPressed: () {
-                // Acciones extra (en desarrollo)
+                // Acciones extra
               },
             ),
           ),
@@ -313,16 +322,51 @@ class _ChatScreenState extends State<ChatScreen> {
               bool isMe = data['senderId'] == currentUserId;
               final String? type = data['type'] as String?;
 
-              if (type == 'shared_plan') {
-                return _buildSharedPlanBubble(data, isMe);
-              } else if (type == 'image') {
-                return _buildImageBubble(data, isMe);
-              } else if (type == 'location') {
-                return _buildLocationBubble(data, isMe);
-              } else {
-                // texto
-                return _buildTextBubble(data, isMe);
-              }
+              // Detectamos swipe (para responder directo) y long press (para diálogo)
+              return GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  // Si se arrastra a la derecha con cierta distancia
+                  if (details.delta.dx > 15) {
+                    startReplyingTo({
+                      'docId': item.id,
+                      'type': type ?? 'text',
+                      'text': data['text'] ?? '',
+                      'senderId': data['senderId'],
+                    });
+                  }
+                },
+                onLongPress: () {
+                  // Abrimos el diálogo frosted con 4 opciones
+                  showMessageOptionsDialog(
+                    context,
+                    {
+                      'docId': item.id,
+                      'type': type ?? 'text',
+                      'text': data['text'] ?? '',
+                      'senderId': data['senderId'],
+                    },
+                    // Opcional: puedes personalizar "onReact" y "onDelete"
+                    onDelete: () async {
+                      // Ejemplo de borrado en Firestore (sólo si el user es dueño o tienes permiso)
+                      final docId = item.id;
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('messages')
+                            .doc(docId)
+                            .delete();
+                        debugPrint('Mensaje $docId eliminado');
+                      } catch (e) {
+                        debugPrint('Error eliminando mensaje: $e');
+                      }
+                    },
+                    onReact: () {
+                      debugPrint('Usuario reaccionó al mensaje');
+                      // Implementa aquí tu lógica de reacciones
+                    },
+                  );
+                },
+                child: _buildBubbleByType(data, isMe),
+              );
             }
             return const SizedBox.shrink();
           },
@@ -354,6 +398,22 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// Función helper para decidir qué burbuja dibujar según el 'type'
+  Widget _buildBubbleByType(Map<String, dynamic> data, bool isMe) {
+    final String? type = data['type'] as String?;
+
+    if (type == 'shared_plan') {
+      return _buildSharedPlanBubble(data, isMe);
+    } else if (type == 'image') {
+      return _buildImageBubble(data, isMe);
+    } else if (type == 'location') {
+      return _buildLocationBubble(data, isMe);
+    } else {
+      // Texto
+      return _buildTextBubble(data, isMe);
+    }
+  }
+
   Widget _buildDayMarker(String dayString) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -379,6 +439,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  /// Burbuja de texto
   Widget _buildTextBubble(Map<String, dynamic> data, bool isMe) {
     DateTime messageTime = DateTime.now();
     if (data['timestamp'] is Timestamp) {
@@ -390,6 +451,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final bubbleColor = isMe
         ? const Color(0xFFF9E4D5)
         : const Color.fromARGB(255, 247, 237, 250);
+
+    // Si este mensaje responde a otro, leemos data['replyTo']
+    final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -413,6 +477,9 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment:
                 isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
+              // Cajita gris que muestra el mensaje original
+              if (replyTo != null) buildReplyContainer(replyTo),
+
               Text(
                 data['text'] ?? '',
                 style: const TextStyle(
@@ -454,7 +521,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  /// Aquí incrustamos un GoogleMap en modo lite, con un marcador y la dirección
+  /// Burbuja de ubicación
   Widget _buildLocationBubble(Map<String, dynamic> data, bool isMe) {
     final double? lat = data['latitude'];
     final double? lng = data['longitude'];
@@ -467,9 +534,11 @@ class _ChatScreenState extends State<ChatScreen> {
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
 
-    final bubbleColor = isMe
-        ? const Color(0xFFF9E4D5)
-        : const Color(0xFFEBD6F2);
+    final bubbleColor =
+        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+
+    // Si este mensaje responde a otro
+    final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -485,7 +554,6 @@ class _ChatScreenState extends State<ChatScreen> {
             bottomRight: isMe ? Radius.zero : const Radius.circular(16),
           ),
         ),
-        // Al pulsar, abrimos la ubicación en Maps externamente
         child: InkWell(
           onTap: () {
             if (lat != null && lng != null) {
@@ -496,7 +564,9 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment:
                 isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              // Mapa en modo lite, con un solo marcador
+              // Cajita gris de respuesta original
+              if (replyTo != null) buildReplyContainer(replyTo),
+
               if (lat != null && lng != null)
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
@@ -529,14 +599,13 @@ class _ChatScreenState extends State<ChatScreen> {
                           scrollGesturesEnabled: false,
                           rotateGesturesEnabled: false,
                           tiltGesturesEnabled: false,
-                          liteModeEnabled: true, // Mapa estático
+                          liteModeEnabled: true,
                         );
                       },
                     ),
                   ),
                 )
               else
-                // Si no hay coords
                 Container(
                   height: 150,
                   width: double.infinity,
@@ -544,7 +613,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: const Icon(Icons.map, size: 50, color: Colors.grey),
                 ),
 
-              // Texto de la dirección
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
@@ -554,8 +622,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: const TextStyle(color: Colors.black, fontSize: 14),
                 ),
               ),
-
-              // Hora y checkmarks
               Padding(
                 padding: const EdgeInsets.only(left: 8, right: 8, bottom: 6),
                 child: Row(
@@ -588,171 +654,14 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  /// Burbuja de plan compartido
   Widget _buildSharedPlanBubble(Map<String, dynamic> data, bool isMe) {
-  final String planId = data['planId'] ?? '';
-  final String planTitle = data['planTitle'] ?? 'Título';
-  final String planDesc = data['planDescription'] ?? 'Descripción';
-  final String planImage = data['planImage'] ?? '';
-  final String planLink = data['planLink'] ?? '';
-  
-  // Recuperamos la fecha de inicio formateada:
-  final String planStartDate = data['planStartDate'] ?? '';
-
-  DateTime messageTime = DateTime.now();
-  if (data['timestamp'] is Timestamp) {
-    messageTime = (data['timestamp'] as Timestamp).toDate();
-  }
-  bool delivered = data['delivered'] ?? false;
-  bool isRead = data['isRead'] ?? false;
-
-  final bubbleColor = isMe
-      ? const Color(0xFFF9E4D5)
-      : const Color(0xFFEBD6F2);
-
-  return Align(
-    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-    child: Container(
-      width: MediaQuery.of(context).size.width * 0.65,
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-      decoration: BoxDecoration(
-        color: bubbleColor,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(16),
-          topRight: const Radius.circular(16),
-          bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-          bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: 
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          // Gestor del tap en la imagen
-          GestureDetector(
-            onTap: () => _openPlanDetails(planId),
-            child: Container(
-              height: 150,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                image: planImage.isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(planImage),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: planImage.isEmpty
-                  ? const Center(
-                      child: Icon(Icons.image, size: 40, color: Colors.grey),
-                    )
-                  : null,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                // --- Mensaje de “¡Échale un vistazo...” ---
-                const Text(
-                  "¡Échale un vistazo a este plan!",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // --- Título del plan ---
-                Text(
-                  planTitle,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                
-                // --- Descripción ---
-                Text(
-                  planDesc,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black),
-                ),
-                const SizedBox(height: 4),
-
-                // --- Fecha de inicio si la hay ---
-                if (planStartDate.isNotEmpty)
-                  Text(
-                    "Fecha de inicio: $planStartDate",
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 13,
-                    ),
-                  ),
-                
-                const SizedBox(height: 8),
-
-                // (Opcional) Link o un "Ver más"
-                if (planLink.isNotEmpty)
-                  InkWell(
-                    onTap: () => _openPlanDetails(planId),
-                    child: Text(
-                      planLink,
-                      style: TextStyle(
-                        color: isMe ? Colors.blue : Colors.blueAccent,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-
-                // --- Hora del mensaje y checks ---
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment:
-                      isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('HH:mm').format(messageTime),
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (isMe) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        isRead
-                            ? Icons.done_all
-                            : (delivered ? Icons.done_all : Icons.done),
-                        size: 16,
-                        color: isRead
-                            ? Colors.green
-                            : (delivered ? Colors.grey : Colors.grey),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-
-  Widget _buildImageBubble(Map<String, dynamic> data, bool isMe) {
-    final String imageUrl = data['imageUrl'] ?? '';
+    final String planId = data['planId'] ?? '';
+    final String planTitle = data['planTitle'] ?? 'Título';
+    final String planDesc = data['planDescription'] ?? 'Descripción';
+    final String planImage = data['planImage'] ?? '';
+    final String planLink = data['planLink'] ?? '';
+    final String planStartDate = data['planStartDate'] ?? '';
 
     DateTime messageTime = DateTime.now();
     if (data['timestamp'] is Timestamp) {
@@ -761,9 +670,11 @@ class _ChatScreenState extends State<ChatScreen> {
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
 
-    final bubbleColor = isMe
-        ? const Color(0xFFF9E4D5)
-        : const Color(0xFFEBD6F2);
+    final bubbleColor =
+        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+
+    // Si este mensaje responde a otro
+    final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -783,58 +694,273 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment:
               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+            if (replyTo != null) buildReplyContainer(replyTo),
+
+            GestureDetector(
+              onTap: () => _openPlanDetails(planId),
+              child: Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  image: planImage.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(planImage),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: planImage.isEmpty
+                    ? const Center(
+                        child: Icon(Icons.image, size: 40, color: Colors.grey),
+                      )
+                    : null,
               ),
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      color: Colors.grey[300],
-                      height: 200,
-                      child: const Icon(
-                        Icons.image,
-                        size: 40,
-                        color: Colors.grey,
-                      ),
-                    ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment:
-                    isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    DateFormat('HH:mm').format(messageTime),
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 12,
+                  const Text(
+                    "¡Échale un vistazo a este plan!",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
-                  if (isMe) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      isRead
-                          ? Icons.done_all
-                          : (delivered ? Icons.done_all : Icons.done),
-                      size: 16,
-                      color: isRead
-                          ? Colors.green
-                          : (delivered ? Colors.grey : Colors.grey),
+                  const SizedBox(height: 6),
+                  Text(
+                    planTitle,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    planDesc,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                  const SizedBox(height: 4),
+                  if (planStartDate.isNotEmpty)
+                    Text(
+                      "Fecha de inicio: $planStartDate",
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  if (planLink.isNotEmpty)
+                    InkWell(
+                      onTap: () => _openPlanDetails(planId),
+                      child: Text(
+                        planLink,
+                        style: TextStyle(
+                          color: isMe ? Colors.blue : Colors.blueAccent,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment:
+                        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('HH:mm').format(messageTime),
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          isRead
+                              ? Icons.done_all
+                              : (delivered ? Icons.done_all : Icons.done),
+                          size: 16,
+                          color: isRead
+                              ? Colors.green
+                              : (delivered ? Colors.grey : Colors.grey),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Para obtener el tamaño de la imagen en la red (ancho y alto).
+  Future<Size> _getImageSize(String imageUrl) async {
+    final Completer<Size> completer = Completer();
+
+    final ImageStream imageStream =
+        NetworkImage(imageUrl).resolve(const ImageConfiguration());
+    late ImageStreamListener listener;
+
+    listener = ImageStreamListener((ImageInfo info, bool _) {
+      final myImage = info.image;
+      final size = Size(
+        myImage.width.toDouble(),
+        myImage.height.toDouble(),
+      );
+      completer.complete(size);
+      imageStream.removeListener(listener);
+    }, onError: (dynamic exception, StackTrace? stackTrace) {
+      completer.completeError(exception, stackTrace);
+      imageStream.removeListener(listener);
+    });
+
+    imageStream.addListener(listener);
+
+    return completer.future;
+  }
+
+  /// Burbuja de imagen
+  Widget _buildImageBubble(Map<String, dynamic> data, bool isMe) {
+    final String imageUrl = data['imageUrl'] ?? '';
+
+    DateTime messageTime = DateTime.now();
+    if (data['timestamp'] is Timestamp) {
+      messageTime = (data['timestamp'] as Timestamp).toDate();
+    }
+    bool delivered = data['delivered'] ?? false;
+    bool isRead = data['isRead'] ?? false;
+
+    final bubbleColor =
+        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+
+    // Si este mensaje responde a otro
+    final replyTo = data['replyTo'] as Map<String, dynamic>?;
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+          ),
+        ),
+        child: FutureBuilder<Size>(
+          future: _getImageSize(imageUrl),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return SizedBox(
+                width: MediaQuery.of(context).size.width * 0.65,
+                height: 150,
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return Container(
+                width: MediaQuery.of(context).size.width * 0.65,
+                height: 150,
+                color: Colors.grey[300],
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.broken_image,
+                  size: 40,
+                  color: Colors.grey,
+                ),
+              );
+            }
+
+            final Size imageSize = snapshot.data!;
+            final double maxWidth =
+                MediaQuery.of(context).size.width * 0.65;
+
+            double displayWidth = imageSize.width;
+            double displayHeight = imageSize.height;
+
+            if (displayWidth > maxWidth) {
+              final double ratio = maxWidth / displayWidth;
+              displayWidth = maxWidth;
+              displayHeight = displayHeight * ratio;
+            }
+
+            return Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                // Cajita gris si hay reply
+                if (replyTo != null) buildReplyContainer(replyTo),
+
+                GestureDetector(
+                  onTap: () {
+                    // Abrir imagen a pantalla completa
+                    openFullImage(context, imageUrl);
+                  },
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: SizedBox(
+                      width: displayWidth,
+                      height: displayHeight,
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.fill,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment:
+                        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('HH:mm').format(messageTime),
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          isRead
+                              ? Icons.done_all
+                              : (delivered ? Icons.done_all : Icons.done),
+                          size: 16,
+                          color: isRead
+                              ? Colors.green
+                              : (delivered ? Colors.grey : Colors.grey),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -874,14 +1000,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Incluir 'uid' en cada participante
   Future<List<Map<String, dynamic>>> _fetchPlanParticipantsWithUid(
-    PlanModel plan,
-  ) async {
+      PlanModel plan) async {
     final List<Map<String, dynamic>> participants = [];
 
-    final docPlan = await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(plan.id)
-        .get();
+    final docPlan =
+        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
 
     if (docPlan.exists) {
       final planMap = docPlan.data();
@@ -912,10 +1035,8 @@ class _ChatScreenState extends State<ChatScreen> {
     for (var sDoc in subsSnap.docs) {
       final data = sDoc.data();
       final uid = data['userId'];
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (userDoc.exists && userDoc.data() != null) {
         final uData = userDoc.data()!;
         participants.add({
@@ -1024,7 +1145,6 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Ubicación
               _buildFloatingOption(
                 svgPath: 'assets/icono-ubicacion.svg',
                 label: 'Ubicación',
@@ -1033,7 +1153,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   await _handleSendLocationWithPicker();
                 },
               ),
-              // Plan
               _buildFloatingOption(
                 svgPath: 'assets/plan-sin-fondo.png',
                 label: 'Plan',
@@ -1042,7 +1161,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   _showPlanSelection();
                 },
               ),
-              // Foto
               _buildFloatingOption(
                 svgPath: 'assets/icono-imagen.svg',
                 label: 'Foto',
@@ -1123,7 +1241,6 @@ class _ChatScreenState extends State<ChatScreen> {
       final address = result['address'] as String?;
 
       if (lat != null && lng != null) {
-        // Envía el mensaje con 'type': 'location'
         await FirebaseFirestore.instance.collection('messages').add({
           'senderId': currentUserId,
           'receiverId': widget.chatPartnerId,
@@ -1135,55 +1252,60 @@ class _ChatScreenState extends State<ChatScreen> {
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'delivered': false,
+          // Incluimos la info de "replyTo" (si está activo)
+          'replyTo': buildReplyMapForSending(),
         });
+        // Limpiamos el estado de “responder”
+        cancelReply();
       }
     }
   }
 
   void _showPlanSelection() async {
-  final selectedPlans = await Navigator.push<Set<String>>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const SelectPlanScreen(),
-    ),
-  );
-  if (selectedPlans == null || selectedPlans.isEmpty) return;
+    final selectedPlans = await Navigator.push<Set<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SelectPlanScreen(),
+      ),
+    );
+    if (selectedPlans == null || selectedPlans.isEmpty) return;
 
-  for (String planId in selectedPlans) {
-    final planDoc = await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(planId)
-        .get();
-    if (!planDoc.exists) continue;
+    for (String planId in selectedPlans) {
+      final planDoc =
+          await FirebaseFirestore.instance.collection('plans').doc(planId).get();
+      if (!planDoc.exists) continue;
 
-    final planData = planDoc.data() as Map<String, dynamic>;
-    final plan = PlanModel.fromMap(planData);
+      final planData = planDoc.data() as Map<String, dynamic>;
+      final plan = PlanModel.fromMap(planData);
 
-    // Si plan.startTimestamp existe, lo formateas en una cadena:
-    String planStartDateString = '';
-    if (plan.startTimestamp != null) {
-      final date = plan.startTimestamp!;
-      planStartDateString = DateFormat('d MMM yyyy, HH:mm', 'es').format(date);
+      // Si plan.startTimestamp existe, lo formateas en una cadena
+      String planStartDateString = '';
+      if (plan.startTimestamp != null) {
+        final date = plan.startTimestamp!;
+        planStartDateString =
+            DateFormat('d MMM yyyy, HH:mm', 'es').format(date);
+      }
+
+      await FirebaseFirestore.instance.collection('messages').add({
+        'senderId': currentUserId,
+        'receiverId': widget.chatPartnerId,
+        'participants': [currentUserId, widget.chatPartnerId],
+        'type': 'shared_plan',
+        'planId': plan.id,
+        'planTitle': plan.type,
+        'planDescription': plan.description,
+        'planImage': plan.backgroundImage ?? '',
+        'planLink': '',
+        'planStartDate': planStartDateString,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'delivered': false,
+        // Info de “replyTo”
+        'replyTo': buildReplyMapForSending(),
+      });
     }
-
-    await FirebaseFirestore.instance.collection('messages').add({
-      'senderId': currentUserId,
-      'receiverId': widget.chatPartnerId,
-      'participants': [currentUserId, widget.chatPartnerId],
-      'type': 'shared_plan',
-      'planId': plan.id,
-      'planTitle': plan.type,
-      'planDescription': plan.description,
-      'planImage': plan.backgroundImage ?? '',
-      'planLink': '',
-      // Nuevo campo con la fecha de inicio formateada:
-      'planStartDate': planStartDateString, 
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-      'delivered': false,
-    });
+    cancelReply();
   }
-}
 
   Future<void> _handleSelectImage() async {
     final picker = ImagePicker();
@@ -1244,7 +1366,10 @@ class _ChatScreenState extends State<ChatScreen> {
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'delivered': false,
+        'replyTo': buildReplyMapForSending(),
       });
+
+      cancelReply();
     } catch (e) {
       print("Error subiendo/enviando imagen: $e");
     }
@@ -1264,10 +1389,15 @@ class _ChatScreenState extends State<ChatScreen> {
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'delivered': false,
+        // Guardamos si es respuesta a otro mensaje
+        'replyTo': buildReplyMapForSending(),
       });
 
       _messageController.clear();
       _scrollToBottom();
+
+      // Cancelamos modo responder
+      cancelReply();
     } catch (e) {
       print("❌ Error al enviar mensaje: $e");
     }
