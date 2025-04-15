@@ -260,7 +260,41 @@ class _ChatsScreenState extends State<ChatsScreen> {
                             color: Colors.white, size: 32),
                       ),
                       direction: DismissDirection.endToStart,
+
+                      /// Aquí interceptamos el deslizamiento antes de eliminar
+                      confirmDismiss: (direction) async {
+                        final bool? result = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) {
+                            return AlertDialog(
+                              title: const Text("Confirmar eliminación"),
+                              content: const Text(
+                                  "¿Estás seguro de que quieres eliminar este chat?"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(ctx).pop(false); // NO
+                                  },
+                                  child: const Text("No"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(ctx).pop(true); // SÍ
+                                  },
+                                  child: const Text("Sí"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        // Si result es true, sí elimina; si es false (o null), cancela el deslizamiento
+                        return result == true;
+                      },
+
+                      /// Si confirmDismiss devolvió true, se ejecutará onDismissed
                       onDismissed: (_) => _deleteChat(otherUserId),
+
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundImage: userPhoto.isNotEmpty
@@ -272,7 +306,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           userName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        // Previa del mensaje
                         subtitle: Text(
                           _buildMessagePreview(lastMsgData),
                           style: unreadCount > 0
@@ -282,14 +315,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Hora
                             Text(
                               _formatTimestamp(
                                   lastMsgData['timestamp'] as Timestamp?),
                               style: const TextStyle(color: Colors.grey),
                             ),
                             const SizedBox(height: 4),
-                            // Si hay mensajes no leídos, mostramos el número
                             if (unreadCount > 0)
                               Container(
                                 padding: const EdgeInsets.all(6),

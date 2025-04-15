@@ -126,6 +126,8 @@ flutter:
     - assets/icono-responder.svg
     - assets/icono-copiar.svg
     - assets/icono-eliminar.svg
+    - assets/icono-reportar.svg
+    - assets/icono-bloquear.svg
 
   fonts:
     - family: Inter

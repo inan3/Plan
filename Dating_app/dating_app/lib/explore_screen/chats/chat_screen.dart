@@ -9,7 +9,7 @@ import 'package:intl/date_symbol_data_local.dart'; // <-- Importante
 import 'package:flutter/scheduler.dart';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:geolocator/geolocator.dart'; // Si lo usas en tu app
+import 'package:geolocator/geolocator.dart'; // Si lo usas
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -20,12 +20,13 @@ import '../users_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 import 'select_plan_screen.dart';
 import 'location_pick_screen.dart';
-// Importamos nuestra función para abrir la imagen a pantalla completa
+// Para abrir imagen a pantalla completa
 import 'inner_chat_utils/picture_managing.dart';
-// Importamos nuestra función para abrir la ubicación
+// Para abrir ubicación
 import 'inner_chat_utils/open_location.dart';
 // Importamos el mixin para manejar la respuesta a un mensaje
 import 'inner_chat_utils/answer_a_message.dart';
+import 'report_and_block_user.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
@@ -53,7 +54,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   bool _localeInitialized = false;
 
-  // Cargamos un Future con el icono del marcador si lo usas en ubicaciones
+  // Carga futuro con icono de marcador (para ubicaciones)
   late Future<BitmapDescriptor> _markerIconFuture;
 
   @override
@@ -67,14 +68,13 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       });
     });
 
-    // Marca como leídos los mensajes
+    // Marca como leídos al entrar
     _markMessagesAsRead();
 
-    // Carga icono custom si deseas. Si no, usa default:
+    // Carga icono custom si lo deseas
     _markerIconFuture = _loadMarkerIcon();
   }
 
-  // Ejemplo de función que carga un icono de marcador
   Future<BitmapDescriptor> _loadMarkerIcon() async {
     try {
       return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
@@ -84,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
-  /// Marca como leídos todos los mensajes recibidos en este chat
+  /// Marca como leídos todos los mensajes recibidos de este chat
   Future<void> _markMessagesAsRead() async {
     try {
       QuerySnapshot unreadMessages = await FirebaseFirestore.instance
@@ -116,7 +116,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             _buildChatHeader(context),
             Expanded(child: _buildMessagesList()),
 
-            // Si estamos respondiendo a algo, mostramos la vista previa arriba del input
+            // Vista previa si estamos respondiendo a algo
             if (isReplying)
               buildReplyPreview(
                 onCancelReply: () {
@@ -131,16 +131,43 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     );
   }
 
-  /// Encabezado superior (con foto, nombre, botón back y menú)
+  /// Encabezado superior (foto, nombre, botón back)
   Widget _buildChatHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        children: [
-          Container(
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    child: Row(
+      children: [
+        // Botón de flecha atrás (cierra el chat y vuelve)
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.blue),
+            onPressed: () {
+              // Aquí sí que volvemos atrás en la navegación
+              Navigator.pop(context);
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // Info del chat (avatar, nombre, etc.)
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.5),
@@ -150,93 +177,76 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                 ),
               ],
             ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.blue),
-              onPressed: () {
-                Navigator.pop(context);
+            child: GestureDetector(
+              onTap: () {
+                // Al pulsar, abrimos UserInfoCheck
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UserInfoCheck(userId: widget.chatPartnerId),
+                  ),
+                );
               },
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 3),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundImage: widget.chatPartnerPhoto != null
+                        ? NetworkImage(widget.chatPartnerPhoto!)
+                        : null,
+                    backgroundColor: Colors.grey[300],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.chatPartnerName,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
-              child: GestureDetector(
-                onTap: () {
-                  // Al pulsar, abrimos UserInfoCheck
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          UserInfoCheck(userId: widget.chatPartnerId),
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundImage: widget.chatPartnerPhoto != null
-                          ? NetworkImage(widget.chatPartnerPhoto!)
-                          : null,
-                      backgroundColor: Colors.grey[300],
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.chatPartnerName,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.more_vert, color: AppColors.blue),
-              onPressed: () {
-                // Acciones extra
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(width: 8),
 
-  /// Lista de mensajes
+        // Botón de tres puntos (muestra popup con “Reportar / Bloquear”)
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.more_vert, color: AppColors.blue),
+            onPressed: () {
+              // Ahora sí, aquí abrimos el popup frosted con las opciones
+              ReportAndBlockUser.showChatOptionsFrosted(
+                context: context,
+                currentUserId: currentUserId,
+                chatPartnerId: widget.chatPartnerId,
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  /// Lista principal de mensajes
   Widget _buildMessagesList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -251,16 +261,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
         _markAllMessagesAsDelivered(snapshot.data!.docs);
 
-        // Filtramos mensajes entre currentUserId <-> widget.chatPartnerId
-        // y que sean posteriores a deletedAt (si existe).
-        var filteredDocs = snapshot.data!.docs.where((doc) {
+        // Filtramos mensajes solo de este chat
+        var allDocs = snapshot.data!.docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
           if (data['timestamp'] is! Timestamp) return false;
           Timestamp timestamp = data['timestamp'];
-          DateTime messageTime = timestamp.toDate();
 
+          // Filtra si se borraron al hacer "borrar chat"
           if (widget.deletedAt != null &&
-              messageTime.isBefore(widget.deletedAt!.toDate())) {
+              timestamp.toDate().isBefore(widget.deletedAt!.toDate())) {
             return false;
           }
 
@@ -271,7 +280,19 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           return case1 || case2;
         }).toList();
 
-        if (filteredDocs.isEmpty) {
+        // *********************
+        // IDEA: Cargar solo los últimos N (por ejemplo, 30) mensajes
+        // para que al entrar el scroll no se quede "atascado" más arriba.
+        // Puedes cambiar "30" por el número que prefieras.
+        // *********************
+        const int limit = 30;
+        if (allDocs.length > limit) {
+          allDocs = allDocs.sublist(allDocs.length - limit);
+        }
+        // *********************
+
+        // Si no hay mensajes, mostramos aviso
+        if (allDocs.isEmpty) {
           return const Center(
             child: Text(
               "No hay mensajes en este chat.",
@@ -280,11 +301,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           );
         }
 
-        // Insertamos separadores de fecha en la lista final
+        // Insertamos separadores de fecha
         List<dynamic> chatItems = [];
         String? lastDate;
 
-        for (var doc in filteredDocs) {
+        for (var doc in allDocs) {
           var data = doc.data() as Map<String, dynamic>;
           final timestamp = data['timestamp'] as Timestamp;
           final dateTime = timestamp.toDate();
@@ -303,14 +324,22 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           chatItems.add(doc);
         }
 
-        // Desplazamos el scroll al final cuando hay nuevos mensajes
+        // ----
+        // Ajuste para que cuando entremos, **salte al último mensaje** sin
+        // que se note ninguna transición:
+        // Usamos addPostFrameCallback con jumpTo (no animateTo) y 0ms.
+        // ----
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(
+              _scrollController.position.maxScrollExtent,
+            );
+          }
         });
 
         return ListView.builder(
           controller: _scrollController,
-          padding: const EdgeInsets.only(top: 8, bottom: 12),
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
           itemCount: chatItems.length,
           itemBuilder: (context, index) {
             final item = chatItems[index];
@@ -322,21 +351,22 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               bool isMe = data['senderId'] == currentUserId;
               final String? type = data['type'] as String?;
 
-              // Detectamos swipe (para responder directo) y long press (para diálogo)
+              // GestureDetector para swipe / longPress
               return GestureDetector(
                 onHorizontalDragUpdate: (details) {
-                  // Si se arrastra a la derecha con cierta distancia
+                  // Swipe a la derecha => responder
                   if (details.delta.dx > 15) {
                     startReplyingTo({
                       'docId': item.id,
                       'type': type ?? 'text',
                       'text': data['text'] ?? '',
                       'senderId': data['senderId'],
+                      'senderName': isMe ? 'Tú' : widget.chatPartnerName,
                     });
                   }
                 },
                 onLongPress: () {
-                  // Abrimos el diálogo frosted con 4 opciones
+                  // Mostramos el pop-up frosted con emojis y opciones
                   showMessageOptionsDialog(
                     context,
                     {
@@ -344,24 +374,25 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                       'type': type ?? 'text',
                       'text': data['text'] ?? '',
                       'senderId': data['senderId'],
+                      'senderName': isMe ? 'Tú' : widget.chatPartnerName,
+                      'timestamp': data['timestamp'],
                     },
-                    // Opcional: puedes personalizar "onReact" y "onDelete"
                     onDelete: () async {
-                      // Ejemplo de borrado en Firestore (sólo si el user es dueño o tienes permiso)
                       final docId = item.id;
                       try {
+                        // En lugar de .delete(), marcamos como borrado
+                        // para mostrar la burbuja "El mensaje original ha sido eliminado"
                         await FirebaseFirestore.instance
                             .collection('messages')
                             .doc(docId)
-                            .delete();
-                        debugPrint('Mensaje $docId eliminado');
+                            .update({
+                          'type': 'deleted',
+                          'text': 'El mensaje original ha sido eliminado.',
+                        });
+                        debugPrint('Mensaje $docId marcado como eliminado');
                       } catch (e) {
-                        debugPrint('Error eliminando mensaje: $e');
+                        debugPrint('Error al eliminar mensaje: $e');
                       }
-                    },
-                    onReact: () {
-                      debugPrint('Usuario reaccionó al mensaje');
-                      // Implementa aquí tu lógica de reacciones
                     },
                   );
                 },
@@ -375,7 +406,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     );
   }
 
-  /// Marca mensajes como 'delivered'
+  /// Marca como 'delivered' los mensajes que aún no se han marcado
   Future<void> _markAllMessagesAsDelivered(List<DocumentSnapshot> docs) async {
     final undeliveredDocs = docs.where((doc) {
       var data = doc.data() as Map<String, dynamic>;
@@ -398,22 +429,24 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
-  /// Función helper para decidir qué burbuja dibujar según el 'type'
+  /// Decide qué tipo de burbuja dibujar
   Widget _buildBubbleByType(Map<String, dynamic> data, bool isMe) {
     final String? type = data['type'] as String?;
-
     if (type == 'shared_plan') {
       return _buildSharedPlanBubble(data, isMe);
     } else if (type == 'image') {
       return _buildImageBubble(data, isMe);
     } else if (type == 'location') {
       return _buildLocationBubble(data, isMe);
+    } else if (type == 'deleted') {
+      return _buildDeletedBubble(data, isMe);
     } else {
       // Texto
       return _buildTextBubble(data, isMe);
     }
   }
 
+  /// Pequeño widget para el separador de día
   Widget _buildDayMarker(String dayString) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -447,75 +480,201 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
+    final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     final bubbleColor = isMe
         ? const Color(0xFFF9E4D5)
         : const Color.fromARGB(255, 247, 237, 250);
 
-    // Si este mensaje responde a otro, leemos data['replyTo']
-    final replyTo = data['replyTo'] as Map<String, dynamic>?;
-
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+    Widget bubbleContent = Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
+      ),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+          bottomRight: isMe ? Radius.zero : const Radius.circular(16),
         ),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: bubbleColor,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-              bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment:
-                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              // Cajita gris que muestra el mensaje original
-              if (replyTo != null) buildReplyContainer(replyTo),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (replyTo != null) buildReplyContainer(replyTo),
 
+          Text(
+            data['text'] ?? '',
+            style: const TextStyle(color: Colors.black, fontSize: 16),
+          ),
+
+          const SizedBox(height: 4),
+          // Hora y checks
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment:
+                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            children: [
               Text(
-                data['text'] ?? '',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                ),
+                DateFormat('HH:mm').format(messageTime),
+                style: const TextStyle(color: Colors.black54, fontSize: 12),
               ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment:
-                    isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                children: [
-                  Text(
-                    DateFormat('HH:mm').format(messageTime),
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 12,
-                    ),
+              if (isMe) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  isRead
+                      ? Icons.done_all
+                      : (delivered ? Icons.done_all : Icons.done),
+                  size: 16,
+                  color: isRead
+                      ? Colors.green
+                      : (delivered ? Colors.grey : Colors.grey),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return _buildBubbleWithReaction(data, isMe, bubbleContent);
+  }
+
+  // Nuevo tipo de burbuja: Mensaje eliminado
+  Widget _buildDeletedBubble(Map<String, dynamic> data, bool isMe) {
+    DateTime messageTime = DateTime.now();
+    if (data['timestamp'] is Timestamp) {
+      messageTime = (data['timestamp'] as Timestamp).toDate();
+    }
+    bool delivered = data['delivered'] ?? false;
+    bool isRead = data['isRead'] ?? false;
+
+    final bubbleColor =
+        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+
+    // Burbuja con ícono a la izquierda y el texto en cursiva
+    Widget bubbleContent = Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
+      ),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+          bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SvgPicture.asset(
+                'assets/icono-eliminar.svg',
+                width: 20,
+                height: 20,
+                color: Colors.grey[700],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  data['text'] ?? 'El mensaje original ha sido eliminado',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontStyle: FontStyle.italic,
+                    fontSize: 15,
                   ),
-                  if (isMe) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      isRead
-                          ? Icons.done_all
-                          : (delivered ? Icons.done_all : Icons.done),
-                      size: 16,
-                      color: isRead
-                          ? Colors.green
-                          : (delivered ? Colors.grey : Colors.grey),
-                    ),
-                  ]
-                ],
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment:
+                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            children: [
+              Text(
+                DateFormat('HH:mm').format(messageTime),
+                style: const TextStyle(color: Colors.black54, fontSize: 12),
+              ),
+              if (isMe) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  isRead
+                      ? Icons.done_all
+                      : (delivered ? Icons.done_all : Icons.done),
+                  size: 16,
+                  color: isRead
+                      ? Colors.green
+                      : (delivered ? Colors.grey : Colors.grey),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return _buildBubbleWithReaction(data, isMe, bubbleContent);
+  }
+
+  /// Apila la burbuja + la reacción (si existe)
+  Widget _buildBubbleWithReaction(
+      Map<String, dynamic> data, bool isMe, Widget bubble) {
+    final reaction = data['reaction'];
+    if (reaction == null) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Align(
+          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+          child: bubble,
+        ),
+      );
+    }
+
+    // Versión con la reacción por debajo de la hora, sobresaliendo mitad
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            bubble,
+            Positioned(
+              // Ajusta estos valores para moverlo más a la izquierda o derecha
+              bottom: -12, // para que la mitad quede fuera
+              right: isMe ? 30 : null,
+              left: isMe ? null : 30,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.4),
+                      blurRadius: 2,
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  reaction,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -536,11 +695,9 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
     final bubbleColor =
         isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
-
-    // Si este mensaje responde a otro
     final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
-    return Align(
+    final bubble = Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         width: MediaQuery.of(context).size.width * 0.65,
@@ -564,9 +721,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             crossAxisAlignment:
                 isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              // Cajita gris de respuesta original
               if (replyTo != null) buildReplyContainer(replyTo),
-
               if (lat != null && lng != null)
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
@@ -580,7 +735,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                       future: _markerIconFuture,
                       builder: (ctx, snapshot) {
                         if (!snapshot.hasData) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
                         final icon = snapshot.data!;
                         return GoogleMap(
@@ -612,7 +768,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   color: Colors.grey[300],
                   child: const Icon(Icons.map, size: 50, color: Colors.grey),
                 ),
-
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
@@ -630,7 +785,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   children: [
                     Text(
                       DateFormat('HH:mm').format(messageTime),
-                      style: const TextStyle(color: Colors.black54, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.black54, fontSize: 12),
                     ),
                     if (isMe) ...[
                       const SizedBox(width: 4),
@@ -652,6 +808,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         ),
       ),
     );
+
+    return _buildBubbleWithReaction(data, isMe, bubble);
   }
 
   /// Burbuja de plan compartido
@@ -672,11 +830,9 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
     final bubbleColor =
         isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
-
-    // Si este mensaje responde a otro
     final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
-    return Align(
+    final bubble = Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         width: MediaQuery.of(context).size.width * 0.65,
@@ -695,7 +851,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             if (replyTo != null) buildReplyContainer(replyTo),
-
             GestureDetector(
               onTap: () => _openPlanDetails(planId),
               child: Container(
@@ -804,9 +959,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         ),
       ),
     );
+
+    return _buildBubbleWithReaction(data, isMe, bubble);
   }
 
-  /// Para obtener el tamaño de la imagen en la red (ancho y alto).
+  /// Para obtener el tamaño de la imagen
   Future<Size> _getImageSize(String imageUrl) async {
     final Completer<Size> completer = Completer();
 
@@ -842,14 +999,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
     bool delivered = data['delivered'] ?? false;
     bool isRead = data['isRead'] ?? false;
+    final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     final bubbleColor =
         isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
 
-    // Si este mensaje responde a otro
-    final replyTo = data['replyTo'] as Map<String, dynamic>?;
-
-    return Align(
+    final bubble = Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
@@ -889,12 +1044,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             }
 
             final Size imageSize = snapshot.data!;
-            final double maxWidth =
-                MediaQuery.of(context).size.width * 0.65;
+            final double maxWidth = MediaQuery.of(context).size.width * 0.65;
 
             double displayWidth = imageSize.width;
             double displayHeight = imageSize.height;
 
+            // Ajuste de tamaño si excede el maxWidth
             if (displayWidth > maxWidth) {
               final double ratio = maxWidth / displayWidth;
               displayWidth = maxWidth;
@@ -905,12 +1060,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               crossAxisAlignment:
                   isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                // Cajita gris si hay reply
                 if (replyTo != null) buildReplyContainer(replyTo),
-
                 GestureDetector(
                   onTap: () {
-                    // Abrir imagen a pantalla completa
+                    // Abrimos imagen a pantalla completa
                     openFullImage(context, imageUrl);
                   },
                   child: ClipRRect(
@@ -939,9 +1092,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                       Text(
                         DateFormat('HH:mm').format(messageTime),
                         style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 12,
-                        ),
+                            color: Colors.black54, fontSize: 12),
                       ),
                       if (isMe) ...[
                         const SizedBox(width: 4),
@@ -964,9 +1115,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         ),
       ),
     );
+
+    return _buildBubbleWithReaction(data, isMe, bubble);
   }
 
-  /// Abre detalles del plan
+  /// Abre los detalles del plan
   void _openPlanDetails(String planId) async {
     try {
       final planDoc = await FirebaseFirestore.instance
@@ -998,7 +1151,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
-  /// Incluir 'uid' en cada participante
+  /// Incluimos 'uid' en cada participante
   Future<List<Map<String, dynamic>>> _fetchPlanParticipantsWithUid(
       PlanModel plan) async {
     final List<Map<String, dynamic>> participants = [];
@@ -1052,7 +1205,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     return participants;
   }
 
-  /// Área inferior para escribir mensaje + botón de envío
+  /// Input inferior: escribir y enviar
   Widget _buildMessageInput() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1226,7 +1379,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     );
   }
 
-  /// Muestra LocationPickScreen para elegir la ubicación
+  /// Enviar ubicación
   Future<void> _handleSendLocationWithPicker() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
@@ -1252,15 +1405,14 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'delivered': false,
-          // Incluimos la info de "replyTo" (si está activo)
           'replyTo': buildReplyMapForSending(),
         });
-        // Limpiamos el estado de “responder”
         cancelReply();
       }
     }
   }
 
+  /// Selección de plan
   void _showPlanSelection() async {
     final selectedPlans = await Navigator.push<Set<String>>(
       context,
@@ -1271,19 +1423,19 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     if (selectedPlans == null || selectedPlans.isEmpty) return;
 
     for (String planId in selectedPlans) {
-      final planDoc =
-          await FirebaseFirestore.instance.collection('plans').doc(planId).get();
+      final planDoc = await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(planId)
+          .get();
       if (!planDoc.exists) continue;
 
       final planData = planDoc.data() as Map<String, dynamic>;
       final plan = PlanModel.fromMap(planData);
 
-      // Si plan.startTimestamp existe, lo formateas en una cadena
       String planStartDateString = '';
       if (plan.startTimestamp != null) {
-        final date = plan.startTimestamp!;
         planStartDateString =
-            DateFormat('d MMM yyyy, HH:mm', 'es').format(date);
+            DateFormat('d MMM yyyy, HH:mm', 'es').format(plan.startTimestamp!);
       }
 
       await FirebaseFirestore.instance.collection('messages').add({
@@ -1300,13 +1452,13 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'delivered': false,
-        // Info de “replyTo”
         'replyTo': buildReplyMapForSending(),
       });
     }
     cancelReply();
   }
 
+  /// Seleccionar imagen
   Future<void> _handleSelectImage() async {
     final picker = ImagePicker();
 
@@ -1375,6 +1527,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
+  /// Enviar mensaje de texto
   void _sendMessage() async {
     String messageText = _messageController.text.trim();
     if (messageText.isEmpty) return;
@@ -1389,23 +1542,23 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'delivered': false,
-        // Guardamos si es respuesta a otro mensaje
         'replyTo': buildReplyMapForSending(),
       });
 
       _messageController.clear();
-      _scrollToBottom();
 
-      // Cancelamos modo responder
+      // Tras enviar, bajamos al final **sin animación**, para que no se note
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(
+            _scrollController.position.maxScrollExtent,
+          );
+        }
+      });
+
       cancelReply();
     } catch (e) {
       print("❌ Error al enviar mensaje: $e");
-    }
-  }
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     }
   }
 }
