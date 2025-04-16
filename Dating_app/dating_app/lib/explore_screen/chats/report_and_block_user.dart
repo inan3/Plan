@@ -31,7 +31,8 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
 
   // booleans para cada motivo
   final List<bool> _selected = [false, false, false, false, false, false];
-  final TextEditingController _optionalCommentController = TextEditingController();
+  final TextEditingController _optionalCommentController =
+      TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -163,128 +164,130 @@ class ReportAndBlockUser {
   /// Muestra el popup con efecto frosted glass y opciones:
   /// - Reportar Perfil
   /// - Bloquear / Desbloquear
-static void showChatOptionsFrosted({
-  required BuildContext context,
-  required String currentUserId,
-  required String chatPartnerId,
-}) {
-  showDialog(
-    context: context,
-    barrierDismissible: false, // Lo controlamos manualmente con GestureDetector
-    barrierColor: Colors.transparent,
-    builder: (BuildContext ctx) {
-      return Material(
-        color: Colors.transparent, // Fondo transparente
-        child: InkWell(
-          // Si tocas fuera del contenedor, cierra el diálogo
-          onTap: () => Navigator.pop(ctx),
-          child: Stack(
-            children: [
-              // Alineamos la caja en la parte superior derecha.
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 60, right: 10),
-                  // Este GestureDetector detiene el evento de tap
-                  // para que NO se propague y no se cierre el dialog
-                  // cuando pulsas dentro del contenedor frosted
-                  child: GestureDetector(
-                    onTap: () {
-                      // NO hacemos nada, simplemente evitamos que
-                      // el onTap de InkWell (fuera) se dispare.
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                        child: Container(
-                          color: Colors.white.withOpacity(0.6),
-                          width: 200,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Opción "Reportar"
-                              InkWell(
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  goToReportScreen(context, chatPartnerId);
-                                },
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    SvgPicture.asset(
-                                      'assets/icono-reportar.svg',
-                                      width: 24,
-                                      height: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Expanded(
-                                      child: Text(
-                                        'Reportar Perfil',
-                                        style: TextStyle(
-                                          color: Colors.black87,
-                                          fontSize: 14,
+  static void showChatOptionsFrosted({
+    required BuildContext context,
+    required String currentUserId,
+    required String chatPartnerId,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // Lo controlamos manualmente con GestureDetector
+      barrierColor: Colors.transparent,
+      builder: (BuildContext ctx) {
+        return Material(
+          color: Colors.transparent, // Fondo transparente
+          child: InkWell(
+            // Si tocas fuera del contenedor, cierra el diálogo
+            onTap: () => Navigator.pop(ctx),
+            child: Stack(
+              children: [
+                // Alineamos la caja en la parte superior derecha.
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 60, right: 10),
+                    // Este GestureDetector detiene el evento de tap
+                    // para que NO se propague y no se cierre el dialog
+                    // cuando pulsas dentro del contenedor frosted
+                    child: GestureDetector(
+                      onTap: () {
+                        // NO hacemos nada, simplemente evitamos que
+                        // el onTap de InkWell (fuera) se dispare.
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Container(
+                            color: Colors.white.withOpacity(0.6),
+                            width: 200,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Opción "Reportar"
+                                InkWell(
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    goToReportScreen(context, chatPartnerId);
+                                  },
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(width: 8),
+                                      SvgPicture.asset(
+                                        'assets/icono-reportar.svg',
+                                        width: 24,
+                                        height: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Expanded(
+                                        child: Text(
+                                          'Reportar Perfil',
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 16,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const Divider(
-                                color: Colors.black54,
-                                height: 8,
-                              ),
-                              // Opción "Bloquear" / "Desbloquear"
-                              InkWell(
-                                onTap: () async {
-                                  Navigator.pop(ctx);
-                                  await toggleBlockUser(
-                                    context,
-                                    currentUserId,
-                                    chatPartnerId,
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    SvgPicture.asset(
-                                      'assets/icono-bloquear.svg',
-                                      width: 24,
-                                      height: 24,
-                                      color: isBlocked ? Colors.blue : Colors.red,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        isBlocked
-                                            ? 'Desbloquear Perfil'
-                                            : 'Bloquear Perfil',
-                                        style: const TextStyle(
-                                          color: Colors.black87,
-                                          fontSize: 14,
+                                const Divider(
+                                  color: Colors.black54,
+                                  height: 8,
+                                ),
+                                // Opción "Bloquear" / "Desbloquear"
+                                InkWell(
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    await toggleBlockUser(
+                                      context,
+                                      currentUserId,
+                                      chatPartnerId,
+                                    );
+                                  },
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(width: 8),
+                                      SvgPicture.asset(
+                                        'assets/icono-bloquear.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: isBlocked
+                                            ? Colors.blue
+                                            : Colors.red,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          isBlocked
+                                              ? 'Desbloquear Perfil'
+                                              : 'Bloquear Perfil',
+                                          style: const TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 16,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 
   /// Navega a la pantalla de reporte
   static void goToReportScreen(BuildContext context, String reportedUserId) {
@@ -339,35 +342,35 @@ static void showChatOptionsFrosted({
 
   /// Bloquea al usuario añadiéndolo a un array 'blockedUsers' en tu documento 'users'
   static Future<void> _blockUser(String currentUserId, String chatPartnerId) async {
-    try {
-      final currentUserRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId);
+  try {
+    final docId = '${currentUserId}_$chatPartnerId'; 
+    await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .set({
+      'blockerId': currentUserId, // quién bloquea
+      'blockedId': chatPartnerId, // quién es bloqueado
+      'timestamp': FieldValue.serverTimestamp(),
+    });
 
-      await currentUserRef.update({
-        'blockedUsers': FieldValue.arrayUnion([chatPartnerId]),
-      });
-
-      print("Usuario $chatPartnerId bloqueado por $currentUserId");
-    } catch (e) {
-      print("Error bloqueando usuario: $e");
-    }
+    print("Usuario $chatPartnerId bloqueado por $currentUserId (doc $docId)");
+  } catch (e) {
+    print("Error bloqueando usuario: $e");
   }
+}
 
-  /// Desbloquea al usuario removiéndolo de 'blockedUsers'
-  static Future<void> _unblockUser(String currentUserId, String chatPartnerId) async {
-    try {
-      final currentUserRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId);
+/// Desbloquea al usuario eliminando ese doc en 'blocked_users'
+static Future<void> _unblockUser(String currentUserId, String chatPartnerId) async {
+  try {
+    final docId = '${currentUserId}_$chatPartnerId';
+    await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .delete();
 
-      await currentUserRef.update({
-        'blockedUsers': FieldValue.arrayRemove([chatPartnerId]),
-      });
-
-      print("Usuario $chatPartnerId desbloqueado por $currentUserId");
-    } catch (e) {
-      print("Error desbloqueando usuario: $e");
-    }
+    print("Usuario $chatPartnerId desbloqueado por $currentUserId (doc $docId)");  
+  } catch (e) {
+    print("Error desbloqueando usuario: $e");
   }
+}
 }

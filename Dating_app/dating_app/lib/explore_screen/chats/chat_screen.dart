@@ -1529,36 +1529,53 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   /// Enviar mensaje de texto
   void _sendMessage() async {
-    String messageText = _messageController.text.trim();
-    if (messageText.isEmpty) return;
+  String messageText = _messageController.text.trim();
+  if (messageText.isEmpty) return;
 
-    try {
-      await FirebaseFirestore.instance.collection('messages').add({
-        'senderId': currentUserId,
-        'receiverId': widget.chatPartnerId,
-        'participants': [currentUserId, widget.chatPartnerId],
-        'type': 'text',
-        'text': messageText,
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'delivered': false,
-        'replyTo': buildReplyMapForSending(),
-      });
+  // 1) Comprobamos si el receptor (widget.chatPartnerId) bloqueó al emisor (currentUserId)
+  final docId = '${widget.chatPartnerId}_$currentUserId';
+  final blockedDoc = await FirebaseFirestore.instance
+      .collection('blocked_users')
+      .doc(docId)
+      .get();
 
-      _messageController.clear();
-
-      // Tras enviar, bajamos al final **sin animación**, para que no se note
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(
-            _scrollController.position.maxScrollExtent,
-          );
-        }
-      });
-
-      cancelReply();
-    } catch (e) {
-      print("❌ Error al enviar mensaje: $e");
-    }
+  if (blockedDoc.exists) {
+    // Significa que tu chatPartnerId (que es 'blockerId') ha bloqueado a currentUserId (que es 'blockedId')
+    print("La otra persona te ha bloqueado, no puedes enviar mensajes.");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("La otra persona te ha bloqueado.")),
+    );
+    return; // no enviamos nada
   }
+
+  // 2) Si no está bloqueado, enviamos el mensaje
+  try {
+    await FirebaseFirestore.instance.collection('messages').add({
+      'senderId': currentUserId,
+      'receiverId': widget.chatPartnerId,
+      'participants': [currentUserId, widget.chatPartnerId],
+      'type': 'text',
+      'text': messageText,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'delivered': false,
+      'replyTo': buildReplyMapForSending(),
+    });
+
+    _messageController.clear();
+
+    // Bajamos el scroll al final sin animación
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(
+          _scrollController.position.maxScrollExtent,
+        );
+      }
+    });
+
+    cancelReply();
+  } catch (e) {
+    print("❌ Error al enviar mensaje: $e");
+  }
+}
 }
