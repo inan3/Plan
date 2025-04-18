@@ -45,9 +45,9 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Construye la “tarjeta” de cada usuario, chequeando primero sus planes.
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Construye la “tarjeta” de cada usuario
+  //----------------------------------------------------------------------
   Widget _buildUserCard(Map<String, dynamic> userData, BuildContext context) {
     final String? uid = userData['uid']?.toString();
     if (uid == null) {
@@ -94,7 +94,7 @@ class UsersGrid extends StatelessWidget {
               return PlanCard(
                 plan: plan,
                 userData: userData,
-                fetchParticipants: fetchPlanParticipants, 
+                fetchParticipants: fetchPlanParticipants,
               );
             }).toList(),
           );
@@ -103,9 +103,9 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Si el usuario no tiene planes creados, se muestra este layout.
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Layout para usuario sin planes
+  //----------------------------------------------------------------------
   Widget _buildNoPlanLayout(BuildContext context, Map<String, dynamic> userData) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String userHandle = userData['handle']?.toString() ?? '@usuario';
@@ -119,7 +119,7 @@ class UsersGrid extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 15),
         child: Stack(
           children: [
-            // Imagen de fondo (o placeholder)
+            // Imagen de fondo
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: (fallbackPhotoUrl != null && fallbackPhotoUrl.isNotEmpty)
@@ -133,7 +133,7 @@ class UsersGrid extends StatelessWidget {
                   : buildPlaceholder(),
             ),
 
-            // Info del usuario (arriba a la izquierda)
+            // Info del usuario
             Positioned(
               top: 10,
               left: 10,
@@ -203,7 +203,7 @@ class UsersGrid extends StatelessWidget {
               ),
             ),
 
-            // Mensaje central indicando que no hay planes...
+            // Mensaje central de "no planes"
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -247,9 +247,9 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Botones que se muestran cuando el usuario no tiene planes (Invitar / Mensaje)
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Botones cuando no tiene planes
+  //----------------------------------------------------------------------
   Widget _buildActionButtons(BuildContext context, String? userId) {
     final String safeUserId = userId ?? '';
     return Row(
@@ -296,9 +296,6 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Helper para cada botón redondeado
-  //--------------------------------------------------------------------------
   Widget _buildActionButton({
     required BuildContext context,
     required String iconPath,

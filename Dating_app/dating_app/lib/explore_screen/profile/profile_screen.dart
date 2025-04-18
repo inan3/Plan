@@ -1,3 +1,5 @@
+// lib/explore_screen/profile/profile_screen.dart
+
 import 'dart:ui';
 import 'dart:io';
 
@@ -9,18 +11,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-// Importa tu FrostedPlanDialog y tu PlanModel
 import '../../models/plan_model.dart';
 import '../users_managing/privilege_level_details.dart';
 import 'memories_calendar.dart';
 import '../../main/colors.dart';
 import '../../start/login_screen.dart';
-// ^ Ajusta estas rutas según tu estructura real
-
-// Importa, si es necesario, tu frosted_plan_dialog_state.dart
-import '../users_managing/frosted_plan_dialog_state.dart'; 
-// Ajusta la ruta a donde tengas tu FrostedPlanDialog
-import 'plan_memories_screen.dart'; // Ajusta la ruta a donde tengas tu PlanMemoriesScreen
+import '../users_managing/frosted_plan_dialog_state.dart';
+import 'plan_memories_screen.dart';
+import '../follow/following_screen.dart';
+import '../future_plans/future_plans.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -32,19 +31,16 @@ class ProfileScreen extends StatefulWidget {
 class ProfileScreenState extends State<ProfileScreen> {
   final String placeholderImageUrl = "https://via.placeholder.com/150";
 
-  // ================================
-  // Campos para avatar y portada
-  // ================================
-  String? profileImageUrl; // Foto de perfil
-  String? coverImageUrl;   // Foto de portada
-
-  // Privilegio actual en formato String ("basico", "premium", "vip", etc.)
+  // Avatar, portada y privilegio
+  String? profileImageUrl;
+  String? coverImageUrl;
   String _privilegeLevel = "basico";
 
+  // Fotos adicionales
   List<String> additionalPhotos = [];
   bool _isLoading = false;
 
-  // Declaramos el ImagePicker solo una vez
+  // ImagePicker
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -54,28 +50,61 @@ class ProfileScreenState extends State<ProfileScreen> {
     _fetchCoverImage();
     _fetchAdditionalPhotos();
     _fetchPrivilegeLevel();
+    _listenPrivilegeLevelUpdates(); // <-- Escucha cambios en Firestore
   }
 
   // ==================================================
-  //  Cargar privilegeLevel (para mostrar su icono)
+  //    Escucha en tiempo real cambios en privilegeLevel
+  // ==================================================
+  void _listenPrivilegeLevelUpdates() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen((doc) {
+      if (!mounted || !doc.exists) return;
+      final raw = doc.data()?['privilegeLevel'];
+      String newLevel;
+      if (raw is int) {
+        switch (raw) {
+          case 1:
+            newLevel = "premium";
+            break;
+          case 2:
+            newLevel = "golden";
+            break;
+          case 3:
+            newLevel = "vip";
+            break;
+          default:
+            newLevel = "basico";
+        }
+      } else {
+        newLevel = (raw ?? "basico").toString().toLowerCase();
+      }
+      if (newLevel != _privilegeLevel) {
+        setState(() => _privilegeLevel = newLevel);
+      }
+    });
+  }
+
+  // ==================================================
+  //    Carga nivel de privilegio desde Firestore
   // ==================================================
   Future<void> _fetchPrivilegeLevel() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
-
       if (doc.exists) {
-        final data = doc.data() ?? {};
-        final raw = data['privilegeLevel'];
+        final raw = doc.data()?['privilegeLevel'];
         String newLevel;
-
         if (raw is int) {
-          // Mapeamos int -> string
           switch (raw) {
             case 1:
               newLevel = "premium";
@@ -92,17 +121,13 @@ class ProfileScreenState extends State<ProfileScreen> {
         } else {
           newLevel = (raw ?? "basico").toString().toLowerCase();
         }
-
-        setState(() {
-          _privilegeLevel = newLevel;
-        });
+        setState(() => _privilegeLevel = newLevel);
       }
     } catch (e) {
       debugPrint("[_fetchPrivilegeLevel] Error: $e");
     }
   }
 
-  // Función auxiliar para pasar de String a int (mismo criterio de _fetchPrivilegeLevel)
   int _mapPrivilegeStringToInt(String privilege) {
     switch (privilege.toLowerCase()) {
       case "premium":
@@ -112,13 +137,10 @@ class ProfileScreenState extends State<ProfileScreen> {
       case "vip":
         return 3;
       default:
-        return 0; // "basico"
+        return 0; // basico
     }
   }
 
-  // =======================================
-  //   OBTENER DATOS: Perfil, Portada, etc.
-  // =======================================
   Future<void> _fetchProfileImage() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -127,11 +149,9 @@ class ProfileScreenState extends State<ProfileScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-
       if (!mounted) return;
       setState(() {
-        final data = doc.data() ?? {};
-        profileImageUrl = data['photoUrl'] ?? "";
+        profileImageUrl = doc.data()?['photoUrl'] ?? "";
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -148,11 +168,9 @@ class ProfileScreenState extends State<ProfileScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-
       if (!mounted) return;
       setState(() {
-        final data = doc.data() ?? {};
-        coverImageUrl = data['coverPhotoUrl'] ?? "";
+        coverImageUrl = doc.data()?['coverPhotoUrl'] ?? "";
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,9 +187,7 @@ class ProfileScreenState extends State<ProfileScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-
-      final data = doc.data() ?? {};
-      final photos = data['additionalPhotos'] as List<dynamic>?;
+      final photos = doc.data()?['additionalPhotos'] as List<dynamic>?;
       if (!mounted) return;
       setState(() {
         additionalPhotos = photos?.cast<String>() ?? [];
@@ -183,33 +199,22 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // =======================================================
-  //   LÓGICA PARA ASIGNAR privilegeLevel (followers-based)
-  // =======================================================
   Future<void> _setUserPrivilegeLevel(int followersCount) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
       int newLevel;
-      if (followersCount < 1000) {
-        newLevel = 0; // Básico
-      } else if (followersCount < 10000) {
-        newLevel = 1; // Premium
-      } else if (followersCount < 100000) {
-        newLevel = 2; // Golden
-      } else {
-        newLevel = 3; // VIP
-      }
+      if (followersCount < 1000) newLevel = 0;
+      else if (followersCount < 10000) newLevel = 1;
+      else if (followersCount < 100000) newLevel = 2;
+      else newLevel = 3;
 
-      // EVITAR SOBREESCRITURA
-      final currentLevelInt = _mapPrivilegeStringToInt(_privilegeLevel);
-      if (newLevel != currentLevelInt) {
+      final current = _mapPrivilegeStringToInt(_privilegeLevel);
+      if (newLevel != current) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update({'privilegeLevel': newLevel});
-
         await _fetchPrivilegeLevel();
       }
     } catch (e) {
@@ -217,115 +222,96 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // =================================================
-  //   LÓGICA PARA MOSTRAR FrostedPlanDialog
-  // =================================================
-
-  /// Función que invoca el FrostedPlanDialog a pantalla completa.
   void _showPlanDialog(PlanModel plan) {
     showDialog(
       context: context,
       barrierDismissible: true,
       useSafeArea: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.zero,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            child: FrostedPlanDialog(
-              plan: plan,
-              fetchParticipants: _fetchParticipants, // Ver método abajo
-            ),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: SizedBox(
+          width: MediaQuery.of(ctx).size.width,
+          height: MediaQuery.of(ctx).size.height,
+          child: FrostedPlanDialog(
+            plan: plan,
+            fetchParticipants: _fetchParticipants,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  /// Método privado que retorna los participantes de un plan.
-  /// Lo usará FrostedPlanDialog y también PlanMemoriesScreen si hace falta.
   Future<List<Map<String, dynamic>>> _fetchParticipants(PlanModel p) async {
     final List<Map<String, dynamic>> participants = [];
-
     final subsSnap = await FirebaseFirestore.instance
         .collection('subscriptions')
         .where('id', isEqualTo: p.id)
         .get();
-
     for (var sDoc in subsSnap.docs) {
-      final sData = sDoc.data();
-      final userId = sData['userId'];
-      final userDoc = await FirebaseFirestore.instance
+      final uid = sDoc.data()['userId'];
+      final uDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
+          .doc(uid)
           .get();
-      if (userDoc.exists && userDoc.data() != null) {
-        final uData = userDoc.data()!;
+      final uData = uDoc.data();
+      if (uData != null) {
         participants.add({
-          'uid': userId,
+          'uid': uid,
           'name': uData['name'] ?? 'Sin nombre',
           'age': uData['age']?.toString() ?? '',
           'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
-          'isCreator': (p.createdBy == userId),
+          'isCreator': (p.createdBy == uid),
         });
       }
     }
-
     return participants;
   }
-
-  // =============================
-  //   CAMBIAR FOTO DE PERFIL
-  // =============================
 
   Future<void> _showAvatarSourceActionSheet() async {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.blue),
-                title: const Text('Seleccionar de la galería'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final pickedFile = await _imagePicker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (pickedFile != null) {
-                    setState(() => _isLoading = true);
-                    await _uploadAvatarImage(File(pickedFile.path));
-                    setState(() => _isLoading = false);
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text('Tomar una foto'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final pickedFile = await _imagePicker.pickImage(
-                    source: ImageSource.camera,
-                  );
-                  if (pickedFile != null) {
-                    setState(() => _isLoading = true);
-                    await _uploadAvatarImage(File(pickedFile.path));
-                    setState(() => _isLoading = false);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.blue),
+              title: const Text('Seleccionar de la galería'),
+              onTap: () async {
+                Navigator.pop(context);
+                final pickedFile = await _imagePicker.pickImage(
+                  source: ImageSource.gallery,
+                );
+                if (pickedFile != null) {
+                  setState(() => _isLoading = true);
+                  await _uploadAvatarImage(File(pickedFile.path));
+                  setState(() => _isLoading = false);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.blue),
+              title: const Text('Tomar una foto'),
+              onTap: () async {
+                Navigator.pop(context);
+                final pickedFile = await _imagePicker.pickImage(
+                  source: ImageSource.camera,
+                );
+                if (pickedFile != null) {
+                  setState(() => _isLoading = true);
+                  await _uploadAvatarImage(File(pickedFile.path));
+                  setState(() => _isLoading = false);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -333,25 +319,18 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
       final ref = FirebaseStorage.instance
           .ref()
           .child('avatar_photos')
           .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-
       await ref.putFile(image);
       final imageUrl = await ref.getDownloadURL();
-
       if (!mounted) return;
-      setState(() {
-        profileImageUrl = imageUrl;
-      });
-
+      setState(() => profileImageUrl = imageUrl);
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .update({'photoUrl': imageUrl});
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto de perfil actualizada')),
       );
@@ -362,55 +341,50 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ================================
-  //   CAMBIAR FOTO DE PORTADA
-  // ================================
   Future<void> _changeBackgroundImage() async {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.blue),
-                title: const Text('Seleccionar de la galería'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final pickedFile = await _imagePicker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (pickedFile != null) {
-                    setState(() => _isLoading = true);
-                    await _uploadBackgroundImage(File(pickedFile.path));
-                    setState(() => _isLoading = false);
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text('Tomar una foto'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final pickedFile = await _imagePicker.pickImage(
-                    source: ImageSource.camera,
-                  );
-                  if (pickedFile != null) {
-                    setState(() => _isLoading = true);
-                    await _uploadBackgroundImage(File(pickedFile.path));
-                    setState(() => _isLoading = false);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.blue),
+              title: const Text('Seleccionar de la galería'),
+              onTap: () async {
+                Navigator.pop(context);
+                final pickedFile = await _imagePicker.pickImage(
+                  source: ImageSource.gallery,
+                );
+                if (pickedFile != null) {
+                  setState(() => _isLoading = true);
+                  await _uploadBackgroundImage(File(pickedFile.path));
+                  setState(() => _isLoading = false);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.blue),
+              title: const Text('Tomar una foto'),
+              onTap: () async {
+                Navigator.pop(context);
+                final pickedFile = await _imagePicker.pickImage(
+                  source: ImageSource.camera,
+                );
+                if (pickedFile != null) {
+                  setState(() => _isLoading = true);
+                  await _uploadBackgroundImage(File(pickedFile.path));
+                  setState(() => _isLoading = false);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -418,25 +392,18 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
       final ref = FirebaseStorage.instance
           .ref()
           .child('cover_photos')
           .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-
       await ref.putFile(image);
       final imageUrl = await ref.getDownloadURL();
-
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .update({'coverPhotoUrl': imageUrl});
-
       if (!mounted) return;
-      setState(() {
-        coverImageUrl = imageUrl;
-      });
-
+      setState(() => coverImageUrl = imageUrl);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fondo actualizado con éxito')),
       );
@@ -447,41 +414,36 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // =================================================
-  //   MANEJO DE FOTOS ADICIONALES
-  // =================================================
   Future<void> _showImageSourceActionSheet() async {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.blue),
-                title: const Text('Seleccionar imágenes'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickMultipleImages();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text('Tomar una foto'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _takePhoto();
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.blue),
+              title: const Text('Seleccionar imágenes'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickMultipleImages();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.blue),
+              title: const Text('Tomar una foto'),
+              onTap: () {
+                Navigator.pop(context);
+                _takePhoto();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -528,20 +490,14 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
       final ref = FirebaseStorage.instance
           .ref()
           .child('user_photos')
           .child('${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-
       await ref.putFile(image);
       final imageUrl = await ref.getDownloadURL();
-
       if (!mounted) return;
-      setState(() {
-        additionalPhotos.add(imageUrl);
-      });
-
+      setState(() => additionalPhotos.add(imageUrl));
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -557,17 +513,12 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .update({'photoUrl': imageUrl});
-
       if (!mounted) return;
-      setState(() {
-        profileImageUrl = imageUrl;
-      });
-
+      setState(() => profileImageUrl = imageUrl);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto de perfil actualizada')),
       );
@@ -582,20 +533,14 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
       final ref = FirebaseStorage.instance.refFromURL(imageUrl);
       await ref.delete();
-
       if (!mounted) return;
-      setState(() {
-        additionalPhotos.remove(imageUrl);
-      });
-
+      setState(() => additionalPhotos.remove(imageUrl));
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .update({'additionalPhotos': additionalPhotos});
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Imagen eliminada')),
       );
@@ -606,14 +551,10 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ===========================
-  //   WIDGETS DE LA PANTALLA
-  // ===========================
   Widget _buildCoverImage() {
-    final bool hasCover = (coverImageUrl != null &&
+    final hasCover = (coverImageUrl != null &&
         coverImageUrl!.isNotEmpty &&
         coverImageUrl! != placeholderImageUrl);
-
     return GestureDetector(
       onTap: _changeBackgroundImage,
       child: Container(
@@ -621,10 +562,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         width: double.infinity,
         color: Colors.grey[300],
         child: hasCover
-            ? Image.network(
-                coverImageUrl!,
-                fit: BoxFit.cover,
-              )
+            ? Image.network(coverImageUrl!, fit: BoxFit.cover)
             : Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -645,21 +583,13 @@ class ProfileScreenState extends State<ProfileScreen> {
   Widget _buildUserAvatarAndName() {
     final user = FirebaseAuth.instance.currentUser;
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user?.uid)
-          .get(),
+      future: FirebaseFirestore.instance.collection('users').doc(user?.uid).get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildAvatarPlaceholder("Cargando...");
         }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          return _buildAvatarPlaceholder(user?.uid ?? "");
-        }
-
-        final userData = snapshot.data?.data() as Map<String, dynamic>?;
-        final userName = userData?['name'] ?? 'Usuario';
-
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final userName = data?['name'] ?? 'Usuario';
         return Column(
           children: [
             Stack(
@@ -672,10 +602,11 @@ class ProfileScreenState extends State<ProfileScreen> {
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 42,
-                      backgroundImage: (profileImageUrl != null &&
-                              profileImageUrl!.isNotEmpty)
-                          ? NetworkImage(profileImageUrl!)
-                          : NetworkImage(placeholderImageUrl),
+                      backgroundImage: NetworkImage(
+                        (profileImageUrl != null && profileImageUrl!.isNotEmpty)
+                            ? profileImageUrl!
+                            : placeholderImageUrl,
+                      ),
                     ),
                   ),
                 ),
@@ -708,26 +639,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _avatarCameraIcon() {
-    return GestureDetector(
-      onTap: _showAvatarSourceActionSheet,
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.blue.shade400,
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: const Icon(
-          Icons.camera_alt,
-          color: Colors.white,
-          size: 16,
-        ),
-      ),
-    );
-  }
-
   Widget _buildAvatarPlaceholder(String label) {
     return Column(
       children: [
@@ -741,9 +652,8 @@ class ProfileScreenState extends State<ProfileScreen> {
                 backgroundColor: Colors.white,
                 child: CircleAvatar(
                   radius: 42,
-                  backgroundImage: NetworkImage(
-                    profileImageUrl ?? placeholderImageUrl,
-                  ),
+                  backgroundImage:
+                      NetworkImage(profileImageUrl ?? placeholderImageUrl),
                 ),
               ),
             ),
@@ -767,7 +677,20 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // BOTÓN "VER PRIVILEGIOS"
+  Widget _avatarCameraIcon() => GestureDetector(
+        onTap: _showAvatarSourceActionSheet,
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.blue.shade400,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+        ),
+      );
+
   Widget _buildPrivilegeButton(BuildContext context) {
     return GestureDetector(
       onTap: _showPrivilegeLevelDetailsPopup,
@@ -786,9 +709,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 0),
               Text(
                 _mapPrivilegeLevelToTitle(_privilegeLevel),
-                style: const TextStyle(
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontSize: 14),
               ),
             ],
           ),
@@ -798,9 +719,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _mapPrivilegeLevelToTitle(String level) {
-    switch (level) {
-      case "basico":
-        return "Básico";
+    switch (level.toLowerCase()) {
       case "premium":
         return "Premium";
       case "golden":
@@ -828,17 +747,14 @@ class ProfileScreenState extends State<ProfileScreen> {
   void _showPrivilegeLevelDetailsPopup() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Cerrar',
       barrierColor: Colors.transparent,
       transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) {
-        return const SizedBox.shrink();
-      },
-      transitionBuilder: (ctx, anim, _, child) {
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      transitionBuilder: (_, anim, __, child) {
         return FadeTransition(
           opacity: anim,
           child: SafeArea(
@@ -846,9 +762,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               alignment: Alignment.center,
               child: Material(
                 color: Colors.transparent,
-                child: PrivilegeLevelDetails(
-                  userId: user.uid,
-                ),
+                child: PrivilegeLevelDetails(userId: user.uid),
               ),
             ),
           ),
@@ -857,9 +771,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // =========================================================
-  //   MÉTODOS PARA BIO Y ESTADÍSTICAS
-  // =========================================================
   Future<int> _getFollowersCount(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('followers')
@@ -868,7 +779,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     return snapshot.size;
   }
 
-  Future<int> _getFollowedCount(String userId) async {
+  Future<int> _getFollowingCount(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('followed')
         .where('userId', isEqualTo: userId)
@@ -876,90 +787,56 @@ class ProfileScreenState extends State<ProfileScreen> {
     return snapshot.size;
   }
 
-  Future<int> _getActivePlanCount() async {
+  Future<int> _getFuturePlanCount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return 0;
-    final snapshot = await FirebaseFirestore.instance
+
+    final snap = await FirebaseFirestore.instance
         .collection('plans')
         .where('createdBy', isEqualTo: user.uid)
+        .where('special_plan', isEqualTo: 0)
         .get();
-    return snapshot.docs.length;
+
+    int counter = 0;
+    final now = DateTime.now();
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final ts = data['start_timestamp'];
+      if (ts is Timestamp && ts.toDate().isAfter(now)) {
+        counter++;
+      }
+    }
+    return counter;
   }
 
-  /// Muestra la bio + las estadísticas (planes activos, seguidores, seguidos).
-  /// Evita la llamada directa a `_setUserPrivilegeLevel` en el build.
   Widget _buildBioAndStats() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return const SizedBox.shrink();
-    }
+    if (user == null) return const SizedBox.shrink();
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get(),
-      builder: (context, userDocSnap) {
-        if (userDocSnap.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text('Cargando...', style: TextStyle(color: Colors.black)),
-          );
-        }
-        if (userDocSnap.hasError ||
-            !userDocSnap.hasData ||
-            !userDocSnap.data!.exists) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text('Error al cargar', style: TextStyle(color: Colors.black)),
-          );
-        }
-
-        final isOwner = (user.uid == FirebaseAuth.instance.currentUser?.uid);
-
+    return FutureBuilder<int>(
+      future: _getFuturePlanCount(),
+      builder: (ctx1, snapPlanes) {
         return FutureBuilder<int>(
-          future: _getActivePlanCount(),
-          builder: (context, snapshotPlans) {
+          future: _getFollowersCount(user.uid),
+          builder: (ctx2, snapFol) {
             return FutureBuilder<int>(
-              future: _getFollowersCount(user.uid),
-              builder: (context, snapshotFollowers) {
-                return FutureBuilder<int>(
-                  future: _getFollowedCount(user.uid),
-                  builder: (context, snapshotFollowed) {
-                    if (snapshotPlans.connectionState == ConnectionState.waiting ||
-                        snapshotFollowers.connectionState ==
-                            ConnectionState.waiting ||
-                        snapshotFollowed.connectionState ==
-                            ConnectionState.waiting) {
-                      return _buildStatsRow('...', '...', '...');
-                    }
-
-                    if (snapshotPlans.hasError ||
-                        snapshotFollowers.hasError ||
-                        snapshotFollowed.hasError ||
-                        !snapshotPlans.hasData ||
-                        !snapshotFollowers.hasData ||
-                        !snapshotFollowed.hasData) {
-                      return _buildStatsRow('0', '0', '0');
-                    }
-
-                    final planCount = snapshotPlans.data ?? 0;
-                    final followersCount = snapshotFollowers.data ?? 0;
-                    final followedCount = snapshotFollowed.data ?? 0;
-
-                    // Actualizar privilegeLevel si eres el dueño
-                    if (isOwner) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _setUserPrivilegeLevel(followersCount);
-                      });
-                    }
-
-                    return _buildStatsRow(
-                      planCount.toString(),
-                      followersCount.toString(),
-                      followedCount.toString(),
-                    );
-                  },
+              future: _getFollowingCount(user.uid),
+              builder: (ctx3, snapIng) {
+                if (snapPlanes.connectionState == ConnectionState.waiting ||
+                    snapFol.connectionState == ConnectionState.waiting ||
+                    snapIng.connectionState == ConnectionState.waiting) {
+                  return _buildStatsRow('...', '...', '...');
+                }
+                final plans = snapPlanes.data ?? 0;
+                final followers = snapFol.data ?? 0;
+                final following = snapIng.data ?? 0;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _setUserPrivilegeLevel(followers);
+                });
+                return _buildStatsRow(
+                  plans.toString(),
+                  followers.toString(),
+                  following.toString(),
                 );
               },
             );
@@ -969,167 +846,151 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsRow(String plans, String followers, String followed) {
-    return Column(
+  Widget _buildStatsRow(String plans, String followers, String following) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildStatItem('planes activos', plans),
-            const SizedBox(width: 20),
-            _buildStatItem('seguidores', followers),
-            const SizedBox(width: 20),
-            _buildStatItem('seguidos', followed),
-          ],
-        ),
+        _buildStatItem('planes futuros', plans),
+        const SizedBox(width: 20),
+        _buildStatItem('seguidores', followers),
+        const SizedBox(width: 20),
+        _buildStatItem('seguidos', following),
       ],
     );
   }
 
   Widget _buildStatItem(String label, String count) {
-    final isPlans = label == 'planes activos';
+    final isPlans = label == 'planes futuros';
     final isFollowers = label == 'seguidores';
+    final iconPath =
+        isPlans ? 'assets/icono-calendario.svg' : 'assets/icono-seguidores.svg';
 
-    String iconPath;
-    Color iconColor;
-    if (isPlans) {
-      iconPath = 'assets/icono-calendario.svg';
-      iconColor = (count != '0' && count != '...') ? AppColors.blue : Colors.grey;
-    } else {
-      iconPath = 'assets/icono-seguidores.svg';
-      if (isFollowers) {
-        iconColor =
-            (count != '0' && count != '...') ? AppColors.blue : Colors.grey;
-      } else {
-        iconColor = (count != '0' && count != '...')
-            ? const Color.fromARGB(235, 84, 87, 228)
-            : Colors.grey;
-      }
-    }
+    final iconColor = isPlans
+        ? AppColors.blue
+        : (isFollowers
+            ? AppColors.blue
+            : const Color.fromARGB(235, 84, 87, 228));
 
-    return SizedBox(
-      width: 100,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            iconPath,
-            width: 24,
-            height: 24,
-            color: iconColor,
+    final content = Column(
+      children: [
+        SvgPicture.asset(iconPath, width: 24, height: 24, color: iconColor),
+        const SizedBox(height: 4),
+        Text(
+          count,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
-          const SizedBox(height: 4),
-          Text(
-            count,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color.fromARGB(255, 134, 134, 134),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF868686)),
+        ),
+      ],
+    );
+
+    return GestureDetector(
+      onTap: () {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return;
+
+        if (isPlans) {
+          FuturePlansScreen.show(
+            context: context,
+            userId: user.uid,
+            isFollowing: true,
+            onPlanSelected: (plan) => _showPlanDialog(plan),
+          );
+        } else {
+          FollowingScreen.show(
+            context: context,
+            userId: user.uid,
+            showFollowersFirst: isFollowers,
+          );
+        }
+      },
+      child: SizedBox(width: 100, child: content),
     );
   }
 
-  // VISOR DE FOTOS ADICIONALES (PageView + Dialog)
   void _openPhotoViewer(int initialIndex) {
     PageController controller = PageController(initialPage: initialIndex);
     int currentPage = initialIndex;
 
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: Colors.white,
-              child: Stack(
-                children: [
-                  PageView.builder(
-                    controller: controller,
-                    onPageChanged: (index) {
-                      setState(() {
-                        currentPage = index;
-                      });
-                    },
-                    itemCount: additionalPhotos.length,
-                    itemBuilder: (context, index) {
-                      final imageUrl = additionalPhotos[index];
-                      return Container(
-                        color: Colors.white,
-                        child: Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.contain,
-                            ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: controller,
+                  onPageChanged: (i) => setState(() => currentPage = i),
+                  itemCount: additionalPhotos.length,
+                  itemBuilder: (_, i) {
+                    return Container(
+                      color: Colors.white,
+                      child: Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            additionalPhotos[i],
+                            fit: BoxFit.contain,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        final currentPhoto = additionalPhotos[currentPage];
-                        if (value == 'set_as_profile') {
-                          await _setAsProfilePhoto(currentPhoto);
-                        } else if (value == 'delete') {
-                          await _deletePhoto(currentPhoto);
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'set_as_profile',
-                          child: Text('Establecer como foto de perfil'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Eliminar imagen'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 32,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text(
-                        '${currentPage + 1}/${additionalPhotos.length}',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          color: Colors.black,
-                        ),
                       ),
+                    );
+                  },
+                ),
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      final url = additionalPhotos[currentPage];
+                      if (value == 'set_as_profile') {
+                        await _setAsProfilePhoto(url);
+                      } else if (value == 'delete') {
+                        await _deletePhoto(url);
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'set_as_profile',
+                        child: Text('Establecer como foto de perfil'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Eliminar imagen'),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: 32,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Text(
+                      '${currentPage + 1}/${additionalPhotos.length}',
+                      style: const TextStyle(fontSize: 32, color: Colors.black),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
-  // =========================================
-  //   BUILD PRINCIPAL DE LA PANTALLA
-  // =========================================
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -1139,7 +1000,6 @@ class ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Stack con portada y avatar
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -1149,10 +1009,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                   right: 16,
                   child: ClipOval(
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(
-                        width: 40.0,
-                        height: 40.0,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
@@ -1176,29 +1036,20 @@ class ProfileScreenState extends State<ProfileScreen> {
                   bottom: -80,
                   left: 0,
                   right: 0,
-                  child: Center(
-                    child: _buildUserAvatarAndName(),
-                  ),
+                  child: Center(child: _buildUserAvatarAndName()),
                 ),
               ],
             ),
-
-            // Espacio para el avatar
             const SizedBox(height: 70),
-
-            // Botón "Ver Privilegios"
             _buildPrivilegeButton(context),
-
-            // Bio + Stats
+            const SizedBox(height: 16),
             _buildBioAndStats(),
             const SizedBox(height: 20),
-
-            // Divider
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Center(
                 child: SizedBox(
-                  width: 200.0,
+                  width: 200,
                   child: const Divider(
                     color: Colors.grey,
                     thickness: 0.5,
@@ -1207,45 +1058,36 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Calendario, solo si user != null
             if (user != null)
               MemoriesCalendar(
                 userId: user.uid,
-                onPlanSelected: (PlanModel plan) {
-                  // En lugar de _showPlanDialog, abrimos la pantalla de memorias
+                onPlanSelected: (plan) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => PlanMemoriesScreen(
                         plan: plan,
-                        // Reutilizamos la lógica de participantes
                         fetchParticipants: _fetchParticipants,
                       ),
                     ),
                   );
                 },
               ),
-
             const SizedBox(height: 20),
-
-            // Botón de Cerrar sesión
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: GestureDetector(
                 onTap: () async {
                   await FirebaseAuth.instance.signOut();
                   if (!mounted) return;
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 24,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(30),
@@ -1261,7 +1103,6 @@ class ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 100),
           ],
         ),

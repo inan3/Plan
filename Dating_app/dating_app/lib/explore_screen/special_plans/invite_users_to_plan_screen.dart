@@ -1320,7 +1320,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                       Row(
                         children: [
                           _buildButton(
-                            label: (startDate == null) ? "Seleccionar"
+                            label: (startDate == null) ? "Elige Día"
                                 : _numericDate(startDate!),
                             onTap: _pickStartDate,
                           ),
@@ -1328,7 +1328,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                           if (!allDay)
                             _buildButton(
                               label: (startTime == null)
-                                  ? "Hora"
+                                  ? "Elige Hora"
                                   : _numericTime(startTime!),
                               onTap: _pickStartTime,
                             ),
@@ -1347,14 +1347,14 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                               children: [
                                 _buildButton(
                                   label: (endDate == null)
-                                      ? "Seleccionar"
+                                      ? "Elige Día"
                                       : _numericDate(endDate!),
                                   onTap: _pickEndDate,
                                 ),
                                 const SizedBox(width: 8),
                                 _buildButton(
                                   label: (endTime == null)
-                                      ? "Hora"
+                                      ? "Elige Hora"
                                       : _numericTime(endTime!),
                                   onTap: _pickEndTime,
                                 ),

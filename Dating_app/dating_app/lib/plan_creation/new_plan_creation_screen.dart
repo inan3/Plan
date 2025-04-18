@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:async'; // Para usar Timer
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
@@ -86,8 +87,8 @@ class NewPlanCreationScreen {
                   end: Alignment.bottomRight,
                   colors: [
                     Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+                    Color.fromARGB(255, 72, 38, 38),
+                    Color(0xFF12232E),
                   ],
                 ),
                 boxShadow: [
@@ -179,13 +180,15 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Marcador en el mapa
   Future<BitmapDescriptor>? _markerIconFuture;
 
+  // Para controlar el popup de visibilidad (y cerrarlo automáticamente)
+  Timer? _visibilityTimer;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
   }
 
-  // Cantidad total de ítems (imágenes + video)
   int get totalMedia =>
       _selectedCroppedImages.length + (_selectedVideo == null ? 0 : 1);
 
@@ -369,114 +372,119 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   }
 
   /// Popup para elegir si subimos imagen/video
-  void _showMediaSelectionPopup() {
-    showGeneralDialog(
-      context: context,
-      barrierLabel: "Selecciona medio",
-      pageBuilder: (context, anim1, anim2) => Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
+  /// Popup para elegir si subimos imagen/video
+void _showMediaSelectionPopup() {
+  showGeneralDialog(
+    context: context,
+    barrierLabel: "Selecciona medio",
+    // AÑADIR ESTAS DOS LÍNEAS:
+    barrierDismissible: true,
+    barrierColor: Colors.black.withOpacity(0.5),
+    pageBuilder: (context, anim1, anim2) => Center(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.fromARGB(255, 13, 32, 53),
+              Color.fromARGB(255, 72, 38, 38),
+              Color(0xFF12232E),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "¿Qué deseas subir?",
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "¿Qué deseas subir?",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
+                fontFamily: 'Inter-Regular',
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+              child: const Text(
+                "Imagen (galería)",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
                   decoration: TextDecoration.none,
                   fontFamily: 'Inter-Regular',
                 ),
               ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-                child: const Text(
-                  "Imagen (galería)",
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+              child: const Text(
+                "Imagen (cámara)",
+                style: TextStyle(
+                  color: Colors.white,
+                  decoration: TextDecoration.none,
+                  fontFamily: 'Inter-Regular',
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-                child: const Text(
-                  "Imagen (cámara)",
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
+            ),
+            const Divider(
+              color: Colors.white54,
+              height: 20,
+              thickness: 0.3,
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickVideo(ImageSource.gallery);
+              },
+              child: const Text(
+                "Video (galería)",
+                style: TextStyle(
+                  color: Colors.white,
+                  decoration: TextDecoration.none,
+                  fontFamily: 'Inter-Regular',
                 ),
               ),
-              const Divider(
-                color: Colors.white54,
-                height: 20,
-                thickness: 0.3,
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickVideo(ImageSource.gallery);
-                },
-                child: const Text(
-                  "Video (galería)",
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickVideo(ImageSource.camera);
+              },
+              child: const Text(
+                "Video (cámara)",
+                style: TextStyle(
+                  color: Colors.white,
+                  decoration: TextDecoration.none,
+                  fontFamily: 'Inter-Regular',
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickVideo(ImageSource.camera);
-                },
-                child: const Text(
-                  "Video (cámara)",
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   /// Elegir imagen y recortarla (guardando original y recortada).
   Future<void> _pickImage(ImageSource source) async {
@@ -742,7 +750,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Para formatear fecha en estilo "Lunes, 20 de Enero de 2025"
   String _formatHumanReadableDateOnly(DateTime date) {
     final Map<int, String> weekdays = {
       1: "Lunes",
@@ -772,7 +779,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     return "$weekday, ${date.day} de $monthName de ${date.year}";
   }
 
-  /// Para formatear hora en estilo "17:00"
   String _formatHumanReadableTime(TimeOfDay time) {
     final String hour = time.hour.toString().padLeft(2, '0');
     final String minute = time.minute.toString().padLeft(2, '0');
@@ -921,8 +927,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Cuando el usuario toca una imagen recortada, abrimos la pantalla donde
-  /// se ve la imagen original y se puede recortar de nuevo.
   void _onTapCroppedImage(int index) async {
     final result = await Navigator.push<Uint8List?>(
       context,
@@ -1067,24 +1071,29 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           child: (totalMedia == 0)
               ? Stack(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 124, 120, 120)
-                              .withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/anadir-imagen.svg',
-                            width: 30,
-                            height: 30,
-                            color: Colors.white,
+                    // Contenedor con icono "añadir imagen" -- ahora pulsable
+                    GestureDetector(
+                      onTap: _showMediaSelectionPopup,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 124, 120, 120)
+                                .withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/anadir-imagen.svg',
+                              width: 30,
+                              height: 30,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                    // Botón "flotante" en esquina superior derecha
                     Positioned(
                       top: 10,
                       right: 10,
@@ -1417,6 +1426,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               setState(() {
                                 _selectedVisibility = "Público";
                               });
+                              _showVisibilityPopup(
+                                "Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él",
+                              );
                             },
                             child: Container(
                               width: double.infinity,
@@ -1458,6 +1470,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               setState(() {
                                 _selectedVisibility = "Privado";
                               });
+                              _showVisibilityPopup(
+                                "Los planes privados son visibles solo por aquellos a quienes se lo compartas. "
+                                'Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.',
+                              );
                             },
                             child: Container(
                               width: double.infinity,
@@ -1499,6 +1515,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               setState(() {
                                 _selectedVisibility = "Solo para mis seguidores";
                               });
+                              _showVisibilityPopup(
+                                "Estos planes solo serán visibles para las personas que te siguen.",
+                              );
                             },
                             child: Container(
                               width: double.infinity,
@@ -1593,12 +1612,60 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Mostramos un popup con el mensaje sobre la visibilidad.
+  /// Permanece 4 segundos y se cierra si se toca fuera o pasan los 4s.
+  void _showVisibilityPopup(String message) {
+    // Cancelamos cualquier temporizador anterior, si lo hubiera
+    _visibilityTimer?.cancel();
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Info Visibilidad",
+      barrierColor: Colors.black54,
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  decoration: TextDecoration.none,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      // Cuando el popup se cierre manualmente, cancelamos el timer (si sigue activo)
+      _visibilityTimer?.cancel();
+    });
+
+    // Cerramos automáticamente a los 4 segundos
+    _visibilityTimer = Timer(const Duration(seconds: 4), () {
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop(); // Cierra el popup si aún está abierto
+      }
+    });
+  }
+
   /// Lógica al pulsar "Finalizar Plan"
   Future<void> _onCreatePlanPressed() async {
     try {
       final planId = DateTime.now().millisecondsSinceEpoch.toString();
 
-      // Subir imágenes (recortadas y originales)
+      // Subir imágenes
       final List<String> uploadedCroppedImages = [];
       final List<String> uploadedOriginalImages = [];
 
@@ -1607,9 +1674,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         final originalName = 'plan_backgrounds/${planId}_original_$i.png';
 
         final croppedUrl = await uploadImageToFirebase(
-            _selectedCroppedImages[i], croppedName);
+          _selectedCroppedImages[i],
+          croppedName,
+        );
         final originalUrl = await uploadImageToFirebase(
-            _selectedOriginalImages[i], originalName);
+          _selectedOriginalImages[i],
+          originalName,
+        );
 
         if (croppedUrl != null) {
           uploadedCroppedImages.add(croppedUrl);
@@ -1663,8 +1734,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         );
       }
 
-      // Creamos el plan en Firestore (ver PlanModel.createPlan).
-      // Pasamos las imágenes recortadas y las originales:
+      // Creamos el plan en Firestore (PlanModel.createPlan)
       await PlanModel.createPlan(
         type: _customPlan ?? _selectedPlan ?? '',
         description: _planDescription ?? '',
@@ -1676,13 +1746,14 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         longitude: _longitude,
         startTimestamp: finalStartDateTime,
         finishTimestamp: finalFinishDateTime,
-        backgroundImage:
-            uploadedCroppedImages.isNotEmpty ? uploadedCroppedImages.first : null,
+        backgroundImage: uploadedCroppedImages.isNotEmpty
+            ? uploadedCroppedImages.first
+            : null,
         visibility: _selectedVisibility,
         iconAsset: _selectedIconAsset,
         special_plan: 0,
         images: uploadedCroppedImages,
-        originalImages: uploadedOriginalImages, // <-- nuevo
+        originalImages: uploadedOriginalImages,
         videoUrl: uploadedVideo,
       );
 
@@ -1830,7 +1901,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                             onTap: _pickStartDate,
                             child: _buildFrostedGlassContainer(
                               startDate == null
-                                  ? "dd/mm/yyyy"
+                                  ? "Elige Fecha"
                                   : _formatNumericDateOnly(startDate!),
                             ),
                           ),
@@ -1840,7 +1911,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                               onTap: _pickStartTime,
                               child: _buildFrostedGlassContainer(
                                 startTime == null
-                                    ? "hh:mm:ss"
+                                    ? "Elige Hora"
                                     : _formatNumericTime(startTime!),
                               ),
                             ),
@@ -1864,7 +1935,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                                   onTap: _pickEndDate,
                                   child: _buildFrostedGlassContainer(
                                     endDate == null
-                                        ? "dd/mm/yyyy"
+                                        ? "Elige Día"
                                         : _formatNumericDateOnly(endDate!),
                                   ),
                                 ),
@@ -1873,7 +1944,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                                   onTap: _pickEndTime,
                                   child: _buildFrostedGlassContainer(
                                     endTime == null
-                                        ? "hh:mm:ss"
+                                        ? "Elige Hora"
                                         : _formatNumericTime(endTime!),
                                   ),
                                 ),
@@ -1919,7 +1990,6 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
     );
   }
 
-  /// Formato dd/mm/yyyy
   String _formatNumericDateOnly(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
@@ -1927,7 +1997,6 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
     return "$day/$month/$year";
   }
 
-  /// Formato hh:mm:ss
   String _formatNumericTime(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
@@ -2106,7 +2175,7 @@ class _PreviewAndRecropScreenState extends State<_PreviewAndRecropScreen> {
 
 /// ---------------------------------------------------------------------------
 /// Pantalla para visualizar **varias** imágenes originales en fullscreen con swipe
-/// (Se usará desde el FrostedPlanDialog)
+/// (Se usará desde el FrostedPlanDialog) - Ejemplo de utilidad
 /// ---------------------------------------------------------------------------
 class _FullScreenImageViewer extends StatefulWidget {
   final List<String> originalImages;

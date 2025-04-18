@@ -1,18 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/plan_model.dart';
 
-/// Obtiene los planes de un usuario (que no sean especiales y no hayan finalizado).
+/// Obtiene los planes de un usuario (que no sean especiales,
+/// no hayan finalizado y que tengan visibility = "Público").
 Future<List<PlanModel>> fetchUserPlans(String userId) async {
   final snapshot = await FirebaseFirestore.instance
       .collection('plans')
       .where('createdBy', isEqualTo: userId)
+      .where('visibility', isEqualTo: 'Público') // <-- Solo planes públicos
       .get();
 
   final now = DateTime.now();
   final filteredDocs = snapshot.docs.where((doc) {
     final data = doc.data();
     final int sp = data['special_plan'] ?? 0;
-    if (sp != 0) return false;
+    if (sp != 0) return false; // si es "especial", se excluye
 
     final Timestamp? finishTs = data['finish_timestamp'];
     if (finishTs == null) return false;

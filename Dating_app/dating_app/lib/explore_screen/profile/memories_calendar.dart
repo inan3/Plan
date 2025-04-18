@@ -32,11 +32,11 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   /// Mapa que guarda, para cada fecha (YYYY-MM-DD), la lista de [PlanModel].
   /// Ejemplo:
-  /// { 
+  /// {
   ///   "2023-09-15": [
   ///       PlanModel(id: "xxx", iconAsset: "assets/icono-cafe.svg", ...),
   ///       ...
-  ///   ] 
+  ///   ]
   /// }
   Map<String, List<PlanModel>> _plansByDate = {};
 
@@ -144,70 +144,69 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   /// Si sí hay planes, se distingue entre planes futuros y planes caducados.
   /// Si [widget.onPlanSelected] no es null, se llama pasando el primer plan.
   void _onDayTapped(DateTime date) {
-  final dateKey = DateFormat('yyyy-MM-dd').format(date);
-  final dayPlans = _plansByDate[dateKey];
-  final String formattedDate = DateFormat.yMMMMd('es').format(date);
+    final dateKey = DateFormat('yyyy-MM-dd').format(date);
+    final dayPlans = _plansByDate[dateKey];
+    final String formattedDate = DateFormat.yMMMMd('es').format(date);
 
-  if (dayPlans == null || dayPlans.isEmpty) {
-    // No hay planes => popup "sin memorias".
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(formattedDate),
-        content: const Text("No hay memorias para este día."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Cerrar"),
-          ),
-        ],
-      ),
-    );
-  } else {
-    // Tomamos el primer plan de ese día (o podrías mostrar lista)
-    final PlanModel plan = dayPlans.first;
-
-    // En lugar de callback o popup => abrimos la nueva pantalla:
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PlanMemoriesScreen(
-          plan: plan,
-          fetchParticipants: (PlanModel p) async {
-            // O la misma lógica que usas en SubscribedPlansScreen / MyPlansScreen
-            // Para ejemplo:
-            final List<Map<String, dynamic>> participants = [];
-            final subsSnap = await FirebaseFirestore.instance
-                .collection('subscriptions')
-                .where('id', isEqualTo: p.id)
-                .get();
-
-            for (var sDoc in subsSnap.docs) {
-              final sData = sDoc.data();
-              final userId = sData['userId'];
-              final userDoc = await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userId)
-                  .get();
-              if (userDoc.exists && userDoc.data() != null) {
-                final uData = userDoc.data()!;
-                participants.add({
-                  'uid': userId,
-                  'name': uData['name'] ?? 'Sin nombre',
-                  'age': uData['age']?.toString() ?? '',
-                  'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
-                  'isCreator': (p.createdBy == userId),
-                });
-              }
-            }
-            return participants;
-          },
+    if (dayPlans == null || dayPlans.isEmpty) {
+      // No hay planes => popup "sin memorias".
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(formattedDate),
+          content: const Text("No hay memorias para este día."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cerrar"),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
+      );
+    } else {
+      // Tomamos el primer plan de ese día (o podrías mostrar lista)
+      final PlanModel plan = dayPlans.first;
 
+      // En lugar de callback o popup => abrimos la nueva pantalla:
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PlanMemoriesScreen(
+            plan: plan,
+            fetchParticipants: (PlanModel p) async {
+              // O la misma lógica que usas en SubscribedPlansScreen / MyPlansScreen
+              // Para ejemplo:
+              final List<Map<String, dynamic>> participants = [];
+              final subsSnap = await FirebaseFirestore.instance
+                  .collection('subscriptions')
+                  .where('id', isEqualTo: p.id)
+                  .get();
+
+              for (var sDoc in subsSnap.docs) {
+                final sData = sDoc.data();
+                final userId = sData['userId'];
+                final userDoc = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userId)
+                    .get();
+                if (userDoc.exists && userDoc.data() != null) {
+                  final uData = userDoc.data()!;
+                  participants.add({
+                    'uid': userId,
+                    'name': uData['name'] ?? 'Sin nombre',
+                    'age': uData['age']?.toString() ?? '',
+                    'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+                    'isCreator': (p.createdBy == userId),
+                  });
+                }
+              }
+              return participants;
+            },
+          ),
+        ),
+      );
+    }
+  }
 
   /// Popup para planes futuros (aún no celebrados).
   void _showUpcomingPlanPopup(DateTime date, List<PlanModel> dayPlans) {
@@ -221,7 +220,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
             mainAxisSize: MainAxisSize.min,
             children: dayPlans.map((plan) {
               final String planId = plan.id;
-              final String? icon = plan.iconAsset; // plan.iconAsset no es parte oficial, agrégalo a tu PlanModel si deseas
+              final String? icon = plan
+                  .iconAsset; // plan.iconAsset no es parte oficial, agrégalo a tu PlanModel si deseas
               return ListTile(
                 leading: _buildPlanIcon(icon ?? '', plan.startTimestamp),
                 title: Text("Plan ID: $planId"),
@@ -373,30 +373,33 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   }
 
   Widget _buildCalendarDays() {
-    if (!_localeInitialized) {
-      return const Expanded(child: SizedBox.shrink());
-    }
+    if (!_localeInitialized) return const SizedBox.shrink();
+
     final firstDayOfMonth =
         DateTime(_currentMonth.year, _currentMonth.month, 1);
     final firstWeekday = firstDayOfMonth.weekday;
     final daysInMonth =
         DateUtils.getDaysInMonth(_currentMonth.year, _currentMonth.month);
 
-    List<Widget> dayWidgets = [];
-    // Rellenar huecos de la primera semana (si el mes no empieza en lunes)
+    final List<Widget> dayWidgets = [];
+
+    // Huecos hasta el primer día (si el mes no empieza en lunes)
     for (int i = 1; i < firstWeekday; i++) {
-      dayWidgets.add(Container());
+      dayWidgets.add(const SizedBox.shrink());
     }
-    // Agregar los días del mes
+
+    // Días del mes
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(_currentMonth.year, _currentMonth.month, day);
       dayWidgets.add(_buildDayCell(day, date));
     }
-    return Expanded(
-      child: GridView.count(
-        crossAxisCount: 7,
-        children: dayWidgets,
-      ),
+
+    return GridView.count(
+      crossAxisCount: 7,
+      shrinkWrap: true, // → se ajusta a su contenido
+      physics: const NeverScrollableScrollPhysics(), // → sin scroll interno
+      padding: const EdgeInsets.all(6),
+      children: dayWidgets,
     );
   }
 

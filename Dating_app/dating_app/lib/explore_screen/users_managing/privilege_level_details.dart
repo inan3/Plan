@@ -57,19 +57,12 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   int _maxParticipantsInOnePlan = 0;  // Máx. de participantes en un plan
   int _totalParticipantsUntilNow = 0; // Total de participantes acumulados
 
-  // ============================
-  //  Arrays de umbrales por campo
-  // ============================
-  final List<int> _plansThresholds = [5, 50, 500];
-  final List<int> _maxPartsThresholds = [5, 50, 500];
-  final List<int> _totalPartsThresholds = [20, 2000, 10000];
-
   // Requisitos de cada nivel
   static final List<_LevelRequirement> _requirements = [
-    _LevelRequirement("Básico",   0,   0,     0),
-    _LevelRequirement("Premium",  5,   5,     20),
-    _LevelRequirement("Golden",   50,  50,    2000),
-    _LevelRequirement("VIP",      500, 500,   10000),
+    _LevelRequirement("Básico",   0,     0,     0),
+    _LevelRequirement("Premium",  5,     5,     20),
+    _LevelRequirement("Golden",   50,    50,    2000),
+    _LevelRequirement("VIP",      500,   500,   10000),
   ];
 
   // Nivel de privilegio actual del usuario
@@ -166,70 +159,60 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     }
   }
 
-  // Retorna el primer umbral que sea estrictamente mayor que [value].
-  // Si [value] supera todos los umbrales, retorna el último.
-  int _getNextThreshold(int value, List<int> thresholds) {
-    for (int t in thresholds) {
-      if (value < t) {
-        return t;
-      }
-    }
-    return thresholds.last;
-  }
-
   // ============================
   //   BARRAS DE PROGRESO
   // ============================
-  Widget _buildProgressWithText({
-  required int currentValue,
-  required int maxValue,
-  double width = 80,
-  double height = 10,
-  double borderRadius = 5,
-  Color? progressColor,
-}) {
-  final double progress =
-      maxValue == 0 ? 0 : (currentValue / maxValue).clamp(0.0, 1.0);
 
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      SizedBox(
-        width: width,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: const Color.fromARGB(255, 108, 104, 104),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  progress == 0
-                      ? Colors.transparent
-                      : (progressColor ?? Colors.white),
+  Widget _buildProgressWithText({
+    required int currentValue,
+    required int maxValue,
+    double width = 80,
+    double height = 10,
+    double borderRadius = 5,
+    Color? progressColor,
+  }) {
+    final double progress =
+        maxValue == 0 ? 0 : (currentValue / maxValue).clamp(0.0, 1.0);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: width,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(borderRadius),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: const Color.fromARGB(255, 108, 104, 104),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    progress == 0
+                        ? Colors.transparent
+                        : (progressColor ?? Colors.white),
+                  ),
+                  minHeight: height,
                 ),
-                minHeight: height,
               ),
-            ),
-            Text(
-              "$currentValue",
-              style: TextStyle(
-                color: progress == 0 ? Colors.white : Colors.black,
-                fontSize: 10,
+              Text(
+                "$currentValue",
+                style: TextStyle(
+                  color: progress == 0 ? Colors.white : Colors.black,
+                  fontSize: 10,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      const SizedBox(width: 6),
-      Text(
-        "$maxValue",
-        style: const TextStyle(color: Colors.white, fontSize: 10),
-      ),
-    ],
-  );
-}
+        const SizedBox(width: 6),
+        Text(
+          "$maxValue",
+          style: const TextStyle(color: Colors.white, fontSize: 10),
+        ),
+      ],
+    );
+  }
 
   Widget _buildTriangleIcon() {
     return SvgPicture.asset(
@@ -259,9 +242,16 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   }
 
   Widget _buildIndicatorsRow() {
-    final int maxPlansBar = _getNextThreshold(_totalCreatedPlans, _plansThresholds);
-    final int maxMaxPartsBar = _getNextThreshold(_maxParticipantsInOnePlan, _maxPartsThresholds);
-    final int maxTotalPartsBar = _getNextThreshold(_totalParticipantsUntilNow, _totalPartsThresholds);
+    // Calculamos el umbral según el siguiente nivel (o el actual si ya es VIP)
+    final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
+    final int? nextIndex = _getNextLevelIndex(currentIndex);
+    final _LevelRequirement thresholdReq = nextIndex != null
+        ? _requirements[nextIndex]
+        : _requirements[currentIndex];
+
+    final int maxPlansBar = thresholdReq.minPlans;
+    final int maxMaxPartsBar = thresholdReq.minMaxParts;
+    final int maxTotalPartsBar = thresholdReq.minTotalParts;
 
     return Column(
       children: [
@@ -405,7 +395,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     if (neededPlans < 0) neededPlans = 0;
 
     bool needMaxParts = (_maxParticipantsInOnePlan < nextReq.minMaxParts);
-    int neededMaxPartsThreshold = nextReq.minMaxParts; 
+    int neededMaxPartsThreshold = nextReq.minMaxParts;
 
     int neededTotalParts = nextReq.minTotalParts - _totalParticipantsUntilNow;
     if (neededTotalParts < 0) neededTotalParts = 0;
@@ -481,7 +471,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   }) {
     return InkWell(
       onTap: () {
-        // AQUÍ está el cambio importante:
         _showPrivilegeInfoPopup(levelName);
       },
       child: Stack(
@@ -518,7 +507,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     String titleText;
     String contentText;
 
-    // Construimos el texto a mostrar según el nivel:
     switch (levelName.toLowerCase()) {
       case 'premium':
         titleText = "Nivel Premium";
@@ -568,7 +556,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Título
                     Text(
                       titleText,
                       style: const TextStyle(
@@ -579,7 +566,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    // Contenido
                     Text(
                       contentText,
                       style: const TextStyle(
@@ -589,7 +575,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                       textAlign: TextAlign.left,
                     ),
                     const SizedBox(height: 20),
-                    // Botón Cerrar
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(

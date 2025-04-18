@@ -1,3 +1,5 @@
+// plan_card.dart
+
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ import '../users_managing/user_info_check.dart';
 import '../users_managing/frosted_plan_dialog_state.dart';
 
 /// Esta clase es la tarjeta que muestra cada Plan de un usuario.
+/// NOTA: se asume que llega aquí un plan donde se aplican tus filtros de visibilidad externamente.
 class PlanCard extends StatefulWidget {
   final PlanModel plan;
   final Map<String, dynamic> userData;
@@ -25,62 +28,105 @@ class PlanCard extends StatefulWidget {
     required this.plan,
     required this.userData,
     required this.fetchParticipants,
-    this.hideJoinButton = false, // por defecto, NO se oculta
+    this.hideJoinButton = false,
   }) : super(key: key);
 
   @override
   State<PlanCard> createState() => PlanCardState();
 }
 
+enum JoinState { none, requested, rejoin }
+
 class PlanCardState extends State<PlanCard> {
-  bool _liked = false;
-  int _likeCount = 0;
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
+  bool _liked = false;
+  int _likeCount = 0;
+
+  // Para el chat
+  final TextEditingController _chatController = TextEditingController();
+
+  // Participantes
   late Future<List<Map<String, dynamic>>> _futureParticipants;
   late List<Map<String, dynamic>> _participants;
 
-  final TextEditingController _chatController = TextEditingController();
+  // Manejo de "Unirse"
+  JoinState _joinState = JoinState.none;
+  String? _pendingNotificationId;
 
   @override
   void initState() {
     super.initState();
     _likeCount = widget.plan.likes;
-    _checkIfLiked();
-    _futureParticipants = widget.fetchParticipants(widget.plan);
     _participants = [];
+    _futureParticipants = widget.fetchParticipants(widget.plan);
+
+    _checkIfLiked();
+    _checkIfPendingJoinRequest();
   }
 
-  //--------------------------------------------------------------------------
-  // Chequea si el plan ya fue marcado como favorito por el usuario actual.
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // 1) Chequea si el plan ya fue marcado como favorito por el usuario actual
+  //----------------------------------------------------------------------
   Future<void> _checkIfLiked() async {
-    final user = _currentUser;
-    if (user == null) return;
+    if (_currentUser == null) return;
 
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    if (userDoc.exists && userDoc.data() != null) {
-      final data = userDoc.data()!;
-      final favs = data['favourites'] as List<dynamic>? ?? [];
-      if (favs.contains(widget.plan.id)) {
-        setState(() => _liked = true);
-      }
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUser!.uid)
+        .get();
+    if (!userDoc.exists) return;
+
+    final data = userDoc.data()!;
+    final favs = data['favourites'] as List<dynamic>? ?? [];
+    if (favs.contains(widget.plan.id)) {
+      setState(() => _liked = true);
     }
   }
 
-  //--------------------------------------------------------------------------
-  // Alterna el “me gusta” de este plan, actualizando Firestore y usuario.
-  //--------------------------------------------------------------------------
-  Future<void> _toggleLike() async {
-    final user = _currentUser;
-    if (user == null) return;
+  //----------------------------------------------------------------------
+  // 2) Chequea si existe una notificación 'join_request' pendiente
+  //----------------------------------------------------------------------
+  Future<void> _checkIfPendingJoinRequest() async {
+    if (_currentUser == null) return;
 
-    final planRef = FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    // Si ya es participante del plan, no hay join_request
+    if (widget.plan.participants?.contains(_currentUser!.uid) ?? false) {
+      return;
+    }
+
+    final q = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('type', isEqualTo: 'join_request')
+        .where('senderId', isEqualTo: _currentUser!.uid)
+        .where('receiverId', isEqualTo: widget.plan.createdBy)
+        .where('planId', isEqualTo: widget.plan.id)
+        .limit(1)
+        .get();
+
+    if (q.docs.isNotEmpty) {
+      setState(() {
+        _joinState = JoinState.requested;
+        _pendingNotificationId = q.docs.first.id;
+      });
+    }
+  }
+
+  //----------------------------------------------------------------------
+  // 3) Alterna el “me gusta” de este plan
+  //----------------------------------------------------------------------
+  Future<void> _toggleLike() async {
+    if (_currentUser == null) return;
+
+    final planRef =
+        FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(_currentUser!.uid);
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snap = await transaction.get(planRef);
       if (!snap.exists) return;
+
       int currentLikes = snap.data()?['likes'] ?? 0;
       if (!_liked) {
         currentLikes++;
@@ -88,9 +134,7 @@ class PlanCardState extends State<PlanCard> {
         currentLikes = (currentLikes > 0) ? currentLikes - 1 : 0;
       }
       transaction.update(planRef, {'likes': currentLikes});
-      setState(() {
-        _likeCount = currentLikes;
-      });
+      setState(() => _likeCount = currentLikes);
     });
 
     if (!_liked) {
@@ -105,27 +149,27 @@ class PlanCardState extends State<PlanCard> {
     setState(() => _liked = !_liked);
   }
 
-  //--------------------------------------------------------------------------
-  // El botón "Unirse" a un plan público o mandar solicitud a un plan privado.
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // 4) Lógica del botón "Unirse"
+  //----------------------------------------------------------------------
   Future<void> _onJoinTap() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return; // No hay usuario logueado
-
+    if (_currentUser == null) return;
     final plan = widget.plan;
 
-    // Si es su propio plan
-    if (plan.createdBy == user.uid) {
+    // Evitar unirse si ya eres participante
+    if (plan.participants?.contains(_currentUser!.uid) ?? false) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No puedes unirte a tu propio plan')),
+        const SnackBar(
+          content: Text('Ya eres participante de este plan.'),
+        ),
       );
       return;
     }
 
-    // Si ya está suscrito
-    if (plan.participants?.contains(user.uid) ?? false) {
+    // Evitar unirse a tu propio plan
+    if (plan.createdBy == _currentUser!.uid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Ya estás suscrito a este plan!')),
+        const SnackBar(content: Text('No puedes unirte a tu propio plan')),
       );
       return;
     }
@@ -136,62 +180,87 @@ class PlanCardState extends State<PlanCard> {
     if (maxPart > 0 && participantes >= maxPart) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('El cupo máximo de participantes para este plan está cubierto'),
+          content:
+              Text('El cupo máximo de participantes para este plan está cubierto'),
         ),
       );
       return;
     }
 
-    // Privado vs público
-    final bool isPlanPrivate = (plan.creatorProfilePrivacy ?? 0) == 1;
-    if (isPlanPrivate) {
-      // Notificación
-      final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
-      await FirebaseFirestore.instance.collection('notifications').add({
-        'type': 'join_request',
-        'receiverId': plan.createdBy,
-        'senderId': user.uid,
-        'planId': plan.id,
-        'planType': planType,
-        'timestamp': FieldValue.serverTimestamp(),
-        'read': false,
+    // Toggle join_request
+    if (_joinState == JoinState.requested) {
+      await _cancelJoinRequest();
+      setState(() {
+        _joinState = JoinState.rejoin;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tu solicitud de unión se ha enviado con éxito.'),
-        ),
-      );
     } else {
-      // Público => se une
-      final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final snap = await transaction.get(planRef);
-        if (!snap.exists) return;
-        final data = snap.data()!;
-        final participantsList = List<String>.from(data['participants'] ?? []);
-        if (!participantsList.contains(user.uid)) {
-          participantsList.add(user.uid);
-        }
-        transaction.update(planRef, {'participants': participantsList});
+      await _createJoinRequest();
+      setState(() {
+        _joinState = JoinState.requested;
       });
+    }
+  }
 
-      // Añadir doc en 'subscriptions'
-      await FirebaseFirestore.instance.collection('subscriptions').add({
-        'id': plan.id,
-        'userId': user.uid,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+  Future<void> _createJoinRequest() async {
+    if (_currentUser == null) return;
 
+    final plan = widget.plan;
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUser!.uid)
+        .get();
+
+    String senderName = 'Usuario';
+    String senderPhoto = '';
+    if (userDoc.exists && userDoc.data() != null) {
+      final udata = userDoc.data()!;
+      senderName = udata['name'] ?? senderName;
+      senderPhoto = udata['photoUrl'] ?? senderPhoto;
+    }
+
+    final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
+    final docRef = await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'join_request',
+      'receiverId': plan.createdBy,
+      'senderId': _currentUser!.uid,
+      'senderName': senderName,
+      'senderProfilePic': senderPhoto,
+      'planId': plan.id,
+      'planType': planType,
+      'timestamp': FieldValue.serverTimestamp(),
+      'read': false,
+    });
+
+    _pendingNotificationId = docRef.id;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tu solicitud de unión se ha enviado con éxito.')),
+    );
+  }
+
+  Future<void> _cancelJoinRequest() async {
+    try {
+      if (_pendingNotificationId != null) {
+        await FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(_pendingNotificationId)
+            .delete();
+
+        _pendingNotificationId = null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Has cancelado tu solicitud de unión.')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Te uniste al plan ${plan.type}.')),
+        SnackBar(content: Text('Error al cancelar solicitud: $e')),
       );
     }
   }
 
-  //--------------------------------------------------------------------------
-  // Muestra el diálogo con detalles del plan (FrostedPlanDialog).
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // 5) Muestra el diálogo con detalles del plan
+  //----------------------------------------------------------------------
   void _openPlanDetails(BuildContext context, PlanModel plan) {
     Navigator.push(
       context,
@@ -204,9 +273,9 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Cuando se presiona el ícono de mensaje, abrimos un popup de chat
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // 6) Popup de chat con los mensajes del plan
+  //----------------------------------------------------------------------
   void _onMessageButtonTap() {
     showDialog(
       context: context,
@@ -214,9 +283,6 @@ class PlanCardState extends State<PlanCard> {
         return Dialog(
           insetPadding: EdgeInsets.only(
             top: MediaQuery.of(context).size.height * 0.25,
-            left: 0,
-            right: 0,
-            bottom: 0,
           ),
           backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
           shape: RoundedRectangleBorder(
@@ -228,9 +294,6 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Popup de chat con los mensajes del plan
-  //--------------------------------------------------------------------------
   Widget _buildChatPopup(PlanModel plan) {
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -350,22 +413,21 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Envía un mensaje al chat del plan
-  //--------------------------------------------------------------------------
   void _sendMessage(PlanModel plan) async {
+    if (_currentUser == null) return;
     final text = _chatController.text.trim();
-    if (text.isEmpty || _currentUser == null) return;
+    if (text.isEmpty) return;
 
     String senderName = _currentUser!.uid;
     String senderPic = '';
+
     final userDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(_currentUser!.uid)
         .get();
     if (userDoc.exists && userDoc.data() != null) {
       final data = userDoc.data()!;
-      senderPic = data['photoUrl'] ?? '';
+      senderPic = data['photoUrl'] ?? senderPic;
       senderName = data['name'] ?? senderName;
     }
 
@@ -378,25 +440,24 @@ class PlanCardState extends State<PlanCard> {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    // Actualizar contador de comentarios en "plans"
     final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
     await planRef.update({
       'commentsCount': FieldValue.increment(1),
     }).catchError((_) {
       planRef.set({'commentsCount': 1}, SetOptions(merge: true));
     });
+
     _chatController.clear();
   }
 
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
   // Comparte el plan con otras apps
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
   void _onShareButtonTap() {
     _openCustomShareModal(widget.plan);
   }
 
-  //--------------------------------------------------------------------------
-  // Abre el "BottomSheet" para compartir el plan con seguidores/seguidos
-  //--------------------------------------------------------------------------
   void _openCustomShareModal(PlanModel plan) {
     showModalBottomSheet(
       context: context,
@@ -418,14 +479,72 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Muestra los Avatares de los participantes en la esquina (en la parte de abajo)
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Creador (avatar + nombre)
+  //----------------------------------------------------------------------
+  Widget _buildCreatorFrosted(String name, String handle, String? photoUrl) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Container(
+          color: Colors.black.withOpacity(0.2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              buildProfileAvatar(photoUrl),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      SvgPicture.asset(
+                        'assets/verificado.svg',
+                        width: 14,
+                        height: 14,
+                        color: Colors.blueAccent,
+                      ),
+                    ],
+                  ),
+                  Text(
+                    handle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  //----------------------------------------------------------------------
+  // Participantes en esquina
+  //----------------------------------------------------------------------
   Widget _buildParticipantsCorner() {
     if (_participants.isEmpty) return const SizedBox.shrink();
     final count = _participants.length;
 
-    // Caso 1: Sólo 1 participante
+    // Caso 1: Solo 1 participante
     if (count == 1) {
       final p = _participants[0];
       final pic = p['photoUrl'] ?? '';
@@ -464,7 +583,7 @@ class PlanCardState extends State<PlanCard> {
       );
     }
 
-    // Caso 2: Más de 1 participante
+    // Caso 2: Mas de 1 participante
     else {
       final p1 = _participants[0];
       final p2 = _participants[1];
@@ -535,9 +654,6 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
-  //--------------------------------------------------------------------------
-  // Muestra un modal con la lista de participantes
-  //--------------------------------------------------------------------------
   void _showParticipantsModal(List<Map<String, dynamic>> participants) {
     showDialog(
       context: context,
@@ -613,7 +729,8 @@ class PlanCardState extends State<PlanCard> {
                         },
                         leading: CircleAvatar(
                           radius: 22,
-                          backgroundImage: (pic.isNotEmpty ? NetworkImage(pic) : null),
+                          backgroundImage:
+                              (pic.isNotEmpty ? NetworkImage(pic) : null),
                           backgroundColor: Colors.blueGrey[400],
                         ),
                         title: Text(
@@ -635,9 +752,105 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  //--------------------------------------------------------------------------
-  // Formatea timestamp (hora y minuto)
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  // Botón "Unirse"
+  //----------------------------------------------------------------------
+  Widget _buildJoinFrosted() {
+    if (widget.hideJoinButton) {
+      return const SizedBox.shrink();
+    }
+
+    String buttonText;
+    switch (_joinState) {
+      case JoinState.none:
+        buttonText = 'Unirse';
+        break;
+      case JoinState.requested:
+        buttonText = 'Unión solicitada';
+        break;
+      case JoinState.rejoin:
+        buttonText = 'Unirse';
+        break;
+    }
+
+    return GestureDetector(
+      onTap: _onJoinTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Container(
+            color: Colors.black.withOpacity(0.2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/union.svg',
+                  width: 20,
+                  height: 20,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  buttonText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  //----------------------------------------------------------------------
+  // Botón Frosted (like, chat, share)
+  //----------------------------------------------------------------------
+  Widget _buildFrostedAction({
+    required String iconPath,
+    required String countText,
+    required VoidCallback onTap,
+    Color iconColor = Colors.white,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 20,
+                  height: 20,
+                  color: iconColor,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  countText,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String formatTimestamp(Timestamp? ts) {
     if (ts == null) return '';
     final date = ts.toDate();
@@ -649,9 +862,9 @@ class PlanCardState extends State<PlanCard> {
   @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
-    final String name = widget.userData['name']?.toString().trim() ?? 'Usuario';
-    final String userHandle = widget.userData['handle']?.toString() ?? '@usuario';
-    final String? fallbackPhotoUrl = widget.userData['photoUrl']?.toString();
+    final name = widget.userData['name']?.toString().trim() ?? 'Usuario';
+    final userHandle = widget.userData['handle']?.toString() ?? '@usuario';
+    final fallbackPhotoUrl = widget.userData['photoUrl']?.toString();
 
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _futureParticipants,
@@ -698,7 +911,7 @@ class PlanCardState extends State<PlanCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Info superior (creador + botón Unirse)
+                  // Fila superior (creador y botón unirse)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                     child: Row(
@@ -715,7 +928,11 @@ class PlanCardState extends State<PlanCard> {
                               );
                             }
                           },
-                          child: _buildCreatorFrosted(name, userHandle, fallbackPhotoUrl),
+                          child: _buildCreatorFrosted(
+                            name,
+                            userHandle,
+                            fallbackPhotoUrl,
+                          ),
                         ),
                         const Spacer(),
                         _buildJoinFrosted(),
@@ -723,10 +940,11 @@ class PlanCardState extends State<PlanCard> {
                     ),
                   ),
 
-                  // Imagen del plan
+                  // Imagen principal
                   GestureDetector(
                     onTap: () => _openPlanDetails(context, plan),
-                    child: (plan.backgroundImage != null && plan.backgroundImage!.isNotEmpty)
+                    child: (plan.backgroundImage != null &&
+                            plan.backgroundImage!.isNotEmpty)
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: AspectRatio(
@@ -747,9 +965,14 @@ class PlanCardState extends State<PlanCard> {
                           ),
                   ),
 
-                  // Botones (like, chat, compartir, participantsCorner)
+                  // Botones (like, chat, share, etc.)
                   Padding(
-                    padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+                    padding: const EdgeInsets.only(
+                      left: 12,
+                      right: 12,
+                      top: 8,
+                      bottom: 8,
+                    ),
                     child: Row(
                       children: [
                         _buildFrostedAction(
@@ -797,7 +1020,9 @@ class PlanCardState extends State<PlanCard> {
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        maxP > 0 ? '$totalP/$maxP participantes' : '$totalP participantes',
+                        maxP > 0
+                            ? '$totalP/$maxP participantes'
+                            : '$totalP participantes',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
@@ -832,152 +1057,6 @@ class PlanCardState extends State<PlanCard> {
           ),
         );
       },
-    );
-  }
-
-  //--------------------------------------------------------------------------
-  // Creador Frosted
-  //--------------------------------------------------------------------------
-  Widget _buildCreatorFrosted(String name, String handle, String? photoUrl) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: Container(
-          color: Colors.black.withOpacity(0.2),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              buildProfileAvatar(photoUrl),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      SvgPicture.asset(
-                        'assets/verificado.svg',
-                        width: 14,
-                        height: 14,
-                        color: Colors.blueAccent,
-                      ),
-                    ],
-                  ),
-                  Text(
-                    handle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  //--------------------------------------------------------------------------
-  // Botón Unirse (frosted) en la esquina superior
-  //--------------------------------------------------------------------------
-  Widget _buildJoinFrosted() {
-  if (widget.hideJoinButton) {
-    // Si nos piden ocultarlo, devolvemos un espacio en blanco (o nada).
-    return const SizedBox.shrink();
-  }
-
-  return GestureDetector(
-    onTap: _onJoinTap,
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: Container(
-          color: Colors.black.withOpacity(0.2),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/union.svg',
-                width: 20,
-                height: 20,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'Unirse',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-
-  //--------------------------------------------------------------------------
-  // Botón Frosted de corazon, chat, compartir...
-  //--------------------------------------------------------------------------
-  Widget _buildFrostedAction({
-    required String iconPath,
-    required String countText,
-    required VoidCallback onTap,
-    Color iconColor = Colors.white,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  iconPath,
-                  width: 20,
-                  height: 20,
-                  color: iconColor,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  countText,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
