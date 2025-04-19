@@ -14,23 +14,25 @@ class PrivilegeLevelDetails extends StatefulWidget {
   }) : super(key: key);
 
   // MÉTODO ESTÁTICO para actualizar estadísticas de suscripciones
+  // (ahora SÓLO sube total_participants_until_now y max_participants_in_one_plan,
+  //  partiendo de la idea de que "currentPlanParticipants" = .length de checkedInUsers)
   static Future<void> updateSubscriptionStats(
     String userId,
     int currentPlanParticipants,
   ) async {
     final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
     await FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot snapshot = await transaction.get(userDocRef);
+      final snapshot = await transaction.get(userDocRef);
       if (!snapshot.exists) return;
 
       final data = snapshot.data() as Map<String, dynamic>;
       int totalParticipants = data['total_participants_until_now'] ?? 0;
       int maxParticipants = data['max_participants_in_one_plan'] ?? 0;
 
-      // Incrementamos el total de participantes en 1
+      // Sube el total en 1 si un nuevo usuario confirmó
       totalParticipants += 1;
 
-      // Actualizamos el máximo si el plan actual supera el anterior
+      // Actualizamos el "maxParticipants" si el plan actual supera el anterior
       if (currentPlanParticipants > maxParticipants) {
         maxParticipants = currentPlanParticipants;
       }
@@ -40,7 +42,9 @@ class PrivilegeLevelDetails extends StatefulWidget {
         'max_participants_in_one_plan': maxParticipants,
       });
     });
-    print("Estadísticas de suscripción actualizadas correctamente para userId=$userId");
+    // OJO: Ya no tocamos total_created_plans aquí,
+    // porque se recalcula en user_info_check.
+    print("Estadísticas de suscripción actualizadas para userId=$userId");
   }
 
   @override
@@ -48,29 +52,25 @@ class PrivilegeLevelDetails extends StatefulWidget {
 }
 
 class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
-  String _privilegeInfo = "Cargando nivel de privilegios..."; // Texto inicial mientras carga
+  String _privilegeInfo = "Cargando nivel de privilegios...";
 
-  // ========================
-  //   Estadísticas Firestore
-  // ========================
-  int _totalCreatedPlans = 0;         // Planes creados por el usuario
-  int _maxParticipantsInOnePlan = 0;  // Máx. de participantes en un plan
-  int _totalParticipantsUntilNow = 0; // Total de participantes acumulados
+  // Estadísticas Firestore
+  int _totalCreatedPlans = 0;
+  int _maxParticipantsInOnePlan = 0;
+  int _totalParticipantsUntilNow = 0;
 
-  // Requisitos de cada nivel
   static final List<_LevelRequirement> _requirements = [
-    _LevelRequirement("Básico",   0,     0,     0),
-    _LevelRequirement("Premium",  5,     5,     20),
-    _LevelRequirement("Golden",   50,    50,    2000),
-    _LevelRequirement("VIP",      500,   500,   10000),
+    _LevelRequirement("Básico", 0, 0, 0),
+    _LevelRequirement("Premium", 5, 5, 20),
+    _LevelRequirement("Golden", 50, 50, 2000),
+    _LevelRequirement("VIP", 500, 500, 10000),
   ];
 
-  // Nivel de privilegio actual del usuario
   String _privilegeLevel = "Básico";
 
-  // Ícono principal (PNG) según el nivel de privilegio
   String get _privilegeIcon {
-    switch (_privilegeLevel.toLowerCase()) {
+    final normalized = _privilegeLevel.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
       case "premium":
         return "assets/icono-usuario-premium.png";
       case "golden":
@@ -85,10 +85,9 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   @override
   void initState() {
     super.initState();
-    _loadPrivilegeInfo(); // Carga los datos al iniciar
+    _loadPrivilegeInfo();
   }
 
-  // Lee estadísticas y nivel de Firestore
   Future<void> _loadPrivilegeInfo() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -130,9 +129,8 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     }
   }
 
-  // Condiciones para subir de nivel
   Future<void> _checkAndUpdatePrivilegeLevel() async {
-    String newLevel = _privilegeLevel; // actual
+    String newLevel = _privilegeLevel;
 
     if (_totalCreatedPlans >= 500 &&
         _maxParticipantsInOnePlan >= 500 &&
@@ -159,9 +157,368 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     }
   }
 
-  // ============================
-  //   BARRAS DE PROGRESO
-  // ============================
+  Widget _buildIndicatorsRow() {
+    final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
+    final int? nextIndex = _getNextLevelIndex(currentIndex);
+    final _LevelRequirement thresholdReq = nextIndex != null
+        ? _requirements[nextIndex]
+        : _requirements[currentIndex];
+
+    final int maxPlansBar = thresholdReq.minPlans;
+    final int maxMaxPartsBar = thresholdReq.minMaxParts;
+    final int maxTotalPartsBar = thresholdReq.minTotalParts;
+
+    final double w = 80;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(child: Center(child: _buildTriangleIcon())),
+            Expanded(child: Center(child: _buildSquareIcon())),
+            Expanded(child: Center(child: _buildPentagonIcon())),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: Center(
+                child: _buildProgressWithText(
+                  currentValue: _totalCreatedPlans,
+                  maxValue: maxPlansBar,
+                  width: w,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _buildProgressWithText(
+                  currentValue: _maxParticipantsInOnePlan,
+                  maxValue: maxMaxPartsBar,
+                  width: w,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _buildProgressWithText(
+                  currentValue: _totalParticipantsUntilNow,
+                  maxValue: maxTotalPartsBar,
+                  width: w,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 1),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: Column(
+                children: const [
+                  Text(
+                    "Planes creados",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                children: const [
+                  Text(
+                    "Máx. participantes",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    "en un plan",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                children: const [
+                  Text(
+                    "Total de participantes",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    "reunidos hasta ahora",
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNextLevelHint() {
+    final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
+    final int? nextIndex = _getNextLevelIndex(currentIndex);
+    if (nextIndex == null) {
+      return Column(
+        children: const [
+          SizedBox(height: 8),
+          Text(
+            "¡Felicidades! Ya estás en el nivel más alto de privilegios.",
+            style: TextStyle(color: Colors.white, fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+
+    final _LevelRequirement nextReq = _requirements[nextIndex];
+    int neededPlans = nextReq.minPlans - _totalCreatedPlans;
+    if (neededPlans < 0) neededPlans = 0;
+    bool needMaxParts = (_maxParticipantsInOnePlan < nextReq.minMaxParts);
+    int neededMaxPartsThreshold = nextReq.minMaxParts;
+    int neededTotalParts = nextReq.minTotalParts - _totalParticipantsUntilNow;
+    if (neededTotalParts < 0) neededTotalParts = 0;
+
+    List<String> parts = [];
+    if (neededPlans > 0) {
+      parts.add("crear $neededPlans plan${neededPlans > 1 ? 'es' : ''}");
+    }
+    if (needMaxParts) {
+      parts.add("un plan que supere el umbral máximo de $neededMaxPartsThreshold participantes");
+    }
+    if (neededTotalParts > 0) {
+      parts.add("reunir $neededTotalParts participantes más en tus siguientes planes");
+    }
+
+    if (parts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final String nextLevelName = nextReq.name;
+    String missing;
+    if (parts.length == 1) {
+      missing = parts.first;
+    } else if (parts.length == 2) {
+      missing = "${parts[0]} y ${parts[1]}";
+    } else {
+      missing = "${parts[0]}, ${parts[1]} y ${parts[2]}";
+    }
+
+    final message =
+        "Te falta $missing para pasar al nivel de privilegio $nextLevelName";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 14),
+      child: Row(
+        children: [
+          SvgPicture.asset(
+            "assets/icono-informacion.svg",
+            width: 20,
+            height: 20,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Color.fromARGB(255, 181, 181, 181),
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrivilegeIconsRow() {
+    final currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
+    final iconPaths = [
+      "assets/icono-usuario-basico.png",
+      "assets/icono-usuario-premium.png",
+      "assets/icono-usuario-golden.png",
+      "assets/icono-usuario-vip.png",
+    ];
+    final iconNames = ["Básico", "Premium", "Golden", "VIP"];
+
+    Widget arrow = const Icon(Icons.arrow_forward, color: Colors.grey, size: 20);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildPrivilegeIconButton(
+          pngPath: iconPaths[0],
+          isUnlocked: 0 <= currentIndex,
+          levelName: iconNames[0],
+        ),
+        arrow,
+        _buildPrivilegeIconButton(
+          pngPath: iconPaths[1],
+          isUnlocked: 1 <= currentIndex,
+          levelName: iconNames[1],
+        ),
+        arrow,
+        _buildPrivilegeIconButton(
+          pngPath: iconPaths[2],
+          isUnlocked: 2 <= currentIndex,
+          levelName: iconNames[2],
+        ),
+        arrow,
+        _buildPrivilegeIconButton(
+          pngPath: iconPaths[3],
+          isUnlocked: 3 <= currentIndex,
+          levelName: iconNames[3],
+        ),
+      ],
+    );
+  }
+
+  final _grayscaleFilter = const ColorFilter.matrix([
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0,      0,      0,      1, 0,
+  ]);
+
+  Widget _buildPrivilegeIconButton({
+    required String pngPath,
+    required bool isUnlocked,
+    required String levelName,
+  }) {
+    return InkWell(
+      onTap: () {
+        _showPrivilegeInfoPopup(levelName);
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ColorFiltered(
+            colorFilter: isUnlocked
+                ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                : _grayscaleFilter,
+            child: Image.asset(
+              pngPath,
+              width: 40,
+              height: 40,
+            ),
+          ),
+          if (!isUnlocked)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: SvgPicture.asset(
+                'assets/icono-candado.svg',
+                width: 18,
+                height: 18,
+                color: Colors.white,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivilegeInfoPopup(String levelName) {
+    String titleText;
+    String contentText;
+
+    switch (levelName.toLowerCase()) {
+      case 'premium':
+        titleText = "Nivel Premium";
+        contentText = "El nivel Premium es el segundo nivel. "
+            "Para pasar al siguiente nivel de Golden:\n"
+            "- Crear 50 planes.\n"
+            "- Máximo de 50 participantes en un plan.\n"
+            "- 2000 participantes en total.";
+        break;
+      case 'golden':
+        titleText = "Nivel Golden";
+        contentText = "El nivel Golden es el penúltimo nivel. "
+            "Para pasar a VIP:\n"
+            "- Crear 500 planes.\n"
+            "- Alcanzar 500 participantes en un plan.\n"
+            "- 10000 participantes en total.";
+        break;
+      case 'vip':
+        titleText = "Nivel VIP";
+        contentText = "Este es el nivel más alto, sin límites.";
+        break;
+      default:
+        titleText = "Nivel Básico";
+        contentText = "El nivel Básico es el más bajo. Para pasar a Premium:\n"
+            "- Crear 5 planes.\n"
+            "- Alcanzar 5 participantes en un plan.\n"
+            "- 20 participantes en total.";
+        break;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 88, 88, 88).withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titleText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      contentText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text(
+                          "Cerrar",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildProgressWithText({
     required int currentValue,
@@ -241,119 +598,9 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     );
   }
 
-  Widget _buildIndicatorsRow() {
-    // Calculamos el umbral según el siguiente nivel (o el actual si ya es VIP)
-    final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
-    final int? nextIndex = _getNextLevelIndex(currentIndex);
-    final _LevelRequirement thresholdReq = nextIndex != null
-        ? _requirements[nextIndex]
-        : _requirements[currentIndex];
-
-    final int maxPlansBar = thresholdReq.minPlans;
-    final int maxMaxPartsBar = thresholdReq.minMaxParts;
-    final int maxTotalPartsBar = thresholdReq.minTotalParts;
-
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(child: Center(child: _buildTriangleIcon())),
-            Expanded(child: Center(child: _buildSquareIcon())),
-            Expanded(child: Center(child: _buildPentagonIcon())),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: Center(
-                child: _buildProgressWithText(
-                  currentValue: _totalCreatedPlans,
-                  maxValue: maxPlansBar,
-                  progressColor: Colors.white,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: _buildProgressWithText(
-                  currentValue: _maxParticipantsInOnePlan,
-                  maxValue: maxMaxPartsBar,
-                  progressColor: Colors.white,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: _buildProgressWithText(
-                  currentValue: _totalParticipantsUntilNow,
-                  maxValue: maxTotalPartsBar,
-                  progressColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 1),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
-                    "Planes creados",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
-                    "Máx. participantes",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    "en un plan",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
-                    "Total de participantes",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    "reunidos hasta ahora",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   int _mapPrivilegeToIndex(String level) {
-    switch (level.toLowerCase()) {
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
       case 'premium':
         return 1;
       case 'golden':
@@ -361,7 +608,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
       case 'vip':
         return 3;
       default:
-        return 0; // "básico"
+        return 0; // "Básico"
     }
   }
 
@@ -372,277 +619,10 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     return currentLevelIndex + 1;
   }
 
-  Widget _buildNextLevelHint() {
-    final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
-    final int? nextIndex = _getNextLevelIndex(currentIndex);
-    if (nextIndex == null) {
-      // Ya estás en VIP
-      return Column(
-        children: const [
-          SizedBox(height: 8),
-          Text(
-            "¡Felicidades! Ya estás en el nivel más alto de privilegios.",
-            style: TextStyle(color: Colors.white, fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      );
-    }
-
-    final _LevelRequirement nextReq = _requirements[nextIndex];
-
-    int neededPlans = nextReq.minPlans - _totalCreatedPlans;
-    if (neededPlans < 0) neededPlans = 0;
-
-    bool needMaxParts = (_maxParticipantsInOnePlan < nextReq.minMaxParts);
-    int neededMaxPartsThreshold = nextReq.minMaxParts;
-
-    int neededTotalParts = nextReq.minTotalParts - _totalParticipantsUntilNow;
-    if (neededTotalParts < 0) neededTotalParts = 0;
-
-    List<String> parts = [];
-    if (neededPlans > 0) {
-      parts.add("crear $neededPlans plan${neededPlans > 1 ? 'es' : ''}");
-    }
-    if (needMaxParts) {
-      parts.add("un plan que supere el umbral máximo de $neededMaxPartsThreshold participantes");
-    }
-    if (neededTotalParts > 0) {
-      parts.add("reunir $neededTotalParts participantes más en tus siguientes planes");
-    }
-
-    if (parts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    String missing;
-    if (parts.length == 1) {
-      missing = parts.first;
-    } else if (parts.length == 2) {
-      missing = "${parts[0]} y ${parts[1]}";
-    } else {
-      missing = "${parts[0]}, ${parts[1]} y ${parts[2]}";
-    }
-
-    final String nextLevelName = nextReq.name;
-    String message = "Te falta $missing para pasar al nivel de privilegio $nextLevelName";
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 14),
-      child: Row(
-        children: [
-          SvgPicture.asset(
-            "assets/icono-informacion.svg",
-            width: 20,
-            height: 20,
-            color: Colors.white,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Color.fromARGB(255, 181, 181, 181),
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ===============================
-  //   ÍCONOS DE PRIVILEGIO + Popup
-  // ===============================
-
-  // Para escala de grises (icónos bloqueados)
-  final _grayscaleFilter = const ColorFilter.matrix([
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0,      0,      0,      1, 0,
-  ]);
-
-  Widget _buildPrivilegeIconButton({
-    required String pngPath,
-    required bool isUnlocked,
-    required String levelName,
-  }) {
-    return InkWell(
-      onTap: () {
-        _showPrivilegeInfoPopup(levelName);
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          ColorFiltered(
-            colorFilter: isUnlocked
-                ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                : _grayscaleFilter,
-            child: Image.asset(
-              pngPath,
-              width: 40,
-              height: 40,
-            ),
-          ),
-          if (!isUnlocked)
-            Positioned(
-              right: -2,
-              bottom: -2,
-              child: SvgPicture.asset(
-                'assets/icono-candado.svg',
-                width: 18,
-                height: 18,
-                color: Colors.white,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Muestra el popup “frosted glass” con texto en blanco según el nivel
-  void _showPrivilegeInfoPopup(String levelName) {
-    String titleText;
-    String contentText;
-
-    switch (levelName.toLowerCase()) {
-      case 'premium':
-        titleText = "Nivel Premium";
-        contentText = "El nivel Premium es el segundo nivel. "
-            "Para pasar al siguiente nivel de Golden debes alcanzar los siguientes objetivos:\n"
-            "- Crear 50 planes.\n"
-            "- Alcanzar el máximo de 50 participantes en un solo plan.\n"
-            "- Reunir un total de 2000 participantes sumando todos tus planes.";
-        break;
-      case 'golden':
-        titleText = "Nivel Golden";
-        contentText = "El nivel Golden es el penúltimo nivel. "
-            "Para pasar al siguiente nivel de VIP debes alcanzar los siguientes objetivos:\n"
-            "- Crear 500 planes.\n"
-            "- Alcanzar el máximo de 500 participantes en un solo plan.\n"
-            "- Reunir un total de 10000 participantes sumando todos tus planes.";
-        break;
-      case 'vip':
-        titleText = "Nivel VIP";
-        contentText = "El nivel VIP es el nivel más alto. Este nivel te permite crear planes sin límite y planes de pago.";
-        break;
-      default: // Básico
-        titleText = "Nivel Básico";
-        contentText = "El nivel básico es el más bajo de todos. "
-            "Para pasar al siguiente nivel de Premium debes alcanzar los siguientes objetivos:\n"
-            "- Crear 5 planes.\n"
-            "- Alcanzar el máximo de 5 participantes en un solo plan.\n"
-            "- Reunir un total de 20 participantes sumando todos tus planes.";
-        break;
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 88, 88, 88).withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      titleText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      contentText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.left,
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          "Cerrar",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPrivilegeIconsRow() {
-    final currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
-
-    final iconPaths = [
-      "assets/icono-usuario-basico.png",
-      "assets/icono-usuario-premium.png",
-      "assets/icono-usuario-golden.png",
-      "assets/icono-usuario-vip.png",
-    ];
-    final iconNames = ["Básico", "Premium", "Golden", "VIP"];
-
-    Widget arrow = const Icon(Icons.arrow_forward, color: Colors.grey, size: 20);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildPrivilegeIconButton(
-          pngPath: iconPaths[0],
-          isUnlocked: 0 <= currentIndex,
-          levelName: iconNames[0],
-        ),
-        arrow,
-        _buildPrivilegeIconButton(
-          pngPath: iconPaths[1],
-          isUnlocked: 1 <= currentIndex,
-          levelName: iconNames[1],
-        ),
-        arrow,
-        _buildPrivilegeIconButton(
-          pngPath: iconPaths[2],
-          isUnlocked: 2 <= currentIndex,
-          levelName: iconNames[2],
-        ),
-        arrow,
-        _buildPrivilegeIconButton(
-          pngPath: iconPaths[3],
-          isUnlocked: 3 <= currentIndex,
-          levelName: iconNames[3],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // A) Fondo difuminado y tamaño dinámico
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
@@ -670,15 +650,8 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Ícono principal del nivel actual (PNG)
-                      Image.asset(
-                        _privilegeIcon,
-                        width: 60,
-                        height: 60,
-                      ),
+                      Image.asset(_privilegeIcon, width: 60, height: 60),
                       const SizedBox(height: 8),
-
-                      // Texto de estado del nivel de privilegios
                       Text(
                         _privilegeInfo,
                         style: TextStyle(
@@ -688,13 +661,10 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 14),
-
                       _buildIndicatorsRow(),
                       const SizedBox(height: 12),
-
                       _buildNextLevelHint(),
                       const SizedBox(height: 16),
-
                       _buildPrivilegeIconsRow(),
                       const SizedBox(height: 20),
                     ],
@@ -704,8 +674,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
             ),
           ),
         ),
-
-        // B) Botón "X" para cerrar
         Positioned(
           top: 10,
           right: 10,
@@ -731,10 +699,10 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
 }
 
 class _LevelRequirement {
-  final String name;          
-  final int minPlans;         
-  final int minMaxParts;      
-  final int minTotalParts;    
+  final String name;
+  final int minPlans;
+  final int minMaxParts;
+  final int minTotalParts;
 
   const _LevelRequirement(
     this.name,

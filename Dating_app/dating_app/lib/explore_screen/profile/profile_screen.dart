@@ -16,7 +16,7 @@ import '../users_managing/privilege_level_details.dart';
 import 'memories_calendar.dart';
 import '../../main/colors.dart';
 import '../../start/login_screen.dart';
-import '../users_managing/frosted_plan_dialog_state.dart';
+import '../plans_managing/frosted_plan_dialog_state.dart';
 import 'plan_memories_screen.dart';
 import '../follow/following_screen.dart';
 import '../future_plans/future_plans.dart';
@@ -34,7 +34,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   // Avatar, portada y privilegio
   String? profileImageUrl;
   String? coverImageUrl;
-  String _privilegeLevel = "basico";
+  String _privilegeLevel = "Básico";
 
   // Fotos adicionales
   List<String> additionalPhotos = [];
@@ -50,12 +50,9 @@ class ProfileScreenState extends State<ProfileScreen> {
     _fetchCoverImage();
     _fetchAdditionalPhotos();
     _fetchPrivilegeLevel();
-    _listenPrivilegeLevelUpdates(); // <-- Escucha cambios en Firestore
+    _listenPrivilegeLevelUpdates();
   }
 
-  // ==================================================
-  //    Escucha en tiempo real cambios en privilegeLevel
-  // ==================================================
   void _listenPrivilegeLevelUpdates() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -66,33 +63,13 @@ class ProfileScreenState extends State<ProfileScreen> {
         .listen((doc) {
       if (!mounted || !doc.exists) return;
       final raw = doc.data()?['privilegeLevel'];
-      String newLevel;
-      if (raw is int) {
-        switch (raw) {
-          case 1:
-            newLevel = "premium";
-            break;
-          case 2:
-            newLevel = "golden";
-            break;
-          case 3:
-            newLevel = "vip";
-            break;
-          default:
-            newLevel = "basico";
-        }
-      } else {
-        newLevel = (raw ?? "basico").toString().toLowerCase();
-      }
+      final newLevel = (raw ?? "Básico").toString();
       if (newLevel != _privilegeLevel) {
         setState(() => _privilegeLevel = newLevel);
       }
     });
   }
 
-  // ==================================================
-  //    Carga nivel de privilegio desde Firestore
-  // ==================================================
   Future<void> _fetchPrivilegeLevel() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -103,41 +80,11 @@ class ProfileScreenState extends State<ProfileScreen> {
           .get();
       if (doc.exists) {
         final raw = doc.data()?['privilegeLevel'];
-        String newLevel;
-        if (raw is int) {
-          switch (raw) {
-            case 1:
-              newLevel = "premium";
-              break;
-            case 2:
-              newLevel = "golden";
-              break;
-            case 3:
-              newLevel = "vip";
-              break;
-            default:
-              newLevel = "basico";
-          }
-        } else {
-          newLevel = (raw ?? "basico").toString().toLowerCase();
-        }
+        final newLevel = (raw ?? "Básico").toString();
         setState(() => _privilegeLevel = newLevel);
       }
     } catch (e) {
       debugPrint("[_fetchPrivilegeLevel] Error: $e");
-    }
-  }
-
-  int _mapPrivilegeStringToInt(String privilege) {
-    switch (privilege.toLowerCase()) {
-      case "premium":
-        return 1;
-      case "golden":
-        return 2;
-      case "vip":
-        return 3;
-      default:
-        return 0; // basico
     }
   }
 
@@ -199,49 +146,8 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _setUserPrivilegeLevel(int followersCount) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-      int newLevel;
-      if (followersCount < 1000) newLevel = 0;
-      else if (followersCount < 10000) newLevel = 1;
-      else if (followersCount < 100000) newLevel = 2;
-      else newLevel = 3;
-
-      final current = _mapPrivilegeStringToInt(_privilegeLevel);
-      if (newLevel != current) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'privilegeLevel': newLevel});
-        await _fetchPrivilegeLevel();
-      }
-    } catch (e) {
-      debugPrint('Error al actualizar privilegeLevel: $e');
-    }
-  }
-
-  void _showPlanDialog(PlanModel plan) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      useSafeArea: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: SizedBox(
-          width: MediaQuery.of(ctx).size.width,
-          height: MediaQuery.of(ctx).size.height,
-          child: FrostedPlanDialog(
-            plan: plan,
-            fetchParticipants: _fetchParticipants,
-          ),
-        ),
-      ),
-    );
-  }
-
+  /// IMPORTANTE: Al mostrar un plan, pedimos la lista de participantes
+  /// (aunque en la nueva lógica solemos usar `checkedInUsers` para confirmar).
   Future<List<Map<String, dynamic>>> _fetchParticipants(PlanModel p) async {
     final List<Map<String, dynamic>> participants = [];
     final subsSnap = await FirebaseFirestore.instance
@@ -266,6 +172,26 @@ class ProfileScreenState extends State<ProfileScreen> {
       }
     }
     return participants;
+  }
+
+  void _showPlanDialog(PlanModel plan) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      useSafeArea: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: SizedBox(
+          width: MediaQuery.of(ctx).size.width,
+          height: MediaQuery.of(ctx).size.height,
+          child: FrostedPlanDialog(
+            plan: plan,
+            fetchParticipants: _fetchParticipants,
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _showAvatarSourceActionSheet() async {
@@ -719,12 +645,13 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _mapPrivilegeLevelToTitle(String level) {
-    switch (level.toLowerCase()) {
-      case "premium":
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
         return "Premium";
-      case "golden":
+      case 'golden':
         return "Golden";
-      case "vip":
+      case 'vip':
         return "VIP";
       default:
         return "Básico";
@@ -732,12 +659,13 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getPrivilegeIcon(String level) {
-    switch (level.toLowerCase()) {
-      case "premium":
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
         return "assets/icono-usuario-premium.png";
-      case "golden":
+      case 'golden':
         return "assets/icono-usuario-golden.png";
-      case "vip":
+      case 'vip':
         return "assets/icono-usuario-vip.png";
       default:
         return "assets/icono-usuario-basico.png";
@@ -787,6 +715,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     return snapshot.size;
   }
 
+  /// Devuelve la cantidad de planes (futuros) creados por el user
   Future<int> _getFuturePlanCount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return 0;
@@ -830,9 +759,6 @@ class ProfileScreenState extends State<ProfileScreen> {
                 final plans = snapPlanes.data ?? 0;
                 final followers = snapFol.data ?? 0;
                 final following = snapIng.data ?? 0;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _setUserPrivilegeLevel(followers);
-                });
                 return _buildStatsRow(
                   plans.toString(),
                   followers.toString(),

@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import '../users_managing/frosted_plan_dialog_state.dart';
+import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../models/plan_model.dart';
 
 class PlansInMapScreen {

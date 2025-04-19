@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/plan_model.dart';
-import '../users_grid/plan_card.dart'; // Ajusta la ruta a tu plan_card.dart
+import '../plans_managing/plan_card.dart'; // Ajusta la ruta a tu plan_card.dart
 
 class MyPlansSelection extends StatelessWidget {
   final Set<String> selectedIds;

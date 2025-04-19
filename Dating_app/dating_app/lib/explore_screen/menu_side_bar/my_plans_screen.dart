@@ -10,38 +10,47 @@ import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
 
 // Importa tu PlanCard:
-import '../users_grid/plan_card.dart';
+import '../plans_managing/plan_card.dart';
 
 // Para tu FrostedPlanDialog especial:
-import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
+import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({Key? key}) : super(key: key);
 
   // --------------------------------------------------------------------------
-  // Método para obtener todos los participantes de un plan (para PlanCard).
+  // Método para obtener todos los participantes del plan usando el array
+  // "participants" en el documento de la colección 'plans'.
   // --------------------------------------------------------------------------
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
-    final List<Map<String, dynamic>> participants = [];
-
-    final subsSnap = await FirebaseFirestore.instance
-        .collection('subscriptions')
-        .where('id', isEqualTo: plan.id)
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+    PlanModel plan,
+  ) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
         .get();
 
-    for (var sDoc in subsSnap.docs) {
-      final sData = sDoc.data();
-      final userId = sData['userId'];
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final List<Map<String, dynamic>> participants = [];
+    if (!doc.exists || doc.data() == null) return participants;
+
+    final data = doc.data()!;
+    // Leemos el array 'participants' del doc:
+    final participantUids = List<String>.from(data['participants'] ?? []);
+
+    // Por cada UID, buscamos su info en 'users'
+    for (String uid in participantUids) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       if (userDoc.exists && userDoc.data() != null) {
         final uData = userDoc.data()!;
         participants.add({
-          'uid': userId,
+          'uid': uid,
           'name': uData['name'] ?? 'Sin nombre',
           'age': uData['age']?.toString() ?? '',
           'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
-          'isCreator': (plan.createdBy == userId),
+          'isCreator': (plan.createdBy == uid),
         });
       }
     }
@@ -105,16 +114,22 @@ class MyPlansScreen extends StatelessWidget {
   // Decide cómo mostrar la tarjeta: especial vs normal (usando PlanCard).
   // --------------------------------------------------------------------------
   Widget _buildPlanTile(BuildContext context, PlanModel plan) {
-    // 1) Plan especial
+    // CASO 1: Plan especial
     if (plan.special_plan == 1) {
       return FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchAllPlanParticipants(plan),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildSpecialPlanLoading();
           }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error al cargar participantes: ${snapshot.error}'),
+            );
+          }
+          final participants = snapshot.data ?? [];
 
-          final participants = snapshot.data!;
+          // Tomamos hasta 2 para mostrar en "mini avatares"
           final creatorAvatar = participants.isNotEmpty &&
                   (participants[0]['photoUrl'] ?? '').isNotEmpty
               ? CircleAvatar(
@@ -140,6 +155,7 @@ class MyPlansScreen extends StatelessWidget {
             }
           }
 
+          // Construimos la "tarjeta" (en realidad un container con tu estilo)
           return GestureDetector(
             onTap: () => _openFrostedPlanDialog(context, plan),
             child: Center(
@@ -193,32 +209,31 @@ class MyPlansScreen extends StatelessWidget {
       );
     }
 
-    // 2) Plan normal → reutilizar PlanCard + superponer botón "Eliminar"
+    // CASO 2: Plan normal
     else {
-      // Obtenemos los datos del creador => en "Mis Planes", ya sabemos
-      // que el creador es el usuario actual, pero si igual quieres mostrar
-      // su nombre/foto, lee tu doc en 'users' o pasa algo “dummy”.
+      // Obtenemos los datos del creador => en "Mis Planes" ya sabemos
+      // que es el usuario actual, pero puedes cargar datos reales si lo deseas
       final userData = {
         'name': 'Tú',
         'handle': '@creador',
-        'photoUrl': '', // Carga tu foto si gustas
+        'photoUrl': '',
       };
 
       return Stack(
         clipBehavior: Clip.none,
         children: [
-          // La tarjeta reusada
+          // La tarjeta reusada (PlanCard)
           PlanCard(
             plan: plan,
             userData: userData,
             fetchParticipants: _fetchAllPlanParticipants,
-            // Es tu propio plan, así que oculta "Unirse":
+            // Es tu propio plan, así que no necesitas el botón "Unirse":
             hideJoinButton: true,
           ),
           // Botón para ELIMINAR plan
           Positioned(
-            top: 20,
-            right: 20,
+            top: 14,
+            right: 14,
             child: GestureDetector(
               onTap: () => _confirmDeletePlan(context, plan),
               child: ClipOval(
@@ -276,6 +291,7 @@ class MyPlansScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           body: new_frosted.FrostedPlanDialog(
             plan: plan,
+            // Le pasamos la misma función de participantes unificada
             fetchParticipants: _fetchAllPlanParticipants,
           ),
         ),
@@ -293,7 +309,9 @@ class MyPlansScreen extends StatelessWidget {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text("¿Eliminar este plan?"),
-          content: Text("Esta acción eliminará el plan ${plan.type} de forma permanente."),
+          content: Text(
+            "Esta acción eliminará el plan ${plan.type} de forma permanente.",
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -308,7 +326,9 @@ class MyPlansScreen extends StatelessWidget {
                     .doc(plan.id)
                     .delete();
 
-                // 2) Elimina docs de 'subscriptions'
+                // 2) (Opcional) Elimina docs de 'subscriptions' si usas esa colección
+                // para almacenar que un usuario "se suscribió". Si ya no la usas,
+                // puedes eliminar este bloque.
                 final subs = await FirebaseFirestore.instance
                     .collection('subscriptions')
                     .where('id', isEqualTo: plan.id)

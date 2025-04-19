@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/plan_model.dart';
 // IMPORTA plan_card.dart
-import '../users_grid/plan_card.dart';
+import '../plans_managing/plan_card.dart';
 
 class SubscribedPlansSelection extends StatelessWidget {
   final Set<String> selectedIds;

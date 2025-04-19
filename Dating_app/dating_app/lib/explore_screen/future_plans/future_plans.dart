@@ -7,7 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/plan_model.dart';
-import '../users_grid/plan_card.dart';
+import '../plans_managing/plan_card.dart';
 
 class FuturePlansScreen extends StatefulWidget {
   final String userId;

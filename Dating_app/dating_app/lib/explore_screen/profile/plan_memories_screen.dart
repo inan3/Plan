@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../users_grid/plan_card.dart';
+import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
 
 // Importa nuestra hoja de compartir imágenes (análogo a tu PlanShareSheet)
@@ -15,6 +15,9 @@ import 'image_share_sheet.dart';
 
 class PlanMemoriesScreen extends StatefulWidget {
   final PlanModel plan;
+
+  /// Función que obtendrá los participantes de un plan, leyendo el array `participants`
+  /// del doc en 'plans'. Se pasa al PlanCard para mostrar avatares, etc.
   final Future<List<Map<String, dynamic>>> Function(PlanModel plan)
       fetchParticipants;
 
@@ -259,7 +262,9 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
                 child: Center(child: CircularProgressIndicator()),
               );
             }
-            if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+            if (snapshot.hasError ||
+                !snapshot.hasData ||
+                !snapshot.data!.exists) {
               // Fallback si hay error o doc no existe
               return Column(
                 children: [

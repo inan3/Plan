@@ -7,17 +7,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 
-// Asegúrate de tener estas importaciones:
+
 import '../../models/plan_model.dart';
-import '../../explore_screen/users_managing/user_info_check.dart';
+import '../users_managing/user_info_check.dart';
+import 'attendance_managing.dart';
+import '../../main/colors.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
-
-  /// Aquí le pasas una función que, dado un PlanModel, regresa
-  /// la lista de participantes (con uid, name, age, photoUrl, etc.)
-  final Future<List<Map<String, dynamic>>> Function(PlanModel plan)
-      fetchParticipants;
+  final Future<List<Map<String, dynamic>>> Function(PlanModel plan) fetchParticipants;
 
   const FrostedPlanDialog({
     Key? key,
@@ -34,13 +32,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   final TextEditingController _chatController = TextEditingController();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  // Añadimos variable local para la edad del creador
+  // Almacenamos localmente la edad del creador (si existe en Firestore)
   String? _creatorAge;
 
   bool _liked = false;
   int _likeCount = 0;
 
-  // Controladores y estados para el carrusel de imágenes + video
+  // Para el carrusel de imágenes:
   late PageController _pageController;
   int _currentPageIndex = 0;
 
@@ -48,25 +46,23 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   void initState() {
     super.initState();
 
-    // Ejecutamos la función que nos pasa el padre para obtener participantes
+    // Cargamos la lista de participantes (fetchParticipants)
     _futureParticipants = widget.fetchParticipants(widget.plan);
 
-    // Carga inicial de 'likes'
+    // Likes iniciales:
     _likeCount = widget.plan.likes;
     _checkIfLiked();
 
-    // Intentamos cargar la info del creador (nombre, foto, EDAD) por si no vino en el plan
+    // Intentamos cargar info del creador (edad, nombre, foto)
     _fetchCreatorInfo();
 
-    // Inicializamos el PageController para el carrusel
+    // Inicializamos PageController para carrusel
     _pageController = PageController();
   }
 
-  /// Consulta en la colección 'users' la info del creador y la guarda localmente
+  /// Intenta cargar la info del creador desde la colección 'users'
   Future<void> _fetchCreatorInfo() async {
-    // Si no hay creador, salimos
     if (widget.plan.createdBy.isEmpty) return;
-
     try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
@@ -75,83 +71,45 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
-
-        // Si en Firestore guardas la edad en 'age'
-        final String ageCreador = data['age']?.toString() ?? '';
-
+        final ageCreador = data['age']?.toString() ?? '';
         setState(() {
           widget.plan.creatorName = data['name'] ?? 'Creador';
           widget.plan.creatorProfilePic = data['photoUrl'] ?? '';
-          _creatorAge = ageCreador; // Guardamos la edad local, no en el PlanModel
+          _creatorAge = ageCreador;
         });
       }
     } catch (e) {
-      debugPrint('Error al obtener info del creador: $e');
+      debugPrint('Error al obtener info creador: $e');
     }
   }
 
-  /// Convierte un Timestamp a String "HH:mm"
+  /// Verifica si ya le dí "like" a este plan
+  Future<void> _checkIfLiked() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final snapshot = await userRef.get();
+    if (!snapshot.exists || snapshot.data() == null) return;
+
+    final data = snapshot.data() as Map<String, dynamic>;
+    final favourites = data['favourites'] as List<dynamic>? ?? [];
+    if (favourites.contains(widget.plan.id)) {
+      setState(() => _liked = true);
+    }
+  }
+
+  /// Formato de Timestamp a HH:mm
   String _formatTimestamp(Timestamp? ts) {
     if (ts == null) return '';
     final date = ts.toDate();
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    final hh = date.hour.toString().padLeft(2, '0');
+    final mm = date.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
   }
 
   // ---------------------------------------------------------------------------
-  // FROSTED BOX (genérico)
-  // ---------------------------------------------------------------------------
-  Widget _buildFrostedDetailBox({
-    required String iconPath,
-    required String title,
-    required Widget child,
-  }) {
-    return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: 360,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset(
-                      iconPath,
-                      width: 18,
-                      height: 18,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                child,
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Ubicación
+  //  UBICACIÓN
   // ---------------------------------------------------------------------------
   Widget _buildLocationArea(PlanModel plan) {
     return Center(
@@ -173,7 +131,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Encabezado "Ubicación"
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -193,7 +150,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Dirección / descripción de la ubicación
+                  // Nombre/lugar
                   Text(
                     plan.location,
                     textAlign: TextAlign.center,
@@ -252,7 +209,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Información adicional (ID + Restricción + Fechas)
+  //  INFORMACIÓN ADICIONAL (ID + Restricción + Fechas)
   // ---------------------------------------------------------------------------
   Widget _buildAdditionalInfoBox(PlanModel plan) {
     return Center(
@@ -275,7 +232,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título de la sección
+                  // Título
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -297,7 +254,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Fila para "ID del Plan" + Botón copiar
+                  // Fila ID + botón copiar
                   Row(
                     children: [
                       Expanded(
@@ -312,10 +269,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(
-                          Icons.copy,
-                          color: Color.fromARGB(255, 203, 202, 206),
-                        ),
+                        icon: const Icon(Icons.copy,
+                            color: Color.fromARGB(255, 203, 202, 206)),
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: plan.id));
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -338,11 +293,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
-                      textAlign: TextAlign.start,
                     ),
 
                   const SizedBox(height: 25),
-                  // FECHA DE INICIO
+                  // Fecha de inicio
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -365,7 +319,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       ),
                     ],
                   ),
-                  // FECHA DE FINALIZACIÓN (si existe)
+                  // Fecha de fin
                   if (plan.finishTimestamp != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
@@ -396,7 +350,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // CONTENEDOR DE ACCIÓN (icono y número)
+  //  ACTION BUTTONS (icono + texto)
   // ---------------------------------------------------------------------------
   Widget _buildActionButton({
     required String iconPath,
@@ -439,7 +393,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón de Like
+  //  BOTÓN LIKE
   // ---------------------------------------------------------------------------
   Widget _buildLikeButton() {
     return _buildActionButton(
@@ -451,7 +405,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón de mensaje -> abre popup de chat
+  //  BOTÓN MENSAJE => abre popup chat
   // ---------------------------------------------------------------------------
   Widget _buildMessageButton(PlanModel plan) {
     return StreamBuilder<DocumentSnapshot>(
@@ -459,10 +413,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           .collection('plans')
           .doc(plan.id)
           .snapshots(),
-      builder: (context, snap) {
+      builder: (context, snapshot) {
         String countText = '0';
-        if (snap.hasData && snap.data!.exists) {
-          final data = snap.data!.data() as Map<String, dynamic>;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
           final count = data['commentsCount'] ?? 0;
           countText = count.toString();
         }
@@ -472,7 +426,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           onTap: () {
             showDialog(
               context: context,
-              builder: (context) {
+              builder: (_) {
                 return Dialog(
                   insetPadding: EdgeInsets.only(
                     top: MediaQuery.of(context).size.height * 0.25,
@@ -495,22 +449,18 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón de compartir
+  //  BOTÓN COMPARTIR
   // ---------------------------------------------------------------------------
   Widget _buildShareButton(PlanModel plan) {
     return _buildActionButton(
       iconPath: 'assets/icono-compartir.svg',
-      countText: "Compartir",
+      countText: "",
       onTap: () {
         _openCustomShareModal(plan);
       },
     );
   }
 
-  /// Abre un bottom sheet DRAGGABLE que incluye:
-  /// - Barra para arrastrar/cerrar.
-  /// - Botón "Compartir con otras apps".
-  /// - Listado de seguidores/seguidos (para compartir dentro de la app).
   void _openCustomShareModal(PlanModel plan) {
     showModalBottomSheet(
       context: context,
@@ -531,7 +481,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               ),
               child: Column(
                 children: [
-                  // Pequeño "handle" para indicar que se puede arrastrar
                   const SizedBox(height: 8),
                   Container(
                     width: 40,
@@ -542,8 +491,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Botón para "Compartir con otras apps"
+                  // Botón "Compartir con otras apps"
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -557,7 +505,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         IconButton(
                           icon: const Icon(Icons.share, color: Colors.white),
                           onPressed: () {
-                            final String shareUrl =
+                            final shareUrl =
                                 'https://plan-social-app.web.app/plan?planId=${plan.id}';
                             final shareText =
                                 '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
@@ -567,8 +515,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       ],
                     ),
                   ),
-
-                  // Sección para compartir dentro de la app
+                  // Compartir dentro de la app
                   Expanded(
                     child: _CustomShareDialogContent(
                       plan: plan,
@@ -585,7 +532,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Fila de acciones: Like, Mensaje y Compartir
+  //  FILA DE ACCIONES
   // ---------------------------------------------------------------------------
   Widget _buildActionButtonsRow(PlanModel plan) {
     return Row(
@@ -601,15 +548,41 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Botón "Únete ahora" (LOGICA DE UNIÓN A PLAN)
+  //  BOTÓN "ÚNETE AHORA" (comprobando cupo completo)
   // ---------------------------------------------------------------------------
   Widget _buildJoinButton(PlanModel plan) {
+    final pCount = plan.participants?.length ?? 0;
+    final maxP = plan.maxParticipants ?? 0;
+    final bool isFull = (maxP > 0 && pCount >= maxP);
+
+    if (isFull) {
+      // Cupo lleno => texto "Cupo completo"
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: const Text(
+            "Cupo completo",
+            style: TextStyle(
+              color: Colors.redAccent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Caso normal: "Únete ahora"
     return GestureDetector(
       onTap: () async {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return; // No hay usuario logueado
+        if (user == null) return;
 
-        // 1) Comprobar si es su propio plan
+        // No unirse a tu plan
         if (plan.createdBy == user.uid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No puedes unirte a tu propio plan')),
@@ -617,7 +590,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           return;
         }
 
-        // 2) Comprobar si ya está suscrito (participants)
+        // Ya participas
         if (plan.participants?.contains(user.uid) ?? false) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('¡Ya estás suscrito a este plan!')),
@@ -625,21 +598,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           return;
         }
 
-        // 3) Verificar cupo máximo (si maxParticipants > 0)
-        final int participantes = plan.participants?.length ?? 0;
-        final int maxPart = plan.maxParticipants ?? 0;
-        if (maxPart > 0 && participantes >= maxPart) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('El cupo máximo de participantes para este plan está cubierto'),
-            ),
-          );
-          return;
+        // Revisa cupo
+        if (maxP > 0 && pCount >= maxP) {
+          return; // Cupo lleno => no hace nada
         }
 
-        // 4) Crear notificación de solicitud de unión
-        final String planType = plan.type.isNotEmpty ? plan.type : 'Plan';
+        // Generar notificación join_request
+        final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
         await FirebaseFirestore.instance.collection('notifications').add({
           'type': 'join_request',
           'receiverId': plan.createdBy,
@@ -650,11 +615,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           'read': false,
         });
 
-        // 5) Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Tu solicitud de unión se ha enviado correctamente!'),
-          ),
+          const SnackBar(content: Text('¡Tu solicitud de unión se ha enviado!')),
         );
       },
       child: ClipRRect(
@@ -687,13 +649,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   // ---------------------------------------------------------------------------
-  // Popup de Chat (al pulsar botón mensaje)
+  //  POPUP DE CHAT
   // ---------------------------------------------------------------------------
   Widget _buildChatPopup(PlanModel plan) {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        // Header con título y botón de cierre
+        // Header + Cierre
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -710,16 +672,14 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
         ),
         const Divider(color: Colors.white38),
 
-        // Área de mensajes
+        // Lista de mensajes
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -727,25 +687,21 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 .where('planId', isEqualTo: plan.id)
                 .orderBy('timestamp', descending: false)
                 .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
+            builder: (ctx, snap) {
+              if (snap.hasError) {
                 return const Center(
-                  child: Text(
-                    'Error al cargar mensajes',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('Error al cargar mensajes',
+                      style: TextStyle(color: Colors.white)),
                 );
               }
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final docs = snapshot.data?.docs ?? [];
+              final docs = snap.data?.docs ?? [];
               if (docs.isEmpty) {
                 return const Center(
-                  child: Text(
-                    'No hay mensajes todavía',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('No hay mensajes todavía',
+                      style: TextStyle(color: Colors.white)),
                 );
               }
               return ListView(
@@ -756,6 +712,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   final senderPic = data['senderPic'] ?? '';
                   final ts = data['timestamp'] as Timestamp?;
                   final timeStr = _formatTimestamp(ts);
+
                   return ListTile(
                     leading: CircleAvatar(
                       radius: 20,
@@ -773,10 +730,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ),
                     subtitle: Text(
                       '$text\n$timeStr',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   );
                 }).toList(),
@@ -785,7 +739,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           ),
         ),
 
-        // Barra inferior para escribir nuevo mensaje
+        // Barra inferior para nuevo mensaje
         Container(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -808,44 +762,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               ),
               IconButton(
                 icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: () async {
-                  final text = _chatController.text.trim();
-                  if (text.isNotEmpty && _currentUser != null) {
-                    String senderName = _currentUser!.uid;
-                    String senderPic = '';
-                    try {
-                      final userDoc = await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(_currentUser!.uid)
-                          .get();
-                      if (userDoc.exists && userDoc.data() != null) {
-                        final userData = userDoc.data()!;
-                        senderPic = userData['photoUrl'] ?? '';
-                        senderName = userData['name'] ?? senderName;
-                      }
-                    } catch (_) {}
-                    await FirebaseFirestore.instance
-                        .collection('plan_chat')
-                        .add({
-                      'planId': plan.id,
-                      'senderId': _currentUser!.uid,
-                      'senderName': senderName,
-                      'senderPic': senderPic,
-                      'text': text,
-                      'timestamp': FieldValue.serverTimestamp(),
-                    });
-
-                    final planRef = FirebaseFirestore.instance
-                        .collection('plans')
-                        .doc(plan.id);
-                    await planRef.update({
-                      'commentsCount': FieldValue.increment(1),
-                    }).catchError((_) {
-                      planRef.set({'commentsCount': 1}, SetOptions(merge: true));
-                    });
-                    _chatController.clear();
-                  }
-                },
+                onPressed: () => _sendMessage(plan),
               ),
             ],
           ),
@@ -854,64 +771,91 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // AVATARES DE PARTICIPANTES
-  // ---------------------------------------------------------------------------
-    Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
-    final count = participants.length;
+  void _sendMessage(PlanModel plan) async {
+    if (_currentUser == null) return;
+    final text = _chatController.text.trim();
+    if (text.isEmpty) return;
 
-    // Si no hay participantes, no mostramos nada.
+    String senderName = _currentUser!.uid;
+    String senderPic = '';
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUser!.uid)
+        .get();
+    if (userDoc.exists && userDoc.data() != null) {
+      final data = userDoc.data()!;
+      senderPic = data['photoUrl'] ?? '';
+      senderName = data['name'] ?? senderName;
+    }
+
+    await FirebaseFirestore.instance.collection('plan_chat').add({
+      'planId': plan.id,
+      'senderId': _currentUser!.uid,
+      'senderName': senderName,
+      'senderPic': senderPic,
+      'text': text,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Actualizar 'commentsCount'
+    final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
+    await planRef.update({
+      'commentsCount': FieldValue.increment(1),
+    }).catchError((_) {
+      planRef.set({'commentsCount': 1}, SetOptions(merge: true));
+    });
+
+    _chatController.clear();
+  }
+
+  // ---------------------------------------------------------------------------
+  //  AVATARES DE PARTICIPANTES (MISMO ESTILO QUE plan_card.dart)
+  // ---------------------------------------------------------------------------
+  Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
+    final count = participants.length;
     if (count == 0) {
       return const SizedBox.shrink();
     }
 
-    // -----------------------------------------------------------------------
-// CASO 1: SOLO HAY 1 PARTICIPANTE
-// -----------------------------------------------------------------------
-if (count == 1) {
-  final p = participants[0];
-  final pic = p['photoUrl'] ?? '';
-  String name = p['name'] ?? 'Usuario';
-  final age = p['age']?.toString() ?? '';
+    // Caso 1: Solo 1
+    if (count == 1) {
+      final p = participants[0];
+      final pic = p['photoUrl'] ?? '';
+      String name = p['name'] ?? 'Usuario';
+      final age = p['age']?.toString() ?? '';
 
-  // Construimos un string con "name, age"
-  String displayText = '$name, $age';
+      // Breve recorte de texto si es muy largo
+      String displayText = '$name, $age';
+      if (displayText.length > 10) {
+        displayText = '${displayText.substring(0, 14)}...';
+      }
 
-  // Limitamos a 10 caracteres si excede
-  if (displayText.length > 10) {
-    displayText = displayText.substring(0, 10) + '...';
-  }
-
-  return GestureDetector(
-    onTap: () => _showParticipantsModal(participants),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-            backgroundColor: Colors.blueGrey[400],
+      return GestureDetector(
+        onTap: () => _showParticipantsModal(participants),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(width: 8),
-          Text(
-            displayText,
-            style: const TextStyle(color: Colors.white),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+                backgroundColor: Colors.blueGrey[400],
+              ),
+              const SizedBox(width: 8),
+              Text(displayText, style: const TextStyle(color: Colors.white)),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
-}
+        ),
+      );
+    }
 
-    // -----------------------------------------------------------------------
-    // CASO 2: HAY 2 O MÁS PARTICIPANTES
-    // -----------------------------------------------------------------------
+    // Caso 2: 2 o más participantes
     else {
       final p1 = participants[0];
       final p2 = participants[1];
@@ -920,8 +864,8 @@ if (count == 1) {
 
       const double avatarSize = 40;
       const double overlapOffset = 24;
-      final int extras = count - 2;
-      final bool hasExtras = extras > 0;
+      final extras = count - 2;
+      final hasExtras = extras > 0;
 
       final double containerWidth = hasExtras
           ? (avatarSize + overlapOffset * 2)
@@ -935,6 +879,7 @@ if (count == 1) {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
+              // Primer avatar
               Positioned(
                 left: 0,
                 child: CircleAvatar(
@@ -943,6 +888,7 @@ if (count == 1) {
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
+              // Segundo
               Positioned(
                 left: overlapOffset,
                 child: CircleAvatar(
@@ -951,6 +897,7 @@ if (count == 1) {
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
+              // Si hay más de 2 => un contenedor con +N
               if (hasExtras)
                 Positioned(
                   left: overlapOffset * 2,
@@ -962,14 +909,12 @@ if (count == 1) {
                       child: BackdropFilter(
                         filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                         child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.4),
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '+$extras',
-                            style: const TextStyle(color: Colors.white),
+                          color: Colors.white.withOpacity(0.4),
+                          child: Center(
+                            child: Text(
+                              '+$extras',
+                              style: const TextStyle(color: Colors.white),
+                            ),
                           ),
                         ),
                       ),
@@ -984,26 +929,36 @@ if (count == 1) {
   }
 
   // ---------------------------------------------------------------------------
-  // MODAL PARTICIPANTES
+  //  MOSTRAR MODAL DE PARTICIPANTES (CON CHEQUEO DE ASISTENCIA)
   // ---------------------------------------------------------------------------
-  void _showParticipantsModal(List<Map<String, dynamic>> participants) {
+  Future<void> _showParticipantsModal(List<Map<String, dynamic>> participants) async {
+    List checkedInUsers = [];
+    try {
+      final planSnap = await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(widget.plan.id)
+          .get();
+      final planData = planSnap.data();
+      checkedInUsers = planData?['checkedInUsers'] ?? [];
+    } catch (e) {
+      debugPrint('Error al cargar checkedInUsers: $e');
+    }
+
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
           insetPadding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.25,
+            top: MediaQuery.of(context).size.height * 0.05,
             left: 0,
             right: 0,
             bottom: 0,
           ),
-          // Dejamos transparente para que no sobrescriba nuestro contenedor con degradado
           backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           child: Container(
-            // Aquí aplicamos el mismo degradado que usas de fondo
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -1020,7 +975,7 @@ if (count == 1) {
               children: [
                 // Título
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
                       const Expanded(
@@ -1041,13 +996,59 @@ if (count == 1) {
                   ),
                 ),
                 const Divider(color: Colors.white38),
-                // Lista de participantes
                 Expanded(
                   child: ListView.builder(
                     itemCount: participants.length,
-                    itemBuilder: (context, index) {
-                      final participant = participants[index];
-                      return _buildParticipantTile(participant);
+                    itemBuilder: (ctx, i) {
+                      final p = participants[i];
+                      final pic = p['photoUrl'] ?? '';
+                      final name = p['name'] ?? 'Usuario';
+                      final age = p['age']?.toString() ?? '';
+                      final uid = p['uid']?.toString() ?? '';
+                      final bool isCheckedIn = checkedInUsers.contains(uid);
+
+                      return ListTile(
+                        onTap: () {
+                          if (uid.isEmpty || uid == _currentUser?.uid) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UserInfoCheck(userId: uid),
+                            ),
+                          );
+                        },
+                        leading: CircleAvatar(
+                          radius: 22,
+                          backgroundImage:
+                              pic.isNotEmpty ? NetworkImage(pic) : null,
+                          backgroundColor: Colors.blueGrey[400],
+                        ),
+                        title: Text(
+                          '$name, $age',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        // Si el usuario está en checkedInUsers => Texto "ASISTE" a la derecha
+                        trailing: isCheckedIn
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: const Text(
+                                  'ASISTE',
+                                  style: TextStyle(
+                                    color: AppColors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              )
+                            : null,
+                      );
                     },
                   ),
                 ),
@@ -1059,50 +1060,14 @@ if (count == 1) {
     );
   }
 
-  // AVATAR + NOMBRE + EDAD de un participante (en el modal) + Navegación a perfil
-  Widget _buildParticipantTile(Map<String, dynamic> participant) {
-    final pic = participant['photoUrl'] ?? '';
-    final name = participant['name'] ?? 'Usuario';
-    final age = participant['age'] ?? '';
-    final uid = participant['uid'] ?? '';
-
-    return ListTile(
-      onTap: () {
-        // Si es mi propio perfil o no hay UID, no hago nada
-        if (uid.isEmpty || uid == _currentUser?.uid) {
-          return;
-        }
-        // En caso contrario, navegamos
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => UserInfoCheck(userId: uid)),
-        );
-      },
-      leading: CircleAvatar(
-        backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-        backgroundColor: Colors.blueGrey[100],
-      ),
-      title: Text(
-        '$name, $age',
-        style: const TextStyle(
-          color: Color.fromARGB(255, 151, 121, 215),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
   // ---------------------------------------------------------------------------
-  // CARRUSEL DE IMÁGENES + VIDEO
+  //  MEDIA CAROUSEL (fotos + video)
   // ---------------------------------------------------------------------------
   Widget _buildMediaCarousel({
     required List<String> images,
     required String? videoUrl,
   }) {
-    // Contamos cuántos elementos en total (imágenes + posible 1 video)
     final totalMedia = images.length + ((videoUrl?.isNotEmpty ?? false) ? 1 : 0);
-
-    // Usaremos originalImages si existen, en caso contrario, las mismas images
     final originalImages = widget.plan.originalImages?.isNotEmpty == true
         ? widget.plan.originalImages!
         : images;
@@ -1114,17 +1079,14 @@ if (count == 1) {
         controller: _pageController,
         itemCount: totalMedia,
         onPageChanged: (index) {
-          setState(() {
-            _currentPageIndex = index;
-          });
+          setState(() => _currentPageIndex = index);
         },
         itemBuilder: (context, index) {
-          // Hasta 'images.length' serán fotos; el resto (si index >= images.length) es video
           if (index < images.length) {
             final imageUrl = images[index];
             return GestureDetector(
               onTap: () {
-                // Al hacer tap en la imagen, abrimos pantalla completa con todas las imágenes
+                // Abrir visor de imágenes a pantalla completa
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1148,7 +1110,7 @@ if (count == 1) {
               ),
             );
           } else {
-            // Vista previa del video (thumbnail simple)
+            // Vista previa del video
             return ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: Container(
@@ -1169,8 +1131,7 @@ if (count == 1) {
   }
 
   // ---------------------------------------------------------------------------
-  // SECCIÓN MULTIMEDIA + BOTONES & AVATARES
-  // (Aquí decidimos si aparece el botón “Únete ahora”)
+  //  SECCIÓN MULTIMEDIA + BOTONES + "Únete ahora"
   // ---------------------------------------------------------------------------
   Widget _buildMediaSection(
     PlanModel plan,
@@ -1191,17 +1152,14 @@ if (count == 1) {
           color: Colors.black54,
         ),
         child: const Center(
-          child: Text(
-            'Sin contenido multimedia',
-            style: TextStyle(color: Colors.white),
-          ),
+          child: Text('Sin contenido multimedia', style: TextStyle(color: Colors.white)),
         ),
       );
     } else {
       mediaContent = _buildMediaCarousel(images: images, videoUrl: video);
     }
 
-    // Indicadores de página (si hay más de 1)
+    // Indicadores de página
     Widget pageIndicator = const SizedBox.shrink();
     if (totalMedia > 1) {
       pageIndicator = Padding(
@@ -1229,26 +1187,25 @@ if (count == 1) {
       children: [
         mediaContent,
         pageIndicator,
-
-        // Fila con los 3 botones + avatares de participantes
+        // Fila: like, chat, share + participantes
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           child: Row(
             children: [
-              // Botones de acción a la izquierda
               Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: _buildActionButtonsRow(plan),
                 ),
               ),
-              // Avatares de participantes a la derecha
+              const SizedBox(width: 12),
+              // Avatares de participantes
               _buildParticipantsCorner(participants),
             ],
           ),
         ),
 
-        // Botón "Únete ahora", SOLO si NO es el creador
+        // Botón "Únete ahora" si no eres creador
         if (!isUserCreator)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1261,16 +1218,14 @@ if (count == 1) {
   }
 
   // ---------------------------------------------------------------------------
-  // ENCABEZADO SUPERIOR: avatar creador + nombre y EDAD + botón back
+  //  ENCABEZADO SUPERIOR (avatar + nombre + flecha back)
   // ---------------------------------------------------------------------------
   Widget _buildHeaderRow() {
     final String name = widget.plan.creatorName ?? 'Creador';
     final String age = _creatorAge ?? '';
 
-    // Hacemos clic en toda la fila (avatar + nombre) para ir al perfil
     return GestureDetector(
       onTap: () {
-        // Ir a la pantalla de perfil del creador
         if (widget.plan.createdBy.isNotEmpty) {
           Navigator.push(
             context,
@@ -1284,17 +1239,15 @@ if (count == 1) {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            // Avatar del creador
             CircleAvatar(
               radius: 20,
-              backgroundImage: (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
-                  ? NetworkImage(widget.plan.creatorProfilePic!)
-                  : null,
+              backgroundImage:
+                  (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
+                      ? NetworkImage(widget.plan.creatorProfilePic!)
+                      : null,
               backgroundColor: Colors.blueGrey[400],
             ),
             const SizedBox(width: 8),
-
-            // Nombre + Edad
             Expanded(
               child: Text(
                 age.isNotEmpty ? '$name, $age' : name,
@@ -1306,8 +1259,6 @@ if (count == 1) {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-
-            // Botón "Atrás"
             IconButton(
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
@@ -1319,12 +1270,11 @@ if (count == 1) {
   }
 
   // ---------------------------------------------------------------------------
-  // CONSTRUCCIÓN PRINCIPAL DEL DIALOG
+  //  BUILD PRINCIPAL
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
-    // Determinamos si el usuario actual es el creador
     final bool isUserCreator =
         (_currentUser != null && _currentUser!.uid == plan.createdBy);
 
@@ -1364,10 +1314,10 @@ if (count == 1) {
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
-                    // Header (avatar creador + nombre + edad + back)
+                    // Encabezado (avatar creador + "back")
                     _buildHeaderRow(),
 
-                    // Sección MULTIMEDIA (si no es plan especial)
+                    // Multimedia si no es special_plan
                     if (plan.special_plan != 1)
                       _buildMediaSection(
                         plan,
@@ -1377,7 +1327,7 @@ if (count == 1) {
                     else
                       const SizedBox(height: 10),
 
-                    // Contenedor frosted con tipo y descripción
+                    // Descripción + Título
                     Center(
                       child: Container(
                         width: MediaQuery.of(context).size.width * 0.95,
@@ -1398,7 +1348,6 @@ if (count == 1) {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Título del plan (centrado)
                                   Center(
                                     child: Text(
                                       plan.type,
@@ -1407,20 +1356,16 @@ if (count == 1) {
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  // Descripción
                                   Text(
                                     plan.description,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
-                                      fontWeight: FontWeight.normal,
                                       height: 1.3,
                                     ),
-                                    textAlign: TextAlign.start,
                                   ),
                                 ],
                               ),
@@ -1434,8 +1379,12 @@ if (count == 1) {
                     _buildLocationArea(plan),
                     const SizedBox(height: 16),
 
-                    // Información adicional (ID + Restricción + Fechas)
+                    // Info adicional
                     _buildAdditionalInfoBox(plan),
+                    const SizedBox(height: 16),
+
+                    // Sección de Check-in (Confirmar Asistencia)
+                    _buildCheckInArea(plan, allParts, isUserCreator),
                     const SizedBox(height: 30),
                   ],
                 ),
@@ -1446,40 +1395,160 @@ if (count == 1) {
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  //  SECCIÓN CHECK-IN
+  // ---------------------------------------------------------------------------
+  Widget _buildCheckInArea(
+      PlanModel plan, List<Map<String, dynamic>> participants, bool isCreator) {
+    // Verificamos si el usuario es participante
+    final bool isParticipant =
+        participants.any((p) => p['uid'] == _currentUser?.uid);
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(plan.id)
+          .snapshots(),
+      builder: (context, snap) {
+        if (!snap.hasData || !snap.data!.exists) {
+          return const SizedBox.shrink();
+        }
+        final data = snap.data!.data() as Map<String, dynamic>?;
+        if (data == null) return const SizedBox.shrink();
+
+        final checkInActive = data['checkInActive'] ?? false;
+        final checkedIn = data['checkedInUsers'] ?? [];
+        final bool alreadyCheckedIn =
+            (checkedIn as List).contains(_currentUser?.uid ?? '');
+
+        // Si YA confirmaste asistencia
+        if (alreadyCheckedIn) {
+          return Container(
+            width: MediaQuery.of(context).size.width * 0.95,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
+                SizedBox(height: 8),
+                Text(
+                  "Tu asistencia se ha confirmado con éxito.\n¡Disfruta del evento!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Si soy el creador
+        if (isCreator) {
+          if (!checkInActive) {
+            // Botón "Iniciar Check-in"
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: () async {
+                  await AttendanceManaging.startCheckIn(plan.id);
+                  if (!mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                    ),
+                  );
+                },
+                child: const Text("Iniciar Check-in"),
+              ),
+            );
+          } else {
+            // "Ver Check-in (QR)" + "Finalizar Check-in"
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                        ),
+                      );
+                    },
+                    child: const Text("Ver Check-in (QR)"),
+                  ),
+                  const SizedBox(height: 6),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                    ),
+                    onPressed: () async {
+                      await AttendanceManaging.finalizeCheckIn(plan.id);
+                    },
+                    child: const Text("Finalizar Check-in"),
+                  ),
+                ],
+              ),
+            );
+          }
+        } else {
+          // No soy creador => ¿Soy participante?
+          if (!isParticipant) {
+            // No hago nada
+            return const SizedBox.shrink();
+          }
+          // Soy participante => "Confirmar asistencia" si checkInActive
+          if (checkInActive) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckInParticipantScreen(planId: plan.id),
+                    ),
+                  );
+                },
+                child: const Text("Confirmar asistencia"),
+              ),
+            );
+          } else {
+            return const SizedBox.shrink();
+          }
+        }
+      },
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Lógica de 'Like' (extensión)
+// LÓGICA DE LIKE: (extensión)
 // ---------------------------------------------------------------------------
 extension LikeLogic on _FrostedPlanDialogState {
-  Future<void> _checkIfLiked() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    final snapshot = await userRef.get();
-    if (snapshot.exists && snapshot.data() != null) {
-      final data = snapshot.data() as Map<String, dynamic>;
-      final favourites = data['favourites'] as List<dynamic>? ?? [];
-      if (favourites.contains(widget.plan.id)) {
-        setState(() {
-          _liked = true;
-        });
-      }
-    }
-  }
-
   Future<void> _toggleLike() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final planRef =
-        FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
-    final userRef =
-        FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final planRef = FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
+    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
-      final snapshot = await transaction.get(planRef);
-      if (!snapshot.exists) return;
-      int currentLikes = snapshot.data()!['likes'] ?? 0;
+      final snap = await transaction.get(planRef);
+      if (!snap.exists) return;
+      int currentLikes = snap.data()?['likes'] ?? 0;
       if (!_liked) {
         currentLikes++;
       } else {
@@ -1491,7 +1560,6 @@ extension LikeLogic on _FrostedPlanDialogState {
       });
     });
 
-    // Actualizamos la lista de favoritos del usuario
     if (!_liked) {
       await userRef.update({
         'favourites': FieldValue.arrayUnion([widget.plan.id])
@@ -1508,7 +1576,7 @@ extension LikeLogic on _FrostedPlanDialogState {
 }
 
 // ---------------------------------------------------------------------------
-// Contenido del modal para compartir DENTRO de la app
+// CONTENIDO DEL BOTTOM SHEET PARA COMPARTIR DENTRO DE LA APP
 // ---------------------------------------------------------------------------
 class _CustomShareDialogContent extends StatefulWidget {
   final PlanModel plan;
@@ -1529,11 +1597,8 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
   final TextEditingController _searchController = TextEditingController();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  // Listas de usuarios (followers / following)
   List<Map<String, dynamic>> _followers = [];
   List<Map<String, dynamic>> _following = [];
-
-  // Conjunto de UIDs seleccionados
   final Set<String> _selectedUsers = {};
 
   @override
@@ -1542,17 +1607,13 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
     _fetchFollowersAndFollowing();
   }
 
-  /// Carga tus "followers" y "followed" desde colecciones separadas.
   Future<void> _fetchFollowersAndFollowing() async {
     if (_currentUser == null) return;
-
     try {
-      // 1) Traemos followers => docs donde userId = mi UID
       final snapFollowers = await FirebaseFirestore.instance
           .collection('followers')
           .where('userId', isEqualTo: _currentUser!.uid)
           .get();
-
       final followerUids = <String>[];
       for (var doc in snapFollowers.docs) {
         final data = doc.data();
@@ -1560,12 +1621,10 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
         if (fid != null) followerUids.add(fid);
       }
 
-      // 2) Traemos followed => docs donde userId = mi UID
       final snapFollowing = await FirebaseFirestore.instance
           .collection('followed')
           .where('userId', isEqualTo: _currentUser!.uid)
           .get();
-
       final followedUids = <String>[];
       for (var doc in snapFollowing.docs) {
         final data = doc.data();
@@ -1573,21 +1632,17 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
         if (fid != null) followedUids.add(fid);
       }
 
-      // 3) Cargar la info de cada uno (nombre, foto, etc.)
       _followers = await _fetchUsersData(followerUids);
       _following = await _fetchUsersData(followedUids);
-
       setState(() {});
     } catch (e) {
       print("Error al cargar followers/following: $e");
     }
   }
 
-  /// Dado un listado de uids, retornamos la info de cada usuario
   Future<List<Map<String, dynamic>>> _fetchUsersData(List<String> uids) async {
     if (uids.isEmpty) return [];
     final List<Map<String, dynamic>> usersData = [];
-
     for (String uid in uids) {
       final doc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -1604,22 +1659,20 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
     return usersData;
   }
 
-  /// Enviar el plan a los usuarios seleccionados (por chat)
   Future<void> _sendPlanToSelectedUsers() async {
     if (_currentUser == null || _selectedUsers.isEmpty) {
-      Navigator.pop(context); // Cerrar si no hay nada que enviar
+      Navigator.pop(context);
       return;
     }
 
-    final String shareUrl =
+    final shareUrl =
         'https://plan-social-app.web.app/plan?planId=${widget.plan.id}';
-    final String planId = widget.plan.id;
-    final String planTitle = widget.plan.type;
-    final String planDesc = widget.plan.description;
-    final String? planImage = widget.plan.backgroundImage;
+    final planId = widget.plan.id;
+    final planTitle = widget.plan.type;
+    final planDesc = widget.plan.description;
+    final planImage = widget.plan.backgroundImage;
 
     for (String uidDestino in _selectedUsers) {
-      // Creamos un "mensaje" de tipo especial: "shared_plan"
       await FirebaseFirestore.instance.collection('messages').add({
         'senderId': _currentUser!.uid,
         'receiverId': uidDestino,
@@ -1634,15 +1687,14 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
         'isRead': false,
       });
     }
-
-    Navigator.pop(context); // Cerrar el bottom sheet
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Barra superior con Cancelar y Enviar
+        // Barra superior
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
@@ -1665,7 +1717,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             ],
           ),
         ),
-
         // Buscador
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1683,13 +1734,11 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
                 borderSide: BorderSide.none,
               ),
             ),
-            onChanged: (_) {
-              setState(() {}); // Para refrescar filtrado
-            },
+            onChanged: (_) => setState(() {}),
           ),
         ),
         const SizedBox(height: 10),
-
+        // Listas
         Expanded(
           child: SingleChildScrollView(
             controller: widget.scrollController,
@@ -1697,7 +1746,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Título "Mis seguidores"
+                // Mis seguidores
                 const SizedBox(height: 6),
                 const Text(
                   "Mis seguidores",
@@ -1711,7 +1760,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
                 _buildUserList(_filterUsers(_followers)),
 
                 const SizedBox(height: 12),
-                // Título "A quienes sigo"
+                // A quienes sigo
                 const Text(
                   "A quienes sigo",
                   style: TextStyle(
@@ -1730,7 +1779,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
     );
   }
 
-  // Filtra por lo que se escribe en el buscador
   List<Map<String, dynamic>> _filterUsers(List<Map<String, dynamic>> users) {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return users;
@@ -1740,7 +1788,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
     }).toList();
   }
 
-  /// Devuelve una lista de usuarios con un "check" para seleccionar
   Widget _buildUserList(List<Map<String, dynamic>> userList) {
     if (userList.isEmpty) {
       return const Padding(
@@ -1806,7 +1853,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
 }
 
 // ---------------------------------------------------------------------------
-// Visor de imágenes a pantalla completa
+// VISOR DE IMÁGENES A PANTALLA COMPLETA
 // ---------------------------------------------------------------------------
 class FullScreenGalleryPage extends StatefulWidget {
   final List<String> images;
@@ -1837,21 +1884,19 @@ class _FullScreenGalleryPageState extends State<FullScreenGalleryPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // PageView para deslizar entre las imágenes
+          // PageView para imágenes
           PageView.builder(
             controller: _pageController,
             itemCount: widget.images.length,
             itemBuilder: (context, index) {
               final url = widget.images[index];
               return Center(
-                child: Image.network(
-                  url,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.network(url, fit: BoxFit.contain),
               );
             },
           ),
-          // Botón de cierre
+
+          // Botón de cerrar
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             left: 10,

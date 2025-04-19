@@ -7,9 +7,9 @@ import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 
 // Importamos funciones y widgets que hemos movido a otros archivos:
-import 'firebase_services.dart';
+import '../plans_managing/firebase_services.dart';
 import 'users_grid_helpers.dart';
-import 'plan_card.dart';
+import '../plans_managing/plan_card.dart';
 import '../special_plans/invite_users_to_plan_screen.dart';
 import '../users_managing/user_info_check.dart';
 import '../users_managing/user_info_inside_chat.dart';

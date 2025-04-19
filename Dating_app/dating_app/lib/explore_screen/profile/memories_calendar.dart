@@ -174,30 +174,33 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           builder: (_) => PlanMemoriesScreen(
             plan: plan,
             fetchParticipants: (PlanModel p) async {
-              // O la misma lógica que usas en SubscribedPlansScreen / MyPlansScreen
-              // Para ejemplo:
               final List<Map<String, dynamic>> participants = [];
-              final subsSnap = await FirebaseFirestore.instance
-                  .collection('subscriptions')
-                  .where('id', isEqualTo: p.id)
+              final planDoc = await FirebaseFirestore.instance
+                  .collection('plans')
+                  .doc(p.id)
                   .get();
 
-              for (var sDoc in subsSnap.docs) {
-                final sData = sDoc.data();
-                final userId = sData['userId'];
-                final userDoc = await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userId)
-                    .get();
-                if (userDoc.exists && userDoc.data() != null) {
-                  final uData = userDoc.data()!;
-                  participants.add({
-                    'uid': userId,
-                    'name': uData['name'] ?? 'Sin nombre',
-                    'age': uData['age']?.toString() ?? '',
-                    'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
-                    'isCreator': (p.createdBy == userId),
-                  });
+              if (planDoc.exists && planDoc.data() != null) {
+                final data = planDoc.data()!;
+                final participantUids =
+                    List<String>.from(data['participants'] ?? []);
+
+                for (String uid in participantUids) {
+                  final userDoc = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .get();
+                  if (userDoc.exists && userDoc.data() != null) {
+                    final uData = userDoc.data()!;
+                    participants.add({
+                      'uid': uid,
+                      'name': uData['name'] ?? 'Sin nombre',
+                      'age': uData['age']?.toString() ?? '',
+                      'photoUrl':
+                          uData['photoUrl'] ?? uData['profilePic'] ?? '',
+                      'isCreator': (p.createdBy == uid),
+                    });
+                  }
                 }
               }
               return participants;

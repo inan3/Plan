@@ -11,8 +11,8 @@ import '../main/colors.dart';
 // Importaciones necesarias:
 import 'users_managing/user_info_check.dart';
 import '../models/plan_model.dart';
-import 'users_grid/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
-import 'users_grid/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
+import 'plans_managing/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
+import 'plans_managing/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
 
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;
@@ -80,10 +80,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
       // Notifica al sender
-      final acceptorDoc = await _firestore.collection('users')
-          .doc(widget.currentUserId).get();
+      final acceptorDoc =
+          await _firestore.collection('users').doc(widget.currentUserId).get();
+
       final acceptorPhoto = acceptorDoc.exists
           ? (acceptorDoc.data()!['photoUrl'] ?? '')
+          : '';
+      final acceptorName = acceptorDoc.exists
+          ? (acceptorDoc.data()!['name'] ?? '')
           : '';
 
       await _firestore.collection('notifications').add({
@@ -93,6 +97,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'planId': planId,
         'planName': planType,
         'senderProfilePic': acceptorPhoto,
+        'senderName': acceptorName, // <--- Importante para que se muestre el nombre
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
@@ -117,8 +122,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       await doc.reference.delete();
 
       // Notifica al que pidió unirse
-      final rejectorDoc = await _firestore.collection('users')
-          .doc(widget.currentUserId).get();
+      final rejectorDoc =
+          await _firestore.collection('users').doc(widget.currentUserId).get();
       final rejectorPhoto = rejectorDoc.exists
           ? (rejectorDoc.data()!['photoUrl'] ?? '')
           : '';
@@ -175,12 +180,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
       // Notifica al creador
+      final acceptorDoc = await _firestore.collection('users')
+          .doc(currentUserId)
+          .get();
+
+      final acceptorPhoto = acceptorDoc.exists
+          ? (acceptorDoc.data()!['photoUrl'] ?? '')
+          : '';
+      final acceptorName = acceptorDoc.exists
+          ? (acceptorDoc.data()!['name'] ?? '')
+          : '';
+
       await _firestore.collection('notifications').add({
         'type': 'join_accepted',
         'receiverId': creatorId,
         'senderId': currentUserId,
         'planId': planId,
         'planName': planType,
+        'senderProfilePic': acceptorPhoto,
+        'senderName': acceptorName, // <--- Importante para mostrar el nombre
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
@@ -205,8 +223,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       await doc.reference.delete();
 
       // Notifica al creador
-      final inviteeDoc = await _firestore.collection('users')
-          .doc(widget.currentUserId).get();
+      final inviteeDoc =
+          await _firestore.collection('users').doc(widget.currentUserId).get();
       final inviteePhoto = inviteeDoc.exists
           ? (inviteeDoc.data()!['photoUrl'] ?? '')
           : '';
@@ -262,8 +280,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
       // Notifica al sender que ha sido aceptado
-      final acceptorDoc = await _firestore.collection('users')
-          .doc(receiverId).get();
+      final acceptorDoc =
+          await _firestore.collection('users').doc(receiverId).get();
       final acceptorPhoto = acceptorDoc.exists
           ? (acceptorDoc.data()!['photoUrl'] ?? '')
           : '';
@@ -300,8 +318,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       await doc.reference.delete();
 
       // Notifica al que pidió follow que fue rechazado
-      final rejectorDoc = await _firestore.collection('users')
-          .doc(receiverId).get();
+      final rejectorDoc =
+          await _firestore.collection('users').doc(receiverId).get();
       final rejectorPhoto = rejectorDoc.exists
           ? (rejectorDoc.data()!['photoUrl'] ?? '')
           : '';
@@ -340,8 +358,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final plan = PlanModel.fromMap(planData);
 
     // Obtenemos el "userData" del creador, para pasárselo a PlanCard
-    final creatorDoc = await _firestore.collection('users')
-        .doc(plan.createdBy).get();
+    final creatorDoc =
+        await _firestore.collection('users').doc(plan.createdBy).get();
     final Map<String, dynamic> creatorData = creatorDoc.exists
         ? creatorDoc.data() as Map<String, dynamic>
         : {};

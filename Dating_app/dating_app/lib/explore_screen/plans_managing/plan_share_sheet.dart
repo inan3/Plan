@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/plan_model.dart';
-import 'users_grid_helpers.dart'; // Para funciones de ayuda si hiciera falta
+import '../users_grid/users_grid_helpers.dart'; // Para funciones de ayuda si hiciera falta
 
 /// Muestra un bottom sheet para compartir el plan con seguidores/seguidos,
 /// y también la opción de compartir con otras apps.

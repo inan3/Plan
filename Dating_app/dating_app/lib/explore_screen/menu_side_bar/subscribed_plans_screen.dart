@@ -9,10 +9,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
-import '../users_managing/frosted_plan_dialog_state.dart' as new_frosted;
+import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 // IMPORTA TU PlanCard
-import '../users_grid/plan_card.dart';
+import '../plans_managing/plan_card.dart';
 
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId;

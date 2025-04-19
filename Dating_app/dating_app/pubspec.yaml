@@ -35,6 +35,8 @@ dependencies:
   share_plus: ^10.1.4
   video_player: ^2.5.5
   screen_protector: ^1.4.2+1
+  qr_flutter: ^4.0.0
+  mobile_scanner: ^3.0.0
   receive_sharing_intent:
     git:
       url: https://github.com/KasemJaffer/receive_sharing_intent

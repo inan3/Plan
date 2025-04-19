@@ -16,7 +16,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
-import '../users_managing/frosted_plan_dialog_state.dart';
+import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 import 'select_plan_screen.dart';
 import 'location_pick_screen.dart';
