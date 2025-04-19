@@ -26,7 +26,7 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Trae todas las notificaciones de interés
+  /// Trae todas las notificaciones de interés, + "new_plan_published"
   Stream<QuerySnapshot> _getAllNotifications() {
     return _firestore
         .collection('notifications')
@@ -40,6 +40,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           'follow_request',
           'follow_accepted',
           'follow_rejected',
+          'new_plan_published', // <--- Agregamos este nuevo tipo
         ])
         .snapshots();
   }
@@ -223,13 +224,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
       await doc.reference.delete();
 
       // Notifica al creador
-      final inviteeDoc =
+      final rejectorDoc =
           await _firestore.collection('users').doc(widget.currentUserId).get();
-      final inviteePhoto = inviteeDoc.exists
-          ? (inviteeDoc.data()!['photoUrl'] ?? '')
+      final rejectorPhoto = rejectorDoc.exists
+          ? (rejectorDoc.data()!['photoUrl'] ?? '')
           : '';
-      final inviteeName = inviteeDoc.exists
-          ? (inviteeDoc.data()!['name'] ?? '')
+      final rejectorName = rejectorDoc.exists
+          ? (rejectorDoc.data()!['name'] ?? '')
           : '';
 
       await _firestore.collection('notifications').add({
@@ -238,8 +239,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'senderId': widget.currentUserId,
         'planId': planId,
         'planName': planType,
-        'senderProfilePic': inviteePhoto,
-        'senderName': inviteeName,
+        'senderProfilePic': rejectorPhoto,
+        'senderName': rejectorName,
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
@@ -277,6 +278,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       await _firestore.collection('followed').add({
         'userId': senderId,
         'followedId': receiverId,
+        // por defecto, asumimos notifyOnNewPlan: false
+        'notifyOnNewPlan': false,
       });
 
       // Notifica al sender que ha sido aceptado
@@ -686,6 +689,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                     ),
                                   );
                                 },
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'new_plan_published':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "¡$senderName acaba de publicar un plan. Échale un vistazo!",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete,
                                       color: Colors.red),

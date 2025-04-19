@@ -130,6 +130,8 @@ flutter:
     - assets/icono-eliminar.svg
     - assets/icono-reportar.svg
     - assets/icono-bloquear.svg
+    - assets/icono-campana-activada.svg
+    - assets/icono-campana-desactivada.svg
     
 
   fonts:

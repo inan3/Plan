@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../users_managing/user_info_check.dart';
 
@@ -92,6 +93,10 @@ class _FollowingScreenState extends State<FollowingScreen> {
 
       for (final doc in snap.docs) {
         final relatedUid = doc.data()[linkField];
+
+        // Revisamos si hay un campo "notifyOnNewPlan" en el doc
+        final bool notifyOnNewPlan = doc.data()['notifyOnNewPlan'] == true;
+
         final uDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(relatedUid)
@@ -100,12 +105,14 @@ class _FollowingScreenState extends State<FollowingScreen> {
           final data = uDoc.data()!;
           items.add(
             _UserItem(
+              followDocId: doc.id, // Id del documento en la colección
               uid: relatedUid,
               name: data['name'] ?? 'Usuario',
               age: (data['age']?.toString() ?? '').isNotEmpty
                   ? data['age'].toString()
                   : null,
               photoUrl: data['photoUrl'] ?? '',
+              notifyOnNewPlan: notifyOnNewPlan,
             ),
           );
         }
@@ -145,6 +152,27 @@ class _FollowingScreenState extends State<FollowingScreen> {
       _showFollowers = followers;
     });
     _loadData();
+  }
+
+  Future<void> _toggleNotification(_UserItem userItem) async {
+    try {
+      final bool newValue = !userItem.notifyOnNewPlan;
+      // Actualizamos en Firestore
+      await FirebaseFirestore.instance
+          .collection('followed')
+          .doc(userItem.followDocId)
+          .update({'notifyOnNewPlan': newValue});
+
+      // Actualizamos en local
+      setState(() {
+        // Buscamos en la lista filtrada y actualizamos
+        userItem.notifyOnNewPlan = newValue;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cambiar notificación: $e')),
+      );
+    }
   }
 
   @override
@@ -225,6 +253,22 @@ class _FollowingScreenState extends State<FollowingScreen> {
                           title: Text(u.name),
                           subtitle:
                               u.age != null ? Text('${u.age} años') : null,
+                          // Solo en la pestaña "Seguidos" mostramos el icono de campana
+                          trailing: _showFollowers
+                              ? null
+                              : IconButton(
+                                  icon: SvgPicture.asset(
+                                    u.notifyOnNewPlan
+                                        ? 'assets/icono-campana-activada.svg'
+                                        : 'assets/icono-campana-desactivada.svg',
+                                    color: u.notifyOnNewPlan
+                                        ? Colors.blue
+                                        : Colors.black,
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                                  onPressed: () => _toggleNotification(u),
+                                ),
                           onTap: () {
                             // 1) Cerramos primero el modal (opcional pero recomendado)
                             Navigator.of(context).pop();
@@ -295,14 +339,19 @@ class _ThinDivider extends StatelessWidget {
 }
 
 class _UserItem {
+  final String followDocId;
   final String uid;
   final String name;
   final String? age;
   final String photoUrl;
+  bool notifyOnNewPlan;
+
   _UserItem({
+    required this.followDocId,
     required this.uid,
     required this.name,
     required this.age,
     required this.photoUrl,
+    required this.notifyOnNewPlan,
   });
 }
