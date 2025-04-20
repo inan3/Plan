@@ -1,11 +1,12 @@
 // user_info_inside_chat.dart
+
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../main/colors.dart'; // Asegúrate de que AppColors esté definido correctamente
-import '../chats/chat_screen.dart'; // Importa la pantalla de chat completa
+import '../../main/colors.dart'; // Ajusta la importación si es necesario
+import '../chats/chat_screen.dart';
 
 class UserInfoInsideChat extends StatefulWidget {
   /// ID del usuario con el que se chatea (el receptor).
@@ -25,6 +26,9 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
   Map<String, dynamic>? _chatPartnerData;
   Map<String, dynamic>? _currentUserData;
 
+  /// Color de fondo lila crema claro
+  final Color _lilaCrema = const Color.fromARGB(255, 245, 237, 246);
+
   @override
   void initState() {
     super.initState();
@@ -35,37 +39,28 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
       return;
     }
     final partnerId = widget.chatPartnerId.trim();
-    print("UserInfoInsideChat: chatPartnerId = $partnerId");
     _fetchChatPartnerData(partnerId);
     _fetchCurrentUserData();
   }
 
   /// Obtiene los datos del usuario receptor (a quién le envío el mensaje)
   Future<void> _fetchChatPartnerData(String partnerId) async {
-    if (partnerId.isEmpty) {
-      print("🚨 Error: chatPartnerId está vacío");
-      return;
-    }
+    if (partnerId.isEmpty) return;
     try {
-      print("Consultando Firestore con ID: $partnerId");
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(partnerId)
           .get();
-      print("Chat partner doc id: ${doc.id}, exists: ${doc.exists}");
       if (doc.exists) {
-        print("✅ Usuario encontrado: ${doc.data()}");
         setState(() {
           _chatPartnerData = doc.data() as Map<String, dynamic>;
         });
       } else {
-        print("❌ Usuario NO encontrado en Firestore");
         setState(() {
           _chatPartnerData = {};
         });
       }
     } catch (e) {
-      print('🔥 Error al obtener datos del usuario receptor: $e');
       setState(() {
         _chatPartnerData = {};
       });
@@ -79,21 +74,17 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
           .collection('users')
           .doc(_currentUser!.uid)
           .get();
-      print("Current user doc id: ${doc.id}, exists: ${doc.exists}");
       if (doc.exists) {
         setState(() {
           _currentUserData = doc.data() as Map<String, dynamic>;
         });
       }
     } catch (e) {
-      print('🔥 Error al obtener datos del usuario emisor: $e');
+      // Manejo de error si hace falta
     }
   }
 
-  /// Función que verifica la conversación actual para saber si ya se envió un mensaje.
-  /// Si ya se envió un mensaje y el último es del usuario actual, muestra un pop up.
-  /// Si el último es del receptor (es decir, respondió) redirige a ChatScreen.
-  /// Si no hay mensajes, envía el primer mensaje.
+  /// Verifica la conversación y, según el estado del último mensaje, envía o redirige.
   Future<void> _checkAndSendMessage() async {
     final String text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -104,8 +95,6 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
         ? "${senderId}_$receiverId"
         : "${receiverId}_$senderId";
 
-    print("ConversationId: $conversationId");
-
     try {
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('messages')
@@ -114,15 +103,11 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
           .limit(1)
           .get();
 
-      print("Cantidad de mensajes en la conversación: ${snapshot.docs.length}");
-
       if (snapshot.docs.isNotEmpty) {
         // Existe al menos un mensaje
-        final lastMessage =
-            snapshot.docs.first.data() as Map<String, dynamic>;
-        print("Último mensaje: ${lastMessage['text']} enviado por ${lastMessage['senderId']}");
+        final lastMessage = snapshot.docs.first.data() as Map<String, dynamic>;
         if (lastMessage['senderId'] == senderId) {
-          // Último mensaje enviado por el usuario actual: no se permite enviar otro
+          // Último mensaje es del usuario actual, pedimos que espere
           _mostrarPopUpEspera();
           return;
         } else {
@@ -141,15 +126,15 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
           return;
         }
       } else {
-        // No hay mensajes en la conversación, se permite enviar el primer mensaje
+        // No hay mensajes, enviamos el primero
         await _sendMessage(conversationId);
       }
     } catch (e) {
-      print("🔥 Error al consultar conversación: $e");
+      // Manejo de error
     }
   }
 
-  /// Envía el mensaje y lo asocia a la conversación
+  /// Envía un mensaje (primer mensaje).
   Future<void> _sendMessage(String conversationId) async {
     final String messageText = _messageController.text.trim();
     if (messageText.isEmpty) return;
@@ -158,7 +143,6 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     final String receiverId = widget.chatPartnerId.trim();
 
     try {
-      print("📤 Enviando mensaje a Firestore...");
       await FirebaseFirestore.instance.collection('messages').add({
         'senderId': senderId,
         'receiverId': receiverId,
@@ -168,14 +152,13 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
       });
-      print("✅ Mensaje enviado con éxito.");
       _messageController.clear();
     } catch (e) {
-      print('🔥 Error al enviar el mensaje: $e');
+      // Manejo de error
     }
   }
 
-  /// Muestra un pop up indicando que se debe esperar a que el receptor responda.
+  /// Muestra un pop-up indicando que se debe esperar a que el receptor responda.
   void _mostrarPopUpEspera() {
     final String receptor = _chatPartnerData?['name'] ?? "el usuario";
     showDialog(
@@ -202,41 +185,44 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
         keyboardHeight > 0 ? screenHeight * 0.4 : screenHeight * 0.5;
 
     return Scaffold(
-      // Fondo transparente para que se vea el contenido original detrás
       backgroundColor: Colors.transparent,
       body: GestureDetector(
-        // Tocar fuera del pop-up cierra el chat
+        // Tocar fuera del pop-up cierra este widget
         onTap: () => Navigator.pop(context),
         child: Stack(
           children: [
-            // Pop-up central
+            // Contenedor principal del chat con clipping de bordes
             Positioned(
               left: MediaQuery.of(context).size.width * 0.1,
-              top: keyboardHeight > 0
-                  ? screenHeight * 0.1
-                  : screenHeight * 0.2,
+              top: keyboardHeight > 0 ? screenHeight * 0.1 : screenHeight * 0.2,
               child: GestureDetector(
-                // Evita que el pop-up se cierre al tocarlo
-                onTap: () {},
+                onTap: () {}, // Evita que se cierre si pulsamos dentro
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      height: popUpHeight,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    height: popUpHeight,
+                    decoration: BoxDecoration(
+                      color: _lilaCrema,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.black12,
                       ),
-                      child: Column(
-                        children: [
-                          _buildHeader(),
-                          Expanded(child: _buildMessagesList()),
-                          _buildMessageInput(),
-                        ],
-                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Cabecera (avatar + nombre + boton cerrar)
+                        _buildHeaderContainer(),
+                        // Línea de separación
+                        const Divider(height: 1, color: Colors.black26),
+                        // Lista de mensajes
+                        Expanded(child: _buildMessagesListContainer()),
+                        // Línea de separación
+                        const Divider(height: 1, color: Colors.black26),
+                        // Caja de texto para enviar mensaje
+                        _buildMessageInputContainer(),
+                      ],
                     ),
                   ),
                 ),
@@ -248,8 +234,8 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     );
   }
 
-  /// Construye el header del pop-up: muestra la foto, nombre y edad del usuario receptor.
-  Widget _buildHeader() {
+  /// Cabecera con foto, nombre y edad del usuario receptor
+  Widget _buildHeaderContainer() {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('users')
@@ -268,7 +254,10 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
             child: const Center(
               child: Text(
                 'Usuario no encontrado',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                ),
               ),
             ),
           );
@@ -279,18 +268,12 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
         final String photoUrl = data['photoUrl'] ?? data['profilePic'] ?? '';
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
+          // Sin borderRadius interno; se hereda del contenedor principal
           child: Row(
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: Colors.grey,
+                backgroundColor: Colors.grey[400],
                 backgroundImage:
                     photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
               ),
@@ -299,14 +282,14 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
                 child: Text(
                   '$name, $age',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.blue),
+                icon: const Icon(Icons.close, color: Colors.black54),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -316,7 +299,16 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     );
   }
 
-  /// Área de mensajes: ahora se filtra por conversationId para mostrar solo los mensajes de esta conversación.
+  /// Contenedor que envuelve la lista de mensajes
+  Widget _buildMessagesListContainer() {
+    return Container(
+      // Mismo color que el contenedor principal
+      color: _lilaCrema,
+      child: _buildMessagesList(),
+    );
+  }
+
+  /// Lista de mensajes en la conversación (o texto vacío si no hay mensajes)
   Widget _buildMessagesList() {
     if (_currentUser == null) return const SizedBox.shrink();
 
@@ -341,7 +333,7 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
           return const Center(
             child: Text(
               "Aún no hay mensajes.",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(color: Colors.black54, fontSize: 16),
             ),
           );
         }
@@ -352,11 +344,9 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
           itemBuilder: (context, index) {
             final message = messages[index].data() as Map<String, dynamic>;
             final bool isMe = message['senderId'] == senderId;
-            DateTime messageTime;
             if (message['timestamp'] is Timestamp) {
-              messageTime = (message['timestamp'] as Timestamp).toDate();
-            } else {
-              messageTime = DateTime.now();
+              // Convertimos si es necesario, pero no lo estamos usando en un text
+              // salvo que quisieras mostrar la hora
             }
             return Align(
               alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -364,13 +354,14 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: isMe ? Colors.blueAccent : Colors.grey[700],
-                  borderRadius: BorderRadius.circular(10),
+                  color: isMe ? Colors.blueAccent : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
                   message['text'] ?? '',
                   style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black87),
+                    color: isMe ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             );
@@ -380,36 +371,35 @@ class _UserInfoInsideChatState extends State<UserInfoInsideChat> {
     );
   }
 
+  /// Contenedor que envuelve el área de entrada de texto para enviar mensaje.
+  Widget _buildMessageInputContainer() {
+    return Container(
+      color: _lilaCrema,
+      child: _buildMessageInput(),
+    );
+  }
+
   /// Área de entrada de mensaje: campo de texto y botón enviar.
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Escribe tu mensaje...',
-                hintStyle: TextStyle(color: Colors.white70),
-                border: InputBorder.none,
-              ),
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _messageController,
+            style: const TextStyle(color: Colors.black87),
+            decoration: const InputDecoration(
+              hintText: 'Escribe tu mensaje...',
+              hintStyle: TextStyle(color: Colors.black45),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send, color: AppColors.blue),
-            onPressed: _checkAndSendMessage,
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.send, color: Colors.blueAccent),
+          onPressed: _checkAndSendMessage,
+        ),
+      ],
     );
   }
 }

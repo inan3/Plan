@@ -26,7 +26,7 @@ import 'inner_chat_utils/picture_managing.dart';
 import 'inner_chat_utils/open_location.dart';
 // Importamos el mixin para manejar la respuesta a un mensaje
 import 'inner_chat_utils/answer_a_message.dart';
-import 'report_and_block_user.dart';
+import '../users_managing/report_and_block_user.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
@@ -54,6 +54,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   bool _localeInitialized = false;
 
+  // Para notificaciones en este chat (manejo local, sin persistir)
+  bool _notificationsEnabled = false;
+
+  // Para saber si yo tengo bloqueado a mi chatPartner
+  bool _isPartnerBlocked = false;
+
   // Carga futuro con icono de marcador (para ubicaciones)
   late Future<BitmapDescriptor> _markerIconFuture;
 
@@ -73,6 +79,25 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
     // Carga icono custom si lo deseas
     _markerIconFuture = _loadMarkerIcon();
+
+    // Verificamos si el chatPartner está actualmente bloqueado por mí
+    _checkIfPartnerIsBlocked();
+  }
+
+  Future<void> _checkIfPartnerIsBlocked() async {
+    if (currentUserId.isEmpty || widget.chatPartnerId.isEmpty) return;
+
+    // Para "bloqueo" => docId = '${blockerId}_${blockedId}'
+    final docId = '${currentUserId}_${widget.chatPartnerId}';
+    final doc = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .get();
+
+    setState(() {
+      // Si existe, significa que YO he bloqueado a mi chatPartner
+      _isPartnerBlocked = doc.exists;
+    });
   }
 
   Future<BitmapDescriptor> _loadMarkerIcon() async {
@@ -133,41 +158,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   /// Encabezado superior (foto, nombre, botón back)
   Widget _buildChatHeader(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-    child: Row(
-      children: [
-        // Botón de flecha atrás (cierra el chat y vuelve)
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.blue),
-            onPressed: () {
-              // Aquí sí que volvemos atrás en la navegación
-              Navigator.pop(context);
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // Info del chat (avatar, nombre, etc.)
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        children: [
+          // Botón de flecha atrás (cierra el chat y vuelve)
+          Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
+              shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.5),
@@ -177,74 +176,258 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                 ),
               ],
             ),
-            child: GestureDetector(
-              onTap: () {
-                // Al pulsar, abrimos UserInfoCheck
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => UserInfoCheck(userId: widget.chatPartnerId),
-                  ),
-                );
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.blue),
+              onPressed: () {
+                Navigator.pop(context);
               },
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: widget.chatPartnerPhoto != null
-                        ? NetworkImage(widget.chatPartnerPhoto!)
-                        : null,
-                    backgroundColor: Colors.grey[300],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Info del chat (avatar, nombre, etc.)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 3),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.chatPartnerName,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                ],
+              ),
+              child: GestureDetector(
+                onTap: () {
+                  // Al pulsar, abrimos con verificación de bloqueo
+                  UserInfoCheck.open(context, widget.chatPartnerId);
+                },
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: widget.chatPartnerPhoto != null
+                          ? NetworkImage(widget.chatPartnerPhoto!)
+                          : null,
+                      backgroundColor: Colors.grey[300],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.chatPartnerName,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Botón de tres puntos => menú
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.5),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.more_vert, color: AppColors.blue),
+              onPressed: _showOptionsMenu,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Muestra el pop-up con “Habilitar/Deshabilitar notificaciones”,
+  /// “Reportar perfil” y “Bloquear/Desbloquear perfil”.
+  void _showOptionsMenu() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent,
+      builder: (BuildContext ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Cambiamos el texto según si está bloqueado o no.
+            final blockText =
+                _isPartnerBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
+
+            return Material(
+              color: Colors.transparent,
+              child: Stack(
+                children: [
+                  // Tocar fuera para cerrar el menú
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.transparent,
+                    ),
+                  ),
+
+                  // El menú flotante en sí
+                  Positioned(
+                    top: 55,
+                    right: 16,
+                    child: GestureDetector(
+                      onTap: () {}, // Evita que se cierre si pulsas dentro
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            color: const Color.fromARGB(255, 114, 114, 114)
+                                .withOpacity(0.6),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 12,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Notificaciones ON / OFF
+                                InkWell(
+                                  onTap: () {
+                                    setDialogState(() {
+                                      _notificationsEnabled =
+                                          !_notificationsEnabled;
+                                    });
+                                    // No cerramos el menú
+                                  },
+                                  child: Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        _notificationsEnabled
+                                            ? 'assets/icono-campana-activada.svg'
+                                            : 'assets/icono-campana-desactivada.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _notificationsEnabled
+                                            ? 'Deshabilitar notificaciones'
+                                            : 'Habilitar notificaciones',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(color: Colors.white54),
+                                // Reportar
+                                InkWell(
+                                  onTap: () {
+                                    final me =
+                                        FirebaseAuth.instance.currentUser;
+                                    if (me == null) return;
+                                    ReportAndBlockUser.goToReportScreen(
+                                      context,
+                                      widget.chatPartnerId,
+                                    );
+                                  },
+                                  child: Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icono-reportar.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Reportar perfil',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(color: Colors.white54),
+                                // Bloquear / Desbloquear
+                                InkWell(
+                                  onTap: () async {
+                                    final me =
+                                        FirebaseAuth.instance.currentUser;
+                                    if (me == null) return;
+
+                                    // Toggle local
+                                    final oldValue = _isPartnerBlocked;
+                                    setState(() {
+                                      _isPartnerBlocked = !_isPartnerBlocked;
+                                    });
+                                    setDialogState(() {});
+
+                                    try {
+                                      await ReportAndBlockUser.toggleBlockUser(
+                                        context,
+                                        me.uid,
+                                        widget.chatPartnerId,
+                                      );
+                                    } catch (e) {
+                                      // Si hay error, revertimos
+                                      setState(() {
+                                        _isPartnerBlocked = oldValue;
+                                      });
+                                      setDialogState(() {});
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icono-bloquear.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        blockText,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // Botón de tres puntos (muestra popup con “Reportar / Bloquear”)
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.blue),
-            onPressed: () {
-              // Ahora sí, aquí abrimos el popup frosted con las opciones
-              ReportAndBlockUser.showChatOptionsFrosted(
-                context: context,
-                currentUserId: currentUserId,
-                chatPartnerId: widget.chatPartnerId,
-              );
-            },
-          ),
-        ),
-      ],
-    ),
-  );
-}
+            );
+          },
+        );
+      },
+    );
+  }
 
   /// Lista principal de mensajes
   Widget _buildMessagesList() {
@@ -280,18 +463,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           return case1 || case2;
         }).toList();
 
-        // *********************
-        // IDEA: Cargar solo los últimos N (por ejemplo, 30) mensajes
-        // para que al entrar el scroll no se quede "atascado" más arriba.
-        // Puedes cambiar "30" por el número que prefieras.
-        // *********************
+        // IDEA: Cargar solo últimos N (p. ej. 30) mensajes
         const int limit = 30;
         if (allDocs.length > limit) {
           allDocs = allDocs.sublist(allDocs.length - limit);
         }
-        // *********************
 
-        // Si no hay mensajes, mostramos aviso
         if (allDocs.isEmpty) {
           return const Center(
             child: Text(
@@ -324,11 +501,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           chatItems.add(doc);
         }
 
-        // ----
-        // Ajuste para que cuando entremos, **salte al último mensaje** sin
-        // que se note ninguna transición:
-        // Usamos addPostFrameCallback con jumpTo (no animateTo) y 0ms.
-        // ----
+        // Al entrar, saltar al último mensaje sin animación
         SchedulerBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
             _scrollController.jumpTo(
@@ -351,10 +524,9 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               bool isMe = data['senderId'] == currentUserId;
               final String? type = data['type'] as String?;
 
-              // GestureDetector para swipe / longPress
+              // Swipe a la derecha => responder
               return GestureDetector(
                 onHorizontalDragUpdate: (details) {
-                  // Swipe a la derecha => responder
                   if (details.delta.dx > 15) {
                     startReplyingTo({
                       'docId': item.id,
@@ -366,7 +538,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   }
                 },
                 onLongPress: () {
-                  // Mostramos el pop-up frosted con emojis y opciones
                   showMessageOptionsDialog(
                     context,
                     {
@@ -380,8 +551,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     onDelete: () async {
                       final docId = item.id;
                       try {
-                        // En lugar de .delete(), marcamos como borrado
-                        // para mostrar la burbuja "El mensaje original ha sido eliminado"
                         await FirebaseFirestore.instance
                             .collection('messages')
                             .doc(docId)
@@ -389,7 +558,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                           'type': 'deleted',
                           'text': 'El mensaje original ha sido eliminado.',
                         });
-                        debugPrint('Mensaje $docId marcado como eliminado');
                       } catch (e) {
                         debugPrint('Error al eliminar mensaje: $e');
                       }
@@ -429,23 +597,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
-  /// Decide qué tipo de burbuja dibujar
-  Widget _buildBubbleByType(Map<String, dynamic> data, bool isMe) {
-    final String? type = data['type'] as String?;
-    if (type == 'shared_plan') {
-      return _buildSharedPlanBubble(data, isMe);
-    } else if (type == 'image') {
-      return _buildImageBubble(data, isMe);
-    } else if (type == 'location') {
-      return _buildLocationBubble(data, isMe);
-    } else if (type == 'deleted') {
-      return _buildDeletedBubble(data, isMe);
-    } else {
-      // Texto
-      return _buildTextBubble(data, isMe);
-    }
-  }
-
   /// Pequeño widget para el separador de día
   Widget _buildDayMarker(String dayString) {
     return Container(
@@ -470,6 +621,23 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         ],
       ),
     );
+  }
+
+  /// Decide qué tipo de burbuja dibujar
+  Widget _buildBubbleByType(Map<String, dynamic> data, bool isMe) {
+    final String? type = data['type'] as String?;
+    if (type == 'shared_plan') {
+      return _buildSharedPlanBubble(data, isMe);
+    } else if (type == 'image') {
+      return _buildImageBubble(data, isMe);
+    } else if (type == 'location') {
+      return _buildLocationBubble(data, isMe);
+    } else if (type == 'deleted') {
+      return _buildDeletedBubble(data, isMe);
+    } else {
+      // Texto
+      return _buildTextBubble(data, isMe);
+    }
   }
 
   /// Burbuja de texto
@@ -505,14 +673,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           if (replyTo != null) buildReplyContainer(replyTo),
-
           Text(
             data['text'] ?? '',
             style: const TextStyle(color: Colors.black, fontSize: 16),
           ),
-
           const SizedBox(height: 4),
-          // Hora y checks
           Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment:
@@ -543,7 +708,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     return _buildBubbleWithReaction(data, isMe, bubbleContent);
   }
 
-  // Nuevo tipo de burbuja: Mensaje eliminado
+  /// Mensaje eliminado
   Widget _buildDeletedBubble(Map<String, dynamic> data, bool isMe) {
     DateTime messageTime = DateTime.now();
     if (data['timestamp'] is Timestamp) {
@@ -555,7 +720,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     final bubbleColor =
         isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
 
-    // Burbuja con ícono a la izquierda y el texto en cursiva
     Widget bubbleContent = Container(
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -640,7 +804,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       );
     }
 
-    // Versión con la reacción por debajo de la hora, sobresaliendo mitad
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: Align(
@@ -650,8 +813,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           children: [
             bubble,
             Positioned(
-              // Ajusta estos valores para moverlo más a la izquierda o derecha
-              bottom: -12, // para que la mitad quede fuera
+              bottom: -12,
               right: isMe ? 30 : null,
               left: isMe ? null : 30,
               child: Container(
@@ -785,8 +947,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   children: [
                     Text(
                       DateFormat('HH:mm').format(messageTime),
-                      style:
-                          const TextStyle(color: Colors.black54, fontSize: 12),
+                      style: const TextStyle(color: Colors.black54, fontSize: 12),
                     ),
                     if (isMe) ...[
                       const SizedBox(width: 4),
@@ -1529,53 +1690,53 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   /// Enviar mensaje de texto
   void _sendMessage() async {
-  String messageText = _messageController.text.trim();
-  if (messageText.isEmpty) return;
+    String messageText = _messageController.text.trim();
+    if (messageText.isEmpty) return;
 
-  // 1) Comprobamos si el receptor (widget.chatPartnerId) bloqueó al emisor (currentUserId)
-  final docId = '${widget.chatPartnerId}_$currentUserId';
-  final blockedDoc = await FirebaseFirestore.instance
-      .collection('blocked_users')
-      .doc(docId)
-      .get();
+    // Verificar si me han bloqueado
+    final docId = '${widget.chatPartnerId}_$currentUserId';
+    final blockedDoc = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .get();
 
-  if (blockedDoc.exists) {
-    // Significa que tu chatPartnerId (que es 'blockerId') ha bloqueado a currentUserId (que es 'blockedId')
-    print("La otra persona te ha bloqueado, no puedes enviar mensajes.");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("La otra persona te ha bloqueado.")),
-    );
-    return; // no enviamos nada
+    if (blockedDoc.exists) {
+      // Significa que tu chatPartnerId ha bloqueado a currentUserId
+      print("La otra persona te ha bloqueado, no puedes enviar mensajes.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("La otra persona te ha bloqueado.")),
+      );
+      return; // no enviamos nada
+    }
+
+    // Si no está bloqueado, enviamos el mensaje
+    try {
+      await FirebaseFirestore.instance.collection('messages').add({
+        'senderId': currentUserId,
+        'receiverId': widget.chatPartnerId,
+        'participants': [currentUserId, widget.chatPartnerId],
+        'type': 'text',
+        'text': messageText,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'delivered': false,
+        'replyTo': buildReplyMapForSending(),
+      });
+
+      _messageController.clear();
+
+      // Bajamos el scroll al final sin animación
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(
+            _scrollController.position.maxScrollExtent,
+          );
+        }
+      });
+
+      cancelReply();
+    } catch (e) {
+      print("❌ Error al enviar mensaje: $e");
+    }
   }
-
-  // 2) Si no está bloqueado, enviamos el mensaje
-  try {
-    await FirebaseFirestore.instance.collection('messages').add({
-      'senderId': currentUserId,
-      'receiverId': widget.chatPartnerId,
-      'participants': [currentUserId, widget.chatPartnerId],
-      'type': 'text',
-      'text': messageText,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-      'delivered': false,
-      'replyTo': buildReplyMapForSending(),
-    });
-
-    _messageController.clear();
-
-    // Bajamos el scroll al final sin animación
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(
-          _scrollController.position.maxScrollExtent,
-        );
-      }
-    });
-
-    cancelReply();
-  } catch (e) {
-    print("❌ Error al enviar mensaje: $e");
-  }
-}
 }

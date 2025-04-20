@@ -1,5 +1,3 @@
-// user_info_check.dart
-
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,33 +13,107 @@ import 'privilege_level_details.dart';
 import '../profile/memories_calendar.dart';
 import '../follow/following_screen.dart';
 import '../future_plans/future_plans.dart';
+import 'report_and_block_user.dart'; // Import para Reportar/Bloquear
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
+
   const UserInfoCheck({Key? key, required this.userId}) : super(key: key);
+
+  /// Método estático para abrir el perfil de [userId].
+  /// Primero comprueba si el usuario actual está bloqueado.
+  /// Si está bloqueado, no navega y muestra un SnackBar.
+  static Future<void> open(BuildContext context, String userId) async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+
+    final docId = '${userId}_${me.uid}';
+    final doc = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .get();
+
+    if (doc.exists) {
+      // El userId me ha bloqueado a mí => No entro
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No puedes acceder al perfil porque te ha bloqueado.'),
+        ),
+      );
+      return;
+    }
+
+    // Si NO hay bloqueo, abrimos la pantalla
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => UserInfoCheck(userId: userId)),
+    );
+  }
 
   @override
   State<UserInfoCheck> createState() => _UserInfoCheckState();
 }
 
 class _UserInfoCheckState extends State<UserInfoCheck> {
+  // DocumentSnapshot del usuario
+  DocumentSnapshot? _userDocSnap;
+
+  // Variables de perfil
   String? _profileImageUrl;
   String? _coverImageUrl;
-  bool isFollowing = false;
   String _privilegeLevel = 'Básico';
   bool _isPrivate = false;
+
+  /// Indica si YO he bloqueado a este usuario (importante para nuestro menú)
+  bool _isUserBlocked = false;
+
+  // Otras banderas
+  bool isFollowing = false;
+  bool _notificationsEnabled = false;
+  bool _isRequestPending = false;
+
+  // Future para cargar todo
+  late Future<void> _futureInit;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData().then((_) => _updateStatsBasedOnAllPlans());
-    _checkIfFollowing();
+    _futureInit = _initAllData();
   }
 
-  /// IMPORTANTE:
-  /// En vez de usar participants.length, usaremos checkedInUsers.length
-  /// para actualizar total_participants_until_now y max_participants_in_one_plan.
-  /// Además, sumaremos un plan a total_created_plans sólo si checkedInUsers > 0.
+  /// Cargamos de Firestore el doc del usuario, más
+  /// stats y si está bloqueado, etc.
+  Future<void> _initAllData() async {
+    // 1. Leo el documento del user
+    final docSnap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .get();
+
+    if (!docSnap.exists) {
+      // Manejar usuario inexistente (se capturará en el FutureBuilder)
+      return;
+    }
+
+    // 2. Guardo info en variables de estado
+    final data = docSnap.data() as Map<String, dynamic>;
+    _userDocSnap = docSnap;
+
+    _profileImageUrl = data['photoUrl'] ?? '';
+    _coverImageUrl = data['coverPhotoUrl'] ?? '';
+    _privilegeLevel = (data['privilegeLevel'] ?? 'Básico').toString();
+    _isPrivate = (data['profile_privacy'] ?? 0) == 1;
+
+    // 3. Llamadas extra
+    await _updateStatsBasedOnAllPlans();
+    await _checkIfFollowing();
+    await _checkIfFollowRequestIsPending();
+    await _checkIfUserIsBlocked();
+  }
+
+  //----------------------------------------------------------------------------
+  // Actualiza estadísticas de planes
+  //----------------------------------------------------------------------------
   Future<void> _updateStatsBasedOnAllPlans() async {
     try {
       final snap = await FirebaseFirestore.instance
@@ -50,28 +122,21 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           .where('special_plan', isEqualTo: 0)
           .get();
 
-      int total = 0;           // Suma de todos los checkedInUsers
-      int maxInOne = 0;        // Máx. en un solo plan (contando checkedInUsers)
-      int countCreated = 0;    // Cantidad de planes (solo si al menos 1 checkedInUser)
+      int total = 0;
+      int maxInOne = 0;
+      int countCreated = 0;
 
-      for (var d in snap.docs) {
+      for (final d in snap.docs) {
         final data = d.data();
         final List<dynamic> checked = data['checkedInUsers'] ?? [];
         final c = checked.length;
         total += c;
-        if (c > maxInOne) {
-          maxInOne = c;
-        }
-        // Solo contamos el plan si c>0
-        if (c > 0) {
-          countCreated++;
-        }
+        if (c > maxInOne) maxInOne = c;
+        if (c > 0) countCreated++;
       }
 
-      // Hacemos la operación en una transacción
-      final userDocRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId);
+      final userDocRef =
+          FirebaseFirestore.instance.collection('users').doc(widget.userId);
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final snapshot = await transaction.get(userDocRef);
@@ -83,172 +148,137 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         });
       });
     } catch (e) {
-      print('[updateStatsBasedOnAllPlans] $e');
+      debugPrint('[updateStatsBasedOnAllPlans] $e');
     }
   }
 
-  Future<void> _loadUserData() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .get();
-      if (!doc.exists) return;
-      final data = doc.data()!;
-      setState(() {
-        _profileImageUrl = data['photoUrl'] ?? '';
-        _coverImageUrl = data['coverPhotoUrl'] ?? '';
-        _privilegeLevel = (data['privilegeLevel'] ?? 'Básico').toString();
-        _isPrivate = (data['profile_privacy'] ?? 0) == 1;
-      });
-    } catch (e) {
-      print('[loadUserData] $e');
-    }
-  }
-
+  //----------------------------------------------------------------------------
+  // Checa si le estoy siguiendo
+  //----------------------------------------------------------------------------
   Future<void> _checkIfFollowing() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+
     final snap = await FirebaseFirestore.instance
         .collection('followed')
-        .where('userId', isEqualTo: user.uid)
+        .where('userId', isEqualTo: me.uid)
         .where('followedId', isEqualTo: widget.userId)
         .get();
-    setState(() => isFollowing = snap.docs.isNotEmpty);
+
+    isFollowing = snap.docs.isNotEmpty;
   }
 
-  Future<int> _getFuturePlanCount(String userId) async {
-    final now = DateTime.now();
-    final snap = await FirebaseFirestore.instance
-        .collection('plans')
-        .where('createdBy', isEqualTo: userId)
-        .where('special_plan', isEqualTo: 0)
-        .get();
-    int counter = 0;
-    for (final d in snap.docs) {
-      final data = d.data();
-      final ts = data['start_timestamp'];
-      if (ts is Timestamp && ts.toDate().isAfter(now)) {
-        counter++;
-      }
-    }
-    return counter;
-  }
-
-  Future<List<PlanModel>> _fetchFuturePlans() async {
-    final now = DateTime.now();
-    final snap = await FirebaseFirestore.instance
-        .collection('plans')
-        .where('createdBy', isEqualTo: widget.userId)
-        .where('special_plan', isEqualTo: 0)
-        .get();
-    final List<PlanModel> list = [];
-    for (final d in snap.docs) {
-      final data = d.data();
-      final ts = data['start_timestamp'];
-      if (ts is Timestamp && ts.toDate().isAfter(now)) {
-        data['id'] = d.id;
-        list.add(PlanModel.fromMap(data));
-      }
-    }
-    list.sort((a, b) => a.startTimestamp!.compareTo(b.startTimestamp!));
-    return list;
-  }
-
-  /// Cambiamos de seguir / dejar de seguir
-  Future<void> _toggleFollow() async {
+  //----------------------------------------------------------------------------
+  // Checa si hay solicitud pendiente (perfiles privados)
+  //----------------------------------------------------------------------------
+  Future<void> _checkIfFollowRequestIsPending() async {
+    if (!_isPrivate) return; // Solo aplica a privados
     final me = FirebaseAuth.instance.currentUser;
-    if (me == null || me.uid == widget.userId) return;
+    if (me == null) return;
+
     try {
-      if (isFollowing) {
-        // Dejar de seguir
-        final f1 = await FirebaseFirestore.instance
-            .collection('followed')
-            .where('userId', isEqualTo: me.uid)
-            .where('followedId', isEqualTo: widget.userId)
-            .get();
-        for (final d in f1.docs) {
-          await d.reference.delete();
-        }
-        final f2 = await FirebaseFirestore.instance
-            .collection('followers')
-            .where('userId', isEqualTo: widget.userId)
-            .where('followerId', isEqualTo: me.uid)
-            .get();
-        for (final d in f2.docs) {
-          await d.reference.delete();
-        }
-        setState(() => isFollowing = false);
-      } else {
-        // Empezar a seguir
-        if (!_isPrivate) {
-          await FirebaseFirestore.instance.collection('followers').add({
-            'userId': widget.userId,
-            'followerId': me.uid,
-          });
-          await FirebaseFirestore.instance.collection('followed').add({
-            'userId': me.uid,
-            'followedId': widget.userId,
-          });
-          setState(() => isFollowing = true);
-        } else {
-          // Perfil privado
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Este usuario es privado. Debes enviar solicitud.'),
-            ),
-          );
-        }
-      }
+      final q = await FirebaseFirestore.instance
+          .collection('follow_requests')
+          .where('fromId', isEqualTo: me.uid)
+          .where('toId', isEqualTo: widget.userId)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+
+      // Si ya estoy following, da igual la request
+      _isRequestPending = (q.docs.isNotEmpty && !isFollowing);
     } catch (e) {
-      print('[toggleFollow] $e');
+      debugPrint('[checkIfFollowRequestIsPending] Error: $e');
     }
   }
 
+  //----------------------------------------------------------------------------
+  // Comprueba si YO he bloqueado al otro
+  //----------------------------------------------------------------------------
+  Future<void> _checkIfUserIsBlocked() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+
+    final docId = '${me.uid}_${widget.userId}';
+    final doc = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .get();
+
+    setState(() {
+      _isUserBlocked = doc.exists;
+    });
+  }
+
+  //----------------------------------------------------------------------------
+  // build principal -> FutureBuilder para _initAllData
+  //----------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.userId)
-            .get(),
-        builder: (ctx, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snap.hasData || !snap.data!.exists) {
-            return const Center(child: Text('Usuario no encontrado'));
-          }
-          final data = snap.data!.data() as Map<String, dynamic>;
-          final name = data['name'] ?? 'Usuario';
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildHeader(name),
-                const SizedBox(height: 70),
-                _buildPrivilegeButton(),
-                const SizedBox(height: 20),
-                _buildActionButtons(widget.userId),
-                const SizedBox(height: 20),
-                _buildBioAndStats(),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Divider(color: Colors.grey[400], thickness: .5),
-                ),
-                const SizedBox(height: 20),
-                _buildMemoriesOrLock(),
-                const SizedBox(height: 40),
-              ],
+    return FutureBuilder<void>(
+      future: _futureInit,
+      builder: (context, snapshot) {
+        // Mientras se carga
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Si hubo error
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text('Error: ${snapshot.error}'),
             ),
           );
-        },
+        }
+        // Si el doc no existe (por ejemplo, usuario borrado)
+        if (_userDocSnap == null || !_userDocSnap!.exists) {
+          return const Scaffold(
+            body: Center(child: Text('Usuario no encontrado')),
+          );
+        }
+
+        // YA tenemos toda la data -> Dibujamos la UI final
+        return _buildMainContent();
+      },
+    );
+  }
+
+  Widget _buildMainContent() {
+    // extraemos "name" del _userDocSnap
+    final data = _userDocSnap!.data() as Map<String, dynamic>;
+    final name = data['name'] ?? 'Usuario';
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildHeader(name),
+            const SizedBox(height: 70),
+            _buildPrivilegeButton(),
+            const SizedBox(height: 20),
+            _buildActionButtons(widget.userId),
+            const SizedBox(height: 20),
+            _buildBioAndStats(),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Divider(color: Colors.grey[400], thickness: .5),
+            ),
+            const SizedBox(height: 20),
+            _buildMemoriesOrLock(),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
 
+  //----------------------------------------------------------------------------
+  // Header (portada + avatar + botones)
+  //----------------------------------------------------------------------------
   Widget _buildHeader(String name) {
     return Stack(
       clipBehavior: Clip.none,
@@ -257,15 +287,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         Positioned(
           top: 40,
           left: 16,
-          child: ClipOval(
-            child: Container(
-              color: Colors.black.withOpacity(.4),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ),
+          child: _buildBackButton(),
+        ),
+        Positioned(
+          top: 40,
+          right: 16,
+          child: _buildMenuButton(),
         ),
         Positioned(
           bottom: -80,
@@ -277,13 +304,37 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  Widget _buildBackButton() {
+    return ClipOval(
+      child: Container(
+        color: Colors.black.withOpacity(.5),
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton() {
+    return ClipOval(
+      child: Container(
+        color: Colors.black.withOpacity(.5),
+        child: IconButton(
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          onPressed: _showOptionsMenu,
+        ),
+      ),
+    );
+  }
+
   Widget _buildCoverImage() {
-    final has = _coverImageUrl != null && _coverImageUrl!.isNotEmpty;
+    final hasCover = _coverImageUrl != null && _coverImageUrl!.isNotEmpty;
     return Container(
       height: 300,
       width: double.infinity,
       color: Colors.grey[300],
-      child: has
+      child: hasCover
           ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
           : Center(
               child: Row(
@@ -302,6 +353,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     final avatarUrl = (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
         ? _profileImageUrl!
         : 'https://via.placeholder.com/150';
+
     return Column(
       children: [
         CircleAvatar(
@@ -325,6 +377,181 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  //----------------------------------------------------------------------------
+  // Menú de 3 puntos (notificaciones, reportar, bloquear)
+  //----------------------------------------------------------------------------
+  void _showOptionsMenu() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent,
+      builder: (BuildContext ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Texto según si está bloqueado localmente
+            final blockText =
+                _isUserBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
+
+            return Material(
+              color: Colors.transparent,
+              child: Stack(
+                children: [
+                  // Tocar fuera para cerrar
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.transparent,
+                    ),
+                  ),
+                  Positioned(
+                    top: 55,
+                    right: 16,
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            color: const Color.fromARGB(255, 114, 114, 114)
+                                .withOpacity(0.6),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 12,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Notificaciones ON/OFF
+                                InkWell(
+                                  onTap: () {
+                                    setDialogState(() {
+                                      _notificationsEnabled =
+                                          !_notificationsEnabled;
+                                    });
+                                  },
+                                  child: Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        _notificationsEnabled
+                                            ? 'assets/icono-campana-activada.svg'
+                                            : 'assets/icono-campana-desactivada.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _notificationsEnabled
+                                            ? 'Deshabilitar notificaciones'
+                                            : 'Habilitar notificaciones',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(color: Colors.white54),
+                                // Reportar
+                                InkWell(
+                                  onTap: () {
+                                    final me =
+                                        FirebaseAuth.instance.currentUser;
+                                    if (me == null) return;
+                                    ReportAndBlockUser.goToReportScreen(
+                                      context,
+                                      widget.userId,
+                                    );
+                                  },
+                                  child: Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icono-reportar.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Reportar perfil',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(color: Colors.white54),
+                                // Bloquear / Desbloquear
+                                InkWell(
+                                  onTap: () async {
+                                    final me =
+                                        FirebaseAuth.instance.currentUser;
+                                    if (me == null) return;
+
+                                    // Guardamos el valor anterior
+                                    final oldValue = _isUserBlocked;
+
+                                    // Cambiamos enseguida nuestro flag local
+                                    setState(() {
+                                      _isUserBlocked = !_isUserBlocked;
+                                    });
+                                    setDialogState(() {});
+
+                                    try {
+                                      // Llamamos a la función toggle
+                                      await ReportAndBlockUser.toggleBlockUser(
+                                        context,
+                                        me.uid,
+                                        widget.userId,
+                                      );
+                                    } catch (e) {
+                                      // Si falla, revertimos
+                                      setState(() {
+                                        _isUserBlocked = oldValue;
+                                      });
+                                      setDialogState(() {});
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'assets/icono-bloquear.svg',
+                                        width: 24,
+                                        height: 24,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        blockText,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  //----------------------------------------------------------------------------
+  // Botón de Privilegio (Básico, Premium, etc.)
+  //----------------------------------------------------------------------------
   Widget _buildPrivilegeButton() {
     return GestureDetector(
       onTap: _showPrivilegeLevelDetailsPopup,
@@ -335,7 +562,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(_getPrivilegeIcon(_privilegeLevel), width: 52, height: 52),
+              Image.asset(
+                _getPrivilegeIcon(_privilegeLevel),
+                width: 52,
+                height: 52,
+              ),
               const SizedBox(height: 0),
               Text(
                 _mapPrivilegeLevelToTitle(_privilegeLevel),
@@ -373,6 +604,37 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
+  String _mapPrivilegeLevelToTitle(String level) {
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
+        return 'Premium';
+      case 'golden':
+        return 'Golden';
+      case 'vip':
+        return 'VIP';
+      default:
+        return 'Básico';
+    }
+  }
+
+  String _getPrivilegeIcon(String level) {
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
+        return 'assets/icono-usuario-premium.png';
+      case 'golden':
+        return 'assets/icono-usuario-golden.png';
+      case 'vip':
+        return 'assets/icono-usuario-vip.png';
+      default:
+        return 'assets/icono-usuario-basico.png';
+    }
+  }
+
+  //----------------------------------------------------------------------------
+  // Botones principales: Invitar, Mensaje, Seguir
+  //----------------------------------------------------------------------------
   Widget _buildActionButtons(String otherUserId) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -380,23 +642,23 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         _buildActionButton(
           iconPath: 'assets/union.svg',
           label: 'Invítale a un Plan',
-          onTap: (_isPrivate && !isFollowing)
-              ? () => _showPrivateToast()
+          onTap: (_isPrivate && !isFollowing && !_isRequestPending)
+              ? _showPrivateToast
               : () => InviteUsersToPlanScreen.showPopup(context, otherUserId),
         ),
         const SizedBox(width: 12),
         _buildActionButton(
           iconPath: 'assets/mensaje.svg',
           label: 'Enviar Mensaje',
-          onTap: (_isPrivate && !isFollowing)
-              ? () => _showPrivateToast()
+          onTap: (_isPrivate && !isFollowing && !_isRequestPending)
+              ? _showPrivateToast
               : () => _openChat(otherUserId),
         ),
         const SizedBox(width: 12),
         _buildActionButton(
-          iconPath: isFollowing ? 'assets/icono-tick.svg' : 'assets/agregar-usuario.svg',
-          label: isFollowing ? 'Siguiendo' : 'Seguir',
-          onTap: _toggleFollow,
+          iconPath: _getFollowIcon(),
+          label: _getFollowLabel(),
+          onTap: _handleFollowTap,
         ),
       ],
     );
@@ -445,6 +707,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
@@ -455,14 +718,128 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  void _showPrivateToast() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Este usuario es privado. Debes seguirle y ser aceptado.'),
-      ),
-    );
+  //----------------------------------------------------------------------------
+  // Lógica Follow
+  //----------------------------------------------------------------------------
+  String _getFollowLabel() {
+    if (isFollowing) {
+      return 'Siguiendo';
+    } else if (_isRequestPending) {
+      return 'Solicitado';
+    } else {
+      return 'Seguir';
+    }
   }
 
+  String _getFollowIcon() {
+    if (isFollowing) {
+      return 'assets/icono-tick.svg';
+    } else if (_isRequestPending) {
+      return 'assets/agregar-usuario.svg';
+    } else {
+      return 'assets/agregar-usuario.svg';
+    }
+  }
+
+  void _handleFollowTap() {
+    if (isFollowing) {
+      // Dejar de seguir
+      _toggleFollow();
+    } else if (_isRequestPending) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ya enviaste una solicitud. Espera la respuesta.'),
+        ),
+      );
+    } else {
+      // Intentar seguir
+      _toggleFollow();
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null || me.uid == widget.userId) return;
+
+    try {
+      if (isFollowing) {
+        // Dejar de seguir
+        final f1 = await FirebaseFirestore.instance
+            .collection('followed')
+            .where('userId', isEqualTo: me.uid)
+            .where('followedId', isEqualTo: widget.userId)
+            .get();
+        for (final d in f1.docs) {
+          await d.reference.delete();
+        }
+
+        final f2 = await FirebaseFirestore.instance
+            .collection('followers')
+            .where('userId', isEqualTo: widget.userId)
+            .where('followerId', isEqualTo: me.uid)
+            .get();
+        for (final d in f2.docs) {
+          await d.reference.delete();
+        }
+        setState(() => isFollowing = false);
+      } else {
+        // Empezar a seguir (o solicitar si privado)
+        if (!_isPrivate) {
+          // Perfil público
+          await FirebaseFirestore.instance.collection('followers').add({
+            'userId': widget.userId,
+            'followerId': me.uid,
+          });
+          await FirebaseFirestore.instance.collection('followed').add({
+            'userId': me.uid,
+            'followedId': widget.userId,
+          });
+          setState(() => isFollowing = true);
+        } else {
+          // Perfil privado => guardamos en follow_requests + notificación
+          await FirebaseFirestore.instance.collection('follow_requests').add({
+            'fromId': me.uid,
+            'toId': widget.userId,
+            'status': 'pending',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+          // Notificación
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(me.uid)
+              .get();
+          final currentUserName =
+              userDoc.exists ? (userDoc.data()?['name'] ?? '') : '';
+          final currentUserPhotoUrl =
+              userDoc.exists ? (userDoc.data()?['photoUrl'] ?? '') : '';
+
+          await FirebaseFirestore.instance.collection('notifications').add({
+            'type': 'follow_request',
+            'receiverId': widget.userId,
+            'senderId': me.uid,
+            'senderName': currentUserName,
+            'senderProfilePic': currentUserPhotoUrl,
+            'timestamp': FieldValue.serverTimestamp(),
+            'read': false,
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Solicitud enviada. Espera a que te responda'),
+            ),
+          );
+          setState(() => _isRequestPending = true);
+        }
+      }
+    } catch (e) {
+      debugPrint('[toggleFollow] $e');
+    }
+  }
+
+  //----------------------------------------------------------------------------
+  // Mensaje privado
+  //----------------------------------------------------------------------------
   void _openChat(String otherId) {
     showGeneralDialog(
       context: context,
@@ -474,12 +851,29 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       transitionBuilder: (_, anim1, __, ___) {
         return FadeTransition(
           opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-          child: UserInfoInsideChat(key: ValueKey(otherId), chatPartnerId: otherId),
+          child: UserInfoInsideChat(
+            key: ValueKey(otherId),
+            chatPartnerId: otherId,
+          ),
         );
       },
     );
   }
 
+  //----------------------------------------------------------------------------
+  // Toast si es privado y no puedo invitar/chatear
+  //----------------------------------------------------------------------------
+  void _showPrivateToast() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Este usuario es privado. Debes enviar solicitud.'),
+      ),
+    );
+  }
+
+  //----------------------------------------------------------------------------
+  // Sección de estadísticas (planes futuros, seguidores, seguidos)
+  //----------------------------------------------------------------------------
   Widget _buildBioAndStats() {
     return FutureBuilder<int>(
       future: _getFuturePlanCount(widget.userId),
@@ -527,8 +921,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   Widget _buildStatItem(String label, String count) {
     final isFuture = label == 'planes futuros';
     final isFollowers = label == 'seguidores';
-    final iconPath =
-        isFuture ? 'assets/icono-calendario.svg' : 'assets/icono-seguidores.svg';
+    final iconPath = isFuture
+        ? 'assets/icono-calendario.svg'
+        : 'assets/icono-seguidores.svg';
 
     final iconColor = isFuture
         ? const Color.fromARGB(255, 13, 32, 53)
@@ -557,7 +952,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         width: 100,
         child: Column(
           children: [
-            SvgPicture.asset(iconPath, width: 24, height: 24, color: iconColor),
+            SvgPicture.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+              color: iconColor,
+            ),
             const SizedBox(height: 4),
             Text(
               count,
@@ -573,6 +973,24 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         ),
       ),
     );
+  }
+
+  Future<int> _getFuturePlanCount(String userId) async {
+    final now = DateTime.now();
+    final snap = await FirebaseFirestore.instance
+        .collection('plans')
+        .where('createdBy', isEqualTo: userId)
+        .where('special_plan', isEqualTo: 0)
+        .get();
+    int counter = 0;
+    for (final d in snap.docs) {
+      final data = d.data();
+      final ts = data['start_timestamp'];
+      if (ts is Timestamp && ts.toDate().isAfter(now)) {
+        counter++;
+      }
+    }
+    return counter;
   }
 
   Future<int> _getFollowersCount(String userId) async {
@@ -591,7 +1009,11 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     return snap.size;
   }
 
+  //----------------------------------------------------------------------------
+  // Memorias o candado
+  //----------------------------------------------------------------------------
   Widget _buildMemoriesOrLock() {
+    // Solo revisamos si es privado y no le sigo
     if (_isPrivate && !isFollowing) {
       return Column(
         children: [
@@ -605,6 +1027,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         ],
       );
     }
+
+    // Si es público o ya le sigo, mostramos su calendario de memorias
     return MemoriesCalendar(
       userId: widget.userId,
       onPlanSelected: (plan) => _showFrostedPlanDialog(plan),
@@ -624,7 +1048,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-      PlanModel plan) async {
+    PlanModel plan,
+  ) async {
     final List<Map<String, dynamic>> res = [];
     final uds = plan.participants ?? [];
     for (final uid in uds) {
@@ -642,33 +1067,5 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       }
     }
     return res;
-  }
-
-  String _mapPrivilegeLevelToTitle(String level) {
-    final normalized = level.toLowerCase().replaceAll('á', 'a');
-    switch (normalized) {
-      case 'premium':
-        return 'Premium';
-      case 'golden':
-        return 'Golden';
-      case 'vip':
-        return 'VIP';
-      default:
-        return 'Básico';
-    }
-  }
-
-  String _getPrivilegeIcon(String level) {
-    final normalized = level.toLowerCase().replaceAll('á', 'a');
-    switch (normalized) {
-      case 'premium':
-        return 'assets/icono-usuario-premium.png';
-      case 'golden':
-        return 'assets/icono-usuario-golden.png';
-      case 'vip':
-        return 'assets/icono-usuario-vip.png';
-      default:
-        return 'assets/icono-usuario-basico.png';
-    }
   }
 }

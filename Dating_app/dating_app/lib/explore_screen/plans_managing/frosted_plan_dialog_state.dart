@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 
-
 import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
 import 'attendance_managing.dart';
@@ -15,7 +14,8 @@ import '../../main/colors.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
-  final Future<List<Map<String, dynamic>>> Function(PlanModel plan) fetchParticipants;
+  final Future<List<Map<String, dynamic>>> Function(PlanModel plan)
+      fetchParticipants;
 
   const FrostedPlanDialog({
     Key? key,
@@ -1010,12 +1010,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       return ListTile(
                         onTap: () {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UserInfoCheck(userId: uid),
-                            ),
-                          );
+                          // Sustituimos por la lógica que comprueba si ha bloqueado
+                          UserInfoCheck.open(context, uid);
                         },
                         leading: CircleAvatar(
                           radius: 22,
@@ -1227,12 +1223,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     return GestureDetector(
       onTap: () {
         if (widget.plan.createdBy.isNotEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => UserInfoCheck(userId: widget.plan.createdBy),
-            ),
-          );
+          // Llamamos a la verificación de bloqueo antes de abrir
+          UserInfoCheck.open(context, widget.plan.createdBy);
         }
       },
       child: Padding(

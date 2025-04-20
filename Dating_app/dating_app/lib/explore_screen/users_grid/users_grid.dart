@@ -1,12 +1,18 @@
+// users_grid.dart
+//
+// Lista de usuarios + planes.  Incluye:
+//   • Verificación de bloqueo antes de abrir perfil, invitar o enviar mensaje
+//   • Llamada a UserInfoCheck.open() para respetar bloqueos
+//   • Helper _isBlocked() centralizado
+//
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
-
-// Importamos funciones y widgets que hemos movido a otros archivos:
 import '../plans_managing/firebase_services.dart';
 import 'users_grid_helpers.dart';
 import '../plans_managing/plan_card.dart';
@@ -14,9 +20,6 @@ import '../special_plans/invite_users_to_plan_screen.dart';
 import '../users_managing/user_info_check.dart';
 import '../users_managing/user_info_inside_chat.dart';
 
-/// Este Widget muestra una lista de usuarios (y cada uno puede tener 0 o varios planes).
-/// Si un usuario no tiene planes, se renderiza `_buildNoPlanLayout`.
-/// De lo contrario, cada plan se muestra con un `_PlanCard`.
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
   final List<dynamic> users;
@@ -27,6 +30,70 @@ class UsersGrid extends StatelessWidget {
     this.onUserTap,
   }) : super(key: key);
 
+  // ──────────────────────────────────────────────────────────────────────────
+  //  HELPERS DE BLOQUEO
+  // ──────────────────────────────────────────────────────────────────────────
+  Future<bool> _isBlocked(String otherId) async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return false;
+
+    // Documento “blockerId_blockedId”
+    final docId = '${otherId}_${me.uid}';
+    final doc = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .doc(docId)
+        .get();
+
+    return doc.exists;
+  }
+
+  void _showBlockedSnack(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content:
+            Text('No puedes interactuar con este perfil porque te ha bloqueado.'),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  INVITAR / MENSAJE (con bloqueo)
+  // ──────────────────────────────────────────────────────────────────────────
+  Future<void> _handleInvite(BuildContext ctx, String userId) async {
+    if (await _isBlocked(userId)) {
+      _showBlockedSnack(ctx);
+      return;
+    }
+    InviteUsersToPlanScreen.showPopup(ctx, userId);
+  }
+
+  Future<void> _handleMessage(BuildContext ctx, String userId) async {
+    if (await _isBlocked(userId)) {
+      _showBlockedSnack(ctx);
+      return;
+    }
+    showGeneralDialog(
+      context: ctx,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) => const SizedBox(),
+      transitionBuilder: (c, anim1, __, ___) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+          child: UserInfoInsideChat(
+            key: ValueKey(userId),
+            chatPartnerId: userId,
+          ),
+        );
+      },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  BUILD
+  // ──────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -39,31 +106,27 @@ class UsersGrid extends StatelessWidget {
         final Map<String, dynamic> userData = userDoc is QueryDocumentSnapshot
             ? (userDoc.data() as Map<String, dynamic>)
             : userDoc as Map<String, dynamic>;
-
         return _buildUserCard(userData, context);
       },
     );
   }
 
-  //----------------------------------------------------------------------
-  // Construye la “tarjeta” de cada usuario
-  //----------------------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Tarjeta por usuario
+  // ──────────────────────────────────────────────────────────────────────────
   Widget _buildUserCard(Map<String, dynamic> userData, BuildContext context) {
     final String? uid = userData['uid']?.toString();
     if (uid == null) {
       return const SizedBox(
         height: 60,
         child: Center(
-          child: Text(
-            'Usuario inválido',
-            style: TextStyle(color: Colors.red),
-          ),
+          child: Text('Usuario inválido', style: TextStyle(color: Colors.red)),
         ),
       );
     }
 
     return FutureBuilder<List<PlanModel>>(
-      future: fetchUserPlans(uid), // Llamamos a la función en firebase_services.dart
+      future: fetchUserPlans(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
@@ -77,10 +140,8 @@ class UsersGrid extends StatelessWidget {
           return SizedBox(
             height: 330,
             child: Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: Text('Error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red)),
             ),
           );
         }
@@ -90,23 +151,24 @@ class UsersGrid extends StatelessWidget {
           return _buildNoPlanLayout(context, userData);
         } else {
           return Column(
-            children: plans.map((plan) {
-              return PlanCard(
-                plan: plan,
-                userData: userData,
-                fetchParticipants: fetchPlanParticipants,
-              );
-            }).toList(),
+            children: plans
+                .map((plan) => PlanCard(
+                      plan: plan,
+                      userData: userData,
+                      fetchParticipants: fetchPlanParticipants,
+                    ))
+                .toList(),
           );
         }
       },
     );
   }
 
-  //----------------------------------------------------------------------
-  // Layout para usuario sin planes
-  //----------------------------------------------------------------------
-  Widget _buildNoPlanLayout(BuildContext context, Map<String, dynamic> userData) {
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Layout usuario SIN planes
+  // ──────────────────────────────────────────────────────────────────────────
+  Widget _buildNoPlanLayout(
+      BuildContext context, Map<String, dynamic> userData) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String userHandle = userData['handle']?.toString() ?? '@usuario';
     final String? uid = userData['uid']?.toString();
@@ -133,28 +195,23 @@ class UsersGrid extends StatelessWidget {
                   : buildPlaceholder(),
             ),
 
-            // Info del usuario
+            // Bloque superior con avatar + nombre
             Positioned(
               top: 10,
               left: 10,
               child: GestureDetector(
                 onTap: () {
-                  if (uid != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => UserInfoCheck(userId: uid),
-                      ),
-                    );
-                  }
+                  if (uid != null) UserInfoCheck.open(context, uid);
                 },
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(36),
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
-                      color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      color:
+                          const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -203,10 +260,10 @@ class UsersGrid extends StatelessWidget {
               ),
             ),
 
-            // Mensaje central de "no planes"
+            // Mensaje central y botones
             Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Container(
                   margin: const EdgeInsets.only(top: 100),
                   child: Column(
@@ -218,7 +275,8 @@ class UsersGrid extends StatelessWidget {
                           filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                           child: Container(
                             padding: const EdgeInsets.all(8),
-                            color: const Color.fromARGB(255, 84, 78, 78).withOpacity(0.3),
+                            color: const Color.fromARGB(255, 84, 78, 78)
+                                .withOpacity(0.3),
                             child: const Text(
                               'Este usuario no ha creado planes aún...',
                               style: TextStyle(color: Colors.white),
@@ -247,50 +305,27 @@ class UsersGrid extends StatelessWidget {
     );
   }
 
-  //----------------------------------------------------------------------
-  // Botones cuando no tiene planes
-  //----------------------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Botones (invitar / mensaje) con verificación de bloqueo
+  // ──────────────────────────────────────────────────────────────────────────
   Widget _buildActionButtons(BuildContext context, String? userId) {
-    final String safeUserId = userId ?? '';
+    if (userId == null || userId.isEmpty) return const SizedBox();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Invitar a un plan
         _buildActionButton(
           context: context,
           iconPath: 'assets/agregar-usuario.svg',
           label: 'Invítale a un Plan',
-          onTap: () {
-            if (userId != null && userId.isNotEmpty) {
-              InviteUsersToPlanScreen.showPopup(context, userId);
-            }
-          },
+          onTap: () => _handleInvite(context, userId),
         ),
         const SizedBox(width: 16),
-        // Mensaje
         _buildActionButton(
           context: context,
           iconPath: 'assets/mensaje.svg',
           label: null,
-          onTap: () {
-            showGeneralDialog(
-              context: context,
-              barrierDismissible: true,
-              barrierLabel: 'Cerrar',
-              barrierColor: Colors.transparent,
-              transitionDuration: const Duration(milliseconds: 300),
-              pageBuilder: (_, __, ___) => const SizedBox(),
-              transitionBuilder: (ctx, anim1, anim2, child) {
-                return FadeTransition(
-                  opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-                  child: UserInfoInsideChat(
-                    key: ValueKey(safeUserId),
-                    chatPartnerId: safeUserId,
-                  ),
-                );
-              },
-            );
-          },
+          onTap: () => _handleMessage(context, userId),
         ),
       ],
     );

@@ -209,7 +209,8 @@ class PlanCardState extends State<PlanCard> {
     }
 
     final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
-    final docRef = await FirebaseFirestore.instance.collection('notifications').add({
+    final docRef =
+        await FirebaseFirestore.instance.collection('notifications').add({
       'type': 'join_request',
       'receiverId': plan.createdBy,
       'senderId': _currentUser!.uid,
@@ -233,7 +234,7 @@ class PlanCardState extends State<PlanCard> {
       if (_pendingNotificationId != null) {
         await FirebaseFirestore.instance
             .collection('notifications')
-            .doc(_pendingNotificationId)
+            .doc(_pendingNotificationId!)
             .delete();
 
         _pendingNotificationId = null;
@@ -645,7 +646,8 @@ class PlanCardState extends State<PlanCard> {
   // ---------------------------------------------------------------------------
   // MOSTRAR MODAL DE PARTICIPANTES (incluyendo lógica "ASISTE")
   // ---------------------------------------------------------------------------
-  Future<void> _showParticipantsModal(List<Map<String, dynamic>> participants) async {
+  Future<void> _showParticipantsModal(
+      List<Map<String, dynamic>> participants) async {
     // Primero obtenemos la lista de usuarios que han hecho check-in
     List checkedInUsers = [];
     try {
@@ -726,14 +728,11 @@ class PlanCardState extends State<PlanCard> {
                       final bool isCheckedIn = checkedInUsers.contains(uid);
 
                       return ListTile(
+                        // NUEVA LÓGICA: en vez de abrir directamente, usamos `UserInfoCheck.open`
                         onTap: () {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UserInfoCheck(userId: uid),
-                            ),
-                          );
+                          // Llamamos a la lógica de verificación de bloqueo
+                          UserInfoCheck.open(context, uid);
                         },
                         leading: CircleAvatar(
                           radius: 22,
@@ -991,16 +990,11 @@ class PlanCardState extends State<PlanCard> {
                     child: Row(
                       children: [
                         GestureDetector(
+                          // NUEVA LÓGICA: en vez de abrir directamente, usamos `UserInfoCheck.open`
                           onTap: () {
                             final creatorUid = plan.createdBy;
                             if (creatorUid.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      UserInfoCheck(userId: creatorUid),
-                                ),
-                              );
+                              UserInfoCheck.open(context, creatorUid);
                             }
                           },
                           child: _buildCreatorFrosted(
@@ -1027,7 +1021,8 @@ class PlanCardState extends State<PlanCard> {
                               child: Image.network(
                                 plan.backgroundImage!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => buildPlaceholder(),
+                                errorBuilder: (_, __, ___) =>
+                                    buildPlaceholder(),
                               ),
                             ),
                           )
@@ -1066,7 +1061,8 @@ class PlanCardState extends State<PlanCard> {
                           builder: (ctx, snapMsg) {
                             String countText = '0';
                             if (snapMsg.hasData && snapMsg.data!.exists) {
-                              final d = snapMsg.data!.data() as Map<String, dynamic>;
+                              final d =
+                                  snapMsg.data!.data() as Map<String, dynamic>;
                               final c = d['commentsCount'] ?? 0;
                               countText = c.toString();
                             }
