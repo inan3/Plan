@@ -132,6 +132,7 @@ flutter:
     - assets/icono-bloquear.svg
     - assets/icono-campana-activada.svg
     - assets/icono-campana-desactivada.svg
+    - assets/icono-fondo.svg
     
 
   fonts:

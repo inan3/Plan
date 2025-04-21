@@ -8,7 +8,7 @@ import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../special_plans/invite_users_to_plan_screen.dart';
-import 'user_info_inside_chat.dart';
+import '../chats/chat_screen.dart'; // <-- Importamos ChatScreen en vez de UserInfoInsideChat
 import 'privilege_level_details.dart';
 import '../profile/memories_calendar.dart';
 import '../follow/following_screen.dart';
@@ -99,7 +99,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     final data = docSnap.data() as Map<String, dynamic>;
     _userDocSnap = docSnap;
 
-    _profileImageUrl = data['photoUrl'] ?? '';
+    // Si en tu BD usas 'profilePic' cuando no exista 'photoUrl', podrías:
+    _profileImageUrl = data['photoUrl'] ?? data['profilePic'] ?? '';
     _coverImageUrl = data['coverPhotoUrl'] ?? '';
     _privilegeLevel = (data['privilegeLevel'] ?? 'Básico').toString();
     _isPrivate = (data['profile_privacy'] ?? 0) == 1;
@@ -650,9 +651,26 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         _buildActionButton(
           iconPath: 'assets/mensaje.svg',
           label: 'Enviar Mensaje',
-          onTap: (_isPrivate && !isFollowing && !_isRequestPending)
-              ? _showPrivateToast
-              : () => _openChat(otherUserId),
+          onTap: () {
+            // Lógica: si el receptor (widget.userId) es privado y no le sigo => popup
+            //         caso contrario => abrimos chat
+            if (_isPrivate && !isFollowing) {
+              _showPrivateToast();
+            } else {
+              final data = _userDocSnap!.data() as Map<String, dynamic>;
+              final userName = data['name'] ?? 'Usuario';
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    chatPartnerId: widget.userId,
+                    chatPartnerName: userName,
+                    chatPartnerPhoto: _profileImageUrl ?? '',
+                  ),
+                ),
+              );
+            }
+          },
         ),
         const SizedBox(width: 12),
         _buildActionButton(
@@ -741,10 +759,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }
   }
 
-  void _handleFollowTap() {
+  void _handleFollowTap() async {
     if (isFollowing) {
       // Dejar de seguir
-      _toggleFollow();
+      await _unfollowUser();
     } else if (_isRequestPending) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -753,111 +771,98 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       );
     } else {
       // Intentar seguir
-      _toggleFollow();
+      await _followUser();
     }
+
+    setState(() {});
   }
 
-  Future<void> _toggleFollow() async {
+  Future<void> _unfollowUser() async {
     final me = FirebaseAuth.instance.currentUser;
     if (me == null || me.uid == widget.userId) return;
 
     try {
-      if (isFollowing) {
-        // Dejar de seguir
-        final f1 = await FirebaseFirestore.instance
-            .collection('followed')
-            .where('userId', isEqualTo: me.uid)
-            .where('followedId', isEqualTo: widget.userId)
-            .get();
-        for (final d in f1.docs) {
-          await d.reference.delete();
-        }
-
-        final f2 = await FirebaseFirestore.instance
-            .collection('followers')
-            .where('userId', isEqualTo: widget.userId)
-            .where('followerId', isEqualTo: me.uid)
-            .get();
-        for (final d in f2.docs) {
-          await d.reference.delete();
-        }
-        setState(() => isFollowing = false);
-      } else {
-        // Empezar a seguir (o solicitar si privado)
-        if (!_isPrivate) {
-          // Perfil público
-          await FirebaseFirestore.instance.collection('followers').add({
-            'userId': widget.userId,
-            'followerId': me.uid,
-          });
-          await FirebaseFirestore.instance.collection('followed').add({
-            'userId': me.uid,
-            'followedId': widget.userId,
-          });
-          setState(() => isFollowing = true);
-        } else {
-          // Perfil privado => guardamos en follow_requests + notificación
-          await FirebaseFirestore.instance.collection('follow_requests').add({
-            'fromId': me.uid,
-            'toId': widget.userId,
-            'status': 'pending',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-
-          // Notificación
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(me.uid)
-              .get();
-          final currentUserName =
-              userDoc.exists ? (userDoc.data()?['name'] ?? '') : '';
-          final currentUserPhotoUrl =
-              userDoc.exists ? (userDoc.data()?['photoUrl'] ?? '') : '';
-
-          await FirebaseFirestore.instance.collection('notifications').add({
-            'type': 'follow_request',
-            'receiverId': widget.userId,
-            'senderId': me.uid,
-            'senderName': currentUserName,
-            'senderProfilePic': currentUserPhotoUrl,
-            'timestamp': FieldValue.serverTimestamp(),
-            'read': false,
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Solicitud enviada. Espera a que te responda'),
-            ),
-          );
-          setState(() => _isRequestPending = true);
-        }
+      // Borrar en "followed"
+      final f1 = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: me.uid)
+          .where('followedId', isEqualTo: widget.userId)
+          .get();
+      for (final d in f1.docs) {
+        await d.reference.delete();
       }
+
+      // Borrar en "followers"
+      final f2 = await FirebaseFirestore.instance
+          .collection('followers')
+          .where('userId', isEqualTo: widget.userId)
+          .where('followerId', isEqualTo: me.uid)
+          .get();
+      for (final d in f2.docs) {
+        await d.reference.delete();
+      }
+
+      isFollowing = false;
     } catch (e) {
-      debugPrint('[toggleFollow] $e');
+      debugPrint('[unfollowUser] $e');
     }
   }
 
-  //----------------------------------------------------------------------------
-  // Mensaje privado
-  //----------------------------------------------------------------------------
-  void _openChat(String otherId) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-      transitionBuilder: (_, anim1, __, ___) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-          child: UserInfoInsideChat(
-            key: ValueKey(otherId),
-            chatPartnerId: otherId,
+  Future<void> _followUser() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null || me.uid == widget.userId) return;
+
+    try {
+      if (!_isPrivate) {
+        // Perfil público
+        await FirebaseFirestore.instance.collection('followers').add({
+          'userId': widget.userId,
+          'followerId': me.uid,
+        });
+        await FirebaseFirestore.instance.collection('followed').add({
+          'userId': me.uid,
+          'followedId': widget.userId,
+        });
+        isFollowing = true;
+      } else {
+        // Perfil privado => guardamos en follow_requests + notificación
+        await FirebaseFirestore.instance.collection('follow_requests').add({
+          'fromId': me.uid,
+          'toId': widget.userId,
+          'status': 'pending',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        // Notificación
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(me.uid)
+            .get();
+        final currentUserName =
+            userDoc.exists ? (userDoc.data()?['name'] ?? '') : '';
+        final currentUserPhotoUrl =
+            userDoc.exists ? (userDoc.data()?['photoUrl'] ?? '') : '';
+
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'follow_request',
+          'receiverId': widget.userId,
+          'senderId': me.uid,
+          'senderName': currentUserName,
+          'senderProfilePic': currentUserPhotoUrl,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Solicitud enviada. Espera a que te responda'),
           ),
         );
-      },
-    );
+        _isRequestPending = true;
+      }
+    } catch (e) {
+      debugPrint('[followUser] $e');
+    }
   }
 
   //----------------------------------------------------------------------------

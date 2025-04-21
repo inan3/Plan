@@ -32,6 +32,9 @@ class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
   final String? chatPartnerPhoto;
+
+  /// Ya no vamos a usar [deletedAt] a nivel de constructor,
+  /// porque ahora usaremos las fechas guardadas en userDoc.
   final Timestamp? deletedAt;
 
   const ChatScreen({
@@ -63,6 +66,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   // Carga futuro con icono de marcador (para ubicaciones)
   late Future<BitmapDescriptor> _markerIconFuture;
 
+  /// Fecha en que YO borré el chat con mi partner, si aplica
+  Timestamp? _myDeletedAt;
+
+  /// Fecha en que el partner borró el chat conmigo, si aplica
+  Timestamp? _theirDeletedAt;
+
   @override
   void initState() {
     super.initState();
@@ -74,14 +83,114 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       });
     });
 
-    // Marca como leídos al entrar
-    _markMessagesAsRead();
-
-    // Carga icono custom si lo deseas
+    // Carga icono custom
     _markerIconFuture = _loadMarkerIcon();
 
     // Verificamos si el chatPartner está actualmente bloqueado por mí
     _checkIfPartnerIsBlocked();
+
+    // Cargar las fechas de borrado (si existen)
+    _loadDeletedChatDates().then((_) {
+      // Tras cargar, intentamos borrar físicamente mensajes si aplica
+      _deleteOldMessagesIfBothDeleted();
+    }).then((_) {
+      // Marca como leídos al entrar (después de haber aplicado el filtrado).
+      _markMessagesAsRead();
+    });
+  }
+
+  /// Carga la fecha en que YO borré el chat con el partner, y la fecha en que
+  /// mi partner borró el chat conmigo.
+  Future<void> _loadDeletedChatDates() async {
+    final meDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserId)
+        .get();
+    if (meDoc.exists) {
+      final myData = meDoc.data()!;
+      if (myData['deletedChats'] != null &&
+          myData['deletedChats'][widget.chatPartnerId] != null) {
+        _myDeletedAt = myData['deletedChats'][widget.chatPartnerId];
+      }
+    }
+
+    final partnerDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.chatPartnerId)
+        .get();
+    if (partnerDoc.exists) {
+      final theirData = partnerDoc.data()!;
+      if (theirData['deletedChats'] != null &&
+          theirData['deletedChats'][currentUserId] != null) {
+        _theirDeletedAt = theirData['deletedChats'][currentUserId];
+      }
+    }
+  }
+
+  /// Si ambos han borrado el chat, comprobamos si ya pasaron 7 días
+  /// desde la fecha de borrado más reciente. De ser así, borramos de Firestore
+  /// todos los mensajes anteriores a la fecha de borrado más antigua.
+  Future<void> _deleteOldMessagesIfBothDeleted() async {
+    if (_myDeletedAt == null || _theirDeletedAt == null) return;
+
+    final myDate = _myDeletedAt!.toDate();
+    final theirDate = _theirDeletedAt!.toDate();
+
+    // La más antigua
+    final earliest = myDate.isBefore(theirDate) ? myDate : theirDate;
+    // La más reciente
+    final latest = myDate.isAfter(theirDate) ? myDate : theirDate;
+
+    final now = DateTime.now();
+
+    // Si ya pasó una semana desde la más reciente
+    if (now.isAfter(latest.add(const Duration(days: 7)))) {
+      // Borramos (batch) todos los mensajes con timestamp < earliest
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection('messages')
+            .where('participants', arrayContains: currentUserId)
+            .where('timestamp', isLessThan: Timestamp.fromDate(earliest))
+            .get();
+
+        if (snap.docs.isNotEmpty) {
+          WriteBatch batch = FirebaseFirestore.instance.batch();
+          for (var doc in snap.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Verificamos que sea realmente entre currentUserId y chatPartnerId
+            final participants = data['participants'];
+            if (participants is List &&
+                participants.contains(widget.chatPartnerId) &&
+                participants.contains(currentUserId)) {
+              batch.delete(doc.reference);
+            }
+          }
+          await batch.commit();
+        }
+      } catch (e) {
+        print("Error al eliminar mensajes antiguos: $e");
+      }
+    }
+  }
+
+  /// Marca como leídos todos los mensajes recibidos de este chat
+  Future<void> _markMessagesAsRead() async {
+    try {
+      QuerySnapshot unreadMessages = await FirebaseFirestore.instance
+          .collection('messages')
+          .where('senderId', isEqualTo: widget.chatPartnerId)
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+      for (var doc in unreadMessages.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
+    } catch (e) {
+      print("❌ Error al marcar mensajes como leídos: $e");
+    }
   }
 
   Future<void> _checkIfPartnerIsBlocked() async {
@@ -106,26 +215,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     } catch (e) {
       print("Error al cargar icono del marcador: $e");
       return BitmapDescriptor.defaultMarker;
-    }
-  }
-
-  /// Marca como leídos todos los mensajes recibidos de este chat
-  Future<void> _markMessagesAsRead() async {
-    try {
-      QuerySnapshot unreadMessages = await FirebaseFirestore.instance
-          .collection('messages')
-          .where('senderId', isEqualTo: widget.chatPartnerId)
-          .where('receiverId', isEqualTo: currentUserId)
-          .where('isRead', isEqualTo: false)
-          .get();
-
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-      for (var doc in unreadMessages.docs) {
-        batch.update(doc.reference, {'isRead': true});
-      }
-      await batch.commit();
-    } catch (e) {
-      print("❌ Error al marcar mensajes como leídos: $e");
     }
   }
 
@@ -162,7 +251,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          // Botón de flecha atrás (cierra el chat y vuelve)
+          // Botón de flecha atrás
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -448,19 +537,26 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         var allDocs = snapshot.data!.docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
           if (data['timestamp'] is! Timestamp) return false;
-          Timestamp timestamp = data['timestamp'];
+          final timestamp = data['timestamp'] as Timestamp;
 
-          // Filtra si se borraron al hacer "borrar chat"
-          if (widget.deletedAt != null &&
-              timestamp.toDate().isBefore(widget.deletedAt!.toDate())) {
-            return false;
-          }
-
-          bool case1 = (data['senderId'] == currentUserId &&
+          // 1) check si es entre currentUserId y widget.chatPartnerId
+          final bool case1 = (data['senderId'] == currentUserId &&
               data['receiverId'] == widget.chatPartnerId);
-          bool case2 = (data['senderId'] == widget.chatPartnerId &&
+          final bool case2 = (data['senderId'] == widget.chatPartnerId &&
               data['receiverId'] == currentUserId);
-          return case1 || case2;
+
+          if (!case1 && !case2) return false;
+
+          // 2) Comparar con _myDeletedAt
+          // Si _myDeletedAt != null => ignoro todo lo anterior a esa fecha
+          if (_myDeletedAt != null) {
+            if (timestamp.toDate().isBefore(_myDeletedAt!.toDate())) {
+              return false;
+            }
+          }
+          // El partner puede seguir viendo si no borró, eso se controla en SU chatScreen.
+
+          return true;
         }).toList();
 
         // IDEA: Cargar solo últimos N (p. ej. 30) mensajes
@@ -640,7 +736,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
-  /// Burbuja de texto
+  /// Pequeño separador de texto
   Widget _buildTextBubble(Map<String, dynamic> data, bool isMe) {
     DateTime messageTime = DateTime.now();
     if (data['timestamp'] is Timestamp) {
@@ -947,7 +1043,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   children: [
                     Text(
                       DateFormat('HH:mm').format(messageTime),
-                      style: const TextStyle(color: Colors.black54, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.black54, fontSize: 12),
                     ),
                     if (isMe) ...[
                       const SizedBox(width: 4),
@@ -1124,7 +1221,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     return _buildBubbleWithReaction(data, isMe, bubble);
   }
 
-  /// Para obtener el tamaño de la imagen
+  /// Para obtener el tamaño de la imagen (así ajustamos la burbuja)
   Future<Size> _getImageSize(String imageUrl) async {
     final Completer<Size> completer = Completer();
 
@@ -1252,8 +1349,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     children: [
                       Text(
                         DateFormat('HH:mm').format(messageTime),
-                        style: const TextStyle(
-                            color: Colors.black54, fontSize: 12),
+                        style:
+                            const TextStyle(color: Colors.black54, fontSize: 12),
                       ),
                       if (isMe) ...[
                         const SizedBox(width: 4),

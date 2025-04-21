@@ -22,9 +22,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
   bool _isSearching = false;
   List<Map<String, dynamic>> _searchResults = [];
 
+  /// Mapa que guarda para cada "otroUsuarioId" la fecha en que el usuario actual
+  /// borró el chat:  _deletedAtMap[otroId] = Timestamp
+  Map<String, Timestamp> _deletedAtMap = {};
+
   @override
   void initState() {
     super.initState();
+
     // Si llegó texto compartido, muestra un cuadro de diálogo al iniciar
     if (widget.sharedText != null && widget.sharedText!.trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,7 +75,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Elimina el chat (ejemplo)
+  /// Elimina el chat con [otherUserId] para el usuario actual.
+  /// Marca la fecha de borrado en "deletedChats.otherUserId = now".
   Future<void> _deleteChat(String otherUserId) async {
     try {
       await FirebaseFirestore.instance
@@ -126,41 +132,78 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Quitamos el AppBar y hacemos el encabezado manualmente
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Encabezado "Chats" (a la izquierda) + botón de escribir (a la derecha)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  const Text(
-                    "Chats",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+    return FutureBuilder<DocumentSnapshot>(
+      // 1) Primero leemos el doc del usuario actual para cargar sus "deletedChats"
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .get(),
+      builder: (ctx, userSnap) {
+        if (userSnap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (!userSnap.hasData || !userSnap.data!.exists) {
+          return const Scaffold(
+            body: Center(child: Text("No existe el usuario actual.")),
+          );
+        }
+
+        // Extraemos la info de 'deletedChats'
+        final userData = userSnap.data!.data() as Map<String, dynamic>;
+        final Map<String, dynamic>? deletedMap =
+            userData['deletedChats'] as Map<String, dynamic>?;
+
+        _deletedAtMap.clear();
+        if (deletedMap != null) {
+          for (var entry in deletedMap.entries) {
+            final key = entry.key; // el otherUserId
+            final val = entry.value;
+            if (val is Timestamp) {
+              _deletedAtMap[key] = val;
+            }
+          }
+        }
+
+        // 2) Ahora construimos la UI principal con un StreamBuilder de los mensajes
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Encabezado "Chats" (a la izquierda) + botón de escribir (a la derecha)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Text(
+                        "Chats",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Botón con SVG
+                      GestureDetector(
+                        onTap: _openContactsDialog,
+                        child: SvgPicture.asset(
+                          'assets/icono-escribir.svg',
+                          width: 28,
+                          height: 28,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  // Botón con SVG
-                  GestureDetector(
-                    onTap: _openContactsDialog,
-                    child: SvgPicture.asset(
-                      'assets/icono-escribir.svg',
-                      width: 28,
-                      height: 28,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                // El resto: la lista de chats
+                Expanded(child: _buildChatList()),
+              ],
             ),
-            // El resto: la lista de chats
-            Expanded(child: _buildChatList()),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -180,7 +223,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         }
 
         final docs = snapshot.data!.docs;
-        // Map: otherUserId -> lastMessageData
+        // Map: otherUserId -> lastMessageData (el más reciente)
         final Map<String, Map<String, dynamic>> lastMessages = {};
 
         for (var doc in docs) {
@@ -193,7 +236,17 @@ class _ChatsScreenState extends State<ChatsScreen> {
               ? data['receiverId']
               : data['senderId'];
 
-          // Nos quedamos con el mensaje más reciente
+          // --------- AQUI FILTRAMOS POR deletedAt ----------
+          final userDeletedAt = _deletedAtMap[otherUserId];
+          if (userDeletedAt != null) {
+            // Si la fecha del mensaje es anterior a userDeletedAt, lo omitimos
+            if (ts.toDate().isBefore(userDeletedAt.toDate())) {
+              continue;
+            }
+          }
+          // -------------------------------------------------
+
+          // Ahora sí nos quedamos con el mensaje más reciente
           if (!lastMessages.containsKey(otherUserId)) {
             lastMessages[otherUserId] = data;
           } else {
@@ -212,6 +265,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
             final tB = b.value['timestamp'] as Timestamp;
             return tB.toDate().compareTo(tA.toDate());
           });
+
+        if (entries.isEmpty) {
+          // Tras filtrar, puede pasar que no quede nada
+          return const Center(child: Text("No tienes mensajes aún."));
+        }
 
         return ListView.builder(
           itemCount: entries.length,
@@ -436,7 +494,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.search, color: Colors.white),
                             onPressed: () {
-                              // Si quieres forzar la búsqueda manual aquí
+                              // Búsqueda manual
                               // _searchUser(_searchController.text);
                             },
                           ),
@@ -521,116 +579,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Contenido interno de la ventana para seleccionar contacto
-  Widget _buildContactsContent(ScrollController scrollController) {
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        // Stack para el handle y (si quisieras) un botón de cierre
-        Stack(
-          children: [
-            // Handle centrado
-            Align(
-              alignment: Alignment.topCenter,
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white54,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const Center(
-          child: Text(
-            "¿Con quién contactar?",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white, // Forzamos blanco
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Buscador
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: TextField(
-            controller: _searchController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: "Buscar usuario...",
-              hintStyle: const TextStyle(color: Colors.white70),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.search, color: Colors.white),
-                onPressed: () {
-                  // Búsqueda manual (si lo deseas)
-                  // _searchUser(_searchController.text);
-                },
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.white),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.white),
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            // Búsqueda en tiempo real
-            onChanged: (val) {
-              if (val.isEmpty) {
-                setState(() {
-                  _searchResults.clear();
-                  _isSearching = false;
-                });
-              } else {
-                setState(() {
-                  _isSearching = true;
-                });
-                _searchUser(val); // Búsqueda por subcadena
-              }
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Resultados de búsqueda
-                if (_isSearching) _buildSearchResults(),
-                // Sección: "Mis seguidores"
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    "Mis seguidores",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                _buildFollowersList(),
-                // Sección: "A quienes sigo"
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    "A quienes sigo",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                _buildFollowingList(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Búsqueda POR SUBCADENA, en tiempo real
   Future<void> _searchUser(String query) async {
     try {
@@ -645,6 +593,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           'name': data['name'] ?? '',
           'photoUrl': data['photoUrl'] ?? '',
           'age': data['age']?.toString() ?? '',
+          'profile_privacy': data['profile_privacy'] ?? 0,
         };
       }).where((user) {
         final userName = user['name'].toString().toLowerCase();
@@ -659,13 +608,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  /// Genera la sección de resultados de la búsqueda
   Widget _buildSearchResults() {
-    // Si no hay resultados, mostramos el mensaje requerido
     if (_searchResults.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Text("El nombre de usuario especificado no existe"),
+        child: Text("El nombre de usuario especificado no existe",
+            style: TextStyle(color: Colors.white)),
       );
     }
     return Column(
@@ -689,13 +637,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
             user['id'],
             user['name'],
             user['photoUrl'],
+            user['profile_privacy'] == 1,
           ),
         );
       }).toList(),
     );
   }
 
-  /// Construye la lista de seguidores
   Widget _buildFollowersList() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -709,7 +657,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
         if (snapshot.data!.docs.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text("Aún no tienes seguidores."),
+            child: Text("Aún no tienes seguidores.",
+                style: TextStyle(color: Colors.white70)),
           );
         }
 
@@ -727,7 +676,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
               final doc = snapshot.data!.docs[index];
               final data = doc.data() as Map<String, dynamic>;
 
-              // El seguidor es data['followerId']
               final followerId = data['followerId'] ?? '';
 
               return FutureBuilder<DocumentSnapshot>(
@@ -739,11 +687,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   if (!userSnap.hasData || !userSnap.data!.exists) {
                     return const SizedBox.shrink();
                   }
-                  final userData =
-                      userSnap.data!.data() as Map<String, dynamic>;
+                  final userData = userSnap.data!.data() as Map<String, dynamic>;
                   final followerName = userData['name'] ?? 'Sin nombre';
                   final followerPhoto = userData['photoUrl'] ?? '';
                   final followerAge = userData['age']?.toString() ?? '';
+                  final isPrivate = (userData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
                     leading: CircleAvatar(
@@ -764,6 +712,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       followerId,
                       followerName,
                       followerPhoto,
+                      isPrivate,
                     ),
                   );
                 },
@@ -775,7 +724,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Construye la lista de a quienes sigo
   Widget _buildFollowingList() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -789,7 +737,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
         if (snapshot.data!.docs.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text("Aún no sigues a nadie."),
+            child: Text("Aún no sigues a nadie.",
+                style: TextStyle(color: Colors.white70)),
           );
         }
 
@@ -807,7 +756,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
               final doc = snapshot.data!.docs[index];
               final data = doc.data() as Map<String, dynamic>;
 
-              // A quién sigo: data['followedId']
               final followingId = data['followedId'] ?? '';
 
               return FutureBuilder<DocumentSnapshot>(
@@ -819,11 +767,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   if (!userSnap.hasData || !userSnap.data!.exists) {
                     return const SizedBox.shrink();
                   }
-                  final userData =
-                      userSnap.data!.data() as Map<String, dynamic>;
+                  final userData = userSnap.data!.data() as Map<String, dynamic>;
                   final followingName = userData['name'] ?? 'Sin nombre';
                   final followingPhoto = userData['photoUrl'] ?? '';
                   final followingAge = userData['age']?.toString() ?? '';
+                  final isPrivate = (userData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
                     leading: CircleAvatar(
@@ -844,6 +792,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       followingId,
                       followingName,
                       followingPhoto,
+                      isPrivate,
                     ),
                   );
                 },
@@ -855,8 +804,46 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Abre la pantalla de Chat con el usuario seleccionado
-  void _openChatWithUser(String userId, String name, String photoUrl) {
+  /// Versión que comprueba si el usuario es privado y, si no le sigues, no te deja abrir chat
+  Future<void> _openChatWithUser(
+    String userId,
+    String name,
+    String photoUrl,
+    bool isUserPrivate,
+  ) async {
+    // Si es privado, comprueba si le sigo
+    if (isUserPrivate) {
+      final me = FirebaseAuth.instance.currentUser;
+      if (me == null) return;
+
+      final q = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: me.uid)
+          .where('followedId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      final amIFollowing = q.docs.isNotEmpty;
+
+      if (!amIFollowing) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Perfil privado"),
+            content: const Text("Debes seguir a este usuario para interactuar."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cerrar"),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+
+    // Abrimos chat
     Navigator.push(
       context,
       MaterialPageRoute(

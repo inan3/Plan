@@ -18,7 +18,7 @@ import 'users_grid_helpers.dart';
 import '../plans_managing/plan_card.dart';
 import '../special_plans/invite_users_to_plan_screen.dart';
 import '../users_managing/user_info_check.dart';
-import '../users_managing/user_info_inside_chat.dart';
+import '../chats/chat_screen.dart';
 
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
@@ -67,27 +67,73 @@ class UsersGrid extends StatelessWidget {
     InviteUsersToPlanScreen.showPopup(ctx, userId);
   }
 
+  /// Lógica para abrir chat con validación de privacidad y si le sigues en caso necesario.
   Future<void> _handleMessage(BuildContext ctx, String userId) async {
+    // 1) Verificamos si te ha bloqueado
     if (await _isBlocked(userId)) {
       _showBlockedSnack(ctx);
       return;
     }
-    showGeneralDialog(
-      context: ctx,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (_, __, ___) => const SizedBox(),
-      transitionBuilder: (c, anim1, __, ___) {
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-          child: UserInfoInsideChat(
-            key: ValueKey(userId),
-            chatPartnerId: userId,
+
+    // 2) Obtenemos doc del receptor
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    if (!userDoc.exists) {
+      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+        content: Text("El usuario no existe o fue borrado."),
+      ));
+      return;
+    }
+
+    final userData = userDoc.data()!;
+    final isPrivate = (userData['profile_privacy'] ?? 0) == 1;
+
+    // 3) Si es privado, comprueba si le sigo
+    if (isPrivate) {
+      final me = FirebaseAuth.instance.currentUser;
+      if (me == null) return;
+
+      final q = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: me.uid)
+          .where('followedId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      final amIFollowing = q.docs.isNotEmpty;
+
+      if (!amIFollowing) {
+        // Muestro popup / snackbar
+        showDialog(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text("Perfil privado"),
+            content: const Text("Debes seguir a este usuario para interactuar."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Cerrar"),
+              ),
+            ],
           ),
         );
-      },
+        return;
+      }
+    }
+
+    // 4) Abrimos ChatScreen
+    Navigator.push(
+      ctx,
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          chatPartnerId: userId,
+          chatPartnerName: userData['name'] ?? 'Usuario',
+          chatPartnerPhoto: userData['photoUrl'] ?? '',
+        ),
+      ),
     );
   }
 
