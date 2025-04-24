@@ -9,9 +9,9 @@ import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import '../main/colors.dart'; // Define AppColors
-import '../main/keys.dart';   // Contiene las claves APIKeys.androidApiKey y APIKeys.iosApiKey
-import '../utils/plans_list.dart'; // Lista de planes
+import '../../main/colors.dart'; // Define AppColors
+import '../../main/keys.dart';   // Contiene las claves APIKeys.androidApiKey y APIKeys.iosApiKey
+import '../../utils/plans_list.dart'; // Lista de planes
 
 // El diálogo acepta opcionalmente filtros iniciales para preservar el último estado.
 class ExploreScreenFilterDialog extends StatefulWidget {

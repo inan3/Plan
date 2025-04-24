@@ -11,7 +11,7 @@ import 'package:dating_app/main/colors.dart';
 // Importaciones de pantallas
 import 'my_plans_screen.dart';
 import 'favourites_screen.dart';
-import 'settings_screen.dart';
+import 'seetings/settings_screen.dart';
 import 'help_center_screen.dart';
 import 'close_session_screen.dart';
 import 'subscribed_plans_screen.dart';

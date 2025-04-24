@@ -93,8 +93,10 @@ class ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     try {
-      final doc =
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       if (doc.exists) {
         final raw = doc.data()?['privilegeLevel'];
         final newLevel = (raw ?? "Básico").toString();
@@ -182,7 +184,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
 
     return SizedBox(
-      height: 300,
+      height: 342,
       child: Stack(
         children: [
           PageView.builder(
@@ -315,8 +317,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                 onTap: () => UserImagesManaging.openProfileImageFullScreen(
                   context,
                   profileImageUrl ?? placeholderImageUrl,
-                  onProfileDeleted: () =>
-                      setState(() => profileImageUrl = ''),
+                  onProfileDeleted: () => setState(() => profileImageUrl = ''),
                   onProfileChanged: (newUrl) =>
                       setState(() => profileImageUrl = newUrl),
                 ),
@@ -607,7 +608,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                   ),
                   // Avatar (bottom: 0 para estar dentro del área de hit-test)
                   Positioned(
-                    bottom: 0,
+                    bottom: -42,
                     left: 0,
                     right: 0,
                     child: Center(child: _buildUserAvatarAndName()),
@@ -618,7 +619,11 @@ class ProfileScreenState extends State<ProfileScreen> {
 
             // Privilegio
             const SizedBox(height: 16),
-            _buildPrivilegeButton(context),
+            Transform.translate(
+              offset: const Offset(
+                  0, 20), // cambia 30 por la distancia que necesites
+              child: _buildPrivilegeButton(context),
+            ),
             const SizedBox(height: 16),
 
             // Stats
@@ -631,8 +636,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               child: Center(
                 child: SizedBox(
                   width: 200,
-                  child:
-                      const Divider(color: Colors.grey, thickness: 0.5),
+                  child: const Divider(color: Colors.grey, thickness: 0.5),
                 ),
               ),
             ),

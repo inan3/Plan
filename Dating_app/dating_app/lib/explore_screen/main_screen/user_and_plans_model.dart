@@ -1,4 +1,4 @@
-import '../models/plan_model.dart';
+import '../../models/plan_model.dart';
 
 class UserAndPlans {
   final Map<String, dynamic> userData; // Información del usuario (nombre, foto, uid, etc.)

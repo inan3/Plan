@@ -89,7 +89,8 @@ class AttendanceManaging {
 /// ---------------------------------------------------------------------------
 class CheckInCreatorScreen extends StatefulWidget {
   final String planId;
-  const CheckInCreatorScreen({Key? key, required this.planId}) : super(key: key);
+  const CheckInCreatorScreen({Key? key, required this.planId})
+      : super(key: key);
 
   @override
   State<CheckInCreatorScreen> createState() => _CheckInCreatorScreenState();
@@ -136,8 +137,9 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Check-in Creator"),
+        title: const Text("Check-in para asistentes"),
         backgroundColor: Colors.black87,
+        foregroundColor: Colors.white,
       ),
       backgroundColor: Colors.black,
       body: StreamBuilder<DocumentSnapshot>(
@@ -209,7 +211,9 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
                 padding: const EdgeInsets.only(bottom: 20),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
+                    backgroundColor: Colors.red,
+                    foregroundColor:
+                        Colors.white, // <-- color del texto e iconos
                   ),
                   onPressed: () async {
                     await AttendanceManaging.finalizeCheckIn(widget.planId);
@@ -416,8 +420,10 @@ class CheckInActionArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance.collection('plans').doc(planId).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(planId)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
         final data = snapshot.data!.data() as Map<String, dynamic>?;

@@ -5,14 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
-import '../../models/plan_model.dart';
-import '../main/colors.dart';
+import '../../../models/plan_model.dart';
+import '../../main/colors.dart';
 
 // Importaciones necesarias:
-import 'users_managing/user_info_check.dart';
-import '../models/plan_model.dart';
-import 'plans_managing/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
-import 'plans_managing/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
+import '../users_managing/user_info_check.dart';
+import '../../models/plan_model.dart';
+import '../plans_managing/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
+import '../plans_managing/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
 
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;

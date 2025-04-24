@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../main/colors.dart';
+import '../../main/colors.dart';
 import 'notification_screen.dart';
 
 class ExploreAppBar extends StatelessWidget {

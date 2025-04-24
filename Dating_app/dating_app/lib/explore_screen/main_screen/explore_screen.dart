@@ -9,12 +9,12 @@ import 'package:dating_app/main/colors.dart';
 
 import 'explore_screen_filter.dart';
 import 'explore_app_bar.dart';
-import 'users_grid/users_grid.dart';
-import 'menu_side_bar/menu_side_bar_screen.dart';
-import 'chats/chats_screen.dart';
-import 'users_managing/user_info_check.dart';
-import 'map/map_screen.dart';
-import 'profile/profile_screen.dart';
+import '../users_grid/users_grid.dart';
+import '../menu_side_bar/menu_side_bar_screen.dart';
+import '../chats/chats_screen.dart';
+import '../users_managing/user_info_check.dart';
+import '../map/map_screen.dart';
+import '../profile/profile_screen.dart';
 import 'notification_screen.dart';
 // Se elimina import de plan_join_request.dart
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';

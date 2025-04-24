@@ -88,7 +88,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snapshot = await userRef.get();
     if (!snapshot.exists || snapshot.data() == null) return;
 
@@ -616,7 +617,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Tu solicitud de unión se ha enviado!')),
+          const SnackBar(
+              content: Text('¡Tu solicitud de unión se ha enviado!')),
         );
       },
       child: ClipRRect(
@@ -931,7 +933,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // ---------------------------------------------------------------------------
   //  MOSTRAR MODAL DE PARTICIPANTES (CON CHEQUEO DE ASISTENCIA)
   // ---------------------------------------------------------------------------
-  Future<void> _showParticipantsModal(List<Map<String, dynamic>> participants) async {
+  Future<void> _showParticipantsModal(
+      List<Map<String, dynamic>> participants) async {
     List checkedInUsers = [];
     try {
       final planSnap = await FirebaseFirestore.instance
@@ -1063,7 +1066,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     required List<String> images,
     required String? videoUrl,
   }) {
-    final totalMedia = images.length + ((videoUrl?.isNotEmpty ?? false) ? 1 : 0);
+    final totalMedia =
+        images.length + ((videoUrl?.isNotEmpty ?? false) ? 1 : 0);
     final originalImages = widget.plan.originalImages?.isNotEmpty == true
         ? widget.plan.originalImages!
         : images;
@@ -1148,7 +1152,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           color: Colors.black54,
         ),
         child: const Center(
-          child: Text('Sin contenido multimedia', style: TextStyle(color: Colors.white)),
+          child: Text('Sin contenido multimedia',
+              style: TextStyle(color: Colors.white)),
         ),
       );
     } else {
@@ -1438,27 +1443,40 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           );
         }
 
+        // ---- INICIO MODIFICACIÓN IMPORTANTE ----
+        // Verificamos si el plan ya terminó (finishTimestamp en el pasado)
+        final bool isPlanFinished = plan.finishTimestamp != null &&
+            plan.finishTimestamp!.isBefore(DateTime.now());
+        // ---- FIN MODIFICACIÓN IMPORTANTE ----
+
         // Si soy el creador
         if (isCreator) {
+          // NUEVA COMPROBACIÓN: si el plan ya terminó, no muestro nada
+          if (isPlanFinished) {
+            return const SizedBox.shrink();
+          }
+
           if (!checkInActive) {
             // Botón "Iniciar Check-in"
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                onPressed: () async {
-                  await AttendanceManaging.startCheckIn(plan.id);
-                  if (!mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CheckInCreatorScreen(planId: plan.id),
-                    ),
-                  );
-                },
-                child: const Text("Iniciar Check-in"),
-              ),
-            );
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.blue, // color de fondo
+                    foregroundColor: Colors.white, // color del texto e iconos
+                  ),
+                  onPressed: () async {
+                    await AttendanceManaging.startCheckIn(plan.id);
+                    if (!mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                      ),
+                    );
+                  },
+                  child: const Text("Iniciar Check-in"),
+                ));
           } else {
             // "Ver Check-in (QR)" + "Finalizar Check-in"
             return Padding(
@@ -1467,7 +1485,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 children: [
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: AppColors.blue,
+                      foregroundColor: Colors.white,
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -1482,7 +1501,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   const SizedBox(height: 6),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                     ),
                     onPressed: () async {
                       await AttendanceManaging.finalizeCheckIn(plan.id);
@@ -1534,8 +1554,10 @@ extension LikeLogic on _FrostedPlanDialogState {
   Future<void> _toggleLike() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final planRef = FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final planRef =
+        FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(user.uid);
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snap = await transaction.get(planRef);

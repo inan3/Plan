@@ -296,7 +296,8 @@ class UserImagesManaging {
   // ---------------
   // Fotos adicionales
   // ---------------
-  static Future<List<String>> fetchAdditionalPhotos(BuildContext context) async {
+  static Future<List<String>> fetchAdditionalPhotos(
+      BuildContext context) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return [];
@@ -563,10 +564,30 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
     final url = widget.images[_currentPage];
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+
+    // 1‑ Actualizamos el campo específico de “fondo”
     await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .update({'coverPhotoUrl': url});
+
+    // 2‑ Reordenamos la lista: quitamos la imagen y la insertamos en la posición 0
+    final List<String> updatedList = List<String>.from(widget.images);
+    updatedList.remove(url);
+    updatedList.insert(0, url);
+
+    // 3‑ Persistimos el nuevo orden en Firestore
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .update({'coverPhotos': updatedList});
+
+    // 4‑ Informamos al widget padre para que refresque la UI
+    widget.onCoverImagesUpdated?.call(updatedList);
+
+    // 5‑ Nos colocamos en la primera página para que el usuario la vea ya en primer lugar
+    setState(() => _currentPage = 0);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Imagen establecida como fondo.')),
     );
@@ -591,8 +612,8 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading:
-                    SvgPicture.asset('assets/usuario.svg', width: 24, height: 24),
+                leading: SvgPicture.asset('assets/usuario.svg',
+                    width: 24, height: 24),
                 title: const Text('Cambiar imagen de perfil'),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -642,8 +663,8 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ),
               const Divider(height: 1, color: Colors.grey),
               ListTile(
-                leading:
-                    SvgPicture.asset('assets/usuario.svg', width: 24, height: 24),
+                leading: SvgPicture.asset('assets/usuario.svg',
+                    width: 24, height: 24),
                 title: const Text('Establecer como imagen de perfil'),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -676,8 +697,8 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading:
-                    SvgPicture.asset('assets/usuario.svg', width: 24, height: 24),
+                leading: SvgPicture.asset('assets/usuario.svg',
+                    width: 24, height: 24),
                 title: const Text('Establecer como foto de perfil'),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -708,7 +729,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.titleAppBar),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       backgroundColor: Colors.white,
       body: Stack(
@@ -801,13 +822,19 @@ class _FrostedPopup extends StatelessWidget {
           // Cuadro de opciones
           Positioned(
             top: MediaQuery.of(context).size.height * 0.4,
+            left: 24, //  <--  nuevo: margen izquierdo
+            right: 24, //  <--  nuevo: margen derecho
             child: Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: child,
+              child: ConstrainedBox(
+                // da un ancho máximo cómodo
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: child,
+                ),
               ),
             ),
           ),

@@ -37,6 +37,7 @@ dependencies:
   screen_protector: ^1.4.2+1
   qr_flutter: ^4.0.0
   mobile_scanner: ^3.0.0
+  google_sign_in: ^6.3.0
   receive_sharing_intent:
     git:
       url: https://github.com/KasemJaffer/receive_sharing_intent
@@ -133,6 +134,13 @@ flutter:
     - assets/icono-campana-activada.svg
     - assets/icono-campana-desactivada.svg
     - assets/icono-fondo.svg
+
+    - assets/image-cycling.png
+    - assets/image-meeting.png
+    - assets/image-padel.png
+    - assets/image-pool-party.png
+
+    - assets/google_logo.png
     
 
   fonts:

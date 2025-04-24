@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import '../explore_screen/explore_screen.dart';
+import '../explore_screen/main_screen/explore_screen.dart';
 
 const Color backgroundColor = Colors.purple;
 
