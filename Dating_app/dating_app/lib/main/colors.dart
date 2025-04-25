@@ -7,11 +7,14 @@ class AppColors {
   static const Color primaryLight = Color.fromARGB(255, 56, 42, 255);
 
   // Colores secundarios
+  // Nota: agregamos 'pink' para evitar errores en user_registration_screen.dart
+  static const Color pink = Color(0xFFFF4081);
+  
   static const Color blue = Color.fromARGB(236, 0, 4, 227);
   static const Color secondaryDark = Color(0xFF018786);
 
   // Colores de fondo
-  static const Color background =Color(0xFFFEF7FF);
+  static const Color background = Color(0xFFFEF7FF);
   static const Color black = Color.fromARGB(255, 0, 0, 0);
 
   // Colores de texto
@@ -27,6 +30,6 @@ class AppColors {
 
   // Color blanco (faltante)
   static const Color white = Color(0xFFFFFFFF);
-  static const Color popularBackground = Color(0xFFF3F4F6); // Gris claro para populares
-  static const Color nearbyBackground = Color(0xFFFFFFFF); // Blanco para cercanos
+  static const Color popularBackground = Color(0xFFF3F4F6); // Gris claro
+  static const Color nearbyBackground = Color(0xFFFFFFFF); // Blanco
 }

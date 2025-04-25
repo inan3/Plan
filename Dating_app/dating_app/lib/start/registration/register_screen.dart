@@ -1,18 +1,17 @@
+// lib/start/registration/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../main/colors.dart';
-
-// Importa nuestro enum y la pantalla de verificación
+import 'package:dating_app/main/colors.dart';
 import 'email_verification_screen.dart';
-// Importa también la pantalla para registro con Google
 import 'register_with_google.dart';
-
-import '../username_screen.dart';
+// Importamos la enum desde el nuevo archivo
+import 'verification_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({Key? key}) : super(key: key);
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -24,7 +23,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   bool isLoading = false;
 
-  /// Lógica principal de registro con email + contraseña
   Future<void> _register() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -34,16 +32,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-
       final user = cred.user;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
       }
-
-      // Cerramos la sesión inmediatamente
       await _auth.signOut();
 
-      // Vamos a la pantalla de verificación
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -51,6 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             builder: (_) => EmailVerificationScreen(
               email: emailController.text.trim(),
               password: passwordController.text.trim(),
+              // Usamos la enum importada
               provider: VerificationProvider.password,
             ),
           ),
@@ -72,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return WillPopScope(
       onWillPop: () async {
         Navigator.pop(context);
-        return false; // Evita el comportamiento estándar
+        return false;
       },
       child: Scaffold(
         backgroundColor: backgroundColor,
@@ -110,11 +105,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          // Navegamos a la pantalla que gestiona el registro con Google
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const RegisterWithGoogle(),
+                              builder: (_) => const RegisterWithGoogle(),
                             ),
                           );
                         },
@@ -144,9 +138,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // separador
+                    // Separador
                     Text(
-                      '--- o ---',
+                      '- o -',
                       style: GoogleFonts.roboto(
                         fontSize: 18,
                         color: Colors.black,
@@ -154,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Campo de correo
+                    // Campo correo
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 30),
                       decoration: BoxDecoration(
@@ -185,7 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Campo de contraseña
+                    // Campo contraseña
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 30),
                       decoration: BoxDecoration(
@@ -259,6 +253,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
 
+            // Botón atrás
             Positioned(
               top: 40,
               left: 10,

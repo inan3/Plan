@@ -1,10 +1,14 @@
+// lib/start/registration/register_with_google.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../../main/colors.dart';
-import 'email_verification_screen.dart';
-import '../username_screen.dart';
+import 'package:dating_app/main/colors.dart';
+import 'email_verification_screen.dart'; 
+import 'verification_provider.dart';
+import 'package:dating_app/start/registration/user_registration_screen.dart'
+    as userReg;
 
 class RegisterWithGoogle extends StatefulWidget {
   const RegisterWithGoogle({Key? key}) : super(key: key);
@@ -14,7 +18,7 @@ class RegisterWithGoogle extends StatefulWidget {
 }
 
 class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
-  final _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _loading = false;
 
   @override
@@ -23,66 +27,59 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
     _startGoogleFlow();
   }
 
+  /// Inicia el proceso de Google Sign-In, obtiene credenciales,
+  /// cierra sesión inmediatamente y navega a UserRegistrationScreen
+  /// con los tokens para que el login final se haga al pulsar "Completar registro".
   Future<void> _startGoogleFlow() async {
     setState(() => _loading = true);
 
     try {
-      // 1. Iniciar sesión con Google
+      // Asegurarnos de salir de cualquier sesión previa en GoogleSignIn
+      await GoogleSignIn().signOut();
+
       final GoogleSignInAccount? acc = await GoogleSignIn().signIn();
       if (acc == null) {
-        // El usuario canceló
+        // Usuario canceló el flujo de Google
         Navigator.pop(context);
         return;
       }
-      final auth = await acc.authentication;
-      final cred = GoogleAuthProvider.credential(
-        accessToken: auth.accessToken,
-        idToken: auth.idToken,
+
+      // Obtenemos el token/credenciales de Google
+      final authAccount = await acc.authentication;
+      final accessToken = authAccount.accessToken;
+      final idToken = authAccount.idToken;
+
+      if (accessToken == null || idToken == null) {
+        // Algo fue mal al obtener tokens
+        Navigator.pop(context);
+        return;
+      }
+
+      // Logueamos brevemente en Firebase para confirmar la cuenta
+      final credential = GoogleAuthProvider.credential(
+        accessToken: accessToken,
+        idToken: idToken,
       );
-      final uCred = await _auth.signInWithCredential(cred);
+      final userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
 
-      User? user = uCred.user;
-      // Recargamos la info del usuario y obtenemos el currentUser
-      await user?.reload();
-      user = _auth.currentUser;
+      // Cerramos sesión para que no quede logueado
+      await _auth.signOut();
 
-      final isNew = uCred.additionalUserInfo?.isNewUser ?? false;
+      if (!mounted) return;
 
-      // 2. Verificamos si es nuevo y si no está verificado
-      if (user == null) {
-        // Si por alguna razón user es null, volvemos
-        Navigator.pop(context);
-        return;
-      }
-
-      // Creamos una variable local no nula para que el compilador lo sepa
-      final currentUser = user;
-
-      if (!currentUser.emailVerified && isNew) {
-        // Nuevo y no verificado: enviamos verificación, cerramos sesión y vamos a EmailVerification
-        await currentUser.sendEmailVerification();
-        await _auth.signOut();
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EmailVerificationScreen(
-              email: currentUser.email!, // ahora sí es seguro usar !
-              provider: VerificationProvider.google,
-            ),
+      // Navegamos a la pantalla de registro de perfil, pasándole los tokens
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => userReg.UserRegistrationScreen(
+            provider: VerificationProvider.google,
+            googleAccessToken: accessToken,
+            googleIdToken: idToken,
           ),
-        );
-      } else {
-        // Ya estaba verificado o no era nuevo
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const UsernameScreen()),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      // Ante cualquier error, cerramos sesión y mostramos SnackBar
       await _auth.signOut();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +99,10 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
       body: Center(
         child: _loading
             ? const CircularProgressIndicator()
-            : const Text('Iniciando con Google…'),
+            : const Text(
+                'Iniciando con Google…',
+                style: TextStyle(color: Colors.white),
+              ),
       ),
     );
   }

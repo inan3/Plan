@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'login_screen.dart';
 import 'registration/register_screen.dart';
@@ -16,50 +17,86 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  // Lista de imágenes de fondo
+  /* ------------------------------------------------------------------ */
+  /* ------------------  CONFIGURACIÓN DEL CARRUSEL  ------------------ */
+  /* ------------------------------------------------------------------ */
   final List<String> _backgroundImages = [
     'assets/image-meeting.png',
     'assets/image-padel.png',
     'assets/image-pool-party.png',
     'assets/image-cycling.png',
   ];
-
-  // Controlador para PageView (carrusel)
   late final PageController _pageController;
-
-  // Timer para avanzar página cada 2 seg
   Timer? _timer;
-
-  // El número total que usaremos para “simular infinito”
   final int _totalPages = 10000;
-
-  // Empezamos en la mitad de las páginas disponibles,
-  // para evitar llegar rápido al final o al principio.
   int _currentPage = 5000;
 
-  // Variable para indicar si se está comprobando la autenticación
+  /* ------------------------------------------------------------------ */
   bool _isLoading = true;
+  StreamSubscription<User?>? _authSub;
 
   @override
   void initState() {
     super.initState();
-    // Verificamos el estado de autenticación
-    _checkLoginStatus();
-
-    // Iniciamos el controlador en la página _currentPage
     _pageController = PageController(initialPage: _currentPage);
+    _autoSlideBackground();
+    _listenAuthChanges(); // Escuchamos la sesión de Firebase
+  }
 
-    // Configuramos un Timer para que cada 2 segundos avance a la siguiente “página”
-    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  /* ---------------------------  LISTENER  --------------------------- */
+  void _listenAuthChanges() {
+    _authSub = FirebaseAuth.instance.authStateChanges().listen(
+      (user) async {
+        if (user == null) {
+          // Sin sesión → mostramos bienvenida
+          if (mounted) setState(() => _isLoading = false);
+          return;
+        }
+
+        // Con sesión → verificamos que exista doc en 'users'
+        final exists = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get()
+            .then((d) => d.exists)
+            .catchError((_) => false);
+
+        if (!exists) {
+          // Elimina la sesión guardada y muestra bienvenida
+          await FirebaseAuth.instance.signOut();
+          if (mounted) setState(() => _isLoading = false);
+          return;
+        }
+
+        // Todo OK → ir a ExploreScreen
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ExploreScreen()),
+          );
+        }
+      },
+    );
+  }
+
+  /* --------------------  CARRUSEL “INFINITO”  -------------------- */
+  void _autoSlideBackground() {
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
       setState(() {
         _currentPage++;
-        // Si llegamos cerca del final, nos regresamos a la mitad
-        // para mantener la ilusión de un carrusel infinito
         if (_currentPage == _totalPages - 1) {
           _currentPage = _totalPages ~/ 2;
           _pageController.jumpToPage(_currentPage);
         } else {
-          // Avanzamos con una animación suave
           _pageController.animateToPage(
             _currentPage,
             duration: const Duration(milliseconds: 300),
@@ -70,98 +107,38 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    // Cancelar el Timer para evitar fugas de memoria
-    _timer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  // Verificar el estado de autenticación
-  void _checkLoginStatus() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    // Pequeño delay para simular tiempo de carga
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (user != null) {
-      // Si está logueado, nos vamos a ExploreScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ExploreScreen()),
-      );
-    } else {
-      // Si no está logueado, mostramos la pantalla de bienvenida
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
+  /* ---------------------------  UI  --------------------------- */
   @override
   Widget build(BuildContext context) {
-    // Mientras comprobamos la autenticación, mostramos el indicador de carga
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Pantalla de bienvenida
     return Scaffold(
       body: Stack(
         children: [
-          // --------------------------
-          // FONDO: PageView infinito
-          // --------------------------
           PageView.builder(
             controller: _pageController,
-            // Deshabilitamos el scroll manual
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _totalPages,
-            itemBuilder: (context, index) {
-              // index % _backgroundImages.length para acceder cíclicamente
-              final imageIndex = index % _backgroundImages.length;
-              return SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-                child: Image.asset(
-                  _backgroundImages[imageIndex],
-                  fit: BoxFit.cover,
-                ),
-              );
+            itemBuilder: (_, index) {
+              final img = _backgroundImages[index % _backgroundImages.length];
+              return Image.asset(img, fit: BoxFit.cover);
             },
           ),
-
-          // ----------------------------------------------
-          // CAPA SEMITRANSPARENTE PARA OSCURECER EL FONDO
-          // ----------------------------------------------
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black.withOpacity(0.3),
-          ),
-
-          // --------------------------------------
-          // CONTENIDO: LOGO, TEXTO Y BOTONES
-          // --------------------------------------
+          Container(color: Colors.black.withOpacity(0.3)),
           Center(
             child: SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 40),
-                  // Logo
-                  Center(
-                    child: Image.asset(
-                      'assets/plan-sin-fondo.png',
-                      height: 150,
-                    ),
-                  ),
+                  Image.asset('assets/plan-sin-fondo.png', height: 150),
                   const SizedBox(height: 20),
-                  // Texto descriptivo
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
                     child: Column(
                       children: [
                         Text(
@@ -187,74 +164,60 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Botones de inicio de sesión y registro
-                  Column(
-                    children: [
-                      // Botón de inicio de sesión
-                      SizedBox(
-                        width: 200,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor:
-                                const Color.fromARGB(236, 0, 4, 227),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            shadowColor: Colors.black.withOpacity(0.2),
-                            elevation: 10,
-                          ),
-                          child: Text(
-                            'Iniciar sesión',
-                            style: GoogleFonts.roboto(
-                              fontSize: 20,
-                              color: Colors.white,
-                            ),
-                          ),
+                  SizedBox(
+                    width: 200,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor:
+                            const Color.fromARGB(236, 0, 4, 227),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        shadowColor: Colors.black.withOpacity(0.2),
+                        elevation: 10,
+                      ),
+                      child: Text(
+                        'Iniciar sesión',
+                        style: GoogleFonts.roboto(
+                          fontSize: 20, 
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      // Botón de registro
-                      SizedBox(
-                        width: 200,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterScreen(),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            side: const BorderSide(
-                              color: Color.fromARGB(236, 0, 4, 227),
-                              width: 2,
-                            ),
-                          ),
-                          child: Text(
-                            'Registrarse',
-                            style: GoogleFonts.roboto(
-                              fontSize: 20,
-                              color: Color.fromARGB(236, 0, 4, 227),
-                            ),
-                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: 200,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const RegisterScreen()),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        side: const BorderSide(
+                          color: Color.fromARGB(236, 0, 4, 227),
+                          width: 2,
                         ),
                       ),
-                    ],
+                      child: Text(
+                        'Registrarse',
+                        style: GoogleFonts.roboto(
+                          fontSize: 20,
+                          color: Color.fromARGB(236, 0, 4, 227),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 40),
                 ],

@@ -1,24 +1,22 @@
+// lib/start/registration/email_verification_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Ajusta la ruta si tu AppColors está en otra ubicación
-import '../../main/colors.dart';
-import '../username_screen.dart';
-
-/// Nuevo nombre para evitar conflicto con AuthProvider de Firebase
-enum VerificationProvider {
-  password,
-  google,
-}
+import 'package:dating_app/main/colors.dart';
+// Importamos la enum y la pantalla de registro
+import 'verification_provider.dart';
+import 'package:dating_app/start/registration/user_registration_screen.dart'
+    as userReg;
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({
     Key? key,
     required this.email,
     required this.provider,
-    this.password, // solo se usa cuando provider == VerificationProvider.password
+    this.password,
   }) : super(key: key);
 
   final String email;
@@ -38,50 +36,41 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     setState(() => _checking = true);
 
     try {
-      User? user;
-
-      if (widget.provider == VerificationProvider.password) {
-        // Iniciamos sesión silenciosamente con email/contraseña
+      // Para Email/Password, hacemos un login silencioso:
+      if (widget.provider == VerificationProvider.password &&
+          widget.password != null) {
         await _auth.signInWithEmailAndPassword(
           email: widget.email,
           password: widget.password!,
         );
-        user = _auth.currentUser;
-      } else {
-        // GOOGLE → intentamos login silencioso
-        final GoogleSignInAccount? googleAcc =
-            await GoogleSignIn().signInSilently();
-        if (googleAcc == null) {
-          // Si no hay sesión, pedimos seleccionar cuenta
-          final GoogleSignInAccount? interactive =
-              await GoogleSignIn().signIn();
-          if (interactive == null) {
-            // canceló
-            setState(() => _checking = false);
-            return;
-          }
-        }
-        // Generamos credencial y entramos en Firebase
-        final googleAuth = await GoogleSignIn().currentUser!.authentication;
-        final cred = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-        await _auth.signInWithCredential(cred);
-        user = _auth.currentUser;
+      } else if (widget.provider == VerificationProvider.google) {
+        // Si fuese necesario, aquí manejaríamos la verificación de Google,
+        // pero Google normalmente ya viene verificado y este flujo de Email
+        // no aplica igual. Lo omitimos si no lo usas.
       }
 
-      // Recargamos para actualizar emailVerified
+      User? user = _auth.currentUser;
       await user?.reload();
       user = _auth.currentUser;
 
       if (user != null && user.emailVerified) {
+        // CERRAMOS SESIÓN para que no quede logueado todavía
+        await _auth.signOut();
+
+        // Navegamos a UserRegistrationScreen, pasándole email/pass
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const UsernameScreen()),
+          MaterialPageRoute(
+            builder: (_) => userReg.UserRegistrationScreen(
+              provider: widget.provider,
+              email: widget.email,
+              password: widget.password,
+            ),
+          ),
           (_) => false,
         );
       } else {
+        // Si no está verificado
         await _auth.signOut();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Tu correo aún no está verificado.')),
@@ -115,21 +104,28 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     child: Image.asset('assets/plan-sin-fondo.png'),
                   ),
                   const SizedBox(height: 24),
+
                   Text(
                     'Verificación de correo',
                     style: GoogleFonts.roboto(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 16),
+
                   Text(
                     'Te enviamos un enlace a:\n${widget.email}\n\n'
-                    'Haz clic, vuelve a la app y pulsa el botón de abajo.',
+                    'Haz clic, vuelve a la app y pulsa el botón de abajo para continuar.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(fontSize: 16),
+                    style: GoogleFonts.roboto(
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 32),
+
                   ElevatedButton(
                     onPressed: _checking ? null : _checkVerification,
                     child: const Text('Ya verifiqué'),
@@ -139,12 +135,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         ? null
                         : () async {
                             final user = _auth.currentUser;
-                            await user?.sendEmailVerification();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Correo de verificación reenviado.'),
-                              ),
-                            );
+                            if (user != null && !user.emailVerified) {
+                              await user.sendEmailVerification();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Correo de verificación reenviado.',
+                                  ),
+                                ),
+                              );
+                            }
                           },
                     child: const Text('Reenviar correo'),
                   ),
@@ -152,9 +152,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
             ),
           ),
-
-          if (_checking)
-            const Center(child: CircularProgressIndicator()),
+          if (_checking) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
