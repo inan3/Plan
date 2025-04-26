@@ -1,5 +1,3 @@
-// lib/start/registration/user_registration_screen.dart
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -11,34 +9,36 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
+// Importación para "reverse geocoding"
+import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates, Placemark;
 
-// Importa tus colores de main/colors.dart con ALIAS para evitar colisión
+// Importa tus colores desde tu archivo principal (ajusta el import según tu proyecto)
 import 'package:dating_app/main/colors.dart' as MyColors;
 
-// Importa la pantalla a la que navegarás al final
+// Pantalla final (la que verás tras completar registro):
 import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
 
-// Importamos la enum desde el archivo único
+// Enum de proveedor (google/password)
 import 'verification_provider.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
     Key? key,
-    // Credenciales para email/password
     this.email,
     this.password,
-    // Credenciales para Google
-    this.googleAccessToken,
-    this.googleIdToken,
-    // De dónde vino
     required this.provider,
+    this.firebaseUser,
   }) : super(key: key);
 
+  /// Si viene de registro con email+pass
   final String? email;
   final String? password;
-  final String? googleAccessToken;
-  final String? googleIdToken;
+
+  /// Proveedor (google/password)
   final VerificationProvider provider;
+
+  /// Usuario que ya está logueado en Firebase (pero sin doc completo en Firestore)
+  final User? firebaseUser;
 
   @override
   State<UserRegistrationScreen> createState() => _UserRegistrationScreenState();
@@ -46,26 +46,29 @@ class UserRegistrationScreen extends StatefulWidget {
 
 class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
+  
+  /// Para escribir manualmente la ciudad/municipio
+  final TextEditingController _cityController = TextEditingController();
+  
+  /// Texto que mostramos en el "botón" de Ubicación actual
+  String _locationLabel = "Ubicación actual";
 
-  // Edad (slider)
+  /// Edad del usuario
   double _age = 25;
 
-  // Fotos de portada (coverPhotos)
+  /// Fotos de portada
   final List<File> _coverImages = [];
   late PageController _coverPageController;
   int _currentCoverIndex = 0;
 
-  // Foto de perfil
+  /// Foto de perfil
   File? _profileImage;
 
-  // Switch ubicación
+  /// Ubicación habilitada (inicialmente false)
   bool _locationEnabled = false;
 
-  // Para mostrar spinner al guardar
+  /// Indicador de guardando
   bool _isSaving = false;
-
-  // Color para contenedores con efecto frosted glass grisáceo
-  final Color _frostedGray = Colors.grey.withOpacity(0.2);
 
   @override
   void initState() {
@@ -77,10 +80,37 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   void dispose() {
     _coverPageController.dispose();
     _nameController.dispose();
+    _cityController.dispose();
     super.dispose();
   }
 
-  /// Subir un archivo a Firebase Storage, retorna la URL
+  /// Muestra un pop-up de error
+  void _showErrorPopup(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(
+          "Atención",
+          style: TextStyle(color: MyColors.AppColors.blue),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(color: MyColors.AppColors.blue),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "OK",
+              style: TextStyle(color: MyColors.AppColors.blue),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  /// Sube un archivo a Firebase Storage y devuelve la URL
   Future<String?> _uploadFileToFirebase(File file, String fileName) async {
     try {
       final ref = FirebaseStorage.instance.ref().child(fileName);
@@ -92,150 +122,13 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     }
   }
 
-  /// Popup para elegir cámara o galería
-  void _showImagePickerPopup({
-    required bool isForProfilePhoto,
-    required bool isForCover,
-  }) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.5),
-      barrierLabel: "Seleccionar imagen",
-      pageBuilder: (context, _, __) {
-        return Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.8,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: _frostedGray,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                  // Borde gris iluminado
-                  border: Border.all(color: Colors.grey, width: 2),
-                ),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "¿Qué deseas subir?",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _pickImage(
-                            fromCamera: false,
-                            isForProfilePhoto: isForProfilePhoto,
-                            isForCover: isForCover,
-                          );
-                        },
-                        child: const Text(
-                          "Imagen (galería)",
-                          style: TextStyle(
-                            color: Colors.black,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _pickImage(
-                            fromCamera: true,
-                            isForProfilePhoto: isForProfilePhoto,
-                            isForCover: isForCover,
-                          );
-                        },
-                        child: const Text(
-                          "Imagen (cámara)",
-                          style: TextStyle(
-                            color: Colors.black,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Elegir imagen con ImagePicker
-  Future<void> _pickImage({
-    required bool fromCamera,
-    required bool isForProfilePhoto,
-    required bool isForCover,
-  }) async {
-    final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(
-      source: fromCamera ? ImageSource.camera : ImageSource.gallery,
-    );
-
-    if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      setState(() {
-        if (isForProfilePhoto) {
-          _profileImage = file;
-        } else if (isForCover) {
-          if (_coverImages.length >= 5) {
-            _showErrorPopup("Máximo 5 imágenes de portada.");
-            return;
-          }
-          _coverImages.add(file);
-          _currentCoverIndex = _coverImages.length - 1;
-          _coverPageController.jumpToPage(_currentCoverIndex);
-        }
-      });
-    }
-  }
-
-  /// Popup de error
-  void _showErrorPopup(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Atención"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          )
-        ],
-      ),
-    );
-  }
-
-  /// Permisos de ubicación
+  /// Obtiene la posición actual (solo si _locationEnabled se pone en true)
   Future<Position?> _determinePosition() async {
     if (!_locationEnabled) return null;
 
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      // Servicio de ubicación desactivado
       return null;
     }
 
@@ -253,55 +146,62 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     );
   }
 
-  /// Completar registro: aquí es donde REALMENTE se loguea el usuario en Firebase
-  /// y se guarda en la colección 'users'.
+  Future<bool> _ensureUserIsLoggedIn() async {
+    // 1) Ya hay un usuario en FirebaseAuth
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) return true;
+
+    // 2) Te llegó un User por parámetro ⇒ confíalo
+    if (widget.firebaseUser != null) return true;
+
+    // 3) Solo si usas email+password
+    if (widget.provider == VerificationProvider.password &&
+        widget.email != null &&
+        widget.password != null) {
+      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: widget.email!.trim(),
+        password: widget.password!.trim(),
+      );
+      return cred.user != null;
+    }
+    return false;
+  }
+
+  /// Botón "Completar registro"
   Future<void> _onCompleteRegistration() async {
+    setState(() => _isSaving = true);
+
+    // 1) Asegurar que hay un usuario logueado
+    final okLogged = await _ensureUserIsLoggedIn();
+    if (!okLogged) {
+      setState(() => _isSaving = false);
+      _showErrorPopup("No se ha podido iniciar sesión con el usuario.\n"
+          "Revisa tus credenciales o tu conexión.");
+      return;
+    }
+
+    // 2) Tomar el usuario final
+    final user = FirebaseAuth.instance.currentUser ?? widget.firebaseUser;
+    if (user == null) {
+      setState(() => _isSaving = false);
+      _showErrorPopup("No hay usuario logueado para completar el registro.");
+      return;
+    }
+
+    // 3) Revisar campos obligatorios (nombre y edad)
     final name = _nameController.text.trim();
     if (name.isEmpty) {
+      setState(() => _isSaving = false);
       _showErrorPopup("Por favor, ingresa un nombre.");
       return;
     }
-    if (_coverImages.isEmpty) {
-      _showErrorPopup("Sube al menos una imagen de portada.");
-      return;
-    }
-    if (_profileImage == null) {
-      _showErrorPopup("Elige una foto de perfil.");
-      return;
-    }
 
-    setState(() => _isSaving = true);
+    // (Se elimina la verificación obligatoria de imágenes para permitir continuar sin ellas)
+    // if (_coverImages.isEmpty) { ... }
+    // if (_profileImage == null) { ... }
 
     try {
-      // 1. Si nadie está logueado, logueamos con las credenciales
-      if (FirebaseAuth.instance.currentUser == null) {
-        if (widget.provider == VerificationProvider.password &&
-            widget.email != null &&
-            widget.password != null) {
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: widget.email!,
-            password: widget.password!,
-          );
-        } else if (widget.provider == VerificationProvider.google &&
-            widget.googleAccessToken != null &&
-            widget.googleIdToken != null) {
-          final credential = GoogleAuthProvider.credential(
-            accessToken: widget.googleAccessToken,
-            idToken: widget.googleIdToken,
-          );
-          await FirebaseAuth.instance.signInWithCredential(credential);
-        }
-      }
-
-      // 2. Obtenemos el usuario logueado
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        _showErrorPopup("No hay usuario logueado para completar el registro.");
-        setState(() => _isSaving = false);
-        return;
-      }
-
-      // 3. Localización (opcional)
+      // Ubicación (opcional)
       double latitude = 0.0;
       double longitude = 0.0;
       if (_locationEnabled) {
@@ -312,28 +212,30 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         }
       }
 
-      // 4. Subir portadas
+      // Subimos fotos de portada (solo si las hay)
       final List<String> coverPhotoUrls = [];
-      for (int i = 0; i < _coverImages.length; i++) {
-        final file = _coverImages[i];
-        final fileName =
-            'users/${user.uid}/coverPhotos/${DateTime.now().millisecondsSinceEpoch}_$i.png';
-        final downloadUrl = await _uploadFileToFirebase(file, fileName);
-        if (downloadUrl != null) {
-          coverPhotoUrls.add(downloadUrl);
+      if (_coverImages.isNotEmpty) {
+        for (int i = 0; i < _coverImages.length; i++) {
+          final file = _coverImages[i];
+          final fileName =
+              'users/${user.uid}/coverPhotos/${DateTime.now().millisecondsSinceEpoch}_$i.png';
+          final downloadUrl = await _uploadFileToFirebase(file, fileName);
+          if (downloadUrl != null) {
+            coverPhotoUrls.add(downloadUrl);
+          }
         }
       }
 
-      // 5. Subir foto de perfil
+      // Subimos foto de perfil (solo si la hay)
       String? profilePhotoUrl;
-      {
+      if (_profileImage != null) {
         final fileName =
             'users/${user.uid}/profilePhoto/${DateTime.now().millisecondsSinceEpoch}.png';
         final url = await _uploadFileToFirebase(_profileImage!, fileName);
         profilePhotoUrl = url;
       }
 
-      // 6. Guardar datos en Firestore
+      // Creamos o actualizamos doc en Firestore
       final userData = <String, dynamic>{
         "uid": user.uid,
         "name": name,
@@ -358,24 +260,387 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           .doc(user.uid)
           .set(userData);
 
-      // 7. Navegamos a ExploreScreen
       if (!mounted) return;
-      Navigator.pushReplacement(
+      // Navegamos a ExploreScreen (limpiando el stack)
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const ExploreScreen()),
+        (_) => false,
       );
     } catch (e) {
       debugPrint("Error al crear usuario: $e");
-      _showErrorPopup("Error: $e");
+      _showErrorPopup("Error al crear usuario: $e");
     } finally {
       setState(() => _isSaving = false);
+    }
+  }
+
+  /// Muestra pop-up para escoger entre cámara o galería
+  void _showImagePickerPopup({
+    required bool isForProfilePhoto,
+    required bool isForCover,
+  }) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: MyColors.AppColors.blue.withOpacity(0.5),
+      barrierLabel: "Seleccionar imagen",
+      pageBuilder: (context, _, __) {
+        return Center(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: MyColors.AppColors.blue, width: 1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "¿Qué deseas subir?",
+                    style: TextStyle(
+                      color: MyColors.AppColors.blue,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _pickImage(
+                        fromCamera: false,
+                        isForProfilePhoto: isForProfilePhoto,
+                        isForCover: isForCover,
+                      );
+                    },
+                    child: Text(
+                      "Imagen (galería)",
+                      style: TextStyle(
+                        color: MyColors.AppColors.blue,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _pickImage(
+                        fromCamera: true,
+                        isForProfilePhoto: isForProfilePhoto,
+                        isForCover: isForCover,
+                      );
+                    },
+                    child: Text(
+                      "Imagen (cámara)",
+                      style: TextStyle(
+                        color: MyColors.AppColors.blue,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Toma la foto desde galería o cámara y la asigna
+  Future<void> _pickImage({
+    required bool fromCamera,
+    required bool isForProfilePhoto,
+    required bool isForCover,
+  }) async {
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      setState(() {
+        if (isForProfilePhoto) {
+          _profileImage = file;
+        } else if (isForCover) {
+          // Límite de 5 fotos de portada
+          if (_coverImages.length >= 5) {
+            _showErrorPopup("Máximo 5 imágenes de portada.");
+            return;
+          }
+          _coverImages.add(file);
+          _currentCoverIndex = _coverImages.length - 1;
+          // Forzamos el rebuild inmediato
+          _coverPageController.jumpToPage(_currentCoverIndex);
+        }
+      });
+    }
+  }
+
+  /// Abre la imagen de perfil en pantalla completa
+  void _showFullScreenImage(File imageFile) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            color: Colors.black.withOpacity(0.9),
+            child: Center(
+              child: Image.file(imageFile),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Carrusel de fotos de portada (sin borde doble)
+  Widget _buildCoverPhotosCarousel() {
+    return Container(
+      // Borde fino, interior blanco
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: MyColors.AppColors.blue, width: 1),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: SizedBox(
+        height: 240,
+        child: _coverImages.isEmpty
+            ? Stack(
+                children: [
+                  // Placeholder
+                  GestureDetector(
+                    onTap: () => _showImagePickerPopup(
+                      isForProfilePhoto: false,
+                      isForCover: true,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey, // Placeholder gris para portada
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/anadir-imagen.svg',
+                          width: 40,
+                          height: 40,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: _buildAddCoverPhotoButton(),
+                  ),
+                ],
+              )
+            : Stack(
+                children: [
+                  PageView.builder(
+                    controller: _coverPageController,
+                    itemCount: _coverImages.length,
+                    onPageChanged: (index) {
+                      setState(() => _currentCoverIndex = index);
+                    },
+                    itemBuilder: (context, index) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(29),
+                        child: Image.file(
+                          _coverImages[index],
+                          fit: BoxFit.cover,
+                          key: ValueKey(_coverImages[index].path),
+                        ),
+                      );
+                    },
+                  ),
+                  if (_coverImages.length > 1)
+                    Positioned(
+                      bottom: 10,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_coverImages.length, (i) {
+                          final isActive = (i == _currentCoverIndex);
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? MyColors.AppColors.blue
+                                  : MyColors.AppColors.blue.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: _buildAddCoverPhotoButton(),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  /// Botoncito "+" para agregar más fotos de portada
+  Widget _buildAddCoverPhotoButton() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: MyColors.AppColors.blue.withOpacity(0.7),
+        shape: BoxShape.circle,
+      ),
+      child: GestureDetector(
+        onTap: () => _showImagePickerPopup(
+          isForProfilePhoto: false,
+          isForCover: true,
+        ),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  /// Avatar de perfil con icono de cámara
+  Widget _buildProfilePhotoPicker() {
+    final double avatarSize = 110;
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // GestureDetector para mostrar la imagen en grande si existe
+            GestureDetector(
+              onTap: () {
+                if (_profileImage != null) {
+                  _showFullScreenImage(_profileImage!);
+                }
+              },
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: MyColors.AppColors.blue,
+                    width: 2,
+                  ),
+                  image: _profileImage != null
+                      ? DecorationImage(
+                          image: FileImage(_profileImage!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  color: Colors.white,
+                ),
+                child: _profileImage == null
+                    ? Icon(
+                        Icons.person,
+                        color: MyColors.AppColors.blue,
+                        size: 60,
+                      )
+                    : null,
+              ),
+            ),
+            // Icono de cámara en esquina inferior derecha
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: () => _showImagePickerPopup(
+                  isForProfilePhoto: true,
+                  isForCover: false,
+                ),
+                child: CircleAvatar(
+                  backgroundColor: MyColors.AppColors.blue,
+                  radius: 18,
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          "Tu foto de perfil",
+          style: TextStyle(
+            color: MyColors.AppColors.blue,
+            fontSize: 16,
+            decoration: TextDecoration.none,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Cuando se pulsa "Ubicación actual":
+  /// - Se pone _locationEnabled en true
+  /// - Se llama a _determinePosition() (pidiendo permiso de ubicación)
+  /// - Si se obtiene la posición, se realiza reverse geocoding para mostrar,
+  ///   por ejemplo, "Leganés, Madrid, España" en lugar de lat/long.
+  Future<void> _onTapCurrentLocation() async {
+    setState(() => _locationEnabled = true);
+    final position = await _determinePosition();
+
+    if (position != null) {
+      try {
+        // Utilizamos geocoding para obtener info del lugar
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (placemarks.isNotEmpty) {
+          final Placemark place = placemarks.first;
+
+          final String city = place.locality ?? "";
+          final String region = place.administrativeArea ?? "";
+          final String country = place.country ?? "";
+
+          setState(() {
+            _locationLabel = "$city, $region, $country";
+          });
+        }
+      } catch (e) {
+        debugPrint("Error al hacer reverse geocoding: $e");
+      }
+    } else {
+      // Si falla (usuario deniega permisos o no obtiene ubicación)
+      setState(() {
+        _locationEnabled = false;
+        _locationLabel = "Ubicación actual (permiso denegado)";
+      });
+      // _showErrorPopup("No se pudo obtener tu ubicación actual");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      // Fondo de la pantalla en blanco
       color: Colors.white,
       child: SafeArea(
         child: Stack(
@@ -389,7 +654,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  // Imagen "plan-sin-fondo.png" SIN borde
                   Center(
                     child: Image.asset(
                       'assets/plan-sin-fondo.png',
@@ -399,118 +663,196 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Avatar (foto de perfil)
+                  // Foto de perfil
                   _buildProfilePhotoPicker(),
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Este será el nombre con el que otros usuarios te conocerán",
+                  Text(
+                    "Nombre de usuario",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: MyColors.AppColors.blue,
                       decoration: TextDecoration.none,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildFrostedInputContainer(
+
+                  // Contenedor fino, interior blanco
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: MyColors.AppColors.blue,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: _nameController,
-                      style: const TextStyle(color: Colors.black),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: MyColors.AppColors.blue),
+                      decoration: InputDecoration(
                         hintText: "Introduzca su nombre...",
-                        hintStyle: TextStyle(color: Colors.grey),
+                        hintStyle: TextStyle(
+                          color: MyColors.AppColors.blue.withOpacity(0.5),
+                        ),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Introduzca su edad",
+                  Text(
+                    "Edad",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: MyColors.AppColors.blue,
                       decoration: TextDecoration.none,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildFrostedContainer(
-                    child: Column(
-                      children: [
-                        Text(
-                          "${_age.toInt()} años",
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+
+                  // Slider sin contenedor adicional
+                  Column(
+                    children: [
+                      Text(
+                        "${_age.toInt()} años",
+                        style: TextStyle(
+                          color: MyColors.AppColors.blue,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Slider(
-                          value: _age,
-                          min: 18,
-                          max: 100,
-                          divisions: 82,
-                          label: "${_age.toInt()} años",
-                          activeColor: Colors.blue,
-                          inactiveColor: Colors.grey,
-                          onChanged: (double value) {
-                            setState(() => _age = value);
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                      Slider(
+                        value: _age,
+                        min: 18,
+                        max: 100,
+                        divisions: 82,
+                        label: "${_age.toInt()} años",
+                        activeColor: MyColors.AppColors.blue,
+                        inactiveColor:
+                            MyColors.AppColors.blue.withOpacity(0.3),
+                        onChanged: (double value) {
+                          setState(() => _age = value);
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Estas serán las imágenes de portada de tu perfil",
+                  Text(
+                    "Imágenes de portada",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: MyColors.AppColors.blue,
                       decoration: TextDecoration.none,
                     ),
                   ),
                   const SizedBox(height: 10),
+
+                  // Carrusel de fotos de portada
                   _buildCoverPhotosCarousel(),
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Habilita tu ubicación para ver planes cercanos a ti y para que otros puedan verte",
-                    textAlign: TextAlign.center,
+                  // -----------------------------
+                  //   NUEVO APARTADO DE UBICACIÓN
+                  // -----------------------------
+
+                  Text(
+                    "Ubicación",
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
+                      color: MyColors.AppColors.blue,
                       decoration: TextDecoration.none,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildLocationSwitch(),
+
+                  // Campo de texto: introducir ciudad/municipio manualmente
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: MyColors.AppColors.blue,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _cityController,
+                      style: TextStyle(color: MyColors.AppColors.blue),
+                      decoration: InputDecoration(
+                        hintText: "Introduce tu ciudad o municipio...",
+                        hintStyle: TextStyle(
+                          color: MyColors.AppColors.blue.withOpacity(0.5),
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Opción “Ubicación actual” (con Reverse Geocoding)
+                  GestureDetector(
+                    onTap: _onTapCurrentLocation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                          color: MyColors.AppColors.blue,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _locationLabel,
+                            style: TextStyle(
+                              color: MyColors.AppColors.blue,
+                              fontSize: 16,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                          Icon(
+                            Icons.near_me,
+                            color: MyColors.AppColors.blue,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 30),
 
-                  // Botón "Completar registro"
+                  // Botón "Completar registro" (fondo azul, texto blanco)
                   SizedBox(
                     width: double.infinity,
-                    child: _buildFrostedContainer(
-                      child: ElevatedButton(
-                        onPressed: _onCompleteRegistration,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          side: const BorderSide(color: Colors.grey, width: 2),
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _onCompleteRegistration,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MyColors.AppColors.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
-                        child: const Text(
-                          "Completar registro",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            decoration: TextDecoration.none,
-                          ),
+                      ),
+                      child: const Text(
+                        "Completar registro",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          decoration: TextDecoration.none,
                         ),
                       ),
                     ),
@@ -519,220 +861,14 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 ],
               ),
             ),
+
+            // Capa de loading mientras se guardan datos
             if (_isSaving)
               Container(
                 color: Colors.black54,
                 child: const Center(child: CircularProgressIndicator()),
               ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// Contenedor frosted
-  Widget _buildFrostedContainer({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey, width: 2),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: double.infinity,
-            color: _frostedGray,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Contenedor para TextField
-  Widget _buildFrostedInputContainer({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey, width: 2),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: double.infinity,
-            color: _frostedGray,
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Switch ubicación
-  Widget _buildLocationSwitch() {
-    return _buildFrostedContainer(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Switch.adaptive(
-          value: _locationEnabled,
-          onChanged: (val) {
-            setState(() => _locationEnabled = val);
-          },
-          activeColor: Colors.blue,
-          inactiveTrackColor: Colors.grey,
-        ),
-      ),
-    );
-  }
-
-  /// Carrusel para las fotos de portada
-  Widget _buildCoverPhotosCarousel() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey, width: 2),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: SizedBox(
-          height: 240,
-          child: _coverImages.isEmpty
-              ? Stack(
-                  children: [
-                    _buildFrostedContainer(
-                      child: GestureDetector(
-                        onTap: () => _showImagePickerPopup(
-                          isForProfilePhoto: false,
-                          isForCover: true,
-                        ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/anadir-imagen.svg',
-                            width: 40,
-                            height: 40,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: _buildAddCoverPhotoButton(),
-                    ),
-                  ],
-                )
-              : Stack(
-                  children: [
-                    PageView.builder(
-                      controller: _coverPageController,
-                      itemCount: _coverImages.length,
-                      onPageChanged: (index) {
-                        setState(() => _currentCoverIndex = index);
-                      },
-                      itemBuilder: (context, index) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(30),
-                          child: Image.file(
-                            _coverImages[index],
-                            fit: BoxFit.cover,
-                          ),
-                        );
-                      },
-                    ),
-                    if (_coverImages.length > 1)
-                      Positioned(
-                        bottom: 10,
-                        left: 0,
-                        right: 0,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(_coverImages.length, (i) {
-                            final isActive = (i == _currentCoverIndex);
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: isActive ? Colors.black : Colors.grey,
-                                shape: BoxShape.circle,
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: _buildAddCoverPhotoButton(),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddCoverPhotoButton() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: 40,
-          height: 40,
-          color: Colors.grey.withOpacity(0.3),
-          child: GestureDetector(
-            onTap: () => _showImagePickerPopup(
-              isForProfilePhoto: false,
-              isForCover: true,
-            ),
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Picker para la foto de perfil
-  Widget _buildProfilePhotoPicker() {
-    final double avatarSize = 100;
-    return GestureDetector(
-      onTap: () => _showImagePickerPopup(
-        isForProfilePhoto: true,
-        isForCover: false,
-      ),
-      child: Center(
-        child: Container(
-          width: avatarSize,
-          height: avatarSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey, width: 2),
-            image: _profileImage != null
-                ? DecorationImage(
-                    image: FileImage(_profileImage!),
-                    fit: BoxFit.cover,
-                  )
-                : null,
-          ),
-          child: _profileImage == null
-              ? const Icon(
-                  Icons.person_add,
-                  color: Colors.white,
-                  size: 40,
-                )
-              : null,
         ),
       ),
     );

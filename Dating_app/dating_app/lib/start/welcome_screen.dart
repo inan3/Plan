@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_screen.dart';
 import 'registration/register_screen.dart';
 import '../explore_screen/main_screen/explore_screen.dart';
+import 'registration/user_registration_screen.dart';
+import 'registration/verification_provider.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -70,9 +72,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             .catchError((_) => false);
 
         if (!exists) {
-          // Elimina la sesión guardada y muestra bienvenida
-          await FirebaseAuth.instance.signOut();
-          if (mounted) setState(() => _isLoading = false);
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const UserRegistrationScreen(
+                  provider: VerificationProvider.google, // o el que corresponda
+                ),
+              ),
+            );
+          }
           return;
         }
 
@@ -173,8 +182,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor:
-                            const Color.fromARGB(236, 0, 4, 227),
+                        backgroundColor: const Color.fromARGB(236, 0, 4, 227),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -184,7 +192,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       child: Text(
                         'Iniciar sesión',
                         style: GoogleFonts.roboto(
-                          fontSize: 20, 
+                          fontSize: 20,
                           color: Colors.white,
                         ),
                       ),

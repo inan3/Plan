@@ -1,14 +1,11 @@
 // lib/start/registration/register_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:dating_app/main/colors.dart';
 import 'email_verification_screen.dart';
 import 'register_with_google.dart';
-// Importamos la enum desde el nuevo archivo
 import 'verification_provider.dart';
+import 'auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -18,34 +15,27 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _auth = FirebaseAuth.instance;
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
 
   Future<void> _register() async {
-    if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      final cred = await _auth.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
+      final cred = await AuthService.createUserWithEmail(
+        email: emailController.text,
+        password: passwordController.text,
       );
+
       final user = cred.user;
       if (user != null && !user.emailVerified) {
-        await user.sendEmailVerification();
-      }
-      await _auth.signOut();
-
-      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => EmailVerificationScreen(
               email: emailController.text.trim(),
               password: passwordController.text.trim(),
-              // Usamos la enum importada
               provider: VerificationProvider.password,
             ),
           ),
@@ -56,7 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(content: Text('Error al registrarte: $e')),
       );
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      setState(() => isLoading = false);
     }
   }
 
