@@ -1,3 +1,4 @@
+//explore_screen.dart
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -5,20 +6,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dating_app/main/colors.dart';
 
 import 'explore_screen_filter.dart';
 import 'explore_app_bar.dart';
 import '../users_grid/users_grid.dart';
 import '../menu_side_bar/menu_side_bar_screen.dart';
 import '../chats/chats_screen.dart';
-import '../users_managing/user_info_check.dart';
 import '../map/map_screen.dart';
 import '../profile/profile_screen.dart';
 import 'notification_screen.dart';
 // Se elimina import de plan_join_request.dart
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
-import 'filter_screen.dart';
+import 'searcher.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -31,9 +30,9 @@ class ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   int _selectedIconIndex = 0;
 
-  final double _iconSize = 30.0;
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final GlobalKey<MainSideBarScreenState> _menuKey = GlobalKey<MainSideBarScreenState>();
+  final GlobalKey<MainSideBarScreenState> _menuKey =
+      GlobalKey<MainSideBarScreenState>();
 
   bool isMenuOpen = false;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
@@ -44,8 +43,10 @@ class ExploreScreenState extends State<ExploreScreen> {
   Map<String, dynamic> appliedFilters = {};
 
   double _spacingPopularToNearby = 10;
-  double _popularTopSpacing = 5;
   late List<Widget> _otherPages;
+
+  String _searchQuery = '';
+  bool _showSearchResults = false;
 
   @override
   void initState() {
@@ -70,7 +71,8 @@ class ExploreScreenState extends State<ExploreScreen> {
   void _onSearchChanged(String value) {}
 
   void _onFilterPressed() async {
-    final result = await showExploreFilterDialog(context, initialFilters: appliedFilters);
+    final result =
+        await showExploreFilterDialog(context, initialFilters: appliedFilters);
     if (result != null) {
       setState(() {
         appliedFilters = result;
@@ -122,13 +124,25 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               );
             },
-            onSearchChanged: _onSearchChanged,
+            onSearchChanged: _onSearchChanged, // Si todavía usas esta prop
             notificationCountStream: _notificationCountStream(),
           ),
           Transform.translate(
             offset: const Offset(0, 0),
             child: _buildSearchContainer(),
           ),
+
+          // Mostrar la lista de resultados si se está buscando
+          if (_showSearchResults)
+            Searcher(
+              query: _searchQuery,
+              maxHeight: 300, // o el alto que quieras
+              isVisible: true,
+              // Si quieres reutilizar tu propia lógica para armar el PlanModel completo:
+              // fetchFullPlanById: (planId) => tuMetodoQueRetornaPlanModel(planId),
+            ),
+
+          // Aquí tu espacio y secciones
           SizedBox(height: _spacingPopularToNearby),
           Expanded(child: _buildNearbySection()),
         ],
@@ -155,8 +169,8 @@ class ExploreScreenState extends State<ExploreScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+                      Color.fromARGB(255, 72, 38, 38),
+                      Color(0xFF12232E),
                     ],
                   ).createShader(bounds);
                 },
@@ -170,7 +184,12 @@ class ExploreScreenState extends State<ExploreScreen> {
             ),
             Expanded(
               child: TextField(
-                onChanged: (value) {},
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _showSearchResults = value.isNotEmpty;
+                  });
+                },
                 decoration: const InputDecoration(
                   hintText: 'Buscar...',
                   border: InputBorder.none,
@@ -185,8 +204,8 @@ class ExploreScreenState extends State<ExploreScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+                      Color.fromARGB(255, 72, 38, 38),
+                      Color(0xFF12232E),
                     ],
                   ).createShader(bounds);
                 },
@@ -206,7 +225,8 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<List<String>> _fetchUserIdsWithPlan(String planFilter) async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('plans').get();
+    QuerySnapshot snapshot =
+        await FirebaseFirestore.instance.collection('plans').get();
     List<String> uids = [];
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
@@ -223,7 +243,8 @@ class ExploreScreenState extends State<ExploreScreen> {
       stream: FirebaseFirestore.instance.collection('users').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.black));
+          return const Center(
+              child: CircularProgressIndicator(color: Colors.black));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
@@ -260,17 +281,26 @@ class ExploreScreenState extends State<ExploreScreen> {
         validUsers.sort((a, b) {
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
-          final double latA = double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
-          final double lngA = double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
-          final double latB = double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
-          final double lngB = double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-          final distanceA = computeDistance(referenceLat, referenceLng, latA, lngA);
-          final distanceB = computeDistance(referenceLat, referenceLng, latB, lngB);
+          final double latA =
+              double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
+          final double lngA =
+              double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
+          final double latB =
+              double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
+          final double lngB =
+              double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
+          final distanceA =
+              computeDistance(referenceLat, referenceLng, latA, lngA);
+          final distanceB =
+              computeDistance(referenceLat, referenceLng, latB, lngB);
           return distanceA.compareTo(distanceB);
         });
 
-        final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
-                (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
+        final String? planFilter = (appliedFilters['planPredeterminado'] !=
+                    null &&
+                (appliedFilters['planPredeterminado'] as String)
+                    .trim()
+                    .isNotEmpty)
             ? appliedFilters['planPredeterminado'] as String
             : (appliedFilters['planBusqueda'] != null &&
                     (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
@@ -390,7 +420,9 @@ class ExploreScreenState extends State<ExploreScreen> {
           ),
           child: Stack(
             children: [
-              _currentIndex == 0 ? _buildExplorePage() : _otherPages[_currentIndex - 1],
+              _currentIndex == 0
+                  ? _buildExplorePage()
+                  : _otherPages[_currentIndex - 1],
               Positioned(
                 bottom: 20,
                 left: 0,
@@ -440,7 +472,8 @@ class DockSection extends StatelessWidget {
     this.selectedBackgroundSize = 60.0,
     this.iconSpacing = 4.0,
     this.mainAxisAlignment = MainAxisAlignment.start,
-    this.padding = const EdgeInsets.only(left: 40, right: 40, bottom: 20, top: 0),
+    this.padding =
+        const EdgeInsets.only(left: 40, right: 40, bottom: 20, top: 0),
     this.containerWidth = 328.0,
     this.notificationCountStream,
     this.unreadMessagesCountStream,
@@ -460,8 +493,8 @@ class DockSection extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+              Color.fromARGB(255, 72, 38, 38),
+              Color(0xFF12232E),
             ],
           ),
           borderRadius: BorderRadius.all(Radius.circular(60)),
@@ -533,8 +566,8 @@ class DockSection extends StatelessWidget {
                                   end: Alignment.bottomRight,
                                   colors: [
                                     Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+                                    Color.fromARGB(255, 72, 38, 38),
+                                    Color(0xFF12232E),
                                   ],
                                 ).createShader(bounds);
                               },
@@ -552,8 +585,8 @@ class DockSection extends StatelessWidget {
                                   end: Alignment.bottomRight,
                                   colors: [
                                     Color.fromARGB(255, 13, 32, 53),
-                        Color.fromARGB(255, 72, 38, 38),
-                        Color(0xFF12232E),
+                                    Color.fromARGB(255, 72, 38, 38),
+                                    Color(0xFF12232E),
                                   ],
                                 ).createShader(bounds);
                               },

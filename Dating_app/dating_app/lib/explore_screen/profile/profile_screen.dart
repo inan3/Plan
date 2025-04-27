@@ -165,7 +165,7 @@ class ProfileScreenState extends State<ProfileScreen> {
           onLoading: (val) => setState(() => _isLoading = val),
         ),
         child: Container(
-          height: 300,
+          height: 340,
           width: double.infinity,
           color: Colors.grey[300],
           child: Center(

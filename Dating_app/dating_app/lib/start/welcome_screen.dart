@@ -10,6 +10,7 @@ import 'registration/register_screen.dart';
 import '../explore_screen/main_screen/explore_screen.dart';
 import 'registration/user_registration_screen.dart';
 import 'registration/verification_provider.dart';
+import 'registration/email_verification_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -63,7 +64,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           return;
         }
 
-        // Con sesión → verificamos que exista doc en 'users'
+        // Recargamos info para asegurar que emailVerified está actualizado
+        await user.reload();
+
+        // Si el correo NO está verificado
+        if (!user.emailVerified) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EmailVerificationScreen(
+                  email: user.email ?? '', // El user.email
+                  password: null, // O lo que necesites
+                  provider:
+                      VerificationProvider.password, // Ajusta según tu flujo
+                ),
+              ),
+            );
+          }
+          return;
+        }
+
+        // Si está verificado, revisamos si ya hay doc en Firestore
         final exists = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -72,12 +94,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             .catchError((_) => false);
 
         if (!exists) {
+          // No hay doc → vamos a UserRegistrationScreen
           if (mounted) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (_) => const UserRegistrationScreen(
-                  provider: VerificationProvider.google, // o el que corresponda
+                  provider: VerificationProvider.password, // o google...
                 ),
               ),
             );

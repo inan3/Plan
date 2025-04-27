@@ -21,7 +21,6 @@ class AuthService {
     if (cred.user != null && !cred.user!.emailVerified) {
       await cred.user!.sendEmailVerification();
     }
-
     return cred;
   }
 
