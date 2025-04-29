@@ -1,7 +1,9 @@
-//login_screen.dart
+// login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+// Import para Realtime Database
+import 'package:firebase_database/firebase_database.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../explore_screen/main_screen/explore_screen.dart';
@@ -48,6 +50,25 @@ class _LoginScreenState extends State<LoginScreen> {
     return doc.exists; // true si existe el documento
   }
 
+  /// Marca en Realtime Database que el usuario está online
+  Future<void> _updateUserPresence(User user) async {
+    final DatabaseReference statusRef =
+        FirebaseDatabase.instance.ref('status/${user.uid}');
+
+    // Al conectar, marcamos "online: true" y guardamos timestamp
+    await statusRef.set({
+      'online': true,
+      'lastSeen': ServerValue.timestamp,
+    });
+
+    // Si la conexión se pierde abruptamente, RTDB ejecuta este onDisconnect
+    statusRef.onDisconnect().update({
+      'online': false,
+      'lastSeen': ServerValue.timestamp,
+    });
+  }
+
+  /// Inicio de sesión con email y contraseña
   void loginEmailPassword() async {
     if (!mounted || isNavigating) return;
 
@@ -63,13 +84,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = credential.user;
       if (user == null) {
-        // Algo raro, no hay usuario
         throw FirebaseAuthException(code: 'USER_NULL');
       }
 
       // Verificamos si existe en la colección 'users'
       final existsInUsers = await _checkUserDocExists(user.uid);
       if (!existsInUsers) {
+        // No hay perfil en Firestore => forzamos logout
         await _auth.signOut();
         if (mounted) {
           showDialog(
@@ -90,11 +111,12 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Si todo está bien
+      // Si sí existe en 'users', marcamos presencia en RTDB
+      await _updateUserPresence(user);
+
+      // Navegamos
       if (mounted && !isNavigating) {
-        setState(() {
-          isNavigating = true;
-        });
+        setState(() => isNavigating = true);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ExploreScreen()),
@@ -125,13 +147,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           isLoading = false;
-          isNavigating = false;
+          // Nota: no establecemos isNavigating = false aquí,
+          // porque si va a explorar, ya no necesitamos resetearlo
         });
       }
     }
   }
 
-  /// Inicio de sesión con Google y validación de doc en "users"
+  /// Inicio de sesión con Google
   Future<void> loginWithGoogle() async {
     if (!mounted || isNavigating) return;
 
@@ -146,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // Usuario canceló
         return;
       }
+
       final googleAuth = await acc.authentication;
       final cred = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -161,6 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Verificamos si existe en la colección 'users'
       final existsInUsers = await _checkUserDocExists(user.uid);
       if (!existsInUsers) {
+        // No hay perfil => logout
         await _auth.signOut();
         if (mounted) {
           showDialog(
@@ -181,11 +206,12 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Si sí existe en "users", continuamos
+      // Si sí existe en 'users', marcamos presencia en RTDB
+      await _updateUserPresence(user);
+
+      // Y navegamos
       if (mounted && !isNavigating) {
-        setState(() {
-          isNavigating = true;
-        });
+        setState(() => isNavigating = true);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ExploreScreen()),
@@ -203,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           isLoading = false;
-          isNavigating = false;
+          // isNavigating = false; // no hace falta reponer
         });
       }
     }

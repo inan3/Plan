@@ -27,7 +27,7 @@ class PlanModel {
   // Imagen principal (opcional)
   String? backgroundImage;
 
-  // Otras propiedades
+  // Visibilidad
   String? visibility;
   String? iconAsset;
   List<String>? participants;
@@ -41,6 +41,9 @@ class PlanModel {
 
   // Privacidad del perfil del creador
   int? creatorProfilePrivacy;
+
+  // Campo NUEVO para búsquedas case-insensitive por tipo
+  String? typeLowercase;
 
   // -----------------------------
   //  Campos Check-in
@@ -77,6 +80,9 @@ class PlanModel {
     this.videoUrl,
     this.creatorProfilePrivacy,
 
+    // Campo nuevo
+    this.typeLowercase,
+
     // Check-in
     this.checkInActive,
     this.checkInCode,
@@ -103,6 +109,7 @@ class PlanModel {
     return {
       'id': id,
       'type': type,
+      'typeLowercase': typeLowercase ?? '',
       'description': description,
       'minAge': minAge,
       'maxAge': maxAge,
@@ -177,6 +184,9 @@ class PlanModel {
       videoUrl: map['videoUrl'] ?? '',
       creatorProfilePrivacy: map['creatorProfilePrivacy'] ?? 0,
 
+      // Campo para búsqueda case-insensitive
+      typeLowercase: map['typeLowercase'] ?? '',
+
       checkInActive: map['checkInActive'] ?? false,
       checkInCode: map['checkInCode'] ?? '',
       checkInCodeTimestamp: map['checkInCodeTimestamp'] != null
@@ -221,6 +231,7 @@ class PlanModel {
   /// Crear un plan y guardarlo en Firestore
   static Future<PlanModel> createPlan({
     required String type,
+    required String typeLowercase,  // <--- Nuevo parámetro
     required String description,
     required int minAge,
     required int maxAge,
@@ -250,18 +261,19 @@ class PlanModel {
       throw Exception("No se encontraron datos del usuario");
     }
 
-    // Generamos el ID
+    // Generamos un ID único para este plan
     final String uniqueId = await generateUniqueId();
 
-    // Leemos la privacidad
+    // Leemos la privacidad de perfil del usuario creador
     final int? privacy = userData['profile_privacy'] is int
         ? userData['profile_privacy'] as int
         : 0;
 
-    // Construimos el Plan
+    // Construimos el PlanModel en memoria
     final plan = PlanModel(
       id: uniqueId,
       type: type,
+      typeLowercase: typeLowercase, // Almacenamos
       description: description,
       minAge: minAge,
       maxAge: maxAge,
@@ -285,6 +297,8 @@ class PlanModel {
       originalImages: originalImages ?? [],
       videoUrl: videoUrl ?? '',
       creatorProfilePrivacy: privacy,
+
+      // Check-in
       checkInActive: false,
       checkInCode: '',
       checkInCodeTimestamp: null,
@@ -297,7 +311,7 @@ class PlanModel {
         .doc(plan.id)
         .set(plan.toMap());
 
-    // Aumentamos el número de planes creados SÍ O SÍ (sin condiciones)
+    // Aumentamos el número de planes creados por el usuario
     await userRef.update({
       'total_created_plans': FieldValue.increment(1),
     });

@@ -12,7 +12,7 @@ import 'package:geolocator/geolocator.dart';
 // Importación para "reverse geocoding"
 import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates, Placemark;
 
-// Importa tus colores desde tu archivo principal (ajusta el import según tu proyecto)
+// Importa tus colores desde tu archivo principal (ajusta el import si lo requieres)
 import 'package:dating_app/main/colors.dart' as MyColors;
 
 // Pantalla final (la que verás tras completar registro):
@@ -46,10 +46,10 @@ class UserRegistrationScreen extends StatefulWidget {
 
 class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
-  
+
   /// Para escribir manualmente la ciudad/municipio
   final TextEditingController _cityController = TextEditingController();
-  
+
   /// Texto que mostramos en el "botón" de Ubicación actual
   String _locationLabel = "Ubicación actual";
 
@@ -122,7 +122,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     }
   }
 
-  /// Obtiene la posición actual (solo si _locationEnabled se pone en true)
+  /// Obtiene la posición actual (solo si _locationEnabled está en true)
   Future<Position?> _determinePosition() async {
     if (!_locationEnabled) return null;
 
@@ -196,10 +196,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       return;
     }
 
-    // (Se elimina la verificación obligatoria de imágenes para permitir continuar sin ellas)
-    // if (_coverImages.isEmpty) { ... }
-    // if (_profileImage == null) { ... }
-
     try {
       // Ubicación (opcional)
       double latitude = 0.0;
@@ -212,7 +208,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         }
       }
 
-      // Subimos fotos de portada (solo si las hay)
+      // Subimos fotos de portada (si las hay)
       final List<String> coverPhotoUrls = [];
       if (_coverImages.isNotEmpty) {
         for (int i = 0; i < _coverImages.length; i++) {
@@ -226,7 +222,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         }
       }
 
-      // Subimos foto de perfil (solo si la hay)
+      // Subimos foto de perfil (si existe)
       String? profilePhotoUrl;
       if (_profileImage != null) {
         final fileName =
@@ -239,9 +235,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       final userData = <String, dynamic>{
         "uid": user.uid,
         "name": name,
+        "nameLowercase": name.toLowerCase(),
         "age": _age.toInt(),
         "photoUrl": profilePhotoUrl ?? "",
-        "coverPhotoUrl": coverPhotoUrls.isNotEmpty ? coverPhotoUrls.first : "",
+        "coverPhotoUrl":
+            coverPhotoUrls.isNotEmpty ? coverPhotoUrls.first : "",
         "coverPhotos": coverPhotoUrls,
         "latitude": latitude,
         "longitude": longitude,
@@ -253,6 +251,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         "favourites": [],
         "deletedChats": [],
         "dateCreatedData": FieldValue.serverTimestamp(),
+
+        // NUEVOS CAMPOS DE PRESENCIA:
+        "online": true,
+        "lastActive": FieldValue.serverTimestamp(),
       };
 
       await FirebaseFirestore.instance
@@ -600,15 +602,14 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   /// Cuando se pulsa "Ubicación actual":
   /// - Se pone _locationEnabled en true
   /// - Se llama a _determinePosition() (pidiendo permiso de ubicación)
-  /// - Si se obtiene la posición, se realiza reverse geocoding para mostrar,
-  ///   por ejemplo, "Leganés, Madrid, España" en lugar de lat/long.
+  /// - Si se obtiene la posición, se realiza reverse geocoding para mostrar
+  ///   "Leganés, Madrid, España" en vez de lat/long.
   Future<void> _onTapCurrentLocation() async {
     setState(() => _locationEnabled = true);
     final position = await _determinePosition();
 
     if (position != null) {
       try {
-        // Utilizamos geocoding para obtener info del lugar
         final placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
@@ -678,7 +679,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Contenedor fino, interior blanco
+                  // Campo nombre
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -714,7 +715,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Slider sin contenedor adicional
+                  // Slider para edad
                   Column(
                     children: [
                       Text(
@@ -752,15 +753,13 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-
-                  // Carrusel de fotos de portada
+                  // Carrusel de fotos
                   _buildCoverPhotosCarousel(),
                   const SizedBox(height: 20),
 
                   // -----------------------------
-                  //   NUEVO APARTADO DE UBICACIÓN
+                  //   UBICACIÓN (opcional)
                   // -----------------------------
-
                   Text(
                     "Ubicación",
                     textAlign: TextAlign.left,
@@ -772,7 +771,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Campo de texto: introducir ciudad/municipio manualmente
+                  // Campo manual (ciudad)
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -797,7 +796,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Opción “Ubicación actual” (con Reverse Geocoding)
                   GestureDetector(
                     onTap: _onTapCurrentLocation,
                     child: Container(
@@ -835,7 +833,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Botón "Completar registro" (fondo azul, texto blanco)
+                  // Botón "Completar registro"
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -862,7 +860,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
               ),
             ),
 
-            // Capa de loading mientras se guardan datos
             if (_isSaving)
               Container(
                 color: Colors.black54,

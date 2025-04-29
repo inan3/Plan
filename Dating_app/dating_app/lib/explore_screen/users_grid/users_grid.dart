@@ -20,6 +20,9 @@ import '../special_plans/invite_users_to_plan_screen.dart';
 import '../users_managing/user_info_check.dart';
 import '../chats/chat_screen.dart';
 
+// Importa nuestro widget que usa RTDB:
+import '../users_managing/user_activity_status.dart';
+
 class UsersGrid extends StatelessWidget {
   final void Function(dynamic userDoc)? onUserTap;
   final List<dynamic> users;
@@ -67,7 +70,7 @@ class UsersGrid extends StatelessWidget {
     InviteUsersToPlanScreen.showPopup(ctx, userId);
   }
 
-  /// Lógica para abrir chat con validación de privacidad y si le sigues en caso necesario.
+  /// Lógica para abrir chat con validación de privacidad y si le sigues, etc.
   Future<void> _handleMessage(BuildContext ctx, String userId) async {
     // 1) Verificamos si te ha bloqueado
     if (await _isBlocked(userId)) {
@@ -104,9 +107,7 @@ class UsersGrid extends StatelessWidget {
           .get();
 
       final amIFollowing = q.docs.isNotEmpty;
-
       if (!amIFollowing) {
-        // Muestro popup / snackbar
         showDialog(
           context: ctx,
           builder: (_) => AlertDialog(
@@ -216,7 +217,6 @@ class UsersGrid extends StatelessWidget {
   Widget _buildNoPlanLayout(
       BuildContext context, Map<String, dynamic> userData) {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
-    final String userHandle = userData['handle']?.toString() ?? '@usuario';
     final String? uid = userData['uid']?.toString();
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
 
@@ -241,7 +241,7 @@ class UsersGrid extends StatelessWidget {
                   : buildPlaceholder(),
             ),
 
-            // Bloque superior con avatar + nombre
+            // Bloque superior con avatar + nombre + estado de actividad
             Positioned(
               top: 10,
               left: 10,
@@ -266,6 +266,7 @@ class UsersGrid extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Nombre y verificado
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -289,13 +290,11 @@ class UsersGrid extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              Text(
-                                userHandle,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
+                              // AQUI LLAMAMOS AL WIDGET DE PRESENCIA
+                              if (uid != null)
+                                UserActivityStatus(
+                                  userId: uid,
                                 ),
-                              ),
                             ],
                           ),
                         ],

@@ -1,20 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
+// Importa tu modelo de plan y tus pantallas/dialogs donde quieras navegar
 import '../../models/plan_model.dart';
-import '../plans_managing/frosted_plan_dialog_state.dart'; // <-- Ajusta según tu proyecto
+import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 
-/// Representa un ítem de búsqueda, que puede ser un usuario o un plan.
+/// Representa un resultado de búsqueda (usuario o plan).
 class SearchResultItem {
-  final String id; // uid de usuario o id del plan
-  final String title; // nombre del usuario o "tipo" del plan
-  final String subtitle; // edad, o fecha, etc.
-  final String avatarUrl; // foto del usuario o avatar del creador del plan
-  final bool isUser; // true => es un usuario, false => es un plan
-  final PlanModel? planData; // si es un plan, se guarda aquí; sino null
+  final String id;
+  final String title;
+  final String subtitle;
+  final String avatarUrl;
+  final bool isUser;
+  final PlanModel? planData;
 
   SearchResultItem({
     required this.id,
@@ -26,18 +25,14 @@ class SearchResultItem {
   });
 }
 
-/// Widget que muestra la lista de resultados de búsqueda
-/// debajo del campo de texto.
+/// Widget que muestra los resultados de búsqueda debajo de un campo de texto,
+/// devolviendo usuarios y/o planes que coincidan.
 class Searcher extends StatefulWidget {
-  final String query; // texto que introduce el usuario
-  final double maxHeight; // altura máxima del contenedor de resultados
-  final bool isVisible; // si mostramos u ocultamos por completo
+  final String query;
+  final double maxHeight;
+  final bool isVisible;
   final Future<PlanModel> Function(String planId)? fetchFullPlanById;
 
-  /// [fetchFullPlanById]: función opcional para reconstruir
-  /// un PlanModel completo (ej. si quieres reutilizar la
-  /// lógica que ya tienes en tu app). Si no la pasas, se usa
-  /// una versión simple dentro del mismo widget.
   const Searcher({
     Key? key,
     required this.query,
@@ -53,44 +48,56 @@ class Searcher extends StatefulWidget {
 class _SearcherState extends State<Searcher> {
   bool _isLoading = false;
   List<SearchResultItem> _results = [];
-
-  /// Guardamos el último texto de búsqueda para comparar en build()
   String _lastQuery = '';
 
   @override
-  void didUpdateWidget(covariant Searcher oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final newQuery = widget.query.trim();
-    final oldQuery = oldWidget.query.trim();
-
-    if (newQuery != oldQuery) {
+  void initState() {
+    super.initState();
+    if (widget.query.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _performSearch(newQuery);
+        debugPrint('Texto introducido en el buscador (init): ${widget.query}');
+        _performSearch(widget.query);
       });
     }
   }
 
-  Future<void> _performSearch(String query) async {
-    if (query.isEmpty) {
+  @override
+  void didUpdateWidget(covariant Searcher oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.query != oldWidget.query) {
+      debugPrint("Texto introducido en el buscador: ${widget.query}");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _performSearch(widget.query);
+      });
+    }
+  }
+
+  /// Realiza la búsqueda de usuarios y planes en Firestore.
+  Future<void> _performSearch(String rawQuery) async {
+    debugPrint("Entramos a _performSearch con: '$rawQuery'");
+
+    final cleanedQuery = rawQuery.trim();
+    if (cleanedQuery.isEmpty) {
       setState(() => _results = []);
       return;
     }
 
+    // Quitamos espacios internos para buscar ID exacto
+    final idCandidate = cleanedQuery.replaceAll(RegExp(r'\s+'), '');
+
     setState(() {
       _isLoading = true;
-      _lastQuery = query;
+      _lastQuery = cleanedQuery;
     });
 
     try {
       final List<SearchResultItem> finalResults = [];
 
-      // -------------------------------------------
-      // 1) Buscar USUARIOS por nombre
-      // -------------------------------------------
+      // 1) BUSCAR USUARIOS POR NOMBRE
       final usersQuery = await FirebaseFirestore.instance
           .collection('users')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: query + '\uf8ff')
+          .where('name', isGreaterThanOrEqualTo: cleanedQuery)
+          .where('name', isLessThan: cleanedQuery + '\uf8ff')
           .get();
 
       for (var doc in usersQuery.docs) {
@@ -111,37 +118,28 @@ class _SearcherState extends State<Searcher> {
         );
       }
 
-      // -------------------------------------------
-      // 2) Buscar PLAN por ID exacto
-      // -------------------------------------------
-      // Si el texto coincide con el doc.id, lo cargamos directamente
+      // 2) BUSCAR PLAN POR ID EXACTO
       final planDocRef =
-          FirebaseFirestore.instance.collection('plans').doc(query);
+          FirebaseFirestore.instance.collection('plans').doc(idCandidate);
       final planDocSnap = await planDocRef.get();
       if (planDocSnap.exists) {
-        final planResult = await _buildSearchItemFromPlan(planDocSnap);
-        if (planResult != null) {
-          finalResults.add(planResult);
-        }
+        final planItem = await _buildSearchItemFromPlan(planDocSnap);
+        if (planItem != null) finalResults.add(planItem);
       }
 
-      // -------------------------------------------
-      // 3) Buscar PLAN por "type" (nombre del plan) con coincidencia parcial
-      // -------------------------------------------
+      // 3) BUSCAR PLAN POR "type" (coincidencia parcial)
       final plansQuery = await FirebaseFirestore.instance
           .collection('plans')
-          .where('type', isGreaterThanOrEqualTo: query)
-          .where('type', isLessThan: query + '\uf8ff')
+          .where('type', isGreaterThanOrEqualTo: cleanedQuery)
+          .where('type', isLessThan: cleanedQuery + '\uf8ff')
           .get();
 
       for (var planDoc in plansQuery.docs) {
-        final planResult = await _buildSearchItemFromPlan(planDoc);
-        if (planResult != null) {
-          finalResults.add(planResult);
-        }
+        final planItem = await _buildSearchItemFromPlan(planDoc);
+        if (planItem != null) finalResults.add(planItem);
       }
 
-      if (mounted) {
+      if (mounted && _lastQuery == cleanedQuery) {
         setState(() {
           _results = finalResults;
           _isLoading = false;
@@ -149,36 +147,30 @@ class _SearcherState extends State<Searcher> {
       }
     } catch (e) {
       debugPrint("Error al buscar: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// Construye un [SearchResultItem] a partir del doc de un plan.
-  /// Obtiene además la info del creador para mostrar su avatar.
+  /// Construye un [SearchResultItem] a partir de un DocumentSnapshot de 'plans'.
   Future<SearchResultItem?> _buildSearchItemFromPlan(
       DocumentSnapshot planDoc) async {
     final data = planDoc.data() as Map<String, dynamic>?;
     if (data == null) return null;
 
-    // Aseguramos que tenga el 'id' en el Map antes de usar fromMap:
     final planMap = {
       'id': planDoc.id,
       ...data,
     };
 
-    // Construimos el PlanModel con el factory fromMap
+    // Cargar el PlanModel
     PlanModel planModel;
     if (widget.fetchFullPlanById != null) {
-      // Si alguien inyectó una función externa, la usamos:
       planModel = await widget.fetchFullPlanById!(planDoc.id);
     } else {
-      // Caso contrario, parseamos nosotros:
       planModel = PlanModel.fromMap(planMap);
     }
 
-    // Sobrescribimos (opcional) el avatar y el nombre del creador con datos frescos
+    // Recuperar info del creador
     final creatorId = planModel.createdBy;
     if (creatorId.isNotEmpty) {
       try {
@@ -192,10 +184,11 @@ class _SearcherState extends State<Searcher> {
           planModel.creatorProfilePic =
               cData['photoUrl'] ?? planModel.creatorProfilePic;
         }
-      } catch (_) {}
+      } catch (_) {
+        // Ignoramos errores de carga de usuario
+      }
     }
 
-    // Formatear la fecha para el subtitle
     String startDateString = '';
     if (planModel.startTimestamp != null) {
       final d = planModel.startTimestamp!;
@@ -206,9 +199,9 @@ class _SearcherState extends State<Searcher> {
 
     return SearchResultItem(
       id: planModel.id,
-      title: planModel.type, // nombre del plan
-      subtitle: 'Inicia: $startDateString', // fecha
-      avatarUrl: planModel.creatorProfilePic ?? '', // foto del creador
+      title: planModel.type,
+      subtitle: 'Inicia: $startDateString',
+      avatarUrl: planModel.creatorProfilePic ?? '',
       isUser: false,
       planData: planModel,
     );
@@ -216,13 +209,13 @@ class _SearcherState extends State<Searcher> {
 
   @override
   Widget build(BuildContext context) {
-    // Si no queremos mostrar nada, retornamos un contenedor vacío
+    // Si no hay texto o no es visible, nada que mostrar
     if (!widget.isVisible || widget.query.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Container(
-      // color claro para diferenciarlo
+      // Quitamos constraints de altura para que se ajuste dinámicamente
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.94),
         boxShadow: [
@@ -232,10 +225,6 @@ class _SearcherState extends State<Searcher> {
             spreadRadius: 2,
           ),
         ],
-      ),
-      constraints: BoxConstraints(
-        // caben ~6 items cómodamente
-        maxHeight: widget.maxHeight,
       ),
       child: _isLoading
           ? const Center(
@@ -254,44 +243,44 @@ class _SearcherState extends State<Searcher> {
                 )
               : ListView.separated(
                   shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: _results.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = _results[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        radius: 20,
-                        backgroundImage: (item.avatarUrl.isNotEmpty)
-                            ? NetworkImage(item.avatarUrl)
-                            : null,
-                        backgroundColor: Colors.grey[300],
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          radius: 20,
+                          backgroundImage: (item.avatarUrl.isNotEmpty)
+                              ? NetworkImage(item.avatarUrl)
+                              : null,
+                          backgroundColor: Colors.grey[300],
+                        ),
+                        title: Text(
+                          item.title,
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                        subtitle: Text(
+                          item.subtitle,
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                        onTap: () => _onTapSearchItem(item),
                       ),
-                      title: Text(
-                        item.title,
-                        style: const TextStyle(color: Colors.black),
-                      ),
-                      subtitle: Text(
-                        item.isUser
-                            ? item.subtitle // "Edad: X"
-                            : item.subtitle, // "Inicia: dd/mm/yyyy"
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                      onTap: () => _onTapSearchItem(item),
                     );
                   },
                 ),
     );
   }
 
-  /// Maneja el tap sobre un resultado.
-  /// Si es usuario => va a [UserInfoCheck].
-  /// Si es plan => va a [FrostedPlanDialog].
+  /// Maneja el tap en un resultado de la lista.
   void _onTapSearchItem(SearchResultItem item) {
     if (item.isUser) {
-      // Ir a user_info_check.dart
+      // Ir a la pantalla de info de usuario
       UserInfoCheck.open(context, item.id);
     } else {
-      // Es un plan
       final plan = item.planData;
       if (plan == null) return;
 
@@ -307,14 +296,12 @@ class _SearcherState extends State<Searcher> {
     }
   }
 
-  /// Ejemplo de función para cargar participantes de un plan,
-  /// usada por `FrostedPlanDialog`.
+  /// Ejemplo de función para cargar participantes de un plan
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-    PlanModel plan,
-  ) async {
+      PlanModel plan) async {
     final List<Map<String, dynamic>> res = [];
-    final uds = plan.participants ?? [];
-    for (final uid in uds) {
+    final uids = plan.participants ?? [];
+    for (final uid in uids) {
       final uDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (uDoc.exists) {

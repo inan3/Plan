@@ -15,7 +15,6 @@ import '../chats/chats_screen.dart';
 import '../map/map_screen.dart';
 import '../profile/profile_screen.dart';
 import 'notification_screen.dart';
-// Se elimina import de plan_join_request.dart
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'searcher.dart';
 
@@ -42,7 +41,7 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   Map<String, dynamic> appliedFilters = {};
 
-  double _spacingPopularToNearby = 10;
+  // Eliminamos la variable _spacingPopularToNearby y su uso
   late List<Widget> _otherPages;
 
   String _searchQuery = '';
@@ -124,26 +123,20 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               );
             },
-            onSearchChanged: _onSearchChanged, // Si todavía usas esta prop
+            onSearchChanged: _onSearchChanged,
             notificationCountStream: _notificationCountStream(),
           ),
-          Transform.translate(
-            offset: const Offset(0, 0),
-            child: _buildSearchContainer(),
-          ),
+          _buildSearchContainer(),
 
           // Mostrar la lista de resultados si se está buscando
           if (_showSearchResults)
             Searcher(
               query: _searchQuery,
-              maxHeight: 300, // o el alto que quieras
+              maxHeight: 300,
               isVisible: true,
-              // Si quieres reutilizar tu propia lógica para armar el PlanModel completo:
-              // fetchFullPlanById: (planId) => tuMetodoQueRetornaPlanModel(planId),
             ),
 
-          // Aquí tu espacio y secciones
-          SizedBox(height: _spacingPopularToNearby),
+          // Ya NO dejamos espacio adicional, pues provocaba huecos innecesarios
           Expanded(child: _buildNearbySection()),
         ],
       ),
@@ -337,9 +330,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // Se quitan los filtros relacionados con unirse a un plan
   Stream<int> _notificationCountStream() {
-    // Se elimina la parte .where('type', whereIn: [...]) que filtraba join, etc.
     return FirebaseFirestore.instance
         .collection('notifications')
         .where('receiverId', isEqualTo: currentUser?.uid)
@@ -362,6 +353,9 @@ class ExploreScreenState extends State<ExploreScreen> {
         return 0;
       case 1:
         return 1;
+      case 2:
+        // Al dar tap en el + se abre creación de plan
+        return _currentIndex;
       case 3:
         return 2;
       case 4:
@@ -388,7 +382,6 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   void _onDockIconTap(int dockIndex) {
     if (dockIndex == 2) {
-      // Ahora, en vez de mostrar un popup, abrimos directamente la creación de plan
       NewPlanCreationScreen.showPopup(context);
     } else {
       setState(() {
@@ -487,7 +480,6 @@ class DockSection extends StatelessWidget {
         height: 70,
         width: containerWidth,
         decoration: const BoxDecoration(
-          // Mismo degradado del dock
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
