@@ -1,10 +1,3 @@
-// users_grid.dart
-//
-// Lista de usuarios + planes.  Incluye:
-//   • Verificación de bloqueo antes de abrir perfil, invitar o enviar mensaje
-//   • Llamada a UserInfoCheck.open() para respetar bloqueos
-//   • Helper _isBlocked() centralizado
-//
 import 'dart:ui' as ui;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

@@ -1,11 +1,10 @@
-//user_activity_status.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+// Cambiamos esta import:
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-/// Widget que muestra la actividad de un usuario usando Realtime Database.
-/// - Punto verde + "En línea" si /status/{uid}/online == true
-/// - Punto blanco + "Hace X..." si está offline, calculando lastSeen
+// Widget que muestra la actividad de un usuario usando Realtime Database.
 class UserActivityStatus extends StatefulWidget {
   final String userId;
 
@@ -35,10 +34,19 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
     super.dispose();
   }
 
-  /// Se suscribe a /status/{uid} en RTDB para detectar cambios en `online` y `lastSeen`
+  /// Se suscribe a /status/{uid} en la base “plan-social-app”
   void _listenToUserStatus(String uid) {
-    final ref = FirebaseDatabase.instance.ref('status/$uid');
-    _rtdbSubscription = ref.onValue.listen((DatabaseEvent event) {
+    // 1) Obtenemos la instancia con la URL de la base secundaria:
+    final db = FirebaseDatabase.instanceFor(
+      app: Firebase.app(),
+      databaseURL: 'https://plan-social-app.europe-west1.firebasedatabase.app',
+    );
+
+    // 2) Referencia a “status/{uid}”
+    final ref = db.ref('status/$uid');
+
+    // 3) Escuchamos cambios en tiempo real
+    _rtdbSubscription = ref.onValue.listen((event) {
       final data = event.snapshot.value;
       if (data is Map) {
         final onlineVal = data['online'];
@@ -47,15 +55,14 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
         setState(() {
           _isOnline = (onlineVal == true);
 
-          if (lastSeenVal is int) {
-            // Convertimos milisegundos → DateTime
+          if (lastSeenVal is int && lastSeenVal > 0) {
             _lastSeen = DateTime.fromMillisecondsSinceEpoch(lastSeenVal);
           } else {
             _lastSeen = null;
           }
         });
       } else {
-        // Si no existe la ruta o está vacía, asumimos offline sin timestamp
+        // Si no existe la ruta, asumimos offline
         setState(() {
           _isOnline = false;
           _lastSeen = null;
@@ -64,9 +71,9 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
     });
   }
 
-  /// Retorna un string estilo "Hace 5 minuto/s, Hace 2 hora/s, Hace 1 día/s", etc.
+  /// Retorna un string estilo "Hace 5 minuto/s", etc.
   String _formatLastActive(DateTime? dt) {
-    if (dt == null) return '';
+    if (dt == null) return "Desconectado";
     final diff = DateTime.now().difference(dt);
 
     if (diff.inMinutes < 1) {
@@ -76,7 +83,7 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
     } else if (diff.inHours < 24) {
       return "Hace ${diff.inHours} hora/s";
     } else {
-      return "Hace ${diff.inDays} dia/s";
+      return "Hace ${diff.inDays} día/s";
     }
   }
 

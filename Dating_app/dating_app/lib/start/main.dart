@@ -113,6 +113,8 @@ class _MyAppState extends State<MyApp> {
               FirebaseAuth.instance.signOut();
               return const WelcomeScreen();
             } else {
+              // Aquí podrías también marcar presencia si quieres forzarlo al iniciar:
+              // Pero como ya lo hacemos en login_screen.dart, no es obligatorio.
               return const MainAppScreen(); // tu pantalla principal
             }
           }
@@ -125,5 +127,20 @@ class _MyAppState extends State<MyApp> {
     // Pequeña pausa para que Firebase Auth tenga tiempo de leer info
     await Future.delayed(const Duration(milliseconds: 300));
     return FirebaseAuth.instance.currentUser;
+  }
+}
+
+// Asegúrate de tener tu pantalla principal:
+class MainAppScreen extends StatelessWidget {
+  const MainAppScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: Implementa tu pantalla principal
+    return const Scaffold(
+      body: Center(
+        child: Text('Pantalla principal de la app'),
+      ),
+    );
   }
 }

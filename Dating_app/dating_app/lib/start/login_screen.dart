@@ -1,13 +1,14 @@
-// login_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // Import para Realtime Database
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../explore_screen/main_screen/explore_screen.dart';
-import 'welcome_screen.dart';
 import '../main/colors.dart';
 
 const Color backgroundColor = AppColors.background; // Azul turquesa
@@ -21,60 +22,71 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  bool isLoading = false;
-  bool isNavigating = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _checkIfUserIsLoggedIn();
+  final TextEditingController emailController    = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  bool isLoading = false;
+
+  // ─────────────────────────────────────────────
+  // Verifica si existe un documento en 'users'
+  // ─────────────────────────────────────────────
+  Future<bool> _userDocExists(String uid) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    return doc.exists;
   }
 
-  void _checkIfUserIsLoggedIn() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      Future.delayed(Duration.zero, () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ExploreScreen()),
-        );
+  // ─────────────────────────────────────────────
+  // Marca al usuario como online en la base “plan-social-app”
+  // ─────────────────────────────────────────────
+  Future<void> _updatePresence(User user) async {
+    try {
+      // 1) Instancia de la RTDB secundaria
+      final db = FirebaseDatabase.instanceFor(
+        app: Firebase.app(),
+        databaseURL: 'https://plan-social-app.europe-west1.firebasedatabase.app',
+      );
+
+      // 2) Referencia a /status/{uid}
+      final ref = db.ref('status/${user.uid}');
+
+      // 3) Al conectar → online = true
+      await ref.set({
+        'online': true,
+        'lastSeen': ServerValue.timestamp,
       });
+
+      // 4) onDisconnect → online = false, lastSeen = now
+      ref.onDisconnect().update({
+        'online': false,
+        'lastSeen': ServerValue.timestamp,
+      });
+    } catch (e) {
+      debugPrint('Error al marcar presencia: $e');
+      // No bloqueamos el flujo aunque falle
     }
   }
 
-  /// Verifica si el usuario tiene documento en la colección "users"
-  Future<bool> _checkUserDocExists(String uid) async {
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.exists; // true si existe el documento
+  // ─────────────────────────────────────────────
+  // Navegar al ExploreScreen
+  // ─────────────────────────────────────────────
+  Future<void> _goToExplore() async {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const ExploreScreen()),
+    );
   }
 
-  /// Marca en Realtime Database que el usuario está online
-  Future<void> _updateUserPresence(User user) async {
-    final DatabaseReference statusRef =
-        FirebaseDatabase.instance.ref('status/${user.uid}');
-
-    // Al conectar, marcamos "online: true" y guardamos timestamp
-    await statusRef.set({
-      'online': true,
-      'lastSeen': ServerValue.timestamp,
-    });
-
-    // Si la conexión se pierde abruptamente, RTDB ejecuta este onDisconnect
-    statusRef.onDisconnect().update({
-      'online': false,
-      'lastSeen': ServerValue.timestamp,
-    });
-  }
-
-  /// Inicio de sesión con email y contraseña
-  void loginEmailPassword() async {
-    if (!mounted || isNavigating) return;
-
-    setState(() {
-      isLoading = true;
-    });
+  // ─────────────────────────────────────────────
+  // Iniciar sesión con email y contraseña
+  // ─────────────────────────────────────────────
+  Future<void> _loginWithEmail() async {
+    if (!mounted) return;
+    setState(() => isLoading = true);
 
     try {
       final credential = await _auth.signInWithEmailAndPassword(
@@ -87,81 +99,38 @@ class _LoginScreenState extends State<LoginScreen> {
         throw FirebaseAuthException(code: 'USER_NULL');
       }
 
-      // Verificamos si existe en la colección 'users'
-      final existsInUsers = await _checkUserDocExists(user.uid);
+      final existsInUsers = await _userDocExists(user.uid);
       if (!existsInUsers) {
-        // No hay perfil en Firestore => forzamos logout
         await _auth.signOut();
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('No estás registrado'),
-              content: const Text(
-                  'No hay ningún perfil en la base de datos para este usuario. Debes registrarte primero.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Aceptar'),
-                ),
-              ],
-            ),
-          );
-        }
+        if (!mounted) return;
+        _showNoProfileDialog();
         return;
       }
 
-      // Si sí existe en 'users', marcamos presencia en RTDB
-      await _updateUserPresence(user);
+      // Actualizamos presencia (no bloqueante)
+      unawaited(_updatePresence(user));
 
-      // Navegamos
-      if (mounted && !isNavigating) {
-        setState(() => isNavigating = true);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ExploreScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (_) {
-      // Error de email/contraseña
+      if (mounted) setState(() => isLoading = false);
+      await _goToExplore();
+
+    } on FirebaseAuthException {
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Error de inicio de sesión'),
-              content: const Text('Correo o contraseña incorrectos.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Aceptar'),
-                ),
-              ],
-            );
-          },
-        );
+        _showErrorDialog('Correo o contraseña incorrectos.');
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          // Nota: no establecemos isNavigating = false aquí,
-          // porque si va a explorar, ya no necesitamos resetearlo
-        });
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  /// Inicio de sesión con Google
-  Future<void> loginWithGoogle() async {
-    if (!mounted || isNavigating) return;
-
+  // ─────────────────────────────────────────────
+  // Iniciar sesión con Google
+  // ─────────────────────────────────────────────
+  Future<void> _loginWithGoogle() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      // Forzamos selección de cuenta localmente
+      // Forzamos selección de cuenta para pruebas locales
       await GoogleSignIn().signOut();
 
       final GoogleSignInAccount? acc = await GoogleSignIn().signIn();
@@ -170,10 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final googleAuth = await acc.authentication;
+      final auth = await acc.authentication;
       final cred = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        accessToken: auth.accessToken,
+        idToken: auth.idToken,
       );
 
       final userCred = await _auth.signInWithCredential(cred);
@@ -182,59 +151,71 @@ class _LoginScreenState extends State<LoginScreen> {
         throw FirebaseAuthException(code: 'USER_NULL');
       }
 
-      // Verificamos si existe en la colección 'users'
-      final existsInUsers = await _checkUserDocExists(user.uid);
+      final existsInUsers = await _userDocExists(user.uid);
       if (!existsInUsers) {
-        // No hay perfil => logout
         await _auth.signOut();
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('No estás registrado'),
-              content: const Text(
-                  'No hay ningún perfil en la base de datos para este usuario. Debes registrarte primero.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Aceptar'),
-                ),
-              ],
-            ),
-          );
-        }
+        if (mounted) _showNoProfileDialog();
         return;
       }
 
-      // Si sí existe en 'users', marcamos presencia en RTDB
-      await _updateUserPresence(user);
+      // Actualizamos presencia
+      unawaited(_updatePresence(user));
 
-      // Y navegamos
-      if (mounted && !isNavigating) {
-        setState(() => isNavigating = true);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ExploreScreen()),
-        );
-      }
+      if (mounted) setState(() => isLoading = false);
+      await _goToExplore();
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error de inicio de sesión con Google.'),
-          ),
+          const SnackBar(content: Text('Error de inicio de sesión con Google.')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          // isNavigating = false; // no hace falta reponer
-        });
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
+  // ─────────────────────────────────────────────
+  // Diálogos
+  // ─────────────────────────────────────────────
+  void _showNoProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('No estás registrado'),
+        content: const Text(
+          'No hay ningún perfil en la base de datos para este usuario. '
+          'Debes registrarte primero.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String msg) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Error de inicio de sesión'),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Construcción del widget
+  // ─────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -246,189 +227,167 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: backgroundColor,
         body: Stack(
           children: [
-            Center(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo
-                    SizedBox(
-                      height: 150,
-                      child: Image.asset(
-                        'assets/plan-sin-fondo.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    // Título "Inicia sesión"
-                    Text(
-                      'Inicio de sesión',
-                      style: GoogleFonts.roboto(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Botón "Continuar con Google"
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 30),
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: loginWithGoogle,
-                        icon: Image.asset(
-                          'assets/google_logo.png',
-                          height: 24,
-                          width: 24,
-                        ),
-                        label: Text(
-                          'Continuar con Google',
-                          style: GoogleFonts.roboto(
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color.fromARGB(236, 0, 4, 227),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          shadowColor: Colors.black.withOpacity(0.2),
-                          elevation: 10,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // separador
-                    Text(
-                      '- o -',
-                      style: GoogleFonts.roboto(
-                        fontSize: 18,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Campo de texto para Correo
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 30),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          hintText: 'Correo electrónico',
-                          hintStyle: GoogleFonts.roboto(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Campo de texto para Contraseña
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 30),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: passwordController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: 'Contraseña',
-                          hintStyle: GoogleFonts.roboto(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    // Botón "Iniciar sesión"
-                    SizedBox(
-                      width: 200,
-                      child: ElevatedButton(
-                        onPressed: loginEmailPassword,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color.fromARGB(236, 0, 4, 227),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          shadowColor: Colors.black.withOpacity(0.2),
-                          elevation: 10,
-                        ),
-                        child: Text(
-                          'Iniciar sesión',
-                          style: GoogleFonts.roboto(
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Funcionalidad pendiente'),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        '¿Olvidaste tu contraseña?',
-                        style: TextStyle(
-                          color: Colors.black,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildForm(),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator()),
             Positioned(
               top: 40,
               left: 10,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.blue,
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
               ),
             ),
-            if (isLoading)
-              const Center(
-                child: CircularProgressIndicator(),
-              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // LOGO
+            SizedBox(
+              height: 150,
+              child: Image.asset(
+                'assets/plan-sin-fondo.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            Text(
+              'Inicio de sesión',
+              style: GoogleFonts.roboto(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            _googleButton(),
+
+            const SizedBox(height: 10),
+            Text('- o -', style: GoogleFonts.roboto(fontSize: 18)),
+            const SizedBox(height: 10),
+
+            _inputField(
+              controller: emailController,
+              hint: 'Correo electrónico',
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 20),
+
+            _inputField(
+              controller: passwordController,
+              hint: 'Contraseña',
+              obscure: true,
+            ),
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: _loginWithEmail,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Color.fromARGB(236, 0, 4, 227),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 10,
+                ),
+                child: const Text(
+                  'Iniciar sesión',
+                  style: TextStyle(fontSize: 20, color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Funcionalidad pendiente'),
+                  ),
+                );
+              },
+              child: const Text(
+                '¿Olvidaste tu contraseña?',
+                style: TextStyle(
+                  color: Colors.black,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _googleButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 30),
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _loginWithGoogle,
+        icon: Image.asset(
+          'assets/google_logo.png',
+          height: 24,
+          width: 24,
+        ),
+        label: Text(
+          'Continuar con Google',
+          style: GoogleFonts.roboto(fontSize: 18, color: Colors.white),
+        ),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: Color.fromARGB(236, 0, 4, 227),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: 10,
+        ),
+      ),
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    bool obscure = false,
+    TextInputType? keyboardType,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 30),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
         ),
       ),
     );
