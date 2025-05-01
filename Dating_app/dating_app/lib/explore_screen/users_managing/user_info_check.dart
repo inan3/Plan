@@ -99,7 +99,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     final data = docSnap.data() as Map<String, dynamic>;
     _userDocSnap = docSnap;
 
-    // Si en tu BD usas 'profilePic' cuando no exista 'photoUrl', podrías:
     _profileImageUrl = data['photoUrl'] ?? data['profilePic'] ?? '';
     _coverImageUrl = data['coverPhotoUrl'] ?? '';
     _privilegeLevel = (data['privilegeLevel'] ?? 'Básico').toString();
@@ -257,12 +256,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         child: Column(
           children: [
             _buildHeader(name),
-            const SizedBox(height: 70),
+            const SizedBox(height: 30),
             _buildPrivilegeButton(),
-            const SizedBox(height: 20),
-            _buildActionButtons(widget.userId),
-            const SizedBox(height: 20),
+            // Intercambiamos la posición: primero mostramos la fila de stats
             _buildBioAndStats(),
+            const SizedBox(height: 20),
+            // Luego mostramos los botones de acción
+            _buildActionButtons(widget.userId),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -281,27 +281,31 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   // Header (portada + avatar + botones)
   //----------------------------------------------------------------------------
   Widget _buildHeader(String name) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        _buildCoverImage(),
-        Positioned(
-          top: 40,
-          left: 16,
-          child: _buildBackButton(),
-        ),
-        Positioned(
-          top: 40,
-          right: 16,
-          child: _buildMenuButton(),
-        ),
-        Positioned(
-          bottom: -80,
-          left: 0,
-          right: 0,
-          child: Center(child: _buildAvatarAndName(name)),
-        ),
-      ],
+    return SizedBox(
+      height: 420, // 300 de portada + 80 para alojar el avatar
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _buildCoverImage(),
+          Positioned(
+            top: 40,
+            left: 16,
+            child: _buildBackButton(),
+          ),
+          Positioned(
+            top: 40,
+            right: 16,
+            child: _buildMenuButton(),
+          ),
+          // El avatar ahora sobresale sólo 42 px (casi todo dentro del Stack)
+          Positioned(
+            bottom: -42,
+            left: 0,
+            right: 0,
+            child: Center(child: _buildAvatarAndName(name)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -331,25 +335,31 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
   Widget _buildCoverImage() {
     final hasCover = _coverImageUrl != null && _coverImageUrl!.isNotEmpty;
-    return Container(
-      height: 300,
-      width: double.infinity,
-      color: Colors.grey[300],
-      child: hasCover
-          ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
-          : Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.image, size: 30, color: Colors.black54),
-                  SizedBox(width: 8),
-                  Text('Sin portada', style: TextStyle(color: Colors.black54)),
-                ],
+
+    return GestureDetector(
+      onTap: hasCover ? () => _showFullImage(_coverImageUrl!) : null,
+      child: Container(
+        height: 380,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: hasCover
+            ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
+            : Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.image, size: 30, color: Colors.black54),
+                    SizedBox(width: 8),
+                    Text('Sin portada',
+                        style: TextStyle(color: Colors.black54)),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
+  /// AQUÍ está la parte clave: envolvemos el avatar en un SizedBox + Stack + InkWell
   Widget _buildAvatarAndName(String userName) {
     final avatarUrl = (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
         ? _profileImageUrl!
@@ -357,12 +367,27 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 45,
-          backgroundColor: Colors.white,
-          child: CircleAvatar(
-            radius: 42,
-            backgroundImage: NetworkImage(avatarUrl),
+        SizedBox(
+          width: 90,
+          height: 90,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              InkWell(
+                onTap: avatarUrl.contains('placeholder')
+                    ? null
+                    : () => _showFullImage(avatarUrl),
+                customBorder: const CircleBorder(),
+                child: CircleAvatar(
+                  radius: 45,
+                  backgroundColor: Colors.white,
+                  child: CircleAvatar(
+                    radius: 42,
+                    backgroundImage: NetworkImage(avatarUrl),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
@@ -375,6 +400,44 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Muestra la imagen a pantalla completa con un botón de cerrar en la esquina superior derecha
+  void _showFullImage(String imageUrl) {
+    if (imageUrl.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  child: Image.network(imageUrl, fit: BoxFit.contain),
+                ),
+              ),
+              Positioned(
+                top: 50,
+                right: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    color: Colors.black54,
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -634,249 +697,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   //----------------------------------------------------------------------------
-  // Botones principales: Invitar, Mensaje, Seguir
-  //----------------------------------------------------------------------------
-  Widget _buildActionButtons(String otherUserId) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildActionButton(
-          iconPath: 'assets/union.svg',
-          label: 'Invítale a un Plan',
-          onTap: (_isPrivate && !isFollowing && !_isRequestPending)
-              ? _showPrivateToast
-              : () => InviteUsersToPlanScreen.showPopup(context, otherUserId),
-        ),
-        const SizedBox(width: 12),
-        _buildActionButton(
-          iconPath: 'assets/mensaje.svg',
-          label: 'Enviar Mensaje',
-          onTap: () {
-            // Lógica: si el receptor (widget.userId) es privado y no le sigo => popup
-            //         caso contrario => abrimos chat
-            if (_isPrivate && !isFollowing) {
-              _showPrivateToast();
-            } else {
-              final data = _userDocSnap!.data() as Map<String, dynamic>;
-              final userName = data['name'] ?? 'Usuario';
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatScreen(
-                    chatPartnerId: widget.userId,
-                    chatPartnerName: userName,
-                    chatPartnerPhoto: _profileImageUrl ?? '',
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-        const SizedBox(width: 12),
-        _buildActionButton(
-          iconPath: _getFollowIcon(),
-          label: _getFollowLabel(),
-          onTap: _handleFollowTap,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton({
-    required String iconPath,
-    required VoidCallback onTap,
-    String? label,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.fromARGB(255, 13, 32, 53),
-                  Color.fromARGB(255, 72, 38, 38),
-                  Color(0xFF12232E),
-                ],
-              ),
-              borderRadius: BorderRadius.all(Radius.circular(20)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.asset(
-                  iconPath,
-                  width: 24,
-                  height: 24,
-                  color: Colors.white,
-                ),
-                if (label != null) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  //----------------------------------------------------------------------------
-  // Lógica Follow
-  //----------------------------------------------------------------------------
-  String _getFollowLabel() {
-    if (isFollowing) {
-      return 'Siguiendo';
-    } else if (_isRequestPending) {
-      return 'Solicitado';
-    } else {
-      return 'Seguir';
-    }
-  }
-
-  String _getFollowIcon() {
-    if (isFollowing) {
-      return 'assets/icono-tick.svg';
-    } else if (_isRequestPending) {
-      return 'assets/agregar-usuario.svg';
-    } else {
-      return 'assets/agregar-usuario.svg';
-    }
-  }
-
-  void _handleFollowTap() async {
-    if (isFollowing) {
-      // Dejar de seguir
-      await _unfollowUser();
-    } else if (_isRequestPending) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ya enviaste una solicitud. Espera la respuesta.'),
-        ),
-      );
-    } else {
-      // Intentar seguir
-      await _followUser();
-    }
-
-    setState(() {});
-  }
-
-  Future<void> _unfollowUser() async {
-    final me = FirebaseAuth.instance.currentUser;
-    if (me == null || me.uid == widget.userId) return;
-
-    try {
-      // Borrar en "followed"
-      final f1 = await FirebaseFirestore.instance
-          .collection('followed')
-          .where('userId', isEqualTo: me.uid)
-          .where('followedId', isEqualTo: widget.userId)
-          .get();
-      for (final d in f1.docs) {
-        await d.reference.delete();
-      }
-
-      // Borrar en "followers"
-      final f2 = await FirebaseFirestore.instance
-          .collection('followers')
-          .where('userId', isEqualTo: widget.userId)
-          .where('followerId', isEqualTo: me.uid)
-          .get();
-      for (final d in f2.docs) {
-        await d.reference.delete();
-      }
-
-      isFollowing = false;
-    } catch (e) {
-      debugPrint('[unfollowUser] $e');
-    }
-  }
-
-  Future<void> _followUser() async {
-    final me = FirebaseAuth.instance.currentUser;
-    if (me == null || me.uid == widget.userId) return;
-
-    try {
-      if (!_isPrivate) {
-        // Perfil público
-        await FirebaseFirestore.instance.collection('followers').add({
-          'userId': widget.userId,
-          'followerId': me.uid,
-        });
-        await FirebaseFirestore.instance.collection('followed').add({
-          'userId': me.uid,
-          'followedId': widget.userId,
-        });
-        isFollowing = true;
-      } else {
-        // Perfil privado => guardamos en follow_requests + notificación
-        await FirebaseFirestore.instance.collection('follow_requests').add({
-          'fromId': me.uid,
-          'toId': widget.userId,
-          'status': 'pending',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        // Notificación
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(me.uid)
-            .get();
-        final currentUserName =
-            userDoc.exists ? (userDoc.data()?['name'] ?? '') : '';
-        final currentUserPhotoUrl =
-            userDoc.exists ? (userDoc.data()?['photoUrl'] ?? '') : '';
-
-        await FirebaseFirestore.instance.collection('notifications').add({
-          'type': 'follow_request',
-          'receiverId': widget.userId,
-          'senderId': me.uid,
-          'senderName': currentUserName,
-          'senderProfilePic': currentUserPhotoUrl,
-          'timestamp': FieldValue.serverTimestamp(),
-          'read': false,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Solicitud enviada. Espera a que te responda'),
-          ),
-        );
-        _isRequestPending = true;
-      }
-    } catch (e) {
-      debugPrint('[followUser] $e');
-    }
-  }
-
-  //----------------------------------------------------------------------------
-  // Toast si es privado y no puedo invitar/chatear
-  //----------------------------------------------------------------------------
-  void _showPrivateToast() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Este usuario es privado. Debes enviar solicitud.'),
-      ),
-    );
-  }
-
-  //----------------------------------------------------------------------------
   // Sección de estadísticas (planes futuros, seguidores, seguidos)
   //----------------------------------------------------------------------------
   Widget _buildBioAndStats() {
@@ -1012,6 +832,246 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         .where('userId', isEqualTo: userId)
         .get();
     return snap.size;
+  }
+
+  //----------------------------------------------------------------------------
+  // Botones principales: Invitar, Mensaje, Seguir
+  //----------------------------------------------------------------------------
+  Widget _buildActionButtons(String otherUserId) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildActionButton(
+          iconPath: 'assets/union.svg',
+          label: 'Invítale a un Plan',
+          onTap: (_isPrivate && !isFollowing && !_isRequestPending)
+              ? _showPrivateToast
+              : () => InviteUsersToPlanScreen.showPopup(context, otherUserId),
+        ),
+        const SizedBox(width: 12),
+        _buildActionButton(
+          iconPath: 'assets/mensaje.svg',
+          label: 'Enviar Mensaje',
+          onTap: () {
+            // Lógica: si el receptor (widget.userId) es privado y no le sigo => popup
+            //         caso contrario => abrimos chat
+            if (_isPrivate && !isFollowing) {
+              _showPrivateToast();
+            } else {
+              final data = _userDocSnap!.data() as Map<String, dynamic>;
+              final userName = data['name'] ?? 'Usuario';
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    chatPartnerId: widget.userId,
+                    chatPartnerName: userName,
+                    chatPartnerPhoto: _profileImageUrl ?? '',
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        const SizedBox(width: 12),
+        _buildActionButton(
+          iconPath: _getFollowIcon(),
+          label: _getFollowLabel(),
+          onTap: _handleFollowTap,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required String iconPath,
+    required VoidCallback onTap,
+    String? label,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 13, 32, 53),
+                  Color.fromARGB(255, 72, 38, 38),
+                  Color(0xFF12232E),
+                ],
+              ),
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 24,
+                  height: 24,
+                  color: Colors.white,
+                ),
+                if (label != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getFollowLabel() {
+    if (isFollowing) {
+      return 'Siguiendo';
+    } else if (_isRequestPending) {
+      return 'Solicitado';
+    } else {
+      return 'Seguir';
+    }
+  }
+
+  String _getFollowIcon() {
+    if (isFollowing) {
+      return 'assets/icono-tick.svg';
+    } else if (_isRequestPending) {
+      return 'assets/agregar-usuario.svg';
+    } else {
+      return 'assets/agregar-usuario.svg';
+    }
+  }
+
+  void _handleFollowTap() async {
+    if (isFollowing) {
+      // Dejar de seguir
+      await _unfollowUser();
+    } else if (_isRequestPending) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ya enviaste una solicitud. Espera la respuesta.'),
+        ),
+      );
+    } else {
+      // Intentar seguir
+      await _followUser();
+    }
+
+    setState(() {});
+  }
+
+  Future<void> _unfollowUser() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null || me.uid == widget.userId) return;
+
+    try {
+      // Borrar en "followed"
+      final f1 = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: me.uid)
+          .where('followedId', isEqualTo: widget.userId)
+          .get();
+      for (final d in f1.docs) {
+        await d.reference.delete();
+      }
+
+      // Borrar en "followers"
+      final f2 = await FirebaseFirestore.instance
+          .collection('followers')
+          .where('userId', isEqualTo: widget.userId)
+          .where('followerId', isEqualTo: me.uid)
+          .get();
+      for (final d in f2.docs) {
+        await d.reference.delete();
+      }
+
+      isFollowing = false;
+    } catch (e) {
+      debugPrint('[unfollowUser] $e');
+    }
+  }
+
+  Future<void> _followUser() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null || me.uid == widget.userId) return;
+
+    try {
+      if (!_isPrivate) {
+        // Perfil público
+        await FirebaseFirestore.instance.collection('followers').add({
+          'userId': widget.userId,
+          'followerId': me.uid,
+        });
+        await FirebaseFirestore.instance.collection('followed').add({
+          'userId': me.uid,
+          'followedId': widget.userId,
+        });
+        isFollowing = true;
+      } else {
+        // Perfil privado => guardamos en follow_requests + notificación
+        await FirebaseFirestore.instance.collection('follow_requests').add({
+          'fromId': me.uid,
+          'toId': widget.userId,
+          'status': 'pending',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        // Notificación
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(me.uid)
+            .get();
+        final currentUserName =
+            userDoc.exists ? (userDoc.data()?['name'] ?? '') : '';
+        final currentUserPhotoUrl =
+            userDoc.exists ? (userDoc.data()?['photoUrl'] ?? '') : '';
+
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'follow_request',
+          'receiverId': widget.userId,
+          'senderId': me.uid,
+          'senderName': currentUserName,
+          'senderProfilePic': currentUserPhotoUrl,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Solicitud enviada. Espera a que te responda'),
+          ),
+        );
+        _isRequestPending = true;
+      }
+    } catch (e) {
+      debugPrint('[followUser] $e');
+    }
+  }
+
+  //----------------------------------------------------------------------------
+  // Toast si es privado y no puedo invitar/chatear
+  //----------------------------------------------------------------------------
+  void _showPrivateToast() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Este usuario es privado. Debes enviar solicitud.'),
+      ),
+    );
   }
 
   //----------------------------------------------------------------------------

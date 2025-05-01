@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../start/welcome_screen.dart'; // Asegúrate de importar la pantalla de bienvenida
+import '../users_managing/presence_service.dart'; // Asegúrate de importar el servicio de presencia
 
 class CloseSessionScreen extends StatelessWidget {
   const CloseSessionScreen({super.key});
@@ -20,6 +21,7 @@ class CloseSessionScreen extends StatelessWidget {
     try {
       // Cierra sesión en Firebase
       await FirebaseAuth.instance.signOut();
+      PresenceService.dispose();
 
       // Redirige a la pantalla de bienvenida
       Navigator.pushAndRemoveUntil(

@@ -16,6 +16,7 @@ import '../future_plans/future_plans.dart';
 
 // Manejo de imágenes
 import 'user_images_managing.dart';
+import '../users_managing/presence_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -664,6 +665,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               child: GestureDetector(
                 onTap: () async {
                   await FirebaseAuth.instance.signOut();
+                  //PresenceService.dispose();
                   if (!mounted) return;
                   Navigator.pushReplacement(context,
                       MaterialPageRoute(builder: (_) => const LoginScreen()));

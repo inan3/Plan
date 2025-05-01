@@ -79,11 +79,11 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
     if (diff.inMinutes < 1) {
       return "Hace unos segundos";
     } else if (diff.inMinutes < 60) {
-      return "Hace ${diff.inMinutes} minuto/s";
+      return "Hace ${diff.inMinutes} minutos";
     } else if (diff.inHours < 24) {
-      return "Hace ${diff.inHours} hora/s";
+      return "Hace ${diff.inHours} horas";
     } else {
-      return "Hace ${diff.inDays} día/s";
+      return "Hace ${diff.inDays} días";
     }
   }
 

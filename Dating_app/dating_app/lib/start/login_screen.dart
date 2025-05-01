@@ -11,6 +11,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../explore_screen/main_screen/explore_screen.dart';
 import '../main/colors.dart';
 
+// IMPORTA TU SERVICIO DE PRESENCIA:
+import '../explore_screen/users_managing/presence_service.dart'; // Ajusta el path según tu estructura
+
 const Color backgroundColor = AppColors.background; // Azul turquesa
 
 class LoginScreen extends StatefulWidget {
@@ -40,35 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // Marca al usuario como online en la base “plan-social-app”
+  // [ELIMINADO O COMENTADO] _updatePresence
   // ─────────────────────────────────────────────
-  Future<void> _updatePresence(User user) async {
-    try {
-      // 1) Instancia de la RTDB secundaria
-      final db = FirebaseDatabase.instanceFor(
-        app: Firebase.app(),
-        databaseURL: 'https://plan-social-app.europe-west1.firebasedatabase.app',
-      );
-
-      // 2) Referencia a /status/{uid}
-      final ref = db.ref('status/${user.uid}');
-
-      // 3) Al conectar → online = true
-      await ref.set({
-        'online': true,
-        'lastSeen': ServerValue.timestamp,
-      });
-
-      // 4) onDisconnect → online = false, lastSeen = now
-      ref.onDisconnect().update({
-        'online': false,
-        'lastSeen': ServerValue.timestamp,
-      });
-    } catch (e) {
-      debugPrint('Error al marcar presencia: $e');
-      // No bloqueamos el flujo aunque falle
-    }
-  }
+  // Future<void> _updatePresence(User user) async {
+  //   // ... [código anterior] ...
+  // }
 
   // ─────────────────────────────────────────────
   // Navegar al ExploreScreen
@@ -107,8 +86,8 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Actualizamos presencia (no bloqueante)
-      unawaited(_updatePresence(user));
+      // *** AQUI USAMOS NUEVO SERVICIO ***
+      await PresenceService.init(user);
 
       if (mounted) setState(() => isLoading = false);
       await _goToExplore();
@@ -130,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      // Forzamos selección de cuenta para pruebas locales
+      // Forzamos selección de cuenta para pruebas
       await GoogleSignIn().signOut();
 
       final GoogleSignInAccount? acc = await GoogleSignIn().signIn();
@@ -158,8 +137,8 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Actualizamos presencia
-      unawaited(_updatePresence(user));
+      // *** AQUI USAMOS NUEVO SERVICIO ***
+      await PresenceService.init(user);
 
       if (mounted) setState(() => isLoading = false);
       await _goToExplore();

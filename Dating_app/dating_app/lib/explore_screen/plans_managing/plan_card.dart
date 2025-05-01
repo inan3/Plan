@@ -12,6 +12,9 @@ import 'plan_share_sheet.dart';
 import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
 
+// Importamos el widget de estado de actividad:
+import '../users_managing/user_activity_status.dart';
+
 /// Tarjeta que muestra cada Plan en la lista
 class PlanCard extends StatefulWidget {
   final PlanModel plan;
@@ -47,7 +50,7 @@ class PlanCardState extends State<PlanCard> {
   late Future<List<Map<String, dynamic>>> _futureParticipants;
   late List<Map<String, dynamic>> _participants;
 
-  // Manejo join
+  // Manejo de la solicitud de unirse
   JoinState _joinState = JoinState.none;
   String? _pendingNotificationId;
 
@@ -62,9 +65,9 @@ class PlanCardState extends State<PlanCard> {
     _checkIfPendingJoinRequest();
   }
 
-  // ---------------------------------------------------------------------------
-  // (1) Verificar si ya le dí like
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // (1) Verificar si ya le di "like" a este plan
+  // ─────────────────────────────────────────────────────────────
   Future<void> _checkIfLiked() async {
     if (_currentUser == null) return;
 
@@ -81,13 +84,13 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // (2) Verificar si hay solicitud pendiente de unirse
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // (2) Verificar si tenemos una solicitud de unión pendiente
+  // ─────────────────────────────────────────────────────────────
   Future<void> _checkIfPendingJoinRequest() async {
     if (_currentUser == null) return;
 
-    // Si ya es participante, no hay join_request
+    // Si ya es participante, no necesitamos join_request
     if (widget.plan.participants?.contains(_currentUser!.uid) ?? false) {
       return;
     }
@@ -109,9 +112,9 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // (3) Toggle Like
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // (3) Toggle "Like"
+  // ─────────────────────────────────────────────────────────────
   Future<void> _toggleLike() async {
     if (_currentUser == null) return;
 
@@ -146,9 +149,9 @@ class PlanCardState extends State<PlanCard> {
     setState(() => _liked = !_liked);
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   // (4) Botón "Unirse"
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   Future<void> _onJoinTap() async {
     if (_currentUser == null) return;
     final plan = widget.plan;
@@ -161,7 +164,7 @@ class PlanCardState extends State<PlanCard> {
       return;
     }
 
-    // Es tu plan
+    // Si es tu plan
     if (plan.createdBy == _currentUser!.uid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No puedes unirte a tu propio plan')),
@@ -169,21 +172,22 @@ class PlanCardState extends State<PlanCard> {
       return;
     }
 
-    // Cupo lleno => No hacer nada
+    // Cupo lleno → no se hace nada
     final int participantes = plan.participants?.length ?? 0;
     final int maxPart = plan.maxParticipants ?? 0;
     if (maxPart > 0 && participantes >= maxPart) {
-      // Cupo completo
-      return; // no hace nada
+      return; // Sin acción
     }
 
-    // Toggle join_request
+    // Alternar join_request
     if (_joinState == JoinState.requested) {
+      // Cancelamos la solicitud anterior
       await _cancelJoinRequest();
       setState(() {
         _joinState = JoinState.rejoin;
       });
     } else {
+      // Creamos solicitud de unión
       await _createJoinRequest();
       setState(() {
         _joinState = JoinState.requested;
@@ -225,7 +229,9 @@ class PlanCardState extends State<PlanCard> {
     _pendingNotificationId = docRef.id;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tu solicitud de unión se ha enviado con éxito.')),
+      const SnackBar(
+        content: Text('Tu solicitud de unión se ha enviado con éxito.'),
+      ),
     );
   }
 
@@ -249,9 +255,9 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   // (5) Abrir detalles del plan
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   void _openPlanDetails(BuildContext context, PlanModel plan) {
     Navigator.push(
       context,
@@ -264,9 +270,9 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   // (6) Popup Chat
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   void _onMessageButtonTap() {
     showDialog(
       context: context,
@@ -431,7 +437,7 @@ class PlanCardState extends State<PlanCard> {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    // Actualizar commentsCount
+    // Actualizar commentsCount en el doc del plan
     final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
     await planRef.update({
       'commentsCount': FieldValue.increment(1),
@@ -442,9 +448,9 @@ class PlanCardState extends State<PlanCard> {
     _chatController.clear();
   }
 
-  // ---------------------------------------------------------------------------
-  // Compartir
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // Compartir plan
+  // ─────────────────────────────────────────────────────────────
   void _onShareButtonTap() {
     _openCustomShareModal(widget.plan);
   }
@@ -470,10 +476,12 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Creador (avatar + nombre)
-  // ---------------------------------------------------------------------------
-  Widget _buildCreatorFrosted(String name, String handle, String? photoUrl) {
+  // ─────────────────────────────────────────────────────────────
+  // Bloque de "creador" (avatar + nombre + actividad)
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildCreatorFrosted(String name, String? photoUrl) {
+    final creatorUid = widget.plan.createdBy;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: BackdropFilter(
@@ -484,11 +492,15 @@ class PlanCardState extends State<PlanCard> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Avatar
               buildProfileAvatar(photoUrl),
               const SizedBox(width: 8),
+
+              // Nombre y estado de actividad
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Nombre + verificado
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -512,13 +524,10 @@ class PlanCardState extends State<PlanCard> {
                       ),
                     ],
                   ),
-                  Text(
-                    handle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
-                  ),
+
+                  // Solo el estado de actividad
+                  if (creatorUid.isNotEmpty)
+                    UserActivityStatus(userId: creatorUid),
                 ],
               ),
             ],
@@ -528,14 +537,14 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Participantes en esquina
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // Participantes en la esquina
+  // ─────────────────────────────────────────────────────────────
   Widget _buildParticipantsCorner() {
     if (_participants.isEmpty) return const SizedBox.shrink();
     final count = _participants.length;
 
-    // Caso 1: Solo 1
+    // Solo 1
     if (count == 1) {
       final p = _participants[0];
       final pic = p['photoUrl'] ?? '';
@@ -570,8 +579,7 @@ class PlanCardState extends State<PlanCard> {
         ),
       );
     }
-
-    // Caso 2: 2 o más
+    // Si hay 2 o más
     else {
       final p1 = _participants[0];
       final p2 = _participants[1];
@@ -599,8 +607,7 @@ class PlanCardState extends State<PlanCard> {
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -608,8 +615,7 @@ class PlanCardState extends State<PlanCard> {
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -643,12 +649,12 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // MOSTRAR MODAL DE PARTICIPANTES (incluyendo lógica "ASISTE")
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // Modal de participantes (con lógica de "ASISTE")
+  // ─────────────────────────────────────────────────────────────
   Future<void> _showParticipantsModal(
       List<Map<String, dynamic>> participants) async {
-    // Primero obtenemos la lista de usuarios que han hecho check-in
+    // Revisamos quién ha hecho check-in
     List checkedInUsers = [];
     try {
       final planSnap = await FirebaseFirestore.instance
@@ -665,7 +671,7 @@ class PlanCardState extends State<PlanCard> {
       context: context,
       builder: (context) {
         return Dialog(
-          // Ajuste para que ocupe casi todo el alto
+          // Ocupamos casi toda la pantalla
           insetPadding: EdgeInsets.only(
             top: MediaQuery.of(context).size.height * 0.05,
             left: 0,
@@ -714,6 +720,8 @@ class PlanCardState extends State<PlanCard> {
                   ),
                 ),
                 const Divider(color: Colors.white38),
+
+                // Lista
                 Expanded(
                   child: ListView.builder(
                     itemCount: participants.length,
@@ -724,14 +732,12 @@ class PlanCardState extends State<PlanCard> {
                       final age = p['age']?.toString() ?? '';
                       final uid = p['uid']?.toString() ?? '';
 
-                      // Verificamos si está en checkedInUsers
                       final bool isCheckedIn = checkedInUsers.contains(uid);
 
                       return ListTile(
-                        // NUEVA LÓGICA: en vez de abrir directamente, usamos `UserInfoCheck.open`
                         onTap: () {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
-                          // Llamamos a la lógica de verificación de bloqueo
+                          // Verificación / apertura de perfil
                           UserInfoCheck.open(context, uid);
                         },
                         leading: CircleAvatar(
@@ -747,7 +753,7 @@ class PlanCardState extends State<PlanCard> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        // Mostramos "ASISTE" si está en checkedInUsers
+                        // Si está en check-in, mostramos "ASISTE"
                         trailing: isCheckedIn
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
@@ -777,9 +783,9 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   // Botón "Unirse" o "Cupo completo"
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   Widget _buildJoinFrosted() {
     if (widget.hideJoinButton) {
       return const SizedBox.shrink();
@@ -791,7 +797,7 @@ class PlanCardState extends State<PlanCard> {
     final bool isFull = (maxP > 0 && pCount >= maxP);
 
     if (isFull) {
-      // Cupo completo => texto en rojo
+      // Cupo completo => texto
       return ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
@@ -811,7 +817,7 @@ class PlanCardState extends State<PlanCard> {
         ),
       );
     } else {
-      // Botón normal (Unirse / Unión solicitada)
+      // Botón normal
       String buttonText;
       switch (_joinState) {
         case JoinState.none:
@@ -861,9 +867,9 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   // Botón Frosted (like, chat, share)
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   Widget _buildFrostedAction({
     required String iconPath,
     required String countText,
@@ -904,19 +910,16 @@ class PlanCardState extends State<PlanCard> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Formatear Timestamp (manejar Timestamp o DateTime)
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
+  // Formatear fecha/hora (Timestamp o DateTime)
+  // ─────────────────────────────────────────────────────────────
   String _formatTimestamp(dynamic value) {
     if (value == null) return '';
     late DateTime dt;
 
-    // Si es Timestamp, convertir a DateTime
     if (value is Timestamp) {
       dt = value.toDate();
-    }
-    // Si ya es DateTime
-    else if (value is DateTime) {
+    } else if (value is DateTime) {
       dt = value;
     } else {
       return '';
@@ -925,14 +928,13 @@ class PlanCardState extends State<PlanCard> {
     return DateFormat('yyyy-MM-dd HH:mm').format(dt);
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   // BUILD PRINCIPAL
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
     final name = widget.userData['name']?.toString().trim() ?? 'Usuario';
-    final userHandle = widget.userData['handle']?.toString() ?? '@usuario';
     final fallbackPhotoUrl = widget.userData['photoUrl']?.toString();
 
     return FutureBuilder<List<Map<String, dynamic>>>(
@@ -960,7 +962,7 @@ class PlanCardState extends State<PlanCard> {
         final maxP = plan.maxParticipants ?? 0;
         final bool isFull = (maxP > 0 && totalP >= maxP);
 
-        // formateamos la fecha/hora de startTimestamp (puede ser Timestamp o DateTime)
+        // Fecha/hora de inicio
         final dateText = _formatTimestamp(plan.startTimestamp);
 
         return Center(
@@ -984,13 +986,12 @@ class PlanCardState extends State<PlanCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Fila superior (creador y botón unirse)
+                  // Fila superior (creador + botón unirse)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                     child: Row(
                       children: [
                         GestureDetector(
-                          // NUEVA LÓGICA: en vez de abrir directamente, usamos `UserInfoCheck.open`
                           onTap: () {
                             final creatorUid = plan.createdBy;
                             if (creatorUid.isNotEmpty) {
@@ -999,7 +1000,6 @@ class PlanCardState extends State<PlanCard> {
                           },
                           child: _buildCreatorFrosted(
                             name,
-                            userHandle,
                             fallbackPhotoUrl,
                           ),
                         ),
@@ -1035,7 +1035,7 @@ class PlanCardState extends State<PlanCard> {
                           ),
                   ),
 
-                  // Botones (like, chat, share)
+                  // Botones de acción (like, chat, share)
                   Padding(
                     padding: const EdgeInsets.only(
                       left: 12,
@@ -1085,7 +1085,7 @@ class PlanCardState extends State<PlanCard> {
                     ),
                   ),
 
-                  // Texto: X/Y participantes
+                  // Texto: "X/Y participantes"
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Align(
@@ -1104,7 +1104,7 @@ class PlanCardState extends State<PlanCard> {
                     ),
                   ),
 
-                  // Mostramos plan.type (bold) a la izquierda y la fecha/hora a la derecha
+                  // plan.type y fecha/hora
                   if (dateText.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
