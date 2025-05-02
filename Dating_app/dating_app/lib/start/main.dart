@@ -27,15 +27,13 @@ void main() async {
   // (2) Si ya hay un usuario autenticado, inicializa el servicio de presencia
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
-    print('>>> [MAIN] Usuario logueado: ${user.uid}');
     PresenceService.dispose();
     await PresenceService.init(user);
-    print('>>> [MAIN] PresenceService init DONE');
   }
 
   // Inicializa la localización para español
   await initializeDateFormatting('es', null);
-
+  print('⚙️ Firebase DatabaseURL: ${Firebase.app().options.databaseURL}');
   runApp(const MyApp());
 }
 

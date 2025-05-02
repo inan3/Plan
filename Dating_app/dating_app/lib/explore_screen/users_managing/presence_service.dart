@@ -32,7 +32,7 @@ class PresenceService with WidgetsBindingObserver {
 
   late final DatabaseReference _statusRef = FirebaseDatabase.instanceFor(
     app: Firebase.app(),
-    databaseURL: 'https://plan-social-app.europe-west1.firebasedatabase.app',
+    databaseURL: 'https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app',
   ).ref('status/$_uid');
 
   StreamSubscription<DatabaseEvent>? _connSub;
@@ -49,10 +49,11 @@ class PresenceService with WidgetsBindingObserver {
       final connected = event.snapshot.value == true;
       if (connected) {
         // Al reconectarse, programamos el onDisconnect
-        _statusRef.onDisconnect().update({
+        _statusRef.onDisconnect().set({
           'online': false,
           'lastSeen': ServerValue.timestamp,
         });
+        await _setOnline();
       }
     });
 

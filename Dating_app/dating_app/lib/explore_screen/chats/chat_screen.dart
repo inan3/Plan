@@ -28,6 +28,9 @@ import 'inner_chat_utils/open_location.dart';
 import 'inner_chat_utils/answer_a_message.dart';
 import '../users_managing/report_and_block_user.dart';
 
+// Importa el widget de presencia:
+import '../users_managing/user_activity_status.dart';
+
 class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
@@ -274,49 +277,55 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           ),
           const SizedBox(width: 8),
 
-          // Info del chat (avatar, nombre, etc.)
+          // Info del chat (avatar, nombre, estado de actividad, etc.)
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: GestureDetector(
-                onTap: () {
-                  // Al pulsar, abrimos con verificación de bloqueo
-                  UserInfoCheck.open(context, widget.chatPartnerId);
-                },
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundImage: widget.chatPartnerPhoto != null
-                          ? NetworkImage(widget.chatPartnerPhoto!)
-                          : null,
-                      backgroundColor: Colors.grey[300],
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.chatPartnerName,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  // ───────── Cambiamos de blanco a gris semitransparente ─────────
+                  color:
+                      const Color.fromARGB(255, 14, 14, 14).withOpacity(0.25),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      UserInfoCheck.open(context, widget.chatPartnerId);
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: widget.chatPartnerPhoto != null
+                              ? NetworkImage(widget.chatPartnerPhoto!)
+                              : null,
+                          backgroundColor: Colors.grey[300],
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.chatPartnerName,
+                                style: const TextStyle(
+                                  color: Colors.white, // ← blanco
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              UserActivityStatus(
+                                userId:
+                                    widget.chatPartnerId, // texto sigue blanco
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1349,8 +1358,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     children: [
                       Text(
                         DateFormat('HH:mm').format(messageTime),
-                        style:
-                            const TextStyle(color: Colors.black54, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.black54, fontSize: 12),
                       ),
                       if (isMe) ...[
                         const SizedBox(width: 4),

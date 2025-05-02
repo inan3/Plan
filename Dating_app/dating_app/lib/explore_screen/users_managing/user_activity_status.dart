@@ -39,7 +39,7 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
     // 1) Obtenemos la instancia con la URL de la base secundaria:
     final db = FirebaseDatabase.instanceFor(
       app: Firebase.app(),
-      databaseURL: 'https://plan-social-app.europe-west1.firebasedatabase.app',
+      databaseURL: 'https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app',
     );
 
     // 2) Referencia a “status/{uid}”

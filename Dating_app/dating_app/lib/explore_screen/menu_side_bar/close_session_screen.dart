@@ -21,7 +21,7 @@ class CloseSessionScreen extends StatelessWidget {
     try {
       // Cierra sesión en Firebase
       await FirebaseAuth.instance.signOut();
-      PresenceService.dispose();
+      //PresenceService.dispose();
 
       // Redirige a la pantalla de bienvenida
       Navigator.pushAndRemoveUntil(
