@@ -1,5 +1,5 @@
+//menu_side_bar_screen.dart
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,7 +12,6 @@ import 'package:dating_app/main/colors.dart';
 import 'my_plans_screen.dart';
 import 'favourites_screen.dart';
 import 'seetings/settings_screen.dart';
-import 'help_center_screen.dart';
 import 'close_session_screen.dart';
 import 'subscribed_plans_screen.dart';
 
@@ -149,13 +148,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                               icon: 'assets/icono-ajustes.svg',
                               title: 'Ajustes',
                               destination: const SettingsScreen(),
-                              iconColor: Colors.white,
-                              textColor: Colors.white,
-                            ),
-                            _buildMenuItem(
-                              icon: 'assets/icono-centro-ayuda.svg',
-                              title: 'Centro de Ayuda',
-                              destination: const HelpCenterScreen(),
                               iconColor: Colors.white,
                               textColor: Colors.white,
                             ),

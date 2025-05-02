@@ -135,6 +135,12 @@ flutter:
     - assets/icono-campana-activada.svg
     - assets/icono-campana-desactivada.svg
     - assets/icono-fondo.svg
+    - assets/icono-general-notifications.svg
+    - assets/icono-help-center.svg
+    - assets/icono-valoration.svg
+    - assets/icono-telefono.svg
+    - assets/icono-email.svg
+    - assets/icono-preguntas.svg
 
     - assets/image-cycling.png
     - assets/image-meeting.png
