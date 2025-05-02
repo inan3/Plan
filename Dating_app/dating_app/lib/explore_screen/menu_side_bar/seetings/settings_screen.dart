@@ -5,7 +5,7 @@ import '../menu_side_bar_screen.dart';
 import 'account.dart';
 import 'privacy.dart';
 import 'general_notifications.dart';
-import 'help_center.dart'; // <-- Importamos la pantalla de Centro de ayuda
+import 'help_center.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -24,13 +24,7 @@ class SettingsScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const MainSideBarScreen(),
-              ),
-              (route) => false,
-            );
+            Navigator.pop(context);
           },
         ),
         elevation: 0,
