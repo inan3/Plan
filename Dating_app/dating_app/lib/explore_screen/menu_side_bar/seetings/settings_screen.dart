@@ -1,14 +1,62 @@
-// settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../menu_side_bar_screen.dart';
 import 'account.dart';
 import 'privacy.dart';
 import 'general_notifications.dart';
 import 'help_center.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
+
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController _failureController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void dispose() {
+    _failureController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendFailureReport() async {
+    final String text = _failureController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, describe el fallo antes de enviar.')),
+      );
+      return;
+    }
+
+    try {
+      final User? user = _auth.currentUser;
+      final String uid = user?.uid ?? 'unknown';
+
+      await _firestore.collection('appFailures').add({
+        'userId': uid,
+        'fail': text,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gracias por tu reporte.')),
+      );
+      _failureController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar el reporte: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,8 +197,20 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       title: const Text('Acerca de Plan'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        // TODO: Navegar a acerca_de_plan.dart
+                      onTap: () async {
+                        final uri = Uri.parse('https://plansocialapp.es//');
+                        try {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } catch (_) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No se pudo abrir el enlace'),
+                            ),
+                          );
+                        }
                       },
                     ),
                     const Divider(height: 1),
@@ -202,25 +262,25 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      width: double.infinity,
-                      height: 100,
                       decoration: BoxDecoration(
                         color: Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: const Text(
-                        'Describe aquí el fallo...',
-                        style: TextStyle(color: Colors.black54),
+                      child: TextField(
+                        controller: _failureController,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          hintText: 'Describe aquí el fallo...',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Enviar reporte
-                        },
+                        onPressed: _sendFailureReport,
                         child: const Text('Enviar'),
                       ),
                     ),

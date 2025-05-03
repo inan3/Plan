@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Plan Social - Conecta y Vive</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --green:#25D366;
+      --green-dark:#128C7E;
+      /*  🎨  Nuevos colores azules  */
+      --blue:#007bff;
+      --blue-dark:#0069d9;
+
+      --gray-dark:#444;
+      --gray-light:#999;
+      --bg:#fff;
+      --font-body:'Poppins',sans-serif;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:var(--font-body);background:var(--bg);color:var(--gray-dark);}
+    a{text-decoration:none;color:inherit;}
+
+    /* ---------- HEADER ---------- */
+    header{
+      position:fixed;
+      top:0;
+      width:100%;
+      height:72px;
+      background:var(--bg);
+      border-bottom:1px solid #eee;
+      z-index:100;
+      overflow:visible;
+    }
+    .nav-container{
+      max-width:1200px;
+      margin:auto;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      padding:0 1rem;
+    }
+    /*  ➜  Logo más a la derecha  */
+    .nav-logo{
+      margin-left:2rem;
+      margin-right:1rem;
+    }
+    .nav-logo img{
+      height:80px;
+      transform:translateX(60px);   /* ya colocado 60 px a la derecha */
+    }
+
+    /*  ➜  Botón “Regístrate”  */
+    .btn-download{
+      background:var(--blue);
+      color:#fff;
+      padding:.6rem 1.2rem;
+      border-radius:24px;                    /* radio 24 px */
+      font-weight:600;
+      transition:background .2s,transform .2s,box-shadow .2s;
+      margin-left:auto;
+      margin-right:0;
+      box-shadow:0 8px 16px rgba(0,0,0,.15); /* efecto flotante */
+    }
+    .btn-download:hover{
+      background:var(--blue-dark);
+      transform:translateY(-2px);            /* se eleva ligeramente */
+      box-shadow:0 12px 20px rgba(0,0,0,.20);
+    }
+
+    nav{margin-left:1.5rem;}
+
+    nav ul{display:flex;gap:1.5rem;list-style:none;}
+    nav ul li a{font-weight:500;color:var(--gray-dark);transition:color .2s;}
+    nav ul li a:hover{color:var(--green);}
+    .nav-toggle{display:none;background:none;border:none;font-size:1.5rem;cursor:pointer;}
+
+    /* ---------- HERO ---------- */
+    .hero{
+      position:relative;
+      overflow:hidden;
+      height:100vh;
+      padding:0 1rem;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .hero-slider{position:absolute;inset:0;display:flex;height:100%;width:500%;transform:translateX(0);}
+    .slide{flex:0 0 100vw;height:100%;background-size:cover;background-position:center;}
+    .slide:nth-child(1){background-image:url("image-pool-party.png");}
+    .slide:nth-child(2){background-image:url("image-meeting.png");}
+    .slide:nth-child(3){background-image:url("image-padel.png");}
+    .slide:nth-child(4){background-image:url("image-cycling.png");}
+    .slide:nth-child(5){background-image:url("image-pool-party.png");}
+    .hero::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.25);pointer-events:none;z-index:1;}
+    .hero-text{position:relative;z-index:2;color:#fff;max-width:500px;margin:0 auto;text-align:center;}
+    .hero-text h1{font-size:2.5rem;margin-bottom:.8rem;}
+    .hero-text p{font-size:1.1rem;margin-bottom:1.5rem;}
+
+    /* ---------- BOTÓN DESCARGAR (HERO) ---------- */
+    .hero-download{
+      display:inline-block;
+      background:var(--green);
+      color:#fff;
+      padding:.8rem 1.6rem;
+      border-radius:24px;                 /* radio 24 px */
+      font-weight:600;
+      transition:background .2s,
+                 transform  .2s,
+                 box-shadow .2s;
+      box-shadow:0 8px 16px rgba(0,0,0,.15);  /* efecto flotante */
+    }
+    .hero-download:hover{
+      background:var(--green-dark);
+      transform:translateY(-2px);             /* se eleva ligeramente */
+      box-shadow:0 12px 20px rgba(0,0,0,.20);
+    }
+
+    .hero-image,.download-buttons{display:none;}
+
+    /* ---------- FEATURES / FOOTER ---------- */
+    .features{background:#f9f9f9;padding:4rem 1rem;}
+    .feature-list{max-width:1000px;margin:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2rem;}
+    .feature{text-align:center;}
+    .feature img{height:60px;margin-bottom:1rem;}
+    .feature h3{font-size:1.2rem;margin-bottom:.5rem;}
+    .feature p{font-size:.95rem;color:var(--gray-light);}
+    footer{background:var(--gray-dark);color:#fff;padding:2rem 1rem;text-align:center;}
+    footer a{color:#ddd;margin:0 .5rem;font-size:.9rem;}
+    footer a:hover{color:#fff;}
+
+    /* ---------- RESPONSIVE ---------- */
+    @media(max-width:992px){
+      .hero{padding:0 1rem;}
+      .hero-text{max-width:90%;}
+    }
+    @media(max-width:768px){
+      .nav-container{justify-content:space-between;}
+      .nav-toggle{display:block;order:1;}
+      .nav-logo{order:2;flex:1;display:flex;justify-content:center;margin-left:0;}
+      .btn-download{display:inline-block;order:3;margin-left:0;margin-right:0;}
+      nav{order:4;margin-left:0;}
+      nav ul{position:fixed;top:60px;left:-100%;width:200px;height:calc(100% - 60px);background:var(--bg);flex-direction:column;align-items:flex-start;padding:1rem;gap:1rem;transition:left .3s ease;box-shadow:4px 0 8px rgba(0,0,0,.1);}
+      nav ul.open{left:0;}
+      nav ul li{width:100%;}
+      nav ul li a{display:block;padding:.5rem 0;width:100%;}
+      .hero-text h1{font-size:2rem;}
+      .hero-text p{font-size:1rem;}
+    }
+    @media(max-width:576px){
+      .feature-list{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <button class="nav-toggle" aria-label="Abrir menú">☰</button>
+      <div class="nav-logo">
+        <img src="plan-sin-fondo.png" alt="Plan Social" />
+      </div>
+      <a href="#download" class="btn-download">Regístrate</a>
+      <nav>
+        <ul>
+          <li><a href="#features">Características</a></li>
+          <li><a href="#download">Descargar</a></li>
+          <li><a href="#faq">Ayuda</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-slider" id="heroSlider" aria-hidden="true">
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+      </div>
+      <div class="hero-text">
+        <h1>Crea planes y conecta con gente cerca</h1>
+        <p>¡PLAN es la plataforma social donde los intereses comunes se fusionan!</p>
+        <a href="#" class="hero-download" id="download">Descargar</a>
+      </div>
+    </section>
+    <section class="features" id="features">
+      <div class="feature-list">
+        <div class="feature">
+          <img src="icono-chat.svg" alt="Chat seguro" />
+          <h3>Chat seguro</h3>
+          <p>Protegemos tus conversaciones con cifrado de extremo a extremo.</p>
+        </div>
+        <div class="feature">
+          <img src="icono-llamada.svg" alt="Llamadas y videollamadas" />
+          <h3>Llamadas y videollamadas</h3>
+          <p>Habla cara a cara con alta calidad de audio y video.</p>
+        </div>
+        <div class="feature">
+          <img src="icono-grupos.svg" alt="Grupos" />
+          <h3>Grupos</h3>
+          <p>Crea grupos de hasta 256 miembros para compartir momentos.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <p>© 2025 Plan Social | <a href="#">Privacidad</a> | <a href="#">Términos</a></p>
+  </footer>
+
+  <script>
+    const navToggle = document.querySelector('.nav-toggle');
+    const navList = document.querySelector('nav ul');
+    navToggle.addEventListener('click', () => navList.classList.toggle('open'));
+
+    const slider = document.getElementById('heroSlider');
+    const totalSlides = slider.children.length;
+    const stepTime = 3000;
+    const slideSpeed = 600;
+    let index = 0;
+    setInterval(() => {
+      index++;
+      slider.style.transition = `transform ${slideSpeed}ms ease`;
+      slider.style.transform = `translateX(-${index * 100}vw)`;
+      if (index === totalSlides - 1) {
+        setTimeout(() => {
+          slider.style.transition = 'none';
+          slider.style.transform = 'translateX(0)';
+          index = 0;
+        }, slideSpeed);
+      }
+    }, stepTime);
+  </script>
+</body>
+</html>

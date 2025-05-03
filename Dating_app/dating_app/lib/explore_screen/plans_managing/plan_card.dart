@@ -1,9 +1,11 @@
-//plan_card.dart
+// plan_card.dart
+
 import 'dart:ui' as ui;
+import 'dart:math' as math; // Para min() si quieres dejarlo más robusto.
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/plan_model.dart';
@@ -439,7 +441,8 @@ class PlanCardState extends State<PlanCard> {
     });
 
     // Actualizar commentsCount en el doc del plan
-    final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
+    final planRef =
+        FirebaseFirestore.instance.collection('plans').doc(plan.id);
     await planRef.update({
       'commentsCount': FieldValue.increment(1),
     }).catchError((_) {
@@ -539,6 +542,16 @@ class PlanCardState extends State<PlanCard> {
   }
 
   // ─────────────────────────────────────────────────────────────
+  // Función de truncado seguro
+  // ─────────────────────────────────────────────────────────────
+  String _truncate(String text, int maxChars) {
+    // Usamos min() para mayor seguridad, pero con la condición if() ya evitamos
+    // desbordes. Aun así queda a prueba de futuro.
+    if (text.length <= maxChars) return text;
+    return text.substring(0, math.min(maxChars, text.length)) + '…';
+  }
+
+  // ─────────────────────────────────────────────────────────────
   // Participantes en la esquina
   // ─────────────────────────────────────────────────────────────
   Widget _buildParticipantsCorner() {
@@ -552,10 +565,10 @@ class PlanCardState extends State<PlanCard> {
       String name = p['name'] ?? 'Usuario';
       final age = p['age']?.toString() ?? '';
 
+      // Truncado seguro para evitar RangeError
+      const int maxChars = 14;
       String displayText = '$name, $age';
-      if (displayText.length > 10) {
-        displayText = displayText.substring(0, 14) + '...';
-      }
+      displayText = _truncate(displayText, maxChars);
 
       return GestureDetector(
         onTap: () => _showParticipantsModal(_participants),
@@ -608,7 +621,8 @@ class PlanCardState extends State<PlanCard> {
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage:
+                      pic1.isNotEmpty ? NetworkImage(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -616,7 +630,8 @@ class PlanCardState extends State<PlanCard> {
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage:
+                      pic2.isNotEmpty ? NetworkImage(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -654,7 +669,8 @@ class PlanCardState extends State<PlanCard> {
   // Modal de participantes (con lógica de "ASISTE")
   // ─────────────────────────────────────────────────────────────
   Future<void> _showParticipantsModal(
-      List<Map<String, dynamic>> participants) async {
+    List<Map<String, dynamic>> participants,
+  ) async {
     // Revisamos quién ha hecho check-in
     List checkedInUsers = [];
     try {
