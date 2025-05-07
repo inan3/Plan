@@ -1,13 +1,15 @@
+// map_screen.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
-import '../../main/keys.dart'; // Asegúrate de que contenga APIKeys.androidApiKey y APIKeys.iosApiKey
+import '../../main/keys.dart';
 import 'plans_in_map_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -19,18 +21,20 @@ class MapScreen extends StatefulWidget {
 
 class MapScreenState extends State<MapScreen> {
   final Completer<GoogleMapController> _controller = Completer();
-  final User? currentUser = FirebaseAuth.instance.currentUser;
-  Set<Marker> _markers = {};
-  bool _locationPermissionGranted = false;
-  Position? _currentPosition;
-
-  // Controladores y variables para el buscador de direcciones
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+
+  Position? _currentPosition;
+  bool _locationPermissionGranted = false;
+  double _currentZoom = 14.0;
   List<dynamic> _predictions = [];
+  List<Marker> _allMarkers = [];
+  Set<Marker> _markers = {};
+  Set<Polyline> _polylines = {};
 
   static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(41.3851, 2.1734), // Ejemplo: Barcelona
+    target: LatLng(41.3851, 2.1734),
     zoom: 14.0,
   );
 
@@ -38,13 +42,9 @@ class MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _checkLocationPermission();
-
-    // Listener para obtener predicciones mientras se escribe
     _searchController.addListener(() {
       _fetchAddressPredictions(_searchController.text);
     });
-
-    // Listener para cerrar las predicciones cuando el campo pierde el foco
     _searchFocusNode.addListener(() {
       if (!_searchFocusNode.hasFocus) {
         setState(() {
@@ -66,7 +66,6 @@ class MapScreenState extends State<MapScreen> {
     if (status.isDenied || status.isPermanentlyDenied) {
       status = await Permission.locationWhenInUse.request();
     }
-
     if (status.isGranted) {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -75,10 +74,9 @@ class MapScreenState extends State<MapScreen> {
         _currentPosition = position;
         _locationPermissionGranted = true;
       });
-
       if (_controller.isCompleted) {
-        final controller = await _controller.future;
-        controller.animateCamera(
+        final c = await _controller.future;
+        c.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: LatLng(position.latitude, position.longitude),
@@ -87,8 +85,6 @@ class MapScreenState extends State<MapScreen> {
           ),
         );
       }
-
-      // Cargar marcadores después de obtener la posición
       await _loadMarkers();
     }
   }
@@ -97,13 +93,65 @@ class MapScreenState extends State<MapScreen> {
     final plansLoader = PlansInMapScreen();
     final planMarkers = await plansLoader.loadPlansMarkers(context);
     final userNoPlanMarkers = await plansLoader.loadUsersWithoutPlansMarkers(context);
+    _allMarkers = [...planMarkers, ...userNoPlanMarkers];
+    _updateVisibleMarkers(_currentZoom);
+  }
 
+  void _updateVisibleMarkers(double zoom) {
+    int maxToShow;
+    if (zoom < 8) {
+      maxToShow = 50;
+    } else if (zoom < 10) {
+      maxToShow = 200;
+    } else if (zoom < 12) {
+      maxToShow = 500;
+    } else {
+      maxToShow = _allMarkers.length;
+    }
+    final limited = _allMarkers.length > maxToShow
+        ? _allMarkers.sublist(0, maxToShow)
+        : _allMarkers;
+    final adjusted = _distributeOverlappingMarkers(limited);
     setState(() {
-      _markers = {...planMarkers, ...userNoPlanMarkers};
+      _markers = adjusted.markers;
+      _polylines = adjusted.polylines;
     });
   }
 
-  // Función para obtener predicciones de direcciones usando Google Places API
+  _MarkerOverlapResult _distributeOverlappingMarkers(List<Marker> markers) {
+    final Map<LatLng, List<Marker>> grouped = {};
+    for (var m in markers) {
+      grouped.putIfAbsent(m.position, () => []).add(m);
+    }
+    final Set<Marker> finalMarkers = {};
+    final Set<Polyline> finalPolylines = {};
+    grouped.forEach((pos, group) {
+      if (group.length == 1) {
+        finalMarkers.add(group.first);
+      } else {
+        final n = group.length;
+        const radius = 0.00005;
+        for (int i = 0; i < n; i++) {
+          final angle = (2 * math.pi / n) * i;
+          final latOffset = pos.latitude + radius * math.cos(angle);
+          final lngOffset = pos.longitude + radius * math.sin(angle);
+          final offsetPos = LatLng(latOffset, lngOffset);
+          final newM = group[i].copyWith(positionParam: offsetPos);
+          finalMarkers.add(newM);
+          finalPolylines.add(
+            Polyline(
+              polylineId: PolylineId('${group[i].markerId.value}_$i'),
+              points: [pos, offsetPos],
+              color: Colors.white,
+              width: 2,
+            ),
+          );
+        }
+      }
+    });
+    return _MarkerOverlapResult(markers: finalMarkers, polylines: finalPolylines);
+  }
+
   Future<void> _fetchAddressPredictions(String input) async {
     if (input.isEmpty) {
       setState(() {
@@ -111,15 +159,13 @@ class MapScreenState extends State<MapScreen> {
       });
       return;
     }
-
-    final String apiKey = Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
-    final String url =
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$apiKey&language=es';
-
+    final key = Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
+    final url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$key&language=es';
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
         if (data['status'] == 'OK') {
           setState(() {
             _predictions = data['predictions'];
@@ -134,50 +180,38 @@ class MapScreenState extends State<MapScreen> {
           _predictions = [];
         });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _predictions = [];
       });
     }
   }
 
-  // Función para centrar el mapa en una dirección seleccionada
-  Future<void> _onPredictionTap(dynamic prediction) async {
-    final placeId = prediction['place_id'];
-    final String apiKey = Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
-    final String url =
-        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey';
-
+  Future<void> _onPredictionTap(dynamic p) async {
+    final placeId = p['place_id'];
+    final key = Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
+    final url =
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$key';
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
         if (data['status'] == 'OK') {
-          final location = data['result']['geometry']['location'];
-          final lat = location['lat'];
-          final lng = location['lng'];
-
-          final controller = await _controller.future;
-          controller.animateCamera(
+          final loc = data['result']['geometry']['location'];
+          final c = await _controller.future;
+          c.animateCamera(
             CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: LatLng(lat, lng),
-                zoom: 14.0,
-              ),
+              CameraPosition(target: LatLng(loc['lat'], loc['lng']), zoom: 14),
             ),
           );
-
-          // Aseguramos que la lista desaparezca después de seleccionar la dirección
           setState(() {
-            _searchController.text = prediction['description'];
-            _predictions = []; // Vacía la lista de predicciones
-            _searchFocusNode.unfocus(); // Quita el foco para cerrar el teclado
+            _searchController.text = p['description'];
+            _predictions = [];
+            _searchFocusNode.unfocus();
           });
         }
       }
-    } catch (e) {
-      debugPrint('Error al obtener detalles de la dirección: $e');
-    }
+    } catch (_) {}
   }
 
   @override
@@ -189,25 +223,28 @@ class MapScreenState extends State<MapScreen> {
             mapType: MapType.normal,
             initialCameraPosition: _initialPosition,
             markers: _markers,
-            onMapCreated: (GoogleMapController controller) {
-              _controller.complete(controller);
+            polylines: _polylines,
+            onMapCreated: (c) {
+              _controller.complete(c);
               if (_currentPosition != null) {
-                controller.animateCamera(
+                c.animateCamera(
                   CameraUpdate.newCameraPosition(
                     CameraPosition(
-                      target: LatLng(
-                        _currentPosition!.latitude,
-                        _currentPosition!.longitude,
-                      ),
+                      target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
                       zoom: 14.0,
                     ),
                   ),
                 );
               }
             },
+            onCameraMove: (pos) {
+              _currentZoom = pos.zoom;
+            },
+            onCameraIdle: () {
+              _updateVisibleMarkers(_currentZoom);
+            },
             myLocationEnabled: _locationPermissionGranted,
           ),
-          // Campo de búsqueda y predicciones
           Positioned(
             top: 50,
             left: 20,
@@ -240,7 +277,10 @@ class MapScreenState extends State<MapScreen> {
                             )
                           : null,
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 15,
+                        horizontal: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -258,14 +298,14 @@ class MapScreenState extends State<MapScreen> {
                       shrinkWrap: true,
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: _predictions.length,
-                      itemBuilder: (context, index) {
-                        final prediction = _predictions[index];
+                      itemBuilder: (context, i) {
+                        final pred = _predictions[i];
                         return ListTile(
                           title: Text(
-                            prediction['description'],
+                            pred['description'],
                             style: const TextStyle(color: Colors.black),
                           ),
-                          onTap: () => _onPredictionTap(prediction),
+                          onTap: () => _onPredictionTap(pred),
                         );
                       },
                     ),
@@ -277,4 +317,13 @@ class MapScreenState extends State<MapScreen> {
       ),
     );
   }
+}
+
+class _MarkerOverlapResult {
+  final Set<Marker> markers;
+  final Set<Polyline> polylines;
+  _MarkerOverlapResult({
+    required this.markers,
+    required this.polylines,
+  });
 }

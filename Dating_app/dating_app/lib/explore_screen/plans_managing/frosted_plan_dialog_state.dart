@@ -1,4 +1,6 @@
+//frosted_plan_dialog_state.dart
 import 'dart:ui' as ui;
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -11,6 +13,7 @@ import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
 import 'attendance_managing.dart';
 import '../../main/colors.dart';
+import '../profile/profile_screen.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
@@ -830,7 +833,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       // Breve recorte de texto si es muy largo
       String displayText = '$name, $age';
       if (displayText.length > 10) {
-        displayText = '${displayText.substring(0, 14)}...';
+        final cut = math.min(displayText.length, 14);
+        displayText = '${displayText.substring(0, cut)}...';
       }
 
       return GestureDetector(
@@ -1227,10 +1231,12 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
     return GestureDetector(
       onTap: () {
-        if (widget.plan.createdBy.isNotEmpty) {
-          // Llamamos a la verificación de bloqueo antes de abrir
-          UserInfoCheck.open(context, widget.plan.createdBy);
+        final creatorUid = widget.plan.createdBy;
+        final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        if (creatorUid.isNotEmpty && creatorUid != currentUid) {
+          UserInfoCheck.open(context, creatorUid);
         }
+        // si creatorUid == currentUid → no hace nada
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -210,54 +210,74 @@ class MyPlansScreen extends StatelessWidget {
     }
 
     // CASO 2: Plan normal
-    else {
-      // Obtenemos los datos del creador => en "Mis Planes" ya sabemos
-      // que es el usuario actual, pero puedes cargar datos reales si lo deseas
-      final userData = {
-        'name': 'Tú',
-        'handle': '@creador',
-        'photoUrl': '',
-      };
+      else {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get(),
+      builder: (ctx, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 330,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (!snap.hasData || !snap.data!.exists) {
+          // fallback mínimo
+          final fallbackData = {
+            'name': 'Tú',
+            'handle': '@creador',
+            'photoUrl': '',
+          };
+          return _buildMyPlanCard(context, plan, fallbackData);
+        }
 
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // La tarjeta reusada (PlanCard)
-          PlanCard(
-            plan: plan,
-            userData: userData,
-            fetchParticipants: _fetchAllPlanParticipants,
-            // Es tu propio plan, así que no necesitas el botón "Unirse":
-            hideJoinButton: true,
-          ),
-          // Botón para ELIMINAR plan
-          Positioned(
-            top: 14,
-            right: 14,
-            child: GestureDetector(
-              onTap: () => _confirmDeletePlan(context, plan),
-              child: ClipOval(
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                    ),
-                  ),
+        final data = snap.data!.data() as Map<String, dynamic>;
+        final userData = {
+          'name': data['name'] ?? 'Tú',
+          'handle': data['handle'] ?? '@creador',
+          'photoUrl': data['photoUrl'] ?? '',
+        };
+        return _buildMyPlanCard(context, plan, userData);
+      },
+    );
+  }
+  }
+
+  Widget _buildMyPlanCard(BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
+  return Stack(
+    clipBehavior: Clip.none,
+    children: [
+      PlanCard(
+        plan: plan,
+        userData: userData,
+        fetchParticipants: _fetchAllPlanParticipants,
+        hideJoinButton: true,
+      ),
+      Positioned(
+        top: 14,
+        right: 14,
+        child: GestureDetector(
+          onTap: () => _confirmDeletePlan(context, plan),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.3),
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(Icons.delete, color: Colors.white),
               ),
             ),
           ),
-        ],
-      );
-    }
+        ),
+      ),
+    ],
+  );
   }
 
   // --------------------------------------------------------------------------

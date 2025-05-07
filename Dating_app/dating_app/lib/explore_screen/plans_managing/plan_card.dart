@@ -17,6 +17,7 @@ import 'frosted_plan_dialog_state.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
+import '../profile/profile_screen.dart';
 
 /// Tarjeta que muestra cada Plan en la lista
 class PlanCard extends StatefulWidget {
@@ -441,8 +442,7 @@ class PlanCardState extends State<PlanCard> {
     });
 
     // Actualizar commentsCount en el doc del plan
-    final planRef =
-        FirebaseFirestore.instance.collection('plans').doc(plan.id);
+    final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
     await planRef.update({
       'commentsCount': FieldValue.increment(1),
     }).catchError((_) {
@@ -621,8 +621,7 @@ class PlanCardState extends State<PlanCard> {
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -630,8 +629,7 @@ class PlanCardState extends State<PlanCard> {
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -1011,14 +1009,15 @@ class PlanCardState extends State<PlanCard> {
                         GestureDetector(
                           onTap: () {
                             final creatorUid = plan.createdBy;
-                            if (creatorUid.isNotEmpty) {
+                            final currentUid =
+                                FirebaseAuth.instance.currentUser?.uid;
+                            if (creatorUid.isNotEmpty &&
+                                creatorUid != currentUid) {
                               UserInfoCheck.open(context, creatorUid);
                             }
+                            // si creatorUid == currentUid → no hace nada
                           },
-                          child: _buildCreatorFrosted(
-                            name,
-                            fallbackPhotoUrl,
-                          ),
+                          child: _buildCreatorFrosted(name, fallbackPhotoUrl),
                         ),
                         const Spacer(),
                         _buildJoinFrosted(),
