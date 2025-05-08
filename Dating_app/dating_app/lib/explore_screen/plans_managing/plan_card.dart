@@ -1,5 +1,4 @@
 // plan_card.dart
-
 import 'dart:ui' as ui;
 import 'dart:math' as math; // Para min() si quieres dejarlo más robusto.
 import 'package:cloud_firestore/cloud_firestore.dart';

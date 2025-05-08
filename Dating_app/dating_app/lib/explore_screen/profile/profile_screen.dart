@@ -8,7 +8,7 @@ import '../../models/plan_model.dart';
 import '../users_managing/privilege_level_details.dart';
 import 'memories_calendar.dart';
 import '../../main/colors.dart';
-import '../../start/login_screen.dart';
+import '../../start/login/login_screen.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import 'plan_memories_screen.dart';
 import '../follow/following_screen.dart';

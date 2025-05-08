@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'login_screen.dart';
+import 'login/login_screen.dart';
 import 'registration/register_screen.dart';
 import '../explore_screen/main_screen/explore_screen.dart';
 import 'registration/user_registration_screen.dart';

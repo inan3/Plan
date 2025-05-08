@@ -1,3 +1,4 @@
+//plan_model.dart
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,7 +43,7 @@ class PlanModel {
   // Privacidad del perfil del creador
   int? creatorProfilePrivacy;
 
-  // Campo NUEVO para búsquedas case-insensitive por tipo
+  // Campo para búsquedas case-insensitive por tipo
   String? typeLowercase;
 
   // -----------------------------
@@ -317,5 +318,61 @@ class PlanModel {
     });
 
     return plan;
+  }
+
+  /// Actualizar un plan existente en Firestore
+  static Future<void> updatePlan(
+    String planId, {
+    required String type,
+    required String typeLowercase,
+    required String description,
+    required int minAge,
+    required int maxAge,
+    int? maxParticipants,
+    required String location,
+    double? latitude,
+    double? longitude,
+    required DateTime startTimestamp,
+    required DateTime finishTimestamp,
+    required String backgroundImage,
+    String? visibility,
+    String? iconAsset,
+    List<String>? images,
+    List<String>? originalImages,
+    String? videoUrl,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception("Usuario no autenticado");
+    }
+
+    final docRef = FirebaseFirestore.instance.collection('plans').doc(planId);
+    final docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      throw Exception("El plan con ID '$planId' no existe en la base de datos.");
+    }
+
+    final Map<String, dynamic> updates = {
+      'type': type,
+      'typeLowercase': typeLowercase,
+      'description': description,
+      'minAge': minAge,
+      'maxAge': maxAge,
+      'maxParticipants': maxParticipants,
+      'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
+      'start_timestamp': Timestamp.fromDate(startTimestamp),
+      'finish_timestamp': Timestamp.fromDate(finishTimestamp),
+      'backgroundImage': backgroundImage,
+      'visibility': visibility,
+      'iconAsset': iconAsset,
+      'images': images ?? [],
+      'originalImages': originalImages ?? [],
+      'videoUrl': videoUrl ?? '',
+    };
+
+    await docRef.update(updates);
   }
 }

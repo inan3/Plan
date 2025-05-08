@@ -41,7 +41,6 @@ Future<BitmapDescriptor> getCustomSvgMarker(
 }
 
 /// Función para subir imagen (PNG/JPG) a Firebase Storage y obtener la URL de descarga.
-/// [fileName] es el path/archivo dentro del Storage (ej: 'plan_backgrounds/...')
 Future<String?> uploadImageToFirebase(Uint8List imageData, String fileName) async {
   try {
     final ref = FirebaseStorage.instance.ref().child(fileName);
@@ -68,8 +67,16 @@ Future<String?> uploadVideo(Uint8List videoData, String planId) async {
   }
 }
 
+///
+/// [NewPlanCreationScreen.showPopup] soporta MODO EDICIÓN o CREACIÓN
+/// al recibir [planToEdit] y [isEditMode].
+///
 class NewPlanCreationScreen {
-  static void showPopup(BuildContext context) {
+  static void showPopup(
+    BuildContext context, {
+    PlanModel? planToEdit,
+    bool isEditMode = false,
+  }) {
     showGeneralDialog(
       context: context,
       barrierLabel: "Nuevo Plan",
@@ -105,7 +112,11 @@ class NewPlanCreationScreen {
               ),
               child: Material(
                 type: MaterialType.transparency,
-                child: _NewPlanPopupContent(),
+                // Se pasa al widget interno el plan a editar y la info del modo
+                child: _NewPlanPopupContent(
+                  planToEdit: planToEdit,
+                  isEditMode: isEditMode,
+                ),
               ),
             ),
           ),
@@ -128,6 +139,15 @@ class NewPlanCreationScreen {
 }
 
 class _NewPlanPopupContent extends StatefulWidget {
+  final PlanModel? planToEdit;
+  final bool isEditMode;
+
+  const _NewPlanPopupContent({
+    Key? key,
+    this.planToEdit,
+    this.isEditMode = false,
+  }) : super(key: key);
+
   @override
   __NewPlanPopupContentState createState() => __NewPlanPopupContentState();
 }
@@ -158,7 +178,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Sección de "fondo del plan": hasta 3 imágenes + 1 video
   final List<Uint8List> _selectedCroppedImages = [];
   final List<Uint8List> _selectedOriginalImages = [];
-
   Uint8List? _selectedVideo;
 
   // Para el carrusel de imágenes + video
@@ -177,34 +196,69 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Visibilidad
   String? _selectedVisibility;
 
-  double headerHorizontalInset = 0;
-  double fieldsHorizontalInset = 20;
-
   // Marcador en el mapa
   Future<BitmapDescriptor>? _markerIconFuture;
 
   // Para controlar el popup de visibilidad (y cerrarlo automáticamente)
   Timer? _visibilityTimer;
 
+  // Para estilo
+  double headerHorizontalInset = 0;
+  double fieldsHorizontalInset = 20;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+
+    // -----------------------------------------------------------------------
+    // MODO EDICIÓN: Si hay un planToEdit, cargamos sus valores a los campos
+    // -----------------------------------------------------------------------
+    if (widget.isEditMode && widget.planToEdit != null) {
+      final plan = widget.planToEdit!;
+
+      // TYPE
+      if (plan.type.isNotEmpty) {
+        // Si el tipo de plan coincide con la lista local, lo asignas a _selectedPlan
+        // de lo contrario, podrías ponerlo en _customPlan
+        _selectedPlan = plan.type;
+        // O: _customPlan = plan.type;
+      }
+      _selectedIconAsset = plan.iconAsset;
+
+      // AGES
+      _ageRange = RangeValues(plan.minAge.toDouble(), plan.maxAge.toDouble());
+
+      // TIMESTAMPS
+      if (plan.startTimestamp != null) {
+        _startDate = plan.startTimestamp;
+        _startTime = TimeOfDay.fromDateTime(plan.startTimestamp!);
+      }
+      if (plan.finishTimestamp != null) {
+        _endDate = plan.finishTimestamp;
+        _endTime = TimeOfDay.fromDateTime(plan.finishTimestamp!);
+        _includeEndDate = true;
+      }
+
+      // LOCATION
+      _location = plan.location;
+      _latitude = plan.latitude;
+      _longitude = plan.longitude;
+
+      // MAX PARTICIPANTS
+      _maxParticipants = plan.maxParticipants;
+
+      // DESCRIPTION
+      _planDescription = plan.description;
+
+      // VISIBILITY
+      _selectedVisibility = plan.visibility ?? "Público";
+    }
   }
 
+  // Cantidad de contenidos (imágenes recortadas + posible video)
   int get totalMedia =>
       _selectedCroppedImages.length + (_selectedVideo == null ? 0 : 1);
-
-  void _loadMarkerIcon() {
-    _markerIconFuture = getCustomSvgMarker(
-      context,
-      'assets/icono-ubicacion-interno.svg',
-      AppColors.blue,
-      width: 48,
-      height: 48,
-    );
-    setState(() {});
-  }
 
   void _toggleDropdown() {
     _isDropdownOpen ? _closeDropdown() : _openDropdown();
@@ -243,6 +297,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Menú desplegable de planes + campo custom
   Widget _buildDropdownMenu() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -323,7 +378,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   thickness: 0.3,
                   height: 0,
                 ),
-                // Lista de planes sugeridos
+                // Lista de planes sugeridos (plans en ../utils/plans_list.dart)
                 Expanded(
                   child: ListView.builder(
                     physics: const BouncingScrollPhysics(),
@@ -340,7 +395,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 4.0),
+                          horizontal: 16.0,
+                          vertical: 4.0,
+                        ),
                         dense: true,
                         leading: SvgPicture.asset(
                           plans[index]['icon'],
@@ -377,7 +434,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Popup para elegir si subimos imagen/video
+  /// Popup para subir imagen o video
   void _showMediaSelectionPopup() {
     showGeneralDialog(
       context: context,
@@ -403,7 +460,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               BoxShadow(
                 color: Colors.black.withOpacity(0.5),
                 blurRadius: 10,
-                offset: Offset(0, 5),
+                offset: const Offset(0, 5),
               ),
             ],
           ),
@@ -489,7 +546,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Elegir imagen y recortarla (guardando original y recortada).
+  /// Elegir imagen y recortarla
   Future<void> _pickImage(ImageSource source) async {
     if (_selectedCroppedImages.length >= 3) {
       _showErrorPopup("Solo se permiten máximo 3 imágenes.");
@@ -503,7 +560,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       final croppedData = await Navigator.push<Uint8List>(
         context,
         MaterialPageRoute(
-          builder: (context) => ImageCropperScreen(imageData: originalImageData),
+          builder: (_) => ImageCropperScreen(imageData: originalImageData),
         ),
       );
       if (croppedData != null) {
@@ -515,7 +572,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
-  /// Elegir video (max 1), revisar duración 15 seg
+  /// Elegir video (máx 1), revisando duración máx 15 seg
   Future<void> _pickVideo(ImageSource source) async {
     if (_selectedVideo != null) {
       _showErrorPopup("Ya has seleccionado un video. Máximo 1 video.");
@@ -528,19 +585,19 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       final controller = VideoPlayerController.file(file);
       await controller.initialize();
       final duration = controller.value.duration.inSeconds;
+      controller.dispose();
       if (duration > 15) {
-        controller.dispose();
         _showErrorPopup("El video excede los 15 segundos permitidos.");
         return;
       }
       final videoData = await pickedFile.readAsBytes();
-      controller.dispose();
       setState(() {
         _selectedVideo = videoData;
       });
     }
   }
 
+  /// Error popup
   void _showErrorPopup(String message) {
     showDialog(
       context: context,
@@ -557,7 +614,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Fecha/hora
+  /// Muestra un dialog para configurar las fechas
   Future<void> _showDateSelectionPopup() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -583,8 +640,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
-  /// Ubicación
+  /// Seleccionar ubicación
   void _navigateToMeetingLocation() {
+    // Creación de un plan temporal con la ubicación ya seleccionada
     final plan = PlanModel(
       id: '',
       type: _customPlan ?? _selectedPlan ?? '',
@@ -638,6 +696,19 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     });
   }
 
+  /// Cargar el ícono SVG coloreado como marker
+  void _loadMarkerIcon() {
+    _markerIconFuture = getCustomSvgMarker(
+      context,
+      'assets/icono-ubicacion-interno.svg',
+      AppColors.blue,
+      width: 48,
+      height: 48,
+    );
+    setState(() {});
+  }
+
+  /// Vista de la sección de ubicación
   Widget _buildLocationSelectionArea() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,14 +739,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         width: double.infinity,
                         child: FutureBuilder<BitmapDescriptor>(
                           future: _markerIconFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
+                          builder: (context, snap) {
+                            if (snap.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
                             }
-                            final icon = snapshot.hasData
-                                ? snapshot.data!
+                            final icon = snap.hasData
+                                ? snap.data!
                                 : BitmapDescriptor.defaultMarker;
                             return GoogleMap(
                               initialCameraPosition: CameraPosition(
@@ -713,7 +782,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             color: Colors.black.withOpacity(0.3),
                             padding: const EdgeInsets.all(12),
                             child: Text(
-                              _location!,
+                              _location ?? '',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -734,8 +803,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       height: 240,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color:
-                            const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                        color: const Color.fromARGB(255, 124, 120, 120)
+                            .withOpacity(0.2),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Center(
@@ -754,6 +823,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Formato para fecha en texto
   String _formatHumanReadableDateOnly(DateTime date) {
     final Map<int, String> weekdays = {
       1: "Lunes",
@@ -778,8 +848,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       11: "Noviembre",
       12: "Diciembre",
     };
-    String weekday = weekdays[date.weekday] ?? "";
-    String monthName = months[date.month] ?? "";
+    final weekday = weekdays[date.weekday] ?? "";
+    final monthName = months[date.month] ?? "";
     return "$weekday, ${date.day} de $monthName de ${date.year}";
   }
 
@@ -873,6 +943,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Container con la info de fecha/hora seleccionada
   Widget _buildDateSelectionArea() {
     return GestureDetector(
       onTap: _showDateSelectionPopup,
@@ -903,8 +974,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: _includeEndDate ? 140 : 100,
@@ -932,11 +1005,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Al pulsar una imagen recortada: preview y recorte adicional
   void _onTapCroppedImage(int index) async {
     final result = await Navigator.push<Uint8List?>(
       context,
       MaterialPageRoute(
-        builder: (context) => _PreviewAndRecropScreen(
+        builder: (_) => _PreviewAndRecropScreen(
           originalImage: _selectedOriginalImages[index],
           croppedImage: _selectedCroppedImages[index],
         ),
@@ -949,6 +1023,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
+  /// Carrusel para las imágenes recortadas y video
   Widget _buildMediaCarousel() {
     return Stack(
       children: [
@@ -957,9 +1032,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
             controller: _pageController,
             itemCount: totalMedia,
             onPageChanged: (index) {
-              setState(() {
-                _currentPageIndex = index;
-              });
+              setState(() => _currentPageIndex = index);
             },
             itemBuilder: (context, index) {
               final isImageSection = (index < _selectedCroppedImages.length);
@@ -976,7 +1049,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   ),
                 );
               } else {
-                // Vista previa de video (icono de reproducir)
+                // Vista previa de video (ícono de play)
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(30),
                   child: Container(
@@ -1025,6 +1098,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Botón para añadir más imágenes o video
   Widget _buildAddMediaButton() {
     return GestureDetector(
       onTap: _showMediaSelectionPopup,
@@ -1047,17 +1121,19 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Sección para mostrar imágenes/video
+  /// Bloque para la sección multimedia
   Widget _buildImageAndVideoSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 30),
-        const Center(
+        Center(
           child: Text(
-            "Contenido multimedia",
+            widget.isEditMode
+                ? "Editar contenido multimedia"
+                : "Contenido multimedia",
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               decoration: TextDecoration.none,
@@ -1106,6 +1182,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
+  /// Bloque principal
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -1120,7 +1197,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Encabezado
+                // Encabezado / Banner
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: headerHorizontalInset),
                   child: Center(
@@ -1139,10 +1216,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        "¡Hazle saber a la gente el plan que deseas compartir!",
+                      // Título
+                      Text(
+                        widget.isEditMode
+                            ? "Edita tu plan como desees"
+                            : "¡Hazle saber a la gente el plan que deseas compartir!",
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -1152,7 +1232,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Tipo de plan
+                      // Tipo de plan (desplegable + custom)
                       CompositedTransformTarget(
                         link: _layerLink,
                         child: GestureDetector(
@@ -1164,7 +1244,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               child: Container(
                                 width: 260,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color.fromARGB(255, 124, 120, 120)
                                       .withOpacity(0.2),
@@ -1174,8 +1256,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Row(
@@ -1188,10 +1269,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                               color: Colors.white,
                                             ),
                                           if (_selectedIconData != null)
-                                            Icon(
-                                              _selectedIconData,
-                                              color: Colors.white,
-                                            ),
+                                            Icon(_selectedIconData,
+                                                color: Colors.white),
                                           if (_selectedIconAsset != null ||
                                               _selectedIconData != null)
                                             const SizedBox(width: 10),
@@ -1227,17 +1306,14 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
                       // Sección imágenes/video
                       _buildImageAndVideoSection(),
-
                       const SizedBox(height: 20),
 
-                      // Fecha/hora
+                      // Sección Fecha/hora
                       _buildDateSelectionArea(),
-
                       const SizedBox(height: 20),
 
                       // Ubicación
                       _buildLocationSelectionArea(),
-
                       const SizedBox(height: 20),
 
                       // Restricción de edad
@@ -1255,8 +1331,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color:
-                              const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                          color: const Color.fromARGB(255, 124, 120, 120)
+                              .withOpacity(0.2),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Column(
@@ -1304,7 +1380,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 20),
 
                       // Máximo participantes
@@ -1320,11 +1395,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 18, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                          color: const Color.fromARGB(255, 124, 120, 120)
+                              .withOpacity(0.2),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
@@ -1364,7 +1441,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 20),
 
                       // Descripción
@@ -1380,8 +1456,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(255, 124, 120, 120)
                               .withOpacity(0.2),
@@ -1389,11 +1467,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                         child: TextField(
                           maxLines: 3,
-                          onChanged: (value) {
-                            setState(() {
-                              _planDescription = value;
-                            });
-                          },
+                          onChanged: (value) => _planDescription = value,
+                          controller: widget.isEditMode && widget.planToEdit != null
+                              ? TextEditingController(text: _planDescription ?? '')
+                              : null,
                           decoration: const InputDecoration(
                             hintText: "Describe brevemente tu plan...",
                             hintStyle: TextStyle(
@@ -1409,7 +1486,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
 
                       // Visibilidad
@@ -1428,9 +1504,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              setState(() {
-                                _selectedVisibility = "Público";
-                              });
+                              setState(() => _selectedVisibility = "Público");
                               _showVisibilityPopup(
                                 "Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él",
                               );
@@ -1438,7 +1512,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 12),
+                                horizontal: 10,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: _selectedVisibility == "Público"
                                     ? AppColors.blue
@@ -1472,9 +1548,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           const SizedBox(height: 10),
                           GestureDetector(
                             onTap: () {
-                              setState(() {
-                                _selectedVisibility = "Privado";
-                              });
+                              setState(() => _selectedVisibility = "Privado");
                               _showVisibilityPopup(
                                 "Los planes privados son visibles solo por aquellos a quienes se lo compartas. "
                                 'Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.',
@@ -1483,7 +1557,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 12),
+                                horizontal: 10,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: _selectedVisibility == "Privado"
                                     ? AppColors.blue
@@ -1517,9 +1593,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           const SizedBox(height: 10),
                           GestureDetector(
                             onTap: () {
-                              setState(() {
-                                _selectedVisibility = "Solo para mis seguidores";
-                              });
+                              setState(() =>
+                                  _selectedVisibility = "Solo para mis seguidores");
                               _showVisibilityPopup(
                                 "Estos planes solo serán visibles para las personas que te siguen.",
                               );
@@ -1527,7 +1602,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 12),
+                                horizontal: 10,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: _selectedVisibility ==
                                         "Solo para mis seguidores"
@@ -1561,12 +1638,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 20),
 
-                      // Botón de Finalizar
+                      // Botón: Finalizar o Actualizar
                       ElevatedButton(
-                        onPressed: _onCreatePlanPressed,
+                        onPressed: _onCreateOrUpdatePlanPressed,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color.fromARGB(235, 17, 19, 135),
                           shape: RoundedRectangleBorder(
@@ -1574,9 +1650,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: const Text(
-                          "Finalizar Plan",
-                          style: TextStyle(
+                        child: Text(
+                          widget.isEditMode ? "Actualizar Plan" : "Finalizar Plan",
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             decoration: TextDecoration.none,
@@ -1591,7 +1667,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
             ),
           ),
 
-          // Botón de cerrar
+          // Botón de cerrar (esquina)
           Positioned(
             top: 0,
             right: 0,
@@ -1617,8 +1693,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Mostramos un popup con el mensaje sobre la visibilidad.
-  /// Permanece 4 segundos y se cierra si se toca fuera o pasan los 4s.
+  /// Muestra un popup con info sobre la visibilidad
   void _showVisibilityPopup(String message) {
     _visibilityTimer?.cancel();
 
@@ -1662,12 +1737,15 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     });
   }
 
-  /// Lógica al pulsar "Finalizar Plan"
-  Future<void> _onCreatePlanPressed() async {
+  /// Crea o actualiza el plan dependiendo del isEditMode
+  Future<void> _onCreateOrUpdatePlanPressed() async {
     try {
-      final planId = DateTime.now().millisecondsSinceEpoch.toString();
+      // id único si es creación
+      final planId = widget.isEditMode && widget.planToEdit != null
+          ? widget.planToEdit!.id
+          : DateTime.now().millisecondsSinceEpoch.toString();
 
-      // Subir imágenes
+      // Subir imágenes a Firebase
       final List<String> uploadedCroppedImages = [];
       final List<String> uploadedOriginalImages = [];
 
@@ -1736,42 +1814,77 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         );
       }
 
-      // Construimos el tipo de plan
+      // Construir el tipo (custom o de la lista)
       final finalType = _customPlan ?? _selectedPlan ?? '';
 
-      // Creamos el plan en Firestore (PlanModel.createPlan)
-      await PlanModel.createPlan(
-        type: finalType,
-        // Añadimos también el campo "typeLowercase":
-        typeLowercase: finalType.toLowerCase(), // <--- Se añade
-        description: _planDescription ?? '',
-        minAge: _ageRange.start.round(),
-        maxAge: _ageRange.end.round(),
-        maxParticipants: _maxParticipants,
-        location: _location ?? '',
-        latitude: _latitude,
-        longitude: _longitude,
-        startTimestamp: finalStartDateTime,
-        finishTimestamp: finalFinishDateTime,
-        backgroundImage: uploadedCroppedImages.isNotEmpty
-            ? uploadedCroppedImages.first
-            : null,
-        visibility: _selectedVisibility,
-        iconAsset: _selectedIconAsset,
-        special_plan: 0,
-        images: uploadedCroppedImages,
-        originalImages: uploadedOriginalImages,
-        videoUrl: uploadedVideo,
-      );
+      // -------------------------------------------------------------------
+      // MODO EDICIÓN: Si isEditMode es true, se actualiza
+      // -------------------------------------------------------------------
+      if (widget.isEditMode && widget.planToEdit != null) {
+        await PlanModel.updatePlan(
+          planId,
+          type: finalType,
+          typeLowercase: finalType.toLowerCase(),
+          description: _planDescription ?? '',
+          minAge: _ageRange.start.round(),
+          maxAge: _ageRange.end.round(),
+          maxParticipants: _maxParticipants,
+          location: _location ?? '',
+          latitude: _latitude,
+          longitude: _longitude,
+          startTimestamp: finalStartDateTime,
+          finishTimestamp: finalFinishDateTime,
+          backgroundImage: uploadedCroppedImages.isNotEmpty
+              ? uploadedCroppedImages.first
+              : (widget.planToEdit!.backgroundImage ?? ''),
+          visibility: _selectedVisibility,
+          iconAsset: _selectedIconAsset,
+          images: uploadedCroppedImages.isNotEmpty
+              ? uploadedCroppedImages
+              : (widget.planToEdit!.images ?? []),
+          originalImages: uploadedOriginalImages.isNotEmpty
+              ? uploadedOriginalImages
+              : (widget.planToEdit!.originalImages ?? []),
+          videoUrl: uploadedVideo ?? widget.planToEdit!.videoUrl,
+        );
+      } else {
+        // -------------------------------------------------------------------
+        // MODO CREACIÓN: crear un plan nuevo
+        // -------------------------------------------------------------------
+        await PlanModel.createPlan(
+          type: finalType,
+          typeLowercase: finalType.toLowerCase(),
+          description: _planDescription ?? '',
+          minAge: _ageRange.start.round(),
+          maxAge: _ageRange.end.round(),
+          maxParticipants: _maxParticipants,
+          location: _location ?? '',
+          latitude: _latitude,
+          longitude: _longitude,
+          startTimestamp: finalStartDateTime,
+          finishTimestamp: finalFinishDateTime,
+          backgroundImage: uploadedCroppedImages.isNotEmpty
+              ? uploadedCroppedImages.first
+              : null,
+          visibility: _selectedVisibility,
+          iconAsset: _selectedIconAsset,
+          special_plan: 0,
+          images: uploadedCroppedImages,
+          originalImages: uploadedOriginalImages,
+          videoUrl: uploadedVideo,
+        );
+      }
 
+      // Regresar y cerrar el popup
       Navigator.pop(context);
     } catch (error) {
-      print("Error al crear el plan: $error");
-      _showErrorPopup("Ocurrió un error al crear el plan.");
+      print("Error al crear/editar plan: $error");
+      _showErrorPopup("Ocurrió un error al procesar el plan.");
     }
   }
 }
 
+/// Popup de selección de fecha/hora (no cambia en modo edición)
 class DateSelectionDialog extends StatefulWidget {
   final bool initialAllDay;
   final bool initialIncludeEndDate;
@@ -1853,8 +1966,9 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color:
-                                allDay ? AppColors.blue : Colors.grey.withOpacity(0.5),
+                            color: allDay
+                                ? AppColors.blue
+                                : Colors.grey.withOpacity(0.5),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -2036,14 +2150,12 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate:
-          startDate == null || startDate!.isBefore(now) ? now : startDate!,
+          (startDate == null || startDate!.isBefore(now)) ? now : startDate!,
       firstDate: now,
       lastDate: DateTime(2100),
     );
     if (pickedDate != null) {
-      setState(() {
-        startDate = pickedDate;
-      });
+      setState(() => startDate = pickedDate);
     }
   }
 
@@ -2053,9 +2165,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
       initialTime: startTime ?? TimeOfDay.now(),
     );
     if (pickedTime != null) {
-      setState(() {
-        startTime = pickedTime;
-      });
+      setState(() => startTime = pickedTime);
     }
   }
 
@@ -2065,16 +2175,15 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
         startDate != null && startDate!.isAfter(now) ? startDate! : now;
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: endDate == null || endDate!.isBefore(firstPossibleDate)
-          ? firstPossibleDate
-          : endDate!,
+      initialDate:
+          (endDate == null || endDate!.isBefore(firstPossibleDate))
+              ? firstPossibleDate
+              : endDate!,
       firstDate: firstPossibleDate,
       lastDate: DateTime(2100),
     );
     if (pickedDate != null) {
-      setState(() {
-        endDate = pickedDate;
-      });
+      setState(() => endDate = pickedDate);
     }
   }
 
@@ -2084,7 +2193,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
       initialTime: endTime ?? TimeOfDay.now(),
     );
     if (pickedTime != null) {
-      // Verificamos que no sea anterior a la fecha/hora de inicio
+      // Asegurarnos de que la fecha final sea posterior a la inicial
       if (startDate != null && endDate != null) {
         final startDateTime = (allDay || startTime == null)
             ? DateTime(startDate!.year, startDate!.month, startDate!.day)
@@ -2105,7 +2214,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
         if (!endDateTime.isAfter(startDateTime)) {
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
+            builder: (_) => AlertDialog(
               title: const Text("Error"),
               content: const Text(
                 "La fecha final debe ser posterior a la fecha/hora de inicio.",
@@ -2121,13 +2230,12 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
           return;
         }
       }
-      setState(() {
-        endTime = pickedTime;
-      });
+      setState(() => endTime = pickedTime);
     }
   }
 }
 
+/// Pantalla de Vista Previa de imagen y recorte adicional
 class _PreviewAndRecropScreen extends StatefulWidget {
   final Uint8List originalImage;
   final Uint8List croppedImage;
@@ -2158,8 +2266,9 @@ class _PreviewAndRecropScreenState extends State<_PreviewAndRecropScreen> {
               final newCropped = await Navigator.push<Uint8List>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      ImageCropperScreen(imageData: widget.originalImage),
+                  builder: (_) => ImageCropperScreen(
+                    imageData: widget.originalImage,
+                  ),
                 ),
               );
               if (newCropped != null) {
@@ -2178,6 +2287,7 @@ class _PreviewAndRecropScreenState extends State<_PreviewAndRecropScreen> {
   }
 }
 
+/// Pantalla fullscreen para ver imágenes originales
 class _FullScreenImageViewer extends StatefulWidget {
   final List<String> originalImages;
   final int initialIndex;
@@ -2209,17 +2319,13 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black54,
-        title: Text(
-          "${_currentIndex + 1} / ${widget.originalImages.length}",
-        ),
+        title: Text("${_currentIndex + 1} / ${widget.originalImages.length}"),
       ),
       body: PageView.builder(
         controller: _pageController,
         itemCount: widget.originalImages.length,
         onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
         },
         itemBuilder: (context, index) {
           final imageUrl = widget.originalImages[index];

@@ -8,11 +8,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../explore_screen/main_screen/explore_screen.dart';
-import '../main/colors.dart';
+import '../../explore_screen/main_screen/explore_screen.dart';
+import '../../main/colors.dart';
 
 // IMPORTA TU SERVICIO DE PRESENCIA:
-import '../explore_screen/users_managing/presence_service.dart'; // Ajusta el path según tu estructura
+import '../../explore_screen/users_managing/presence_service.dart'; // Ajusta el path según tu estructura
+
+// Import de la nueva pantalla de recuperación
+import 'recover_password.dart';
 
 const Color backgroundColor = AppColors.background; // Azul turquesa
 
@@ -31,9 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool isLoading = false;
 
-  // ─────────────────────────────────────────────
-  // Verifica si existe un documento en 'users'
-  // ─────────────────────────────────────────────
   Future<bool> _userDocExists(String uid) async {
     final doc = await FirebaseFirestore.instance
         .collection('users')
@@ -42,16 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return doc.exists;
   }
 
-  // ─────────────────────────────────────────────
-  // [ELIMINADO O COMENTADO] _updatePresence
-  // ─────────────────────────────────────────────
-  // Future<void> _updatePresence(User user) async {
-  //   // ... [código anterior] ...
-  // }
-
-  // ─────────────────────────────────────────────
-  // Navegar al ExploreScreen
-  // ─────────────────────────────────────────────
   Future<void> _goToExplore() async {
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -60,9 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // Iniciar sesión con email y contraseña
-  // ─────────────────────────────────────────────
   Future<void> _loginWithEmail() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -86,7 +73,6 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // *** AQUI USAMOS NUEVO SERVICIO ***
       await PresenceService.init(user);
 
       if (mounted) setState(() => isLoading = false);
@@ -101,22 +87,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // Iniciar sesión con Google
-  // ─────────────────────────────────────────────
   Future<void> _loginWithGoogle() async {
     if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      // Forzamos selección de cuenta para pruebas
       await GoogleSignIn().signOut();
 
       final GoogleSignInAccount? acc = await GoogleSignIn().signIn();
-      if (acc == null) {
-        // Usuario canceló
-        return;
-      }
+      if (acc == null) return;
 
       final auth = await acc.authentication;
       final cred = GoogleAuthProvider.credential(
@@ -126,9 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final userCred = await _auth.signInWithCredential(cred);
       final user = userCred.user;
-      if (user == null) {
-        throw FirebaseAuthException(code: 'USER_NULL');
-      }
+      if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       final existsInUsers = await _userDocExists(user.uid);
       if (!existsInUsers) {
@@ -137,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // *** AQUI USAMOS NUEVO SERVICIO ***
       await PresenceService.init(user);
 
       if (mounted) setState(() => isLoading = false);
@@ -154,9 +130,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // Diálogos
-  // ─────────────────────────────────────────────
   void _showNoProfileDialog() {
     showDialog(
       context: context,
@@ -192,9 +165,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // Construcción del widget
-  // ─────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -291,10 +261,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Funcionalidad pendiente'),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RecoverPasswordScreen()),
                 );
               },
               child: const Text(

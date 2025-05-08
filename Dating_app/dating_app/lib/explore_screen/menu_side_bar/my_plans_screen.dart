@@ -1,30 +1,30 @@
+//my_plans_screen.dart
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart'; // Para Share.share()
+import 'package:intl/intl.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
 
-// Importa tu PlanCard:
+// Importamos el new_plan_creation_screen.dart
+import '../../plan_creation/new_plan_creation_screen.dart';
+// Importa tu PlanCard
 import '../plans_managing/plan_card.dart';
-
-// Para tu FrostedPlanDialog especial:
+// Para tu FrostedPlanDialog especial
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({Key? key}) : super(key: key);
 
-  // --------------------------------------------------------------------------
-  // Método para obtener todos los participantes del plan usando el array
-  // "participants" en el documento de la colección 'plans'.
-  // --------------------------------------------------------------------------
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-    PlanModel plan,
-  ) async {
+  // ----------------------------------------------------------------------------
+  // Cargar participantes
+  // ----------------------------------------------------------------------------
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
     final doc = await FirebaseFirestore.instance
         .collection('plans')
         .doc(plan.id)
@@ -34,10 +34,8 @@ class MyPlansScreen extends StatelessWidget {
     if (!doc.exists || doc.data() == null) return participants;
 
     final data = doc.data()!;
-    // Leemos el array 'participants' del doc:
     final participantUids = List<String>.from(data['participants'] ?? []);
 
-    // Por cada UID, buscamos su info en 'users'
     for (String uid in participantUids) {
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
@@ -54,7 +52,6 @@ class MyPlansScreen extends StatelessWidget {
         });
       }
     }
-
     return participants;
   }
 
@@ -90,7 +87,6 @@ class MyPlansScreen extends StatelessWidget {
             );
           }
 
-          // Convertimos cada doc en un PlanModel
           final plans = snapshot.data!.docs.map((doc) {
             final pData = doc.data() as Map<String, dynamic>;
             pData['id'] = doc.id;
@@ -110,12 +106,12 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Decide cómo mostrar la tarjeta: especial vs normal (usando PlanCard).
-  // --------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // Lógica de mostrar tarjeta
+  // ----------------------------------------------------------------------------
   Widget _buildPlanTile(BuildContext context, PlanModel plan) {
-    // CASO 1: Plan especial
     if (plan.special_plan == 1) {
+      // Plan especial
       return FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchAllPlanParticipants(plan),
         builder: (context, snapshot) {
@@ -129,7 +125,16 @@ class MyPlansScreen extends StatelessWidget {
           }
           final participants = snapshot.data ?? [];
 
-          // Tomamos hasta 2 para mostrar en "mini avatares"
+          // Encontrar icono
+          String iconPath = plan.iconAsset ?? '';
+          for (var item in plansData.plans) {
+            if (plan.iconAsset == item['icon']) {
+              iconPath = item['icon'];
+              break;
+            }
+          }
+
+          // Avatares
           final creatorAvatar = participants.isNotEmpty &&
                   (participants[0]['photoUrl'] ?? '').isNotEmpty
               ? CircleAvatar(
@@ -146,16 +151,6 @@ class MyPlansScreen extends StatelessWidget {
                 )
               : const SizedBox();
 
-          // Encontramos icono en tu lista local
-          String iconPath = plan.iconAsset ?? '';
-          for (var item in plansData.plans) {
-            if (plan.iconAsset == item['icon']) {
-              iconPath = item['icon'];
-              break;
-            }
-          }
-
-          // Construimos la "tarjeta" (en realidad un container con tu estilo)
           return GestureDetector(
             onTap: () => _openFrostedPlanDialog(context, plan),
             child: Center(
@@ -171,7 +166,6 @@ class MyPlansScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // Icono + tipo de plan
                     Row(
                       children: [
                         if (iconPath.isNotEmpty)
@@ -184,15 +178,11 @@ class MyPlansScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           plan.type,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
+                          style: const TextStyle(fontSize: 20, color: Colors.white),
                         ),
                       ],
                     ),
                     const Spacer(),
-                    // Avatares
                     Row(
                       children: [
                         creatorAvatar,
@@ -207,82 +197,187 @@ class MyPlansScreen extends StatelessWidget {
           );
         },
       );
-    }
-
-    // CASO 2: Plan normal
-      else {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-        .collection('users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .get(),
-      builder: (ctx, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 330,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (!snap.hasData || !snap.data!.exists) {
-          // fallback mínimo
-          final fallbackData = {
-            'name': 'Tú',
-            'handle': '@creador',
-            'photoUrl': '',
+    } else {
+      // Plan normal
+      return FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .get(),
+        builder: (ctx, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              height: 330,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (!snap.hasData || !snap.data!.exists) {
+            final fallbackData = {
+              'name': 'Tú',
+              'handle': '@creador',
+              'photoUrl': '',
+            };
+            return _buildMyPlanCard(context, plan, fallbackData);
+          }
+          final data = snap.data!.data() as Map<String, dynamic>;
+          final userData = {
+            'name': data['name'] ?? 'Tú',
+            'handle': data['handle'] ?? '@creador',
+            'photoUrl': data['photoUrl'] ?? '',
           };
-          return _buildMyPlanCard(context, plan, fallbackData);
-        }
-
-        final data = snap.data!.data() as Map<String, dynamic>;
-        final userData = {
-          'name': data['name'] ?? 'Tú',
-          'handle': data['handle'] ?? '@creador',
-          'photoUrl': data['photoUrl'] ?? '',
-        };
-        return _buildMyPlanCard(context, plan, userData);
-      },
-    );
-  }
+          return _buildMyPlanCard(context, plan, userData);
+        },
+      );
+    }
   }
 
-  Widget _buildMyPlanCard(BuildContext context, PlanModel plan, Map<String, dynamic> userData) {
-  return Stack(
-    clipBehavior: Clip.none,
-    children: [
-      PlanCard(
-        plan: plan,
-        userData: userData,
-        fetchParticipants: _fetchAllPlanParticipants,
-        hideJoinButton: true,
-      ),
-      Positioned(
-        top: 14,
-        right: 14,
-        child: GestureDetector(
-          onTap: () => _confirmDeletePlan(context, plan),
-          child: ClipOval(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.3),
-                  shape: BoxShape.circle,
+  // ----------------------------------------------------------------------------
+  // Tarjeta normal + botones Eliminar/Editar
+  // ----------------------------------------------------------------------------
+  Widget _buildMyPlanCard(
+    BuildContext context,
+    PlanModel plan,
+    Map<String, dynamic> userData,
+  ) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        PlanCard(
+          plan: plan,
+          userData: userData,
+          fetchParticipants: _fetchAllPlanParticipants,
+          hideJoinButton: true,
+        ),
+        // Botón ELIMINAR
+        Positioned(
+          top: 14,
+          right: 14,
+          child: GestureDetector(
+            onTap: () => _confirmDeletePlan(context, plan),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                child: const Icon(Icons.delete, color: Colors.white),
               ),
             ),
           ),
         ),
-      ),
-    ],
-  );
+        // Botón EDITAR
+        Positioned(
+          top: 14,
+          right: 60, // Para no solapar con el icono de eliminar
+          child: GestureDetector(
+            onTap: () => _openEditPlanPopup(context, plan),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.edit, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  // --------------------------------------------------------------------------
-  // Tarjeta "loading" para plan especial
-  // --------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // Popup de confirmación para ELIMINAR plan
+  // ----------------------------------------------------------------------------
+  void _confirmDeletePlan(BuildContext context, PlanModel plan) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text("¿Eliminar este plan?"),
+          content: Text(
+            "Esta acción eliminará el plan ${plan.type} de forma permanente.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                // Elimina el doc en 'plans'
+                await FirebaseFirestore.instance
+                    .collection('plans')
+                    .doc(plan.id)
+                    .delete();
+                // (Opcional) Elimina docs de 'subscriptions' si se usan
+                final subs = await FirebaseFirestore.instance
+                    .collection('subscriptions')
+                    .where('id', isEqualTo: plan.id)
+                    .get();
+                for (var doc in subs.docs) {
+                  await doc.reference.delete();
+                }
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Plan ${plan.type} eliminado.')),
+                );
+              },
+              child: const Text("Eliminar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ----------------------------------------------------------------------------
+  // Abrir popup de edición con new_plan_creation_screen.dart en modo "edición"
+  // ----------------------------------------------------------------------------
+  void _openEditPlanPopup(BuildContext context, PlanModel plan) {
+    // Llamamos a la misma UI de creación, pero en modo editar
+    NewPlanCreationScreen.showPopup(
+      context,
+      planToEdit: plan, // pasamos el plan
+      isEditMode: true, // indicamos que es edición
+    );
+  }
+
+  // ----------------------------------------------------------------------------
+  // Mostrar FrostedPlanDialog a pantalla completa
+  // ----------------------------------------------------------------------------
+  void _openFrostedPlanDialog(BuildContext context, PlanModel plan) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.transparent,
+          body: new_frosted.FrostedPlanDialog(
+            plan: plan,
+            fetchParticipants: _fetchAllPlanParticipants,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ----------------------------------------------------------------------------
+  // "Cargando" para planes especiales
+  // ----------------------------------------------------------------------------
   Widget _buildSpecialPlanLoading() {
     return Center(
       child: Container(
@@ -297,76 +392,6 @@ class MyPlansScreen extends StatelessWidget {
         ),
         child: const Center(child: CircularProgressIndicator()),
       ),
-    );
-  }
-
-  // --------------------------------------------------------------------------
-  // Muestra el FrostedPlanDialog a pantalla completa
-  // --------------------------------------------------------------------------
-  void _openFrostedPlanDialog(BuildContext context, PlanModel plan) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.transparent,
-          body: new_frosted.FrostedPlanDialog(
-            plan: plan,
-            // Le pasamos la misma función de participantes unificada
-            fetchParticipants: _fetchAllPlanParticipants,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --------------------------------------------------------------------------
-  // Popup de confirmación para ELIMINAR plan
-  // --------------------------------------------------------------------------
-  void _confirmDeletePlan(BuildContext context, PlanModel plan) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("¿Eliminar este plan?"),
-          content: Text(
-            "Esta acción eliminará el plan ${plan.type} de forma permanente.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancelar"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () async {
-                // 1) Elimina el doc en 'plans'
-                await FirebaseFirestore.instance
-                    .collection('plans')
-                    .doc(plan.id)
-                    .delete();
-
-                // 2) (Opcional) Elimina docs de 'subscriptions' si usas esa colección
-                // para almacenar que un usuario "se suscribió". Si ya no la usas,
-                // puedes eliminar este bloque.
-                final subs = await FirebaseFirestore.instance
-                    .collection('subscriptions')
-                    .where('id', isEqualTo: plan.id)
-                    .get();
-                for (var doc in subs.docs) {
-                  await doc.reference.delete();
-                }
-
-                Navigator.pop(ctx); // Cierra el alert
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Plan ${plan.type} eliminado.')),
-                );
-              },
-              child: const Text("Eliminar"),
-            ),
-          ],
-        );
-      },
     );
   }
 }
