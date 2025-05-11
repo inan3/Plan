@@ -1,4 +1,3 @@
-//explore_screen.dart
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -41,7 +40,6 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   Map<String, dynamic> appliedFilters = {};
 
-  // Eliminamos la variable _spacingPopularToNearby y su uso
   late List<Widget> _otherPages;
 
   String _searchQuery = '';
@@ -98,7 +96,6 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   double _deg2rad(double deg) => deg * (math.pi / 180);
 
-  // Nueva función para cambiar la página desde el menú lateral
   void changePage(int pageIndex) {
     setState(() {
       _currentIndex = pageIndex;
@@ -127,16 +124,12 @@ class ExploreScreenState extends State<ExploreScreen> {
             notificationCountStream: _notificationCountStream(),
           ),
           _buildSearchContainer(),
-
-          // Mostrar la lista de resultados si se está buscando
           if (_showSearchResults)
             Searcher(
               query: _searchQuery,
               maxHeight: 300,
               isVisible: true,
             ),
-
-          // Ya NO dejamos espacio adicional, pues provocaba huecos innecesarios
           Expanded(child: _buildNearbySection()),
         ],
       ),
@@ -289,8 +282,7 @@ class ExploreScreenState extends State<ExploreScreen> {
           return distanceA.compareTo(distanceB);
         });
 
-        final String? planFilter = (appliedFilters['planPredeterminado'] !=
-                    null &&
+        final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
                 (appliedFilters['planPredeterminado'] as String)
                     .trim()
                     .isNotEmpty)
@@ -354,7 +346,7 @@ class ExploreScreenState extends State<ExploreScreen> {
       case 1:
         return 1;
       case 2:
-        // Al dar tap en el + se abre creación de plan
+        // El + abre creación de plan, no cambia de pantalla
         return _currentIndex;
       case 3:
         return 2;
@@ -427,6 +419,11 @@ class ExploreScreenState extends State<ExploreScreen> {
                     onTapIcon: _onDockIconTap,
                     notificationCountStream: null,
                     unreadMessagesCountStream: _unreadMessagesCountStream(),
+
+                    /// Ajusta a tu gusto (lo modifiqué un poco como ejemplo):
+                    badgeSize: 10,
+                    badgeOffsetX: 15,
+                    badgeOffsetY: 15,
                   ),
                 ),
               ),
@@ -456,6 +453,14 @@ class DockSection extends StatelessWidget {
   final Stream<int>? unreadMessagesCountStream;
   final double containerWidth;
 
+  /// Diámetro del punto rojo
+  final double badgeSize;
+
+  /// Desplazamiento del centro del badge respecto al centro del icono
+  /// (positivo = derecha / abajo)
+  final double badgeOffsetX;
+  final double badgeOffsetY;
+
   const DockSection({
     Key? key,
     required this.currentIndex,
@@ -470,6 +475,11 @@ class DockSection extends StatelessWidget {
     this.containerWidth = 328.0,
     this.notificationCountStream,
     this.unreadMessagesCountStream,
+
+    /// Valores por defecto
+    this.badgeSize = 10,
+    this.badgeOffsetX = 10,
+    this.badgeOffsetY = -10,
   }) : super(key: key);
 
   @override
@@ -531,7 +541,8 @@ class DockSection extends StatelessWidget {
     final double effectiveIconSize = overrideIconSize ?? iconSize;
     final bool isSelected = selectedIconIndex == index;
 
-    return Stack(
+    // -- Botón base (InkWell + icono) --
+    Widget baseStack = Stack(
       clipBehavior: Clip.none,
       children: [
         InkWell(
@@ -609,6 +620,39 @@ class DockSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+
+    // -- Si NO es el icono de mensajes, devolvemos directamente baseStack --
+    if (index != 3 || unreadMessagesCountStream == null) {
+      return baseStack;
+    }
+
+    // -- Si ES el icono de mensajes (index=3) Y tenemos unreadMessagesCountStream --
+    return StreamBuilder<int>(
+      stream: unreadMessagesCountStream,
+      builder: (context, snapshot) {
+        final int unreadCount = snapshot.data ?? 0;
+        final bool showBadge = unreadCount > 0;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            baseStack,
+            if (showBadge)
+              Positioned(
+                right: badgeOffsetX,
+                top: badgeOffsetY,
+                child: Container(
+                  width: badgeSize,
+                  height: badgeSize,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

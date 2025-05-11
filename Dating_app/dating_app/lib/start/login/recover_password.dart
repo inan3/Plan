@@ -1,5 +1,8 @@
+// recover_password.dart
+import 'dart:convert';                           //  ⬅️  NUEVO
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 class RecoverPasswordScreen extends StatefulWidget {
   const RecoverPasswordScreen({Key? key}) : super(key: key);
@@ -13,47 +16,47 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _codeController = TextEditingController();
-  final TextEditingController _pwdController = TextEditingController();
+  final TextEditingController _codeController  = TextEditingController();
+  final TextEditingController _pwdController   = TextEditingController();
   final TextEditingController _pwdConfirmController = TextEditingController();
 
   String? _verificationId;
-  bool _isEmail = true;
-  bool _isLoading = false;
+  bool   _isEmail   = true;
+  bool   _isLoading = false;
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
+  void _showSnack(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  /* ---------- ENVÍO DE CORREO (Cloud Function + nodemailer) ---------- */
   Future<void> _sendEmail() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      _showSnack('Introduce tu correo');
-      return;
-    }
+    if (email.isEmpty) { _showSnack('Introduce tu correo'); return; }
+
     setState(() => _isLoading = true);
+    final uri = Uri.parse(
+      'https://europe-west1-plan-social-app.cloudfunctions.net/sendResetEmail'
+    );
     try {
-      await _auth.sendPasswordResetEmail(
-        email: email,
-        actionCodeSettings: ActionCodeSettings(
-          url: 'https://plansocialapp.es/reset_password.html',
-          handleCodeInApp: false,
-        ),
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},           //  ⬅️  JSON
+        body: jsonEncode({'email': email}),
       );
-      _showSnack('Correo de recuperación enviado');
-    } on FirebaseAuthException catch (e) {
-      _showSnack('Error: ${e.message}');
+      res.statusCode == 200
+          ? _showSnack('Correo de recuperación enviado')
+          : _showSnack('Error al enviar correo');
+    } catch (_) {
+      _showSnack('Error de red');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+  /* ------------------- ENVÍO DE SMS (Firebase Auth) --------------------- */
   Future<void> _sendSMS() async {
     final phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
-      _showSnack('Introduce tu teléfono');
-      return;
-    }
+    if (phone.isEmpty) { _showSnack('Introduce tu teléfono'); return; }
+
     setState(() => _isLoading = true);
     await _auth.verifyPhoneNumber(
       phoneNumber: phone,
@@ -72,6 +75,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
     );
   }
 
+  /* ----------------- DIALOGO PARA INTRODUCIR CÓDIGO SMS ----------------- */
   void _showCodeDialog() {
     showDialog(
       context: context,
@@ -98,9 +102,10 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
         ),
         actions: [
           TextButton(
+            child: const Text('Actualizar'),
             onPressed: () async {
               final code = _codeController.text.trim();
-              final pwd = _pwdController.text;
+              final pwd  = _pwdController.text;
               final pwd2 = _pwdConfirmController.text;
               if (code.isEmpty || pwd.isEmpty || pwd2.isEmpty || pwd != pwd2) {
                 _showSnack('Campos incompletos o no coinciden');
@@ -121,13 +126,13 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
                 _showSnack('Error: ${e.message}');
               }
             },
-            child: const Text('Actualizar'),
           ),
         ],
       ),
     );
   }
 
+  /* --------------------------------- UI --------------------------------- */
   @override
   Widget build(BuildContext context) {
     return Scaffold(

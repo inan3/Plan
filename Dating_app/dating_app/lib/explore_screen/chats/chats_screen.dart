@@ -17,20 +17,19 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  /// Controladores para el buscador
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   List<Map<String, dynamic>> _searchResults = [];
 
   /// Mapa que guarda para cada "otroUsuarioId" la fecha en que el usuario actual
-  /// borró el chat:  _deletedAtMap[otroId] = Timestamp
+  /// borró el chat: _deletedAtMap[otroId] = Timestamp
   Map<String, Timestamp> _deletedAtMap = {};
 
   @override
   void initState() {
     super.initState();
 
-    // Si llegó texto compartido, muestra un cuadro de diálogo al iniciar
+    // Muestra un diálogo si trae texto compartido
     if (widget.sharedText != null && widget.sharedText!.trim().isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showSharedTextDialog(widget.sharedText!);
@@ -54,7 +53,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                // EJEMPLO: envía el texto a un chat con un ID "destUserId"
+                // Ejemplo: envía el texto a un chat con un ID "destUserId"
                 String destUserId = "123456"; // Ejemplo
                 Navigator.push(
                   context,
@@ -76,13 +75,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   /// Elimina el chat con [otherUserId] para el usuario actual.
-  /// Marca la fecha de borrado en "deletedChats.otherUserId = now".
+  /// Marca la fecha en "deletedChats.otherUserId = now".
   Future<void> _deleteChat(String otherUserId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .set(
+      await FirebaseFirestore.instance.collection('users').doc(currentUserId).set(
         {
           'deletedChats': {otherUserId: FieldValue.serverTimestamp()}
         },
@@ -97,7 +93,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  /// Convierte un Timestamp a String "HH:mm"
+  /// Convierte un Timestamp a string "HH:mm"
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return "";
     final date = timestamp.toDate();
@@ -106,7 +102,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     return "$hh:$mm";
   }
 
-  /// Lógica para la previa de mensaje.
+  /// Construye el preview del último mensaje
   String _buildMessagePreview(Map<String, dynamic> data) {
     final type = data['type'] ?? 'text';
     if (type == 'shared_plan') {
@@ -119,7 +115,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         return _truncate(text, maxLen: 30);
       }
     } else {
-      // Otros tipos (imagen, video, etc.)
+      // imagen, ubicación, etc.
       return "Mensaje multimedia";
     }
   }
@@ -133,11 +129,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-      // 1) Primero leemos el doc del usuario actual para cargar sus "deletedChats"
-      future: FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .get(),
+      // Primero leemos el doc del usuario actual para cargar 'deletedChats'
+      future:
+          FirebaseFirestore.instance.collection('users').doc(currentUserId).get(),
       builder: (ctx, userSnap) {
         if (userSnap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -150,28 +144,28 @@ class _ChatsScreenState extends State<ChatsScreen> {
           );
         }
 
-        // Extraemos la info de 'deletedChats'
-        final userData = userSnap.data!.data() as Map<String, dynamic>;
-        final Map<String, dynamic>? deletedMap =
-            userData['deletedChats'] as Map<String, dynamic>?;
-
-        _deletedAtMap.clear();
-        if (deletedMap != null) {
-          for (var entry in deletedMap.entries) {
-            final key = entry.key; // el otherUserId
-            final val = entry.value;
-            if (val is Timestamp) {
-              _deletedAtMap[key] = val;
+        // Extraemos 'deletedChats'
+        final userDataRaw = userSnap.data!.data();
+        if (userDataRaw is Map<String, dynamic>) {
+          final deletedMap = userDataRaw['deletedChats'];
+          if (deletedMap is Map) {
+            _deletedAtMap.clear();
+            for (var entry in deletedMap.entries) {
+              final otherId = entry.key;
+              final val = entry.value;
+              if (val is Timestamp) {
+                _deletedAtMap[otherId] = val;
+              }
             }
           }
         }
 
-        // 2) Ahora construimos la UI principal con un StreamBuilder de los mensajes
+        // Construimos la UI con un StreamBuilder de mensajes
         return Scaffold(
           body: SafeArea(
             child: Column(
               children: [
-                // Encabezado "Chats" (a la izquierda) + botón de escribir (a la derecha)
+                // Cabecera "Chats" + icono de escribir
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -185,7 +179,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         ),
                       ),
                       const Spacer(),
-                      // Botón con SVG
                       GestureDetector(
                         onTap: _openContactsDialog,
                         child: SvgPicture.asset(
@@ -197,7 +190,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     ],
                   ),
                 ),
-                // El resto: la lista de chats
+                // El resto: lista de chats
                 Expanded(child: _buildChatList()),
               ],
             ),
@@ -207,7 +200,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Muestra la lista de últimos chats
+  /// Construye la lista de últimos chats
   Widget _buildChatList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -223,42 +216,44 @@ class _ChatsScreenState extends State<ChatsScreen> {
         }
 
         final docs = snapshot.data!.docs;
-        // Map: otherUserId -> lastMessageData (el más reciente)
+        // Map: otherUserId -> { ... lastMessageData ... }
         final Map<String, Map<String, dynamic>> lastMessages = {};
 
         for (var doc in docs) {
-          final data = doc.data() as Map<String, dynamic>;
-          final ts = data['timestamp'] as Timestamp?;
-          if (ts == null) continue;
+          final raw = doc.data();
+          if (raw is! Map<String, dynamic>) continue;
+          final data = raw;
+
+          final ts = data['timestamp'];
+          if (ts is! Timestamp) continue;
 
           // Determinamos el "otro" usuario
-          final String otherUserId = (data['senderId'] == currentUserId)
-              ? data['receiverId']
-              : data['senderId'];
+          final sender = data['senderId']?.toString() ?? '';
+          final receiver = data['receiverId']?.toString() ?? '';
+          final otherUserId = (sender == currentUserId) ? receiver : sender;
+          if (otherUserId.isEmpty) continue;
 
-          // --------- AQUI FILTRAMOS POR deletedAt ----------
+          // Filtrar por deletedAt
           final userDeletedAt = _deletedAtMap[otherUserId];
           if (userDeletedAt != null) {
-            // Si la fecha del mensaje es anterior a userDeletedAt, lo omitimos
             if (ts.toDate().isBefore(userDeletedAt.toDate())) {
+              // Si es anterior a la fecha de borrado, lo saltamos
               continue;
             }
           }
-          // -------------------------------------------------
 
-          // Ahora sí nos quedamos con el mensaje más reciente
+          // Quedarnos con el más reciente
           if (!lastMessages.containsKey(otherUserId)) {
             lastMessages[otherUserId] = data;
           } else {
-            final existingTs =
-                lastMessages[otherUserId]!['timestamp'] as Timestamp;
-            if (ts.toDate().isAfter(existingTs.toDate())) {
+            final oldTs = lastMessages[otherUserId]!['timestamp'] as Timestamp;
+            if (ts.toDate().isAfter(oldTs.toDate())) {
               lastMessages[otherUserId] = data;
             }
           }
         }
 
-        // Ordenamos por fecha descendente
+        // Ordenamos por timestamp desc
         final entries = lastMessages.entries.toList()
           ..sort((a, b) {
             final tA = a.value['timestamp'] as Timestamp;
@@ -267,7 +262,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
           });
 
         if (entries.isEmpty) {
-          // Tras filtrar, puede pasar que no quede nada
           return const Center(child: Text("No tienes mensajes aún."));
         }
 
@@ -287,14 +281,16 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   return const SizedBox.shrink();
                 }
 
-                final userData =
-                    usrSnapshot.data!.data() as Map<String, dynamic>?;
-                if (userData == null) return const SizedBox.shrink();
+                final userRaw = usrSnapshot.data!.data();
+                if (userRaw is! Map<String, dynamic>) {
+                  return const SizedBox.shrink();
+                }
+                final userData = userRaw;
 
-                final userName = userData['name'] ?? 'Usuario';
-                final userPhoto = userData['photoUrl'] ?? '';
+                final userName = userData['name']?.toString() ?? 'Usuario';
+                final userPhoto = userData['photoUrl']?.toString() ?? '';
 
-                // Mensajes no leídos (sender=otherUserId => receiver=currentUserId => isRead=false)
+                // Contar no leídos de otherUserId -> currentUserId
                 return FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
                       .collection('messages')
@@ -318,8 +314,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                             color: Colors.white, size: 32),
                       ),
                       direction: DismissDirection.endToStart,
-
-                      /// Aquí interceptamos el deslizamiento antes de eliminar
                       confirmDismiss: (direction) async {
                         final bool? result = await showDialog<bool>(
                           context: context,
@@ -331,13 +325,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.of(ctx).pop(false); // NO
+                                    Navigator.of(ctx).pop(false);
                                   },
                                   child: const Text("No"),
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.of(ctx).pop(true); // SÍ
+                                    Navigator.of(ctx).pop(true);
                                   },
                                   child: const Text("Sí"),
                                 ),
@@ -345,17 +339,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
                             );
                           },
                         );
-
-                        // Si result es true, sí elimina; si es false (o null), cancela el deslizamiento
                         return result == true;
                       },
-
-                      /// Si confirmDismiss devolvió true, se ejecutará onDismissed
                       onDismissed: (_) => _deleteChat(otherUserId),
 
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundImage: userPhoto.isNotEmpty
+                          backgroundImage: (userPhoto.isNotEmpty)
                               ? NetworkImage(userPhoto)
                               : null,
                           backgroundColor: Colors.grey[300],
@@ -375,7 +365,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           children: [
                             Text(
                               _formatTimestamp(
-                                  lastMsgData['timestamp'] as Timestamp?),
+                                lastMsgData['timestamp'] as Timestamp?,
+                              ),
                               style: const TextStyle(color: Colors.grey),
                             ),
                             const SizedBox(height: 4),
@@ -420,11 +411,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Abre la ventana (draggable) ocupando el 90% de la pantalla para seleccionar contacto
+  /// Abre el modal arrastrable para seleccionar contacto
   void _openContactsDialog() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Para que pueda ocupar el 90% de la altura
+      isScrollControlled: true, // para ocupar 90% de altura
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return DraggableScrollableSheet(
@@ -438,7 +429,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
               ),
               child: Container(
                 decoration: const BoxDecoration(
-                  // Degradado de fondo + borde redondeado arriba
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -453,7 +443,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 16),
-                    // ----- Handle -----
                     Stack(
                       children: [
                         Align(
@@ -470,19 +459,17 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // ----- Título -----
                     const Center(
                       child: Text(
                         "¿Con quién contactar?",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white, // Forzamos blanco
+                          color: Colors.white,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // ----- Buscador -----
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
@@ -514,26 +501,19 @@ class _ChatsScreenState extends State<ChatsScreen> {
                               _isSearching = false;
                             });
                           } else {
-                            setState(() {
-                              _isSearching = true;
-                            });
+                            setState(() => _isSearching = true);
                             _searchUser(val);
                           }
                         },
                       ),
                     ),
                     const SizedBox(height: 8),
-
-                    // ----- Todo lo que se desplaza -----
                     Expanded(
                       child: ListView(
                         controller: scrollController,
                         padding: EdgeInsets.zero,
                         children: [
-                          // Resultados de búsqueda (si estás buscando)
                           if (_isSearching) _buildSearchResults(),
-
-                          // Sección: "Mis seguidores"
                           const Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 16,
@@ -549,8 +529,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                             ),
                           ),
                           _buildFollowersList(),
-
-                          // Sección: "A quienes sigo"
                           const Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 16,
@@ -579,15 +557,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Búsqueda POR SUBCADENA, en tiempo real
+  /// Búsqueda por subcadena en 'name'
   Future<void> _searchUser(String query) async {
     try {
-      // 1) Obtenemos TODOS los documentos de 'users'
       final snap = await FirebaseFirestore.instance.collection('users').get();
-
-      // 2) Filtramos localmente por subcadena en 'name'
       final filtered = snap.docs.map((doc) {
-        final data = doc.data();
+        final raw = doc.data();
+        if (raw is! Map<String, dynamic>) return null;
+        final data = raw;
         return {
           'id': doc.id,
           'name': data['name'] ?? '',
@@ -595,10 +572,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
           'age': data['age']?.toString() ?? '',
           'profile_privacy': data['profile_privacy'] ?? 0,
         };
-      }).where((user) {
-        final userName = user['name'].toString().toLowerCase();
+      }).where((u) {
+        if (u == null) return false;
+        final userName = u['name'].toString().toLowerCase();
         return userName.contains(query.toLowerCase());
-      }).toList();
+      }).cast<Map<String, dynamic>>().toList();
 
       setState(() {
         _searchResults = filtered;
@@ -612,32 +590,38 @@ class _ChatsScreenState extends State<ChatsScreen> {
     if (_searchResults.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Text("El nombre de usuario especificado no existe",
-            style: TextStyle(color: Colors.white)),
+        child: Text(
+          "El nombre de usuario especificado no existe",
+          style: TextStyle(color: Colors.white),
+        ),
       );
     }
     return Column(
       children: _searchResults.map((user) {
+        final name = user['name'] ?? 'Desconocido';
+        final photoUrl = user['photoUrl'] ?? '';
+        final age = user['age'] ?? '';
+        final isPrivate = user['profile_privacy'] == 1;
+
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: user['photoUrl'].isNotEmpty
-                ? NetworkImage(user['photoUrl'])
-                : null,
+            backgroundImage:
+                (photoUrl.isNotEmpty) ? NetworkImage(photoUrl) : null,
             backgroundColor: Colors.grey[300],
           ),
           title: Text(
-            "${user['name']}",
+            name,
             style: const TextStyle(color: Colors.white),
           ),
           subtitle: Text(
-            "Edad: ${user['age']}",
+            "Edad: $age",
             style: const TextStyle(color: Colors.white70),
           ),
           onTap: () => _openChatWithUser(
-            user['id'],
-            user['name'],
-            user['photoUrl'],
-            user['profile_privacy'] == 1,
+            user['id'].toString(),
+            name,
+            photoUrl,
+            isPrivate,
           ),
         );
       }).toList(),
@@ -650,15 +634,17 @@ class _ChatsScreenState extends State<ChatsScreen> {
           .collection('followers')
           .where('userId', isEqualTo: currentUserId)
           .get(),
-      builder: (context, snapshot) {
+      builder: (ctx, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.data!.docs.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text("Aún no tienes seguidores.",
-                style: TextStyle(color: Colors.white70)),
+            child: Text(
+              "Aún no tienes seguidores.",
+              style: TextStyle(color: Colors.white70),
+            ),
           );
         }
 
@@ -673,10 +659,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
           child: ListView.builder(
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (ctx, index) {
-              final doc = snapshot.data!.docs[index];
-              final data = doc.data() as Map<String, dynamic>;
+              final rawDoc = snapshot.data!.docs[index].data();
+              if (rawDoc is! Map<String, dynamic>) return const SizedBox();
+              final data = rawDoc;
 
-              final followerId = data['followerId'] ?? '';
+              final followerId = data['followerId']?.toString() ?? '';
+              if (followerId.isEmpty) return const SizedBox();
 
               return FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
@@ -687,15 +675,20 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   if (!userSnap.hasData || !userSnap.data!.exists) {
                     return const SizedBox.shrink();
                   }
-                  final userData = userSnap.data!.data() as Map<String, dynamic>;
-                  final followerName = userData['name'] ?? 'Sin nombre';
-                  final followerPhoto = userData['photoUrl'] ?? '';
-                  final followerAge = userData['age']?.toString() ?? '';
-                  final isPrivate = (userData['profile_privacy'] ?? 0) == 1;
+                  final rawUser = userSnap.data!.data();
+                  if (rawUser is! Map<String, dynamic>) {
+                    return const SizedBox.shrink();
+                  }
+                  final uData = rawUser;
+
+                  final followerName = uData['name']?.toString() ?? 'Sin nombre';
+                  final followerPhoto = uData['photoUrl']?.toString() ?? '';
+                  final followerAge = uData['age']?.toString() ?? '';
+                  final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: followerPhoto.isNotEmpty
+                      backgroundImage: (followerPhoto.isNotEmpty)
                           ? NetworkImage(followerPhoto)
                           : null,
                       backgroundColor: Colors.grey[300],
@@ -730,15 +723,17 @@ class _ChatsScreenState extends State<ChatsScreen> {
           .collection('followed')
           .where('userId', isEqualTo: currentUserId)
           .get(),
-      builder: (context, snapshot) {
+      builder: (ctx, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.data!.docs.isEmpty) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text("Aún no sigues a nadie.",
-                style: TextStyle(color: Colors.white70)),
+            child: Text(
+              "Aún no sigues a nadie.",
+              style: TextStyle(color: Colors.white70),
+            ),
           );
         }
 
@@ -753,10 +748,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
           child: ListView.builder(
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (ctx, index) {
-              final doc = snapshot.data!.docs[index];
-              final data = doc.data() as Map<String, dynamic>;
+              final rawDoc = snapshot.data!.docs[index].data();
+              if (rawDoc is! Map<String, dynamic>) return const SizedBox();
+              final data = rawDoc;
 
-              final followingId = data['followedId'] ?? '';
+              final followingId = data['followedId']?.toString() ?? '';
+              if (followingId.isEmpty) return const SizedBox();
 
               return FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
@@ -767,15 +764,20 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   if (!userSnap.hasData || !userSnap.data!.exists) {
                     return const SizedBox.shrink();
                   }
-                  final userData = userSnap.data!.data() as Map<String, dynamic>;
-                  final followingName = userData['name'] ?? 'Sin nombre';
-                  final followingPhoto = userData['photoUrl'] ?? '';
-                  final followingAge = userData['age']?.toString() ?? '';
-                  final isPrivate = (userData['profile_privacy'] ?? 0) == 1;
+                  final rawUser = userSnap.data!.data();
+                  if (rawUser is! Map<String, dynamic>) {
+                    return const SizedBox.shrink();
+                  }
+                  final uData = rawUser;
+
+                  final followingName = uData['name']?.toString() ?? 'Sin nombre';
+                  final followingPhoto = uData['photoUrl']?.toString() ?? '';
+                  final followingAge = uData['age']?.toString() ?? '';
+                  final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: followingPhoto.isNotEmpty
+                      backgroundImage: (followingPhoto.isNotEmpty)
                           ? NetworkImage(followingPhoto)
                           : null,
                       backgroundColor: Colors.grey[300],
@@ -804,14 +806,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
     );
   }
 
-  /// Versión que comprueba si el usuario es privado y, si no le sigues, no te deja abrir chat
+  /// Comprueba si es privado y si no lo sigo, no deja abrir el chat
   Future<void> _openChatWithUser(
     String userId,
     String name,
     String photoUrl,
     bool isUserPrivate,
   ) async {
-    // Si es privado, comprueba si le sigo
     if (isUserPrivate) {
       final me = FirebaseAuth.instance.currentUser;
       if (me == null) return;
@@ -830,7 +831,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
           context: context,
           builder: (_) => AlertDialog(
             title: const Text("Perfil privado"),
-            content: const Text("Debes seguir a este usuario para interactuar."),
+            content:
+                const Text("Debes seguir a este usuario para interactuar."),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -843,7 +845,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
       }
     }
 
-    // Abrimos chat
     Navigator.push(
       context,
       MaterialPageRoute(

@@ -97,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       // Tras cargar, intentamos borrar físicamente mensajes si aplica
       _deleteOldMessagesIfBothDeleted();
     }).then((_) {
-      // Marca como leídos al entrar (después de haber aplicado el filtrado).
+      // Marca como leídos (primer intento) al entrar:
       _markMessagesAsRead();
     });
   }
@@ -176,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
   }
 
-  /// Marca como leídos todos los mensajes recibidos de este chat
+  /// Marca como leídos todos los mensajes recibidos de este chat (llamada puntual)
   Future<void> _markMessagesAsRead() async {
     try {
       QuerySnapshot unreadMessages = await FirebaseFirestore.instance
@@ -193,6 +193,36 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       await batch.commit();
     } catch (e) {
       print("❌ Error al marcar mensajes como leídos: $e");
+    }
+  }
+
+  /// Marca en tiempo real los mensajes de este chat como leídos según vayan llegando
+  Future<void> _markAllMessagesAsReadInSnapshot(
+      List<DocumentSnapshot> docs) async {
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+    bool needCommit = false;
+
+    for (var doc in docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      final senderId = data['senderId'];
+      final receiverId = data['receiverId'];
+      final isRead = data['isRead'] ?? false;
+
+      // Deben ser mensajes del partner hacia mí y no leídos aún
+      if (senderId == widget.chatPartnerId &&
+          receiverId == currentUserId &&
+          !isRead) {
+        batch.update(doc.reference, {'isRead': true});
+        needCommit = true;
+      }
+    }
+
+    if (needCommit) {
+      try {
+        await batch.commit();
+      } catch (e) {
+        print("❌ Error al actualizar isRead: $e");
+      }
     }
   }
 
@@ -285,8 +315,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   // ───────── Cambiamos de blanco a gris semitransparente ─────────
-                  color:
-                      const Color.fromARGB(255, 14, 14, 14).withOpacity(0.25),
+                  color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.25),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: GestureDetector(
@@ -317,8 +346,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               UserActivityStatus(
-                                userId:
-                                    widget.chatPartnerId, // texto sigue blanco
+                                userId: widget.chatPartnerId,
                               ),
                             ],
                           ),
@@ -395,8 +423,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            color: const Color.fromARGB(255, 114, 114, 114)
-                                .withOpacity(0.6),
+                            color:
+                                const Color.fromARGB(255, 114, 114, 114).withOpacity(0.6),
                             padding: const EdgeInsets.symmetric(
                               vertical: 8,
                               horizontal: 12,
@@ -440,8 +468,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                 // Reportar
                                 InkWell(
                                   onTap: () {
-                                    final me =
-                                        FirebaseAuth.instance.currentUser;
+                                    final me = FirebaseAuth.instance.currentUser;
                                     if (me == null) return;
                                     ReportAndBlockUser.goToReportScreen(
                                       context,
@@ -468,8 +495,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                 // Bloquear / Desbloquear
                                 InkWell(
                                   onTap: () async {
-                                    final me =
-                                        FirebaseAuth.instance.currentUser;
+                                    final me = FirebaseAuth.instance.currentUser;
                                     if (me == null) return;
 
                                     // Toggle local
@@ -540,7 +566,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           return const SizedBox();
         }
 
+        // Primero marcamos como 'delivered' los mensajes que aún no se han marcado
         _markAllMessagesAsDelivered(snapshot.data!.docs);
+
+        // También marcamos en tiempo real como 'read' todo mensaje recibido
+        _markAllMessagesAsReadInSnapshot(snapshot.data!.docs);
 
         // Filtramos mensajes solo de este chat
         var allDocs = snapshot.data!.docs.where((doc) {
