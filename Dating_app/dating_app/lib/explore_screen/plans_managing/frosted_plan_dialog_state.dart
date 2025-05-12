@@ -1,4 +1,4 @@
-//frosted_plan_dialog_state.dart
+// frosted_plan_dialog_state.dart
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,35 +35,23 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   final TextEditingController _chatController = TextEditingController();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  // Almacenamos localmente la edad del creador (si existe en Firestore)
   String? _creatorAge;
-
   bool _liked = false;
   int _likeCount = 0;
 
-  // Para el carrusel de imágenes:
   late PageController _pageController;
   int _currentPageIndex = 0;
 
   @override
   void initState() {
     super.initState();
-
-    // Cargamos la lista de participantes (fetchParticipants)
     _futureParticipants = widget.fetchParticipants(widget.plan);
-
-    // Likes iniciales:
     _likeCount = widget.plan.likes;
     _checkIfLiked();
-
-    // Intentamos cargar info del creador (edad, nombre, foto)
     _fetchCreatorInfo();
-
-    // Inicializamos PageController para carrusel
     _pageController = PageController();
   }
 
-  /// Intenta cargar la info del creador desde la colección 'users'
   Future<void> _fetchCreatorInfo() async {
     if (widget.plan.createdBy.isEmpty) return;
     try {
@@ -71,7 +59,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           .collection('users')
           .doc(widget.plan.createdBy)
           .get();
-
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
         final ageCreador = data['age']?.toString() ?? '';
@@ -86,11 +73,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     }
   }
 
-  /// Verifica si ya le dí "like" a este plan
   Future<void> _checkIfLiked() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     final userRef =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snapshot = await userRef.get();
@@ -103,7 +88,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     }
   }
 
-  /// Formato de Timestamp a HH:mm
   String _formatTimestamp(Timestamp? ts) {
     if (ts == null) return '';
     final date = ts.toDate();
@@ -112,9 +96,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     return '$hh:$mm';
   }
 
-  // ---------------------------------------------------------------------------
-  //  UBICACIÓN
-  // ---------------------------------------------------------------------------
   Widget _buildLocationArea(PlanModel plan) {
     return Center(
       child: Container(
@@ -153,8 +134,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // Nombre/lugar
                   Text(
                     plan.location,
                     textAlign: TextAlign.center,
@@ -165,8 +144,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Mapa
                   if (plan.latitude != null && plan.longitude != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
@@ -212,9 +189,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  INFORMACIÓN ADICIONAL (ID + Restricción + Fechas)
-  // ---------------------------------------------------------------------------
   Widget _buildAdditionalInfoBox(PlanModel plan) {
     return Center(
       child: Container(
@@ -236,7 +210,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -257,8 +230,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // Fila ID + botón copiar
                   Row(
                     children: [
                       Expanded(
@@ -273,8 +244,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.copy,
-                            color: Color.fromARGB(255, 203, 202, 206)),
+                        icon: const Icon(
+                          Icons.copy,
+                          color: Color.fromARGB(255, 203, 202, 206),
+                        ),
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: plan.id));
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -287,8 +260,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // Restricción de edad (si no es plan especial)
                   if (plan.special_plan != 1)
                     Text(
                       "Restricción de edad: ${plan.minAge} - ${plan.maxAge} años",
@@ -298,9 +269,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         fontSize: 14,
                       ),
                     ),
-
                   const SizedBox(height: 25),
-                  // Fecha de inicio
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -323,7 +292,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       ),
                     ],
                   ),
-                  // Fecha de fin
                   if (plan.finishTimestamp != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
@@ -353,9 +321,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  ACTION BUTTONS (icono + texto)
-  // ---------------------------------------------------------------------------
   Widget _buildActionButton({
     required String iconPath,
     required String countText,
@@ -396,9 +361,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  BOTÓN LIKE
-  // ---------------------------------------------------------------------------
   Widget _buildLikeButton() {
     return _buildActionButton(
       iconPath: 'assets/corazon.svg',
@@ -408,15 +370,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  BOTÓN MENSAJE => abre popup chat
-  // ---------------------------------------------------------------------------
   Widget _buildMessageButton(PlanModel plan) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('plans')
-          .doc(plan.id)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
       builder: (context, snapshot) {
         String countText = '0';
         if (snapshot.hasData && snapshot.data!.exists) {
@@ -452,16 +408,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  BOTÓN COMPARTIR
-  // ---------------------------------------------------------------------------
   Widget _buildShareButton(PlanModel plan) {
     return _buildActionButton(
       iconPath: 'assets/icono-compartir.svg',
       countText: "",
-      onTap: () {
-        _openCustomShareModal(plan);
-      },
+      onTap: () => _openCustomShareModal(plan),
     );
   }
 
@@ -495,7 +446,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Botón "Compartir con otras apps"
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -519,7 +469,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       ],
                     ),
                   ),
-                  // Compartir dentro de la app
                   Expanded(
                     child: _CustomShareDialogContent(
                       plan: plan,
@@ -535,9 +484,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  FILA DE ACCIONES
-  // ---------------------------------------------------------------------------
   Widget _buildActionButtonsRow(PlanModel plan) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -551,16 +497,12 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  BOTÓN "ÚNETE AHORA" (comprobando cupo completo)
-  // ---------------------------------------------------------------------------
   Widget _buildJoinButton(PlanModel plan) {
     final pCount = plan.participants?.length ?? 0;
     final maxP = plan.maxParticipants ?? 0;
     final bool isFull = (maxP > 0 && pCount >= maxP);
 
     if (isFull) {
-      // Cupo lleno => texto "Cupo completo"
       return ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: Container(
@@ -580,34 +522,26 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       );
     }
 
-    // Caso normal: "Únete ahora"
     return GestureDetector(
       onTap: () async {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) return;
-
-        // No unirse a tu plan
         if (plan.createdBy == user.uid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No puedes unirte a tu propio plan')),
           );
           return;
         }
-
-        // Ya participas
         if (plan.participants?.contains(user.uid) ?? false) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('¡Ya estás suscrito a este plan!')),
           );
           return;
         }
-
-        // Revisa cupo
         if (maxP > 0 && pCount >= maxP) {
-          return; // Cupo lleno => no hace nada
+          return;
         }
 
-        // Generar notificación join_request
         final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
         await FirebaseFirestore.instance.collection('notifications').add({
           'type': 'join_request',
@@ -620,8 +554,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('¡Tu solicitud de unión se ha enviado!')),
+          const SnackBar(content: Text('¡Tu solicitud de unión se ha enviado!')),
         );
       },
       child: ClipRRect(
@@ -653,14 +586,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  POPUP DE CHAT
-  // ---------------------------------------------------------------------------
   Widget _buildChatPopup(PlanModel plan) {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        // Header + Cierre
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -683,8 +612,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           ),
         ),
         const Divider(color: Colors.white38),
-
-        // Lista de mensajes
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -743,8 +670,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             },
           ),
         ),
-
-        // Barra inferior para nuevo mensaje
         Container(
           padding: const EdgeInsets.all(8.0),
           child: Row(
@@ -803,7 +728,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    // Actualizar 'commentsCount'
     final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
     await planRef.update({
       'commentsCount': FieldValue.increment(1),
@@ -814,23 +738,18 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     _chatController.clear();
   }
 
-  // ---------------------------------------------------------------------------
-  //  AVATARES DE PARTICIPANTES (MISMO ESTILO QUE plan_card.dart)
-  // ---------------------------------------------------------------------------
   Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
     final count = participants.length;
     if (count == 0) {
       return const SizedBox.shrink();
     }
 
-    // Caso 1: Solo 1
     if (count == 1) {
       final p = participants[0];
       final pic = p['photoUrl'] ?? '';
       String name = p['name'] ?? 'Usuario';
       final age = p['age']?.toString() ?? '';
 
-      // Breve recorte de texto si es muy largo
       String displayText = '$name, $age';
       if (displayText.length > 10) {
         final cut = math.min(displayText.length, 14);
@@ -859,10 +778,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           ),
         ),
       );
-    }
-
-    // Caso 2: 2 o más participantes
-    else {
+    } else {
       final p1 = participants[0];
       final p2 = participants[1];
       final pic1 = p1['photoUrl'] ?? '';
@@ -872,7 +788,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       const double overlapOffset = 24;
       final extras = count - 2;
       final hasExtras = extras > 0;
-
       final double containerWidth = hasExtras
           ? (avatarSize + overlapOffset * 2)
           : (avatarSize + overlapOffset);
@@ -885,7 +800,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // Primer avatar
               Positioned(
                 left: 0,
                 child: CircleAvatar(
@@ -894,7 +808,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
-              // Segundo
               Positioned(
                 left: overlapOffset,
                 child: CircleAvatar(
@@ -903,7 +816,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
-              // Si hay más de 2 => un contenedor con +N
               if (hasExtras)
                 Positioned(
                   left: overlapOffset * 2,
@@ -934,9 +846,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  //  MOSTRAR MODAL DE PARTICIPANTES (CON CHEQUEO DE ASISTENCIA)
-  // ---------------------------------------------------------------------------
   Future<void> _showParticipantsModal(
       List<Map<String, dynamic>> participants) async {
     List checkedInUsers = [];
@@ -980,7 +889,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             ),
             child: Column(
               children: [
-                // Título
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -1017,7 +925,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       return ListTile(
                         onTap: () {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
-                          // Sustituimos por la lógica que comprueba si ha bloqueado
                           UserInfoCheck.open(context, uid);
                         },
                         leading: CircleAvatar(
@@ -1033,7 +940,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        // Si el usuario está en checkedInUsers => Texto "ASISTE" a la derecha
                         trailing: isCheckedIn
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
@@ -1063,9 +969,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  MEDIA CAROUSEL (fotos + video)
-  // ---------------------------------------------------------------------------
   Widget _buildMediaCarousel({
     required List<String> images,
     required String? videoUrl,
@@ -1090,7 +993,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             final imageUrl = images[index];
             return GestureDetector(
               onTap: () {
-                // Abrir visor de imágenes a pantalla completa
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1114,7 +1016,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               ),
             );
           } else {
-            // Vista previa del video
             return ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: Container(
@@ -1134,9 +1035,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  SECCIÓN MULTIMEDIA + BOTONES + "Únete ahora"
-  // ---------------------------------------------------------------------------
   Widget _buildMediaSection(
     PlanModel plan,
     List<Map<String, dynamic>> participants, {
@@ -1164,7 +1062,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       mediaContent = _buildMediaCarousel(images: images, videoUrl: video);
     }
 
-    // Indicadores de página
     Widget pageIndicator = const SizedBox.shrink();
     if (totalMedia > 1) {
       pageIndicator = Padding(
@@ -1192,25 +1089,19 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       children: [
         mediaContent,
         pageIndicator,
-        // Fila: like, chat, share + participantes
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          child: Row(
-            children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildActionButtonsRow(plan),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Avatares de participantes
-              _buildParticipantsCorner(participants),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildActionButtonsRow(plan),
+                const SizedBox(width: 12),
+                _buildParticipantsCorner(participants),
+              ],
+            ),
           ),
         ),
-
-        // Botón "Únete ahora" si no eres creador
         if (!isUserCreator)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1222,13 +1113,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  ENCABEZADO SUPERIOR (avatar + nombre + flecha back)
-  // ---------------------------------------------------------------------------
   Widget _buildHeaderRow() {
     final String name = widget.plan.creatorName ?? 'Creador';
     final String age = _creatorAge ?? '';
-
     return GestureDetector(
       onTap: () {
         final creatorUid = widget.plan.createdBy;
@@ -1236,7 +1123,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         if (creatorUid.isNotEmpty && creatorUid != currentUid) {
           UserInfoCheck.open(context, creatorUid);
         }
-        // si creatorUid == currentUid → no hace nada
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1272,9 +1158,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  BUILD PRINCIPAL
-  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
@@ -1284,7 +1167,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        // Gradiente de fondo
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -1317,10 +1199,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
-                    // Encabezado (avatar creador + "back")
                     _buildHeaderRow(),
-
-                    // Multimedia si no es special_plan
                     if (plan.special_plan != 1)
                       _buildMediaSection(
                         plan,
@@ -1329,8 +1208,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       )
                     else
                       const SizedBox(height: 10),
-
-                    // Descripción + Título
                     Center(
                       child: Container(
                         width: MediaQuery.of(context).size.width * 0.95,
@@ -1377,16 +1254,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         ),
                       ),
                     ),
-
-                    // Ubicación
                     _buildLocationArea(plan),
                     const SizedBox(height: 16),
-
-                    // Info adicional
                     _buildAdditionalInfoBox(plan),
                     const SizedBox(height: 16),
-
-                    // Sección de Check-in (Confirmar Asistencia)
                     _buildCheckInArea(plan, allParts, isUserCreator),
                     const SizedBox(height: 30),
                   ],
@@ -1399,20 +1270,16 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  SECCIÓN CHECK-IN
-  // ---------------------------------------------------------------------------
   Widget _buildCheckInArea(
-      PlanModel plan, List<Map<String, dynamic>> participants, bool isCreator) {
-    // Verificamos si el usuario es participante
+    PlanModel plan,
+    List<Map<String, dynamic>> participants,
+    bool isCreator,
+  ) {
     final bool isParticipant =
         participants.any((p) => p['uid'] == _currentUser?.uid);
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('plans')
-          .doc(plan.id)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
       builder: (context, snap) {
         if (!snap.hasData || !snap.data!.exists) {
           return const SizedBox.shrink();
@@ -1425,7 +1292,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         final bool alreadyCheckedIn =
             (checkedIn as List).contains(_currentUser?.uid ?? '');
 
-        // Si YA confirmaste asistencia
+        final bool isPlanFinished = plan.finishTimestamp != null &&
+            plan.finishTimestamp!.isBefore(DateTime.now());
+
         if (alreadyCheckedIn) {
           return Container(
             width: MediaQuery.of(context).size.width * 0.95,
@@ -1449,42 +1318,32 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           );
         }
 
-        // ---- INICIO MODIFICACIÓN IMPORTANTE ----
-        // Verificamos si el plan ya terminó (finishTimestamp en el pasado)
-        final bool isPlanFinished = plan.finishTimestamp != null &&
-            plan.finishTimestamp!.isBefore(DateTime.now());
-        // ---- FIN MODIFICACIÓN IMPORTANTE ----
-
-        // Si soy el creador
         if (isCreator) {
-          // NUEVA COMPROBACIÓN: si el plan ya terminó, no muestro nada
           if (isPlanFinished) {
             return const SizedBox.shrink();
           }
-
           if (!checkInActive) {
-            // Botón "Iniciar Check-in"
             return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue, // color de fondo
-                    foregroundColor: Colors.white, // color del texto e iconos
-                  ),
-                  onPressed: () async {
-                    await AttendanceManaging.startCheckIn(plan.id);
-                    if (!mounted) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckInCreatorScreen(planId: plan.id),
-                      ),
-                    );
-                  },
-                  child: const Text("Iniciar Check-in"),
-                ));
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  await AttendanceManaging.startCheckIn(plan.id);
+                  if (!mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                    ),
+                  );
+                },
+                child: const Text("Iniciar Check-in"),
+              ),
+            );
           } else {
-            // "Ver Check-in (QR)" + "Finalizar Check-in"
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Column(
@@ -1520,12 +1379,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             );
           }
         } else {
-          // No soy creador => ¿Soy participante?
           if (!isParticipant) {
-            // No hago nada
             return const SizedBox.shrink();
           }
-          // Soy participante => "Confirmar asistencia" si checkInActive
           if (checkInActive) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1537,7 +1393,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => CheckInParticipantScreen(planId: plan.id),
+                      builder: (_) =>
+                          CheckInParticipantScreen(planId: plan.id),
                     ),
                   );
                 },
@@ -1553,9 +1410,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// LÓGICA DE LIKE: (extensión)
-// ---------------------------------------------------------------------------
 extension LikeLogic on _FrostedPlanDialogState {
   Future<void> _toggleLike() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -1595,9 +1449,6 @@ extension LikeLogic on _FrostedPlanDialogState {
   }
 }
 
-// ---------------------------------------------------------------------------
-// CONTENIDO DEL BOTTOM SHEET PARA COMPARTIR DENTRO DE LA APP
-// ---------------------------------------------------------------------------
 class _CustomShareDialogContent extends StatefulWidget {
   final PlanModel plan;
   final ScrollController scrollController;
@@ -1714,7 +1565,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Barra superior
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
@@ -1737,7 +1587,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             ],
           ),
         ),
-        // Buscador
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: TextField(
@@ -1758,7 +1607,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
           ),
         ),
         const SizedBox(height: 10),
-        // Listas
         Expanded(
           child: SingleChildScrollView(
             controller: widget.scrollController,
@@ -1766,7 +1614,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Mis seguidores
                 const SizedBox(height: 6),
                 const Text(
                   "Mis seguidores",
@@ -1778,9 +1625,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
                 ),
                 const SizedBox(height: 6),
                 _buildUserList(_filterUsers(_followers)),
-
                 const SizedBox(height: 12),
-                // A quienes sigo
                 const Text(
                   "A quienes sigo",
                   style: TextStyle(
@@ -1818,7 +1663,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
         ),
       );
     }
-
     return Column(
       children: userList.map((user) {
         final uid = user['uid'] ?? '';
@@ -1872,9 +1716,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// VISOR DE IMÁGENES A PANTALLA COMPLETA
-// ---------------------------------------------------------------------------
 class FullScreenGalleryPage extends StatefulWidget {
   final List<String> images;
   final int initialIndex;
@@ -1904,7 +1745,6 @@ class _FullScreenGalleryPageState extends State<FullScreenGalleryPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // PageView para imágenes
           PageView.builder(
             controller: _pageController,
             itemCount: widget.images.length,
@@ -1915,8 +1755,6 @@ class _FullScreenGalleryPageState extends State<FullScreenGalleryPage> {
               );
             },
           ),
-
-          // Botón de cerrar
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             left: 10,

@@ -1,4 +1,4 @@
-//menu_side_bar_screen.dart
+// menu_side_bar_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,8 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:dating_app/main/colors.dart';
-
-// Importaciones de pantallas
 import 'my_plans_screen.dart';
 import 'favourites_screen.dart';
 import 'seetings/settings_screen.dart';
@@ -46,7 +44,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
 
     return Stack(
       children: [
-        // Fondo difuminado cuando el menú está abierto
         if (isOpen)
           GestureDetector(
             onTap: toggleMenu,
@@ -57,8 +54,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
               ),
             ),
           ),
-
-        // Menú lateral con AnimatedPositioned
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           left: isOpen ? 0 : -screenSize.width,
@@ -70,7 +65,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
             child: Stack(
               children: [
                 Container(
-                  // AQUÍ aplicamos tu degradado
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -82,8 +76,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Para evitar overflows se usa ListView:
+                  child: ListView(
+                    padding: EdgeInsets.zero,
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(
@@ -102,69 +97,59 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                           ],
                         ),
                       ),
-                      Expanded(
-                        child: ListView(
-                          padding: EdgeInsets.zero,
-                          children: [
-                            _buildProfileHeader(),
-                            _buildMenuItemWithBadge(
-                              icon: 'assets/icono-calendario.svg',
-                              title: 'Mis Planes',
-                              destination: const MyPlansScreen(),
-                              iconColor: Colors.white,
-                              textColor: Colors.white,
-                              stream: FirebaseFirestore.instance
-                                  .collection('plans')
-                                  .where('createdBy', isEqualTo: currentUserId)
-                                  .snapshots(),
-                            ),
-                            _buildMenuItemWithBadge(
-                              icon: 'assets/union.svg',
-                              title: 'Planes Suscritos',
-                              destination: SubscribedPlansScreen(
-                                userId: currentUserId!,
-                              ),
-                              iconColor: Colors.white,
-                              textColor: Colors.white,
-                              stream: FirebaseFirestore.instance
-                                  .collection('subscriptions')
-                                  .where('userId', isEqualTo: currentUserId)
-                                  .snapshots(),
-                            ),
-                            _buildMenuItemWithBadge(
-                              icon: 'assets/icono-corazon.svg',
-                              title: 'Favoritos',
-                              destination: const FavouritesScreen(),
-                              iconColor: Colors.white,
-                              textColor: Colors.white,
-                              stream: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(currentUserId)
-                                  .snapshots(
-                                    includeMetadataChanges: true,
-                                  ),
-                            ),
-                            _buildMenuItem(
-                              icon: 'assets/icono-ajustes.svg',
-                              title: 'Ajustes',
-                              destination: const SettingsScreen(),
-                              iconColor: Colors.white,
-                              textColor: Colors.white,
-                            ),
-                            _buildMenuItem(
-                              icon: 'assets/icono-cerrar-sesion.svg',
-                              title: 'Cerrar Sesión',
-                              destination: const CloseSessionScreen(),
-                              iconColor: Colors.red,
-                              textColor: Colors.red,
-                            ),
-                          ],
+                      _buildProfileHeader(),
+                      _buildMenuItemWithBadge(
+                        icon: 'assets/icono-calendario.svg',
+                        title: 'Mis Planes',
+                        destination: const MyPlansScreen(),
+                        iconColor: Colors.white,
+                        textColor: Colors.white,
+                        stream: FirebaseFirestore.instance
+                            .collection('plans')
+                            .where('createdBy', isEqualTo: currentUserId)
+                            .snapshots(),
+                      ),
+                      _buildMenuItemWithBadge(
+                        icon: 'assets/union.svg',
+                        title: 'Planes Suscritos',
+                        destination: SubscribedPlansScreen(
+                          userId: currentUserId ?? '',
                         ),
+                        iconColor: Colors.white,
+                        textColor: Colors.white,
+                        stream: FirebaseFirestore.instance
+                            .collection('subscriptions')
+                            .where('userId', isEqualTo: currentUserId)
+                            .snapshots(),
+                      ),
+                      _buildMenuItemWithBadge(
+                        icon: 'assets/icono-corazon.svg',
+                        title: 'Favoritos',
+                        destination: const FavouritesScreen(),
+                        iconColor: Colors.white,
+                        textColor: Colors.white,
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(currentUserId)
+                            .snapshots(includeMetadataChanges: true),
+                      ),
+                      _buildMenuItem(
+                        icon: 'assets/icono-ajustes.svg',
+                        title: 'Ajustes',
+                        destination: const SettingsScreen(),
+                        iconColor: Colors.white,
+                        textColor: Colors.white,
+                      ),
+                      _buildMenuItem(
+                        icon: 'assets/icono-cerrar-sesion.svg',
+                        title: 'Cerrar Sesión',
+                        destination: const CloseSessionScreen(),
+                        iconColor: Colors.red,
+                        textColor: Colors.red,
                       ),
                     ],
                   ),
                 ),
-                // Botón para cerrar el menú lateral
                 Positioned(
                   top: 40,
                   right: 16,
@@ -348,19 +333,15 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
       stream: stream,
       builder: (context, AsyncSnapshot snapshot) {
         int count = 0;
-
         if (snapshot.hasData) {
           if (title == 'Favoritos') {
-            // Para favoritos, es un DocumentSnapshot en 'users'
-            final data = (snapshot.data as DocumentSnapshot).data()
+            final data = (snapshot.data as DocumentSnapshot?)?.data()
                 as Map<String, dynamic>?;
             count = (data?['favourites'] as List<dynamic>?)?.length ?? 0;
           } else {
-            // Para planes creados, suscripciones, etc. => QuerySnapshot
-            count = (snapshot.data as QuerySnapshot).docs.length;
+            count = (snapshot.data as QuerySnapshot?)?.docs.length ?? 0;
           }
         }
-
         return ListTile(
           dense: true,
           leading: icon is String
@@ -403,41 +384,38 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                 builder: (context) => Dialog(
                   backgroundColor: const Color.fromARGB(0, 255, 255, 255),
                   insetPadding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
+                  child: SizedBox(
+                    // Evita overflow en pantallas pequeñas
+                    height: MediaQuery.of(context).size.height * 0.8,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        const Text(
                           'Mi lista de planes creados',
-                          style: GoogleFonts.roboto(
-                            color: AppColors.white,
-                            fontSize: 26,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20.0),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20.0),
-                              border: Border.all(
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20.0),
+                            child: Container(
+                              decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20.0),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
                               ),
+                              // MyPlansScreen es un ListView que ya controla su scroll
+                              child: const MyPlansScreen(),
                             ),
-                            constraints: const BoxConstraints(maxHeight: 500),
-                            child: const MyPlansScreen(),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -447,41 +425,38 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                 builder: (context) => Dialog(
                   backgroundColor: const Color.fromARGB(0, 255, 255, 255),
                   insetPadding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.8,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        const Text(
                           'Mi lista de planes suscritos',
-                          style: GoogleFonts.roboto(
-                            color: AppColors.white,
+                          style: TextStyle(
+                            color: Colors.white,
                             fontSize: 24,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20.0),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20.0),
-                              border: Border.all(
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20.0),
+                            child: Container(
+                              decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20.0),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
+                              ),
+                              child: SubscribedPlansScreen(
+                                userId: currentUserId ?? '',
                               ),
                             ),
-                            constraints: const BoxConstraints(maxHeight: 500),
-                            child: SubscribedPlansScreen(userId: currentUserId!),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -491,41 +466,36 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                 builder: (context) => Dialog(
                   backgroundColor: const Color.fromARGB(0, 255, 255, 255),
                   insetPadding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.8,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        const Text(
                           'Mi lista de planes favoritos',
-                          style: GoogleFonts.roboto(
-                            color: AppColors.white,
+                          style: TextStyle(
+                            color: Colors.white,
                             fontSize: 24,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20.0),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20.0),
-                              border: Border.all(
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20.0),
+                            child: Container(
+                              decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20.0),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
                               ),
+                              child: const FavouritesScreen(),
                             ),
-                            constraints: const BoxConstraints(maxHeight: 500),
-                            child: const FavouritesScreen(),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

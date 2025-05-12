@@ -1,46 +1,36 @@
-//my_plans_screen.dart
+// my_plans_screen.dart
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:share_plus/share_plus.dart'; // Para Share.share()
 import 'package:intl/intl.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
-
-// Importamos el new_plan_creation_screen.dart
 import '../../plan_creation/new_plan_creation_screen.dart';
-// Importa tu PlanCard
 import '../plans_managing/plan_card.dart';
-// Para tu FrostedPlanDialog especial
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({Key? key}) : super(key: key);
 
-  // ----------------------------------------------------------------------------
-  // Cargar participantes
-  // ----------------------------------------------------------------------------
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+    PlanModel plan,
+  ) async {
     final doc = await FirebaseFirestore.instance
         .collection('plans')
         .doc(plan.id)
         .get();
-
     final List<Map<String, dynamic>> participants = [];
     if (!doc.exists || doc.data() == null) return participants;
 
     final data = doc.data()!;
     final participantUids = List<String>.from(data['participants'] ?? []);
-
     for (String uid in participantUids) {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (userDoc.exists && userDoc.data() != null) {
         final uData = userDoc.data()!;
         participants.add({
@@ -67,9 +57,10 @@ class MyPlansScreen extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: StreamBuilder<QuerySnapshot>(
+    // ListView con shrinkWrap para que se ajuste al espacio del Dialog
+    return Container(
+      color: Colors.transparent,
+      child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('plans')
             .where('createdBy', isEqualTo: currentUser.uid)
@@ -82,7 +73,7 @@ class MyPlansScreen extends StatelessWidget {
             return const Center(
               child: Text(
                 'No tienes planes aún.',
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(color: Colors.white),
               ),
             );
           }
@@ -94,7 +85,7 @@ class MyPlansScreen extends StatelessWidget {
           }).toList();
 
           return ListView.builder(
-            padding: const EdgeInsets.all(8),
+            shrinkWrap: true,
             itemCount: plans.length,
             itemBuilder: (context, index) {
               final plan = plans[index];
@@ -106,9 +97,6 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  // ----------------------------------------------------------------------------
-  // Lógica de mostrar tarjeta
-  // ----------------------------------------------------------------------------
   Widget _buildPlanTile(BuildContext context, PlanModel plan) {
     if (plan.special_plan == 1) {
       // Plan especial
@@ -125,7 +113,6 @@ class MyPlansScreen extends StatelessWidget {
           }
           final participants = snapshot.data ?? [];
 
-          // Encontrar icono
           String iconPath = plan.iconAsset ?? '';
           for (var item in plansData.plans) {
             if (plan.iconAsset == item['icon']) {
@@ -134,7 +121,6 @@ class MyPlansScreen extends StatelessWidget {
             }
           }
 
-          // Avatares
           final creatorAvatar = participants.isNotEmpty &&
                   (participants[0]['photoUrl'] ?? '').isNotEmpty
               ? CircleAvatar(
@@ -155,9 +141,13 @@ class MyPlansScreen extends StatelessWidget {
             onTap: () => _openFrostedPlanDialog(context, plan),
             child: Center(
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.95,
+                width: double.infinity,
                 height: 80,
-                margin: const EdgeInsets.only(bottom: 15),
+                margin: const EdgeInsets.only(
+                  bottom: 15,
+                  left: 8,
+                  right: 8,
+                ),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.1),
@@ -178,7 +168,8 @@ class MyPlansScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           plan.type,
-                          style: const TextStyle(fontSize: 20, color: Colors.white),
+                          style:
+                              const TextStyle(fontSize: 20, color: Colors.white),
                         ),
                       ],
                     ),
@@ -231,9 +222,6 @@ class MyPlansScreen extends StatelessWidget {
     }
   }
 
-  // ----------------------------------------------------------------------------
-  // Tarjeta normal + botones Eliminar/Editar
-  // ----------------------------------------------------------------------------
   Widget _buildMyPlanCard(
     BuildContext context,
     PlanModel plan,
@@ -248,7 +236,6 @@ class MyPlansScreen extends StatelessWidget {
           fetchParticipants: _fetchAllPlanParticipants,
           hideJoinButton: true,
         ),
-        // Botón ELIMINAR
         Positioned(
           top: 14,
           right: 14,
@@ -270,10 +257,9 @@ class MyPlansScreen extends StatelessWidget {
             ),
           ),
         ),
-        // Botón EDITAR
         Positioned(
           top: 14,
-          right: 60, // Para no solapar con el icono de eliminar
+          right: 60,
           child: GestureDetector(
             onTap: () => _openEditPlanPopup(context, plan),
             child: ClipOval(
@@ -296,9 +282,6 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  // ----------------------------------------------------------------------------
-  // Popup de confirmación para ELIMINAR plan
-  // ----------------------------------------------------------------------------
   void _confirmDeletePlan(BuildContext context, PlanModel plan) {
     showDialog(
       context: context,
@@ -319,12 +302,10 @@ class MyPlansScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
-                // Elimina el doc en 'plans'
                 await FirebaseFirestore.instance
                     .collection('plans')
                     .doc(plan.id)
                     .delete();
-                // (Opcional) Elimina docs de 'subscriptions' si se usan
                 final subs = await FirebaseFirestore.instance
                     .collection('subscriptions')
                     .where('id', isEqualTo: plan.id)
@@ -345,21 +326,14 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  // ----------------------------------------------------------------------------
-  // Abrir popup de edición con new_plan_creation_screen.dart en modo "edición"
-  // ----------------------------------------------------------------------------
   void _openEditPlanPopup(BuildContext context, PlanModel plan) {
-    // Llamamos a la misma UI de creación, pero en modo editar
     NewPlanCreationScreen.showPopup(
       context,
-      planToEdit: plan, // pasamos el plan
-      isEditMode: true, // indicamos que es edición
+      planToEdit: plan,
+      isEditMode: true,
     );
   }
 
-  // ----------------------------------------------------------------------------
-  // Mostrar FrostedPlanDialog a pantalla completa
-  // ----------------------------------------------------------------------------
   void _openFrostedPlanDialog(BuildContext context, PlanModel plan) {
     Navigator.push(
       context,
@@ -375,9 +349,6 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  // ----------------------------------------------------------------------------
-  // "Cargando" para planes especiales
-  // ----------------------------------------------------------------------------
   Widget _buildSpecialPlanLoading() {
     return Center(
       child: Container(

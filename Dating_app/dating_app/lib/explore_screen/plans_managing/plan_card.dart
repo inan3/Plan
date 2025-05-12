@@ -544,8 +544,6 @@ class PlanCardState extends State<PlanCard> {
   // Función de truncado seguro
   // ─────────────────────────────────────────────────────────────
   String _truncate(String text, int maxChars) {
-    // Usamos min() para mayor seguridad, pero con la condición if() ya evitamos
-    // desbordes. Aun así queda a prueba de futuro.
     if (text.length <= maxChars) return text;
     return text.substring(0, math.min(maxChars, text.length)) + '…';
   }
@@ -564,7 +562,6 @@ class PlanCardState extends State<PlanCard> {
       String name = p['name'] ?? 'Usuario';
       final age = p['age']?.toString() ?? '';
 
-      // Truncado seguro para evitar RangeError
       const int maxChars = 14;
       String displayText = '$name, $age';
       displayText = _truncate(displayText, maxChars);
@@ -1014,7 +1011,6 @@ class PlanCardState extends State<PlanCard> {
                                 creatorUid != currentUid) {
                               UserInfoCheck.open(context, creatorUid);
                             }
-                            // si creatorUid == currentUid → no hace nada
                           },
                           child: _buildCreatorFrosted(name, fallbackPhotoUrl),
                         ),
@@ -1050,7 +1046,7 @@ class PlanCardState extends State<PlanCard> {
                           ),
                   ),
 
-                  // Botones de acción (like, chat, share)
+                  // Botones de acción (like, chat, share) → Se añade SingleChildScrollView para evitar overflow
                   Padding(
                     padding: const EdgeInsets.only(
                       left: 12,
@@ -1058,45 +1054,47 @@ class PlanCardState extends State<PlanCard> {
                       top: 8,
                       bottom: 8,
                     ),
-                    child: Row(
-                      children: [
-                        _buildFrostedAction(
-                          iconPath: 'assets/corazon.svg',
-                          countText: '$_likeCount',
-                          onTap: _toggleLike,
-                          iconColor: _liked ? Colors.red : Colors.white,
-                        ),
-                        const SizedBox(width: 16),
-                        // Contador de comentarios
-                        StreamBuilder<DocumentSnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('plans')
-                              .doc(plan.id)
-                              .snapshots(),
-                          builder: (ctx, snapMsg) {
-                            String countText = '0';
-                            if (snapMsg.hasData && snapMsg.data!.exists) {
-                              final d =
-                                  snapMsg.data!.data() as Map<String, dynamic>;
-                              final c = d['commentsCount'] ?? 0;
-                              countText = c.toString();
-                            }
-                            return _buildFrostedAction(
-                              iconPath: 'assets/mensaje.svg',
-                              countText: countText,
-                              onTap: _onMessageButtonTap,
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 16),
-                        _buildFrostedAction(
-                          iconPath: 'assets/icono-compartir.svg',
-                          countText: '',
-                          onTap: _onShareButtonTap,
-                        ),
-                        const Spacer(),
-                        _buildParticipantsCorner(),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFrostedAction(
+                            iconPath: 'assets/corazon.svg',
+                            countText: '$_likeCount',
+                            onTap: _toggleLike,
+                            iconColor: _liked ? Colors.red : Colors.white,
+                          ),
+                          const SizedBox(width: 16),
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('plans')
+                                .doc(plan.id)
+                                .snapshots(),
+                            builder: (ctx, snapMsg) {
+                              String countText = '0';
+                              if (snapMsg.hasData && snapMsg.data!.exists) {
+                                final d =
+                                    snapMsg.data!.data() as Map<String, dynamic>;
+                                final c = d['commentsCount'] ?? 0;
+                                countText = c.toString();
+                              }
+                              return _buildFrostedAction(
+                                iconPath: 'assets/mensaje.svg',
+                                countText: countText,
+                                onTap: _onMessageButtonTap,
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          _buildFrostedAction(
+                            iconPath: 'assets/icono-compartir.svg',
+                            countText: '',
+                            onTap: _onShareButtonTap,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildParticipantsCorner(),
+                        ],
+                      ),
                     ),
                   ),
 

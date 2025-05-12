@@ -1,23 +1,16 @@
+// favourites_screen.dart
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Importamos la PlanCard
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 
-/// ---------------------------------------------------------------------------
-/// PANTALLA de planes "favoritos" del usuario
-/// ---------------------------------------------------------------------------
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({Key? key}) : super(key: key);
 
-  // ------------------------------------------------------------------------
-  // Obtener todos los participantes del plan leyendo el array 'participants'
-  // en el doc del plan.
-  // ------------------------------------------------------------------------
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
     PlanModel plan,
   ) async {
@@ -25,13 +18,11 @@ class FavouritesScreen extends StatelessWidget {
         .collection('plans')
         .doc(plan.id)
         .get();
-
     final List<Map<String, dynamic>> participants = [];
     if (!doc.exists || doc.data() == null) return participants;
 
     final data = doc.data()!;
     final participantUids = List<String>.from(data['participants'] ?? []);
-
     for (String uid in participantUids) {
       final userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -46,17 +37,12 @@ class FavouritesScreen extends StatelessWidget {
         });
       }
     }
-
     return participants;
   }
 
-  // ------------------------------------------------------------------------
-  // Cargar los planes completos desde IDs en 'favourites'
-  // ------------------------------------------------------------------------
   Future<List<PlanModel>> _fetchPlansFromIds(List<String> planIds) async {
     if (planIds.isEmpty) return [];
     final List<PlanModel> plans = [];
-
     for (String planId in planIds) {
       final planDoc = await FirebaseFirestore.instance
           .collection('plans')
@@ -64,16 +50,13 @@ class FavouritesScreen extends StatelessWidget {
           .get();
       if (planDoc.exists) {
         final planData = planDoc.data() as Map<String, dynamic>;
-        planData['id'] = planDoc.id; // Asigna el doc.id como 'id'
+        planData['id'] = planDoc.id;
         plans.add(PlanModel.fromMap(planData));
       }
     }
     return plans;
   }
 
-  // ------------------------------------------------------------------------
-  // Build principal: muestra la lista de planes marcados como favoritos
-  // ------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -86,12 +69,8 @@ class FavouritesScreen extends StatelessWidget {
       );
     }
 
-    // Observa el doc del usuario para obtener su array de 'favourites'
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -116,7 +95,6 @@ class FavouritesScreen extends StatelessWidget {
           );
         }
 
-        // Cargamos los PlanModels referidos en 'favourites'
         return FutureBuilder<List<PlanModel>>(
           future: _fetchPlansFromIds(favouritePlanIds),
           builder: (context, planSnapshot) {
@@ -133,21 +111,19 @@ class FavouritesScreen extends StatelessWidget {
             }
 
             final plans = planSnapshot.data!;
+            // Para uso en un Dialog, se recomienda shrinkWrap
             return ListView.builder(
-              padding: const EdgeInsets.all(8),
+              shrinkWrap: true,
               itemCount: plans.length,
               itemBuilder: (context, index) {
                 final plan = plans[index];
-
-                // Para mostrar la tarjeta, obtenemos los datos del creador:
                 return FutureBuilder<DocumentSnapshot>(
                   future: FirebaseFirestore.instance
                       .collection('users')
                       .doc(plan.createdBy)
                       .get(),
                   builder: (context, userSnapshot) {
-                    if (userSnapshot.connectionState ==
-                        ConnectionState.waiting) {
+                    if (userSnapshot.connectionState == ConnectionState.waiting) {
                       return const SizedBox(
                         height: 330,
                         child: Center(child: CircularProgressIndicator()),
@@ -175,8 +151,6 @@ class FavouritesScreen extends StatelessWidget {
                       'photoUrl': creatorData['photoUrl'] ?? '',
                     };
 
-                    // Reutilizamos PlanCard.
-                    // hideJoinButton = false para que aparezca "Unirse".
                     return PlanCard(
                       plan: plan,
                       userData: userData,

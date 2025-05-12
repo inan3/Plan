@@ -1,3 +1,4 @@
+// profile_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -261,7 +262,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                   InkWell(
                     onTap: () => UserImagesManaging.openProfileImageFullScreen(
                       context,
-                      profileImageUrl ?? placeholderImageUrl,
+                      profileImageUrl ?? '',
                       onProfileDeleted: () =>
                           setState(() => profileImageUrl = ''),
                       onProfileChanged: (newUrl) =>
@@ -271,15 +272,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                     child: CircleAvatar(
                       radius: 45,
                       backgroundColor: Colors.white,
-                      child: CircleAvatar(
-                        radius: 42,
-                        backgroundImage: NetworkImage(
-                          (profileImageUrl != null &&
-                                  profileImageUrl!.isNotEmpty)
-                              ? profileImageUrl!
-                              : placeholderImageUrl,
-                        ),
-                      ),
+                      child: _buildInnerAvatar(),
                     ),
                   ),
                   Positioned(bottom: 0, right: 0, child: _avatarCameraIcon()),
@@ -317,7 +310,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               InkWell(
                 onTap: () => UserImagesManaging.openProfileImageFullScreen(
                   context,
-                  profileImageUrl ?? placeholderImageUrl,
+                  profileImageUrl ?? '',
                   onProfileDeleted: () => setState(() => profileImageUrl = ''),
                   onProfileChanged: (newUrl) =>
                       setState(() => profileImageUrl = newUrl),
@@ -326,11 +319,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                 child: CircleAvatar(
                   radius: 45,
                   backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 42,
-                    backgroundImage:
-                        NetworkImage(profileImageUrl ?? placeholderImageUrl),
-                  ),
+                  child: _buildInnerAvatar(),
                 ),
               ),
               Positioned(bottom: 0, right: 0, child: _avatarCameraIcon()),
@@ -344,6 +333,21 @@ class ProfileScreenState extends State<ProfileScreen> {
                 fontWeight: FontWeight.bold,
                 color: Colors.black87)),
       ],
+    );
+  }
+
+  // NUEVO: avatar interior con foto o icono
+  Widget _buildInnerAvatar() {
+    final bool hasPhoto =
+        profileImageUrl != null && profileImageUrl!.isNotEmpty;
+
+    return CircleAvatar(
+      radius: 42,
+      backgroundColor: hasPhoto ? Colors.transparent : Colors.grey[300],
+      backgroundImage: hasPhoto ? NetworkImage(profileImageUrl!) : null,
+      child: hasPhoto
+          ? null
+          : const Icon(Icons.person, size: 42, color: Colors.white70),
     );
   }
 
@@ -505,13 +509,11 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildStatsRow(String plans, String followers, String following) =>
       Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem('planes futuros', plans),
-          const SizedBox(width: 20),
-          _buildStatItem('seguidores', followers),
-          const SizedBox(width: 20),
-          _buildStatItem('seguidos', following),
+          Expanded(child: _buildStatItem('planes futuros', plans)),
+          Expanded(child: _buildStatItem('seguidores', followers)),
+          Expanded(child: _buildStatItem('seguidos', following)),
         ],
       );
 
@@ -527,6 +529,7 @@ class ProfileScreenState extends State<ProfileScreen> {
             : const Color.fromARGB(235, 84, 87, 228));
 
     final content = Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         SvgPicture.asset(iconPath, width: 24, height: 24, color: iconColor),
         const SizedBox(height: 4),
@@ -561,7 +564,7 @@ class ProfileScreenState extends State<ProfileScreen> {
           );
         }
       },
-      child: SizedBox(width: 100, child: content),
+      child: content,
     );
   }
 
@@ -576,14 +579,12 @@ class ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Portada + Avatar (ahora avatar totalmente dentro del Stack)
             SizedBox(
               height: 380, // 300 portada + 80 avatar
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   _buildCoverImagesWidget(),
-                  // Botón añadir portada
                   Positioned(
                     top: 40,
                     right: 16,
@@ -607,7 +608,6 @@ class ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  // Avatar (bottom: 0 para estar dentro del área de hit-test)
                   Positioned(
                     bottom: -42,
                     left: 0,
@@ -617,21 +617,14 @@ class ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-
-            // Privilegio
             const SizedBox(height: 16),
             Transform.translate(
-              offset: const Offset(
-                  0, 20), // cambia 30 por la distancia que necesites
+              offset: const Offset(0, 20),
               child: _buildPrivilegeButton(context),
             ),
             const SizedBox(height: 16),
-
-            // Stats
             _buildBioAndStats(),
             const SizedBox(height: 20),
-
-            // Divider
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Center(
@@ -642,8 +635,6 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Calendario de memorias
             if (user != null)
               MemoriesCalendar(
                 userId: user.uid,
@@ -658,17 +649,16 @@ class ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             const SizedBox(height: 20),
-
-            // Logout
             Padding(
               padding: const EdgeInsets.all(16),
               child: GestureDetector(
                 onTap: () async {
                   await FirebaseAuth.instance.signOut();
-                  //PresenceService.dispose();
                   if (!mounted) return;
-                  Navigator.pushReplacement(context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()));
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
                 },
                 child: Container(
                   padding:
@@ -685,7 +675,6 @@ class ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 100),
           ],
         ),

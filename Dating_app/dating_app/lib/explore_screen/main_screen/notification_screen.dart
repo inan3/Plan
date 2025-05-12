@@ -1,16 +1,15 @@
+//notification_screen.dart
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../models/plan_model.dart';
 import '../../main/colors.dart';
 
 // Importaciones necesarias:
 import '../users_managing/user_info_check.dart';
-import '../../models/plan_model.dart';
 import '../plans_managing/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
 import '../plans_managing/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
 

@@ -1,3 +1,4 @@
+// explore_screen.dart
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -282,7 +283,8 @@ class ExploreScreenState extends State<ExploreScreen> {
           return distanceA.compareTo(distanceB);
         });
 
-        final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
+        final String? planFilter = (appliedFilters['planPredeterminado'] !=
+                    null &&
                 (appliedFilters['planPredeterminado'] as String)
                     .trim()
                     .isNotEmpty)
@@ -419,8 +421,6 @@ class ExploreScreenState extends State<ExploreScreen> {
                     onTapIcon: _onDockIconTap,
                     notificationCountStream: null,
                     unreadMessagesCountStream: _unreadMessagesCountStream(),
-
-                    /// Ajusta a tu gusto (lo modifiqué un poco como ejemplo):
                     badgeSize: 10,
                     badgeOffsetX: 15,
                     badgeOffsetY: 15,
@@ -451,13 +451,11 @@ class DockSection extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final Stream<int>? notificationCountStream;
   final Stream<int>? unreadMessagesCountStream;
-  final double containerWidth;
 
   /// Diámetro del punto rojo
   final double badgeSize;
 
   /// Desplazamiento del centro del badge respecto al centro del icono
-  /// (positivo = derecha / abajo)
   final double badgeOffsetX;
   final double badgeOffsetY;
 
@@ -468,15 +466,14 @@ class DockSection extends StatelessWidget {
     required this.onTapIcon,
     this.iconSize = 23.0,
     this.selectedBackgroundSize = 60.0,
-    this.iconSpacing = 4.0,
+    // Ajustamos iconSpacing para acercar los iconos.
+    this.iconSpacing = 2.0,
     this.mainAxisAlignment = MainAxisAlignment.start,
+    // Reducimos la separación lateral para que quepa el último icono.
     this.padding =
-        const EdgeInsets.only(left: 40, right: 40, bottom: 20, top: 0),
-    this.containerWidth = 328.0,
+        const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 0),
     this.notificationCountStream,
     this.unreadMessagesCountStream,
-
-    /// Valores por defecto
     this.badgeSize = 10,
     this.badgeOffsetX = 10,
     this.badgeOffsetY = -10,
@@ -486,46 +483,51 @@ class DockSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padding,
-      child: Container(
-        height: 70,
-        width: containerWidth,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 13, 32, 53),
-              Color.fromARGB(255, 72, 38, 38),
-              Color(0xFF12232E),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          height: 70,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 13, 32, 53),
+                Color.fromARGB(255, 72, 38, 38),
+                Color(0xFF12232E),
+              ],
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(60)),
+          ),
+          child: Row(
+            mainAxisAlignment: mainAxisAlignment,
+            children: [
+              // margen interior izquierdo
+              Padding(
+                padding: const EdgeInsets.only(left: 6.0),
+                child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
+              ),
+              SizedBox(width: iconSpacing),
+              _buildIconButton(index: 1, asset: 'assets/icono-mapa.svg'),
+              SizedBox(width: iconSpacing),
+              _buildIconButton(
+                index: 2,
+                asset: 'assets/anadir.svg',
+                notificationCountStream: notificationCountStream,
+                overrideIconSize: 70.0,
+              ),
+              SizedBox(width: iconSpacing),
+              _buildIconButton(
+                index: 3,
+                asset: 'assets/mensaje.svg',
+                unreadMessagesCountStream: unreadMessagesCountStream,
+              ),
+              SizedBox(width: iconSpacing),
+              _buildIconButton(index: 4, asset: 'assets/usuario.svg'),
+              // margen interior derecho NUEVO
+              const SizedBox(width: 6),
             ],
           ),
-          borderRadius: BorderRadius.all(Radius.circular(60)),
-        ),
-        child: Row(
-          mainAxisAlignment: mainAxisAlignment,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 6.0),
-              child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
-            ),
-            SizedBox(width: iconSpacing),
-            _buildIconButton(index: 1, asset: 'assets/icono-mapa.svg'),
-            SizedBox(width: iconSpacing),
-            _buildIconButton(
-              index: 2,
-              asset: 'assets/anadir.svg',
-              notificationCountStream: notificationCountStream,
-              overrideIconSize: 70.0,
-            ),
-            SizedBox(width: iconSpacing),
-            _buildIconButton(
-              index: 3,
-              asset: 'assets/mensaje.svg',
-              unreadMessagesCountStream: unreadMessagesCountStream,
-            ),
-            SizedBox(width: iconSpacing),
-            _buildIconButton(index: 4, asset: 'assets/usuario.svg'),
-          ],
         ),
       ),
     );
@@ -541,7 +543,6 @@ class DockSection extends StatelessWidget {
     final double effectiveIconSize = overrideIconSize ?? iconSize;
     final bool isSelected = selectedIconIndex == index;
 
-    // -- Botón base (InkWell + icono) --
     Widget baseStack = Stack(
       clipBehavior: Clip.none,
       children: [
@@ -622,12 +623,12 @@ class DockSection extends StatelessWidget {
       ],
     );
 
-    // -- Si NO es el icono de mensajes, devolvemos directamente baseStack --
+    // Si no es el icono de mensajes, retornamos baseStack directamente
     if (index != 3 || unreadMessagesCountStream == null) {
       return baseStack;
     }
 
-    // -- Si ES el icono de mensajes (index=3) Y tenemos unreadMessagesCountStream --
+    // Si ES el icono de mensajes (index=3) y hay unreadMessagesCountStream
     return StreamBuilder<int>(
       stream: unreadMessagesCountStream,
       builder: (context, snapshot) {

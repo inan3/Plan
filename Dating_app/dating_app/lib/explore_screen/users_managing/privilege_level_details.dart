@@ -1,6 +1,7 @@
 // lib/explore_screen/users_managing/privilege_level_details.dart
 
 import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -44,6 +45,7 @@ class PrivilegeLevelDetails extends StatefulWidget {
     });
     // OJO: Ya no tocamos total_created_plans aquí,
     // porque se recalcula en user_info_check.
+    // ignore: avoid_print
     print("Estadísticas de suscripción actualizadas para userId=$userId");
   }
 
@@ -153,11 +155,20 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
           .collection('users')
           .doc(widget.userId)
           .update({'privilegeLevel': newLevel});
+      // ignore: avoid_print
       print("Nivel actualizado de $_privilegeLevel a $newLevel");
     }
   }
 
+  // ---------- UI ---------- //
+
   Widget _buildIndicatorsRow() {
+    // Ajustamos dinámicamente el ancho del progress bar para evitar overflows
+    final double screenWidth = MediaQuery.of(context).size.width;
+    // Reservamos un 90 % del ancho total y restamos el espacio del padding interno
+    final double barWidthCandidate = (screenWidth * 0.90) / 3 - 36;
+    final double w = math.max(60, barWidthCandidate);
+
     final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
     final int? nextIndex = _getNextLevelIndex(currentIndex);
     final _LevelRequirement thresholdReq = nextIndex != null
@@ -167,8 +178,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     final int maxPlansBar = thresholdReq.minPlans;
     final int maxMaxPartsBar = thresholdReq.minMaxParts;
     final int maxTotalPartsBar = thresholdReq.minTotalParts;
-
-    final double w = 80;
 
     return Column(
       children: [
@@ -589,6 +598,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     );
   }
 
+  // Reutilizamos el mismo icono para el pentágono por simplicidad
   Widget _buildPentagonIcon() {
     return SvgPicture.asset(
       'assets/icono-seguidores.svg',

@@ -2,41 +2,40 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id 'com.google.gms.google-services'
+    id "com.google.gms.google-services"
 }
 
 android {
     namespace = "com.company.plan"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    kotlinOptions {
-        jvmTarget = "21"
-    }
+    compileSdk = flutter.compileSdkVersion      // 34 recomendado
 
     defaultConfig {
         applicationId = "com.company.plan"
-        minSdk = 23
+        minSdk = 23                              // ≥21 para desugaring
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    buildTypes {release { signingConfig = signingConfigs.debug}}
+    compileOptions {
+        // Usa al menos Java 17 (estable para Android Gradle 8.x)
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true        // ← ya estaba OK
+    }
+
+    kotlinOptions { jvmTarget = "17" }           // mismo nivel que compileOptions
+
+    buildTypes {
+        release { signingConfig = signingConfigs.debug }
+    }
 }
 
 dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.android.material:material:1.9.0' // Asegúrate de incluir esta línea
-}
+    implementation 'com.google.android.material:material:1.9.0'
 
-flutter {
-    source = "../.."
+    // ⚠️  AÑADE ESTA LÍNEA para que el task l8DexDesugarLibDebug tenga algo que procesar
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
-

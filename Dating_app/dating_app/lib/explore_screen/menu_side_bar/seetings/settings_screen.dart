@@ -1,3 +1,4 @@
+//settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,7 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final String text = _failureController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, describe el fallo antes de enviar.')),
+        const SnackBar(
+            content: Text('Por favor, describe el fallo antes de enviar.')),
       );
       return;
     }
@@ -113,7 +115,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const AccountScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const AccountScreen()),
                         );
                       },
                     ),
@@ -129,7 +132,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const PrivacyScreen()),
                         );
                       },
                     ),
@@ -145,7 +149,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const GeneralNotificationsScreen()),
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  const GeneralNotificationsScreen()),
                         );
                       },
                     ),
@@ -184,7 +190,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const HelpCenterScreen()),
                         );
                       },
                     ),
@@ -245,17 +252,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Row(
                       children: [
-                        SvgPicture.asset(
-                          'assets/icono-reportar.svg',
-                          width: 24,
-                          height: 24,
-                        ),
+                        SvgPicture.asset('assets/icono-reportar.svg',
+                            width: 24, height: 24),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Reportar fallos de la aplicación',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          // <- clave
+                          child: Text(
+                            'Reportar fallos de la aplicación',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                            softWrap: true,
                           ),
                         ),
                       ],
@@ -272,7 +278,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         decoration: const InputDecoration(
                           hintText: 'Describe aquí el fallo...',
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         ),
                       ),
                     ),

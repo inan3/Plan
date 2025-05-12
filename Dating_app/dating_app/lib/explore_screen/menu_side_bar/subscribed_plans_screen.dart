@@ -1,8 +1,8 @@
+// subscribed_plans_screen.dart
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Ya NO necesitas muchos de los imports previos relacionados a la UI manual.
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -10,8 +10,6 @@ import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
-
-// IMPORTA TU PlanCard
 import '../plans_managing/plan_card.dart';
 
 class SubscribedPlansScreen extends StatelessWidget {
@@ -20,9 +18,6 @@ class SubscribedPlansScreen extends StatelessWidget {
   const SubscribedPlansScreen({Key? key, required this.userId})
       : super(key: key);
 
-  // --------------------------------------------------------------------------
-  // Mostrar el FrostedPlanDialog a pantalla completa (se usa solo en plan especial)
-  // --------------------------------------------------------------------------
   void _showFrostedPlanDialog(BuildContext context, PlanModel plan) {
     showDialog(
       context: context,
@@ -45,9 +40,6 @@ class SubscribedPlansScreen extends StatelessWidget {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Obtener todos los participantes leyendo el campo 'participants' del plan
-  // --------------------------------------------------------------------------
   Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
     PlanModel plan,
   ) async {
@@ -75,9 +67,6 @@ class SubscribedPlansScreen extends StatelessWidget {
     return participants;
   }
 
-  // --------------------------------------------------------------------------
-  // Obtener los PlanModel completos a partir de IDs
-  // --------------------------------------------------------------------------
   Future<List<PlanModel>> _fetchPlansFromIds(List<String> planIds) async {
     if (planIds.isEmpty) return [];
     final List<PlanModel> plans = [];
@@ -95,11 +84,7 @@ class SubscribedPlansScreen extends StatelessWidget {
     return plans;
   }
 
-  // --------------------------------------------------------------------------
-  // Lógica para "Abandonar" plan (borrado de 'subscriptions' y participants)
-  // --------------------------------------------------------------------------
   void _confirmDeletePlan(BuildContext context, PlanModel plan) {
-    final String currentUserId = userId;
     showDialog(
       context: context,
       builder: (context) {
@@ -115,21 +100,19 @@ class SubscribedPlansScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
-                // 1) Elimina el doc de 'subscriptions'
                 final subs = await FirebaseFirestore.instance
                     .collection('subscriptions')
-                    .where('userId', isEqualTo: currentUserId)
+                    .where('userId', isEqualTo: userId)
                     .where('id', isEqualTo: plan.id)
                     .get();
                 for (var doc in subs.docs) {
                   await doc.reference.delete();
                 }
-                // 2) Remueve al usuario del array 'participants' en 'plans'
                 await FirebaseFirestore.instance
                     .collection('plans')
                     .doc(plan.id)
                     .update({
-                  'participants': FieldValue.arrayRemove([currentUserId])
+                  'participants': FieldValue.arrayRemove([userId])
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +120,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                     content: Text('Has abandonado el plan ${plan.type}.'),
                   ),
                 );
-                Navigator.pop(context); // Cierra el alert
+                Navigator.pop(context);
               },
               child: const Text("Sí"),
             ),
@@ -147,17 +130,12 @@ class SubscribedPlansScreen extends StatelessWidget {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Construye el widget final para cada plan (plan especial o normal)
-  // --------------------------------------------------------------------------
   Widget _buildPlanTile(
     BuildContext context,
     Map<String, dynamic> userData,
     PlanModel plan,
   ) {
-    // PLAN ESPECIAL
     if (plan.special_plan == 1) {
-      // Reutilizamos la UI previa para "plan especial"
       return FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchAllPlanParticipants(plan),
         builder: (context, snapshot) {
@@ -193,7 +171,6 @@ class SubscribedPlansScreen extends StatelessWidget {
                 )
               : const SizedBox();
 
-          // Buscamos el icono si existe en tu lista
           String iconPath = plan.iconAsset ?? '';
           for (var item in plansData.plans) {
             if (plan.iconAsset == item['icon']) {
@@ -218,7 +195,6 @@ class SubscribedPlansScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // Icono + tipo de plan
                     Row(
                       children: [
                         if (iconPath.isNotEmpty)
@@ -239,7 +215,6 @@ class SubscribedPlansScreen extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    // Avatares
                     Row(
                       children: [
                         creatorAvatar,
@@ -254,22 +229,16 @@ class SubscribedPlansScreen extends StatelessWidget {
           );
         },
       );
-    }
-
-    // PLAN NORMAL → Usar PlanCard + botón "Abandonar"
-    else {
+    } else {
       return Stack(
         clipBehavior: Clip.none,
         children: [
-          // La tarjeta principal
           PlanCard(
             plan: plan,
             userData: userData,
             fetchParticipants: _fetchAllPlanParticipants,
-            hideJoinButton: true, // <--- Importante
+            hideJoinButton: true,
           ),
-
-          // Botón para "Abandonar" (arriba a la derecha, con un offset)
           Positioned(
             top: 14,
             right: 12,
@@ -299,17 +268,15 @@ class SubscribedPlansScreen extends StatelessWidget {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // Build principal: muestra la lista de planes a los que estoy suscrito
-  // --------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: StreamBuilder<QuerySnapshot>(
+    // Igualmente hacemos un ListView con shrinkWrap en caso de uso en Dialog:
+    return Container(
+      color: Colors.transparent,
+      child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('subscriptions')
-            .where('userId', isEqualTo: userId) // <--- IMPORTANTE
+            .where('userId', isEqualTo: userId)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -319,18 +286,14 @@ class SubscribedPlansScreen extends StatelessWidget {
             return const Center(
               child: Text(
                 'No tienes planes suscritos aún.',
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(color: Colors.white),
               ),
             );
           }
-
-          // Recopilamos todos los IDs de plan a los que el usuario está suscrito
           final planIds = snapshot.data!.docs
-              .map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                return data['id'] as String? ?? '';
-              })
-              .where((id) => id.isNotEmpty)
+              .map((doc) => (doc.data() as Map<String, dynamic>)['id'] as String?)
+              .where((id) => id != null && id.isNotEmpty)
+              .cast<String>()
               .toList();
 
           return FutureBuilder<List<PlanModel>>(
@@ -344,13 +307,13 @@ class SubscribedPlansScreen extends StatelessWidget {
                 return const Center(
                   child: Text(
                     'No tienes planes suscritos aún.',
-                    style: TextStyle(color: Colors.black),
+                    style: TextStyle(color: Colors.white),
                   ),
                 );
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(8),
+                shrinkWrap: true,
                 itemCount: plans.length,
                 itemBuilder: (context, index) {
                   final plan = plans[index];
@@ -382,8 +345,6 @@ class SubscribedPlansScreen extends StatelessWidget {
                       }
                       final userData =
                           userSnapshot.data!.data() as Map<String, dynamic>;
-                      // Aquí llamamos a nuestra función que decide
-                      // si se muestra "plan especial" o un PlanCard:
                       return _buildPlanTile(context, userData, plan);
                     },
                   );

@@ -39,6 +39,8 @@ dependencies:
   qr_flutter: ^4.0.0
   mobile_scanner: ^3.0.0
   google_sign_in: ^6.3.0
+  firebase_messaging: ^15.2.5
+  flutter_local_notifications: ^17.0.0
   receive_sharing_intent:
     git:
       url: https://github.com/KasemJaffer/receive_sharing_intent

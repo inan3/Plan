@@ -8,7 +8,7 @@ import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../special_plans/invite_users_to_plan_screen.dart';
-import '../chats/chat_screen.dart'; // <-- Importamos ChatScreen en vez de UserInfoInsideChat
+import '../chats/chat_screen.dart'; // <-- Importamos ChatScreen
 import 'privilege_level_details.dart';
 import '../profile/memories_calendar.dart';
 import '../follow/following_screen.dart';
@@ -185,7 +185,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           .limit(1)
           .get();
 
-      // Si ya estoy following, da igual la request
       _isRequestPending = (q.docs.isNotEmpty && !isFollowing);
     } catch (e) {
       debugPrint('[checkIfFollowRequestIsPending] Error: $e');
@@ -246,7 +245,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Widget _buildMainContent() {
-    // extraemos "name" del _userDocSnap
     final data = _userDocSnap!.data() as Map<String, dynamic>;
     final name = data['name'] ?? 'Usuario';
 
@@ -258,10 +256,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             _buildHeader(name),
             const SizedBox(height: 30),
             _buildPrivilegeButton(),
-            // Intercambiamos la posición: primero mostramos la fila de stats
             _buildBioAndStats(),
             const SizedBox(height: 20),
-            // Luego mostramos los botones de acción
             _buildActionButtons(widget.userId),
             const SizedBox(height: 20),
             Padding(
@@ -297,7 +293,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             right: 16,
             child: _buildMenuButton(),
           ),
-          // El avatar ahora sobresale sólo 42 px (casi todo dentro del Stack)
           Positioned(
             bottom: -42,
             left: 0,
@@ -359,7 +354,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  /// AQUÍ está la parte clave: envolvemos el avatar en un SizedBox + Stack + InkWell
   Widget _buildAvatarAndName(String userName) {
     final avatarUrl = (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
         ? _profileImageUrl!
@@ -403,10 +397,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  /// Muestra la imagen a pantalla completa con un botón de cerrar en la esquina superior derecha
   void _showFullImage(String imageUrl) {
     if (imageUrl.isEmpty) return;
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -452,7 +444,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       builder: (BuildContext ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Texto según si está bloqueado localmente
             final blockText =
                 _isUserBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
 
@@ -460,7 +451,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               color: Colors.transparent,
               child: Stack(
                 children: [
-                  // Tocar fuera para cerrar
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
                     child: Container(
@@ -489,7 +479,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Notificaciones ON/OFF
                                 InkWell(
                                   onTap: () {
                                     setDialogState(() {
@@ -520,7 +509,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                                   ),
                                 ),
                                 const Divider(color: Colors.white54),
-                                // Reportar
                                 InkWell(
                                   onTap: () {
                                     final me =
@@ -548,31 +536,26 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                                   ),
                                 ),
                                 const Divider(color: Colors.white54),
-                                // Bloquear / Desbloquear
                                 InkWell(
                                   onTap: () async {
                                     final me =
                                         FirebaseAuth.instance.currentUser;
                                     if (me == null) return;
 
-                                    // Guardamos el valor anterior
                                     final oldValue = _isUserBlocked;
 
-                                    // Cambiamos enseguida nuestro flag local
                                     setState(() {
                                       _isUserBlocked = !_isUserBlocked;
                                     });
                                     setDialogState(() {});
 
                                     try {
-                                      // Llamamos a la función toggle
                                       await ReportAndBlockUser.toggleBlockUser(
                                         context,
                                         me.uid,
                                         widget.userId,
                                       );
                                     } catch (e) {
-                                      // Si falla, revertimos
                                       setState(() {
                                         _isUserBlocked = oldValue;
                                       });
@@ -853,8 +836,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           iconPath: 'assets/mensaje.svg',
           label: 'Enviar Mensaje',
           onTap: () {
-            // Lógica: si el receptor (widget.userId) es privado y no le sigo => popup
-            //         caso contrario => abrimos chat
             if (_isPrivate && !isFollowing) {
               _showPrivateToast();
             } else {
@@ -957,21 +938,15 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }
   }
 
+  /// Al pulsar el botón de Seguir / Dejar de Seguir / Cancelar Solicitud
   void _handleFollowTap() async {
     if (isFollowing) {
-      // Dejar de seguir
       await _unfollowUser();
     } else if (_isRequestPending) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ya enviaste una solicitud. Espera la respuesta.'),
-        ),
-      );
+      await _cancelFollowRequest();
     } else {
-      // Intentar seguir
       await _followUser();
     }
-
     setState(() {});
   }
 
@@ -1031,7 +1006,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
           'createdAt': FieldValue.serverTimestamp(),
         });
 
-        // Notificación
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(me.uid)
@@ -1063,6 +1037,45 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     }
   }
 
+  /// Cancela la solicitud de seguimiento pendiente
+  Future<void> _cancelFollowRequest() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null || me.uid == widget.userId) return;
+
+    try {
+      // Eliminar la solicitud de follow_requests
+      final q = await FirebaseFirestore.instance
+          .collection('follow_requests')
+          .where('fromId', isEqualTo: me.uid)
+          .where('toId', isEqualTo: widget.userId)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      for (final doc in q.docs) {
+        await doc.reference.delete();
+      }
+
+      // Eliminar la notificación de tipo follow_request
+      final noti = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('type', isEqualTo: 'follow_request')
+          .where('receiverId', isEqualTo: widget.userId)
+          .where('senderId', isEqualTo: me.uid)
+          .limit(1)
+          .get();
+      for (final doc in noti.docs) {
+        await doc.reference.delete();
+      }
+
+      _isRequestPending = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solicitud de seguimiento cancelada.')),
+      );
+    } catch (e) {
+      debugPrint('[cancelFollowRequest] error: $e');
+    }
+  }
+
   //----------------------------------------------------------------------------
   // Toast si es privado y no puedo invitar/chatear
   //----------------------------------------------------------------------------
@@ -1078,7 +1091,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   // Memorias o candado
   //----------------------------------------------------------------------------
   Widget _buildMemoriesOrLock() {
-    // Solo revisamos si es privado y no le sigo
     if (_isPrivate && !isFollowing) {
       return Column(
         children: [
@@ -1092,8 +1104,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         ],
       );
     }
-
-    // Si es público o ya le sigo, mostramos su calendario de memorias
     return MemoriesCalendar(
       userId: widget.userId,
       onPlanSelected: (plan) => _showFrostedPlanDialog(plan),
