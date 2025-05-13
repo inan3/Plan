@@ -1,56 +1,96 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.company.plan">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.company.plan">
+
+    <!-- ─────── Permisos ─────── -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- FCM -->
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
+    <!-- Android 13+: la pedirás en runtime -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <application
-        android:label="Plan"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:label="Plan">
+
+        <!-- ─────── Pantalla principal ─────── -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:hardwareAccelerated="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <!-- Intent filter para iniciar la app -->
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
+
+            <!-- launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Intent filter para recibir contenido compartido (texto) -->
+
+            <!-- compartir texto -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
-        <!-- No borrar el meta-data utilizado por Flutter -->
+
+        <!-- uCrop -->
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Ucrop.CropTheme"/>
-        
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-        
+
+        <!-- ─────── FCM componentes ─────── -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+                <action android:name="com.google.android.c2dm.intent.REGISTRATION"/>
+                <category android:name="com.company.plan"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- ─────── Meta-data ─────── -->
+        <meta-data android:name="flutterEmbedding" android:value="2"/>
+        <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/>
+
+        <!-- Google Maps -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAE-7mhYtxx003cYqL6uANqweCBLQ-2uO4"/>
-        
+
+        <!-- FCM: icono y canal por defecto -->
         <meta-data
-            android:name="io.flutter.embedding.android.EnableImpeller"
-            android:value="false" />
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="plan_high"/>
+
     </application>
+
+    <!-- ─────── Queries (Android 11+) ─────── -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
-    
-    <!-- Permisos -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
 </manifest>

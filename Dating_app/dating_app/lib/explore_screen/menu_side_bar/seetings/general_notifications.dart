@@ -1,3 +1,4 @@
+//general_notifications.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/notification_service.dart';

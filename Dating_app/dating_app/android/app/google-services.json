@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "861608593316",
+    "firebase_url": "https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "plan-social-app",
     "storage_bucket": "plan-social-app.firebasestorage.app"
   },

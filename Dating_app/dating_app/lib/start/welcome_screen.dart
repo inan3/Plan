@@ -43,7 +43,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentPage);
-    _autoSlideBackground();
+
+    // Asegurarnos de que el PageView esté montado antes de iniciar el timer
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoSlideBackground();
+    });
+
     _listenAuthChanges(); // Escuchamos la sesión de Firebase
   }
 
@@ -55,7 +60,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.dispose();
   }
 
-  /* ---------------------------  LISTENER  --------------------------- */
+  /* --------------------------- LISTENER --------------------------- */
   void _listenAuthChanges() {
     _authSub = FirebaseAuth.instance.authStateChanges().listen(
       (user) async {
@@ -75,10 +80,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => EmailVerificationScreen(
-                  email: user.email ?? '', // El user.email
-                  password: null, // O lo que necesites
-                  provider:
-                      VerificationProvider.password, // Ajusta según tu flujo
+                  email: user.email ?? '',
+                  password: null,
+                  provider: VerificationProvider.password,
                 ),
               ),
             );
@@ -101,7 +105,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => const UserRegistrationScreen(
-                  provider: VerificationProvider.password, // o google...
+                  provider: VerificationProvider.password,
                 ),
               ),
             );
@@ -121,27 +125,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  /* --------------------  CARRUSEL “INFINITO”  -------------------- */
+  /* -------------------- CARRUSEL “INFINITO” -------------------- */
   void _autoSlideBackground() {
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
-      setState(() {
-        _currentPage++;
-        if (_currentPage == _totalPages - 1) {
-          _currentPage = _totalPages ~/ 2;
-          _pageController.jumpToPage(_currentPage);
-        } else {
-          _pageController.animateToPage(
-            _currentPage,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-      });
+      // Solo animar si el PageView está listo
+      if (!_pageController.hasClients) return;
+
+      _currentPage++;
+      if (_currentPage == _totalPages - 1) {
+        _currentPage = _totalPages ~/ 2;
+        _pageController.jumpToPage(_currentPage);
+      } else {
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
-  /* ---------------------------  UI  --------------------------- */
+  /* --------------------------- UI --------------------------- */
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -247,7 +252,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         'Registrarse',
                         style: GoogleFonts.roboto(
                           fontSize: 20,
-                          color: Color.fromARGB(236, 0, 4, 227),
+                          color: const Color.fromARGB(236, 0, 4, 227),
                         ),
                       ),
                     ),

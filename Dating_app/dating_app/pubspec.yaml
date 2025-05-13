@@ -144,6 +144,8 @@ flutter:
     - assets/icono-email.svg
     - assets/icono-preguntas.svg
 
+    - assets/verificado.svg
+
     - assets/image-cycling.png
     - assets/image-meeting.png
     - assets/image-padel.png
