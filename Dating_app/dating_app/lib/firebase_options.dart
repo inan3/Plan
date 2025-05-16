@@ -55,17 +55,20 @@ class DefaultFirebaseOptions {
     appId: '1:861608593316:android:0180b7738065e14fe96331',
     messagingSenderId: '861608593316',
     projectId: 'plan-social-app',
+    databaseURL: 'https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'plan-social-app.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD3wBxlTtCE6NY4J0rEalB_98q-MpF-5vg',
-    appId: '1:861608593316:ios:dda7395fc1337490e96331',
+    appId: '1:861608593316:ios:d5e29f99ded3850fe96331',
     messagingSenderId: '861608593316',
     projectId: 'plan-social-app',
+    databaseURL: 'https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'plan-social-app.firebasestorage.app',
-    iosClientId: '861608593316-l1qqhkh3ruijck714c8j4qn7fgvpjckp.apps.googleusercontent.com',
-    iosBundleId: 'com.example.datingApp',
+    androidClientId: '861608593316-qat23sqjscnbldr82mas57lrn2ieqh7v.apps.googleusercontent.com',
+    iosClientId: '861608593316-9glsvqnh6l9ugjbfkjf2l5ug5or2ohlm.apps.googleusercontent.com',
+    iosBundleId: 'com.company.plan',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

@@ -13,10 +13,7 @@
           "projectId": "plan-social-app",
           "configurations": {
             "android": "1:861608593316:android:0180b7738065e14fe96331",
-            "ios": "1:861608593316:ios:dda7395fc1337490e96331",
-            "macos": "1:861608593316:ios:dda7395fc1337490e96331",
-            "web": "1:861608593316:web:fa8964d140025bb0e96331",
-            "windows": "1:861608593316:web:ff8785aeede3f428e96331"
+            "ios": "1:861608593316:ios:d5e29f99ded3850fe96331"
           }
         }
       }
@@ -32,6 +29,10 @@
         "firebase-debug.log",
         "firebase-debug.*.log",
         "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
   ]
