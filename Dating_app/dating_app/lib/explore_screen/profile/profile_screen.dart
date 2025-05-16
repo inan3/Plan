@@ -19,6 +19,9 @@ import '../future_plans/future_plans.dart';
 import 'user_images_managing.dart';
 import '../users_managing/presence_service.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
@@ -653,6 +656,19 @@ class ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(16),
               child: GestureDetector(
                 onTap: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  final fcm = FirebaseMessaging.instance;
+                  final token = await fcm.getToken();
+
+                  if (user != null && token != null) {
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .update({
+                      'tokens': FieldValue.arrayRemove([token])
+                    });
+                  }
+
                   await FirebaseAuth.instance.signOut();
                   if (!mounted) return;
                   Navigator.pushReplacement(

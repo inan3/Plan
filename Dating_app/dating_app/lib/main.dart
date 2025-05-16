@@ -8,7 +8,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -52,34 +51,34 @@ Future<void> main() async {
   if (currentUser != null) {
     PresenceService.dispose();
     await PresenceService.init(currentUser);
-    await _registerFcmToken(currentUser); // asegura token único
+    await _registerFcmToken(currentUser); // asegura token único POR dispositivo
   }
 
   runApp(const MyApp());
 }
 
 /* ─────────────────────────────────────────────────────────
- *  FCM ⇆ Cloud Functions (token único por usuario)
+ *  FCM ⇆ Firestore (token único por dispositivo, multi‑dispositivo soportado)
  * ────────────────────────────────────────────────────────*/
 Future<void> _registerFcmToken(User user) async {
   final fcm = FirebaseMessaging.instance;
-  await fcm.requestPermission();
+
+  // Solicita permisos (iOS) ─ ignora si ya concedidos / Android ≥ 13
+  final settings = await fcm.requestPermission();
+  if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+
+  // Guarda token en array evitando duplicados
+  Future<void> _save(String token) async {
+    await FirebaseFirestore.instance
+        .doc('users/${user.uid}')
+        .set({'tokens': FieldValue.arrayUnion([token])}, SetOptions(merge: true));
+  }
 
   final token = await fcm.getToken();
-  if (token != null) {
-    await _callRegisterToken(token);
-  }
+  if (token != null) await _save(token);
 
-  fcm.onTokenRefresh.listen(_callRegisterToken);
-}
-
-Future<void> _callRegisterToken(String token) async {
-  final callable = FirebaseFunctions.instance.httpsCallable('registerToken');
-  try {
-    await callable.call(<String, dynamic>{'token': token});
-  } catch (_) {
-    // Silenciar: Cloud Functions puede fallar offline; se reintenta al refrescar
-  }
+  // Se dispara cuando el sistema renueva el token
+  fcm.onTokenRefresh.listen(_save);
 }
 
 /// Llamar desde tu botón «Cerrar sesión»
@@ -167,7 +166,7 @@ class _MyAppState extends State<MyApp> {
 
           if (user != null && !_fcmDone) {
             _fcmDone = true;
-            _registerFcmToken(user);
+            _registerFcmToken(user); // se vuelve a registrar tras hot‑reload
           }
 
           if (_sharedText != null) return ChatsScreen(sharedText: _sharedText!);
