@@ -80,11 +80,8 @@ Future<void> _registerFcmToken(User user) async {
   );
   if (settings.authorizationStatus != AuthorizationStatus.authorized) return;
 
-  // Guarda token en array evitando duplicados
+ // Guarda el token garantizando que no quede asociado a otros usuarios
   Future<void> _save(String token) async {
-    await FirebaseFirestore.instance
-        .doc('users/${user.uid}')
-        .set({'tokens': FieldValue.arrayUnion([token])}, SetOptions(merge: true));
     final db = FirebaseFirestore.instance;
     final batch = db.batch();
 
@@ -148,7 +145,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
-  String? _lastUserId; // para registrar token solo cuando cambia el usuario
+  String? _fcmUserId; // para registrar token solo cuando cambia el usuario
 
   @override
   void initState() {
@@ -201,9 +198,13 @@ class _MyAppState extends State<MyApp> {
 
           final user = snap.data;
 
-          if (user?.uid != _lastUserId) {
-            _lastUserId = user?.uid;
-            if (user != null) _registerFcmToken(user);
+          if (user != null) {
+            if (_fcmUserId != user.uid) {
+              _fcmUserId = user.uid;
+              _registerFcmToken(user); // se registra si el usuario cambió
+            }
+          } else {
+            _fcmUserId = null; // resetea para próximas sesiones
           }
 
           if (_sharedText != null) return ChatsScreen(sharedText: _sharedText!);
