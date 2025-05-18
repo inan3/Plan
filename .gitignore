@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 firebase-debug.log*
 firebase-debug.*.log*
+openai_api_key.txt
 
 # Firebase cache
 .firebase/
@@ -67,5 +68,3 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
-openai_api_key.txt
-openai_api_key

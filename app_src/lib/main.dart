@@ -85,6 +85,30 @@ Future<void> _registerFcmToken(User user) async {
     await FirebaseFirestore.instance
         .doc('users/${user.uid}')
         .set({'tokens': FieldValue.arrayUnion([token])}, SetOptions(merge: true));
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
+    // 1 ▸ Remove token from any other user
+    final q = await db
+        .collection('users')
+        .where('tokens', arrayContains: token)
+        .get();
+    for (final doc in q.docs) {
+      if (doc.id != user.uid) {
+        batch.update(doc.reference, {
+          'tokens': FieldValue.arrayRemove([token])
+        });
+      }
+    }
+
+    // 2 ▸ Add token to current user
+    batch.set(
+      db.doc('users/${user.uid}'),
+      {'tokens': FieldValue.arrayUnion([token])},
+      SetOptions(merge: true),
+    );
+
+    await batch.commit();
   }
 
   final token = await fcm.getToken();
@@ -124,7 +148,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
-  bool _fcmDone = false; // evita doble registro en hot‑reload
+  String? _lastUserId; // para registrar token solo cuando cambia el usuario
 
   @override
   void initState() {
@@ -177,9 +201,9 @@ class _MyAppState extends State<MyApp> {
 
           final user = snap.data;
 
-          if (user != null && !_fcmDone) {
-            _fcmDone = true;
-            _registerFcmToken(user); // se vuelve a registrar tras hot‑reload
+          if (user?.uid != _lastUserId) {
+            _lastUserId = user?.uid;
+            if (user != null) _registerFcmToken(user);
           }
 
           if (_sharedText != null) return ChatsScreen(sharedText: _sharedText!);
