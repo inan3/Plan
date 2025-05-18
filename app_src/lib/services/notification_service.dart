@@ -88,13 +88,34 @@ class NotificationService {
     await _showLocal(msg);
   }
 
-  /* Guarda el token en array `tokens` (multi-dispositivo) */
+  /* Guarda el token garantizando que esté asociado solo al usuario actual */
   Future<void> _saveToken(String? token) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || token == null) return;
-    await _firestore.doc('users/${user.uid}').set({
-      'tokens': FieldValue.arrayUnion([token])
-    }, SetOptions(merge: true));
+
+    final batch = _firestore.batch();
+
+    // 1 ▸ Elimina el token de cualquier otro usuario
+    final q = await _firestore
+        .collection('users')
+        .where('tokens', arrayContains: token)
+        .get();
+    for (final doc in q.docs) {
+      if (doc.id != user.uid) {
+        batch.update(doc.reference, {
+          'tokens': FieldValue.arrayRemove([token])
+        });
+      }
+    }
+
+    // 2 ▸ Añade el token al usuario actual
+    batch.set(
+      _firestore.doc('users/${user.uid}'),
+      {'tokens': FieldValue.arrayUnion([token])},
+      SetOptions(merge: true),
+    );
+
+    await batch.commit();
   }
 
   /* Muestra notificación local en foreground */
