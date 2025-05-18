@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
- *  lib/main.dart  ·  versión con FCM completamente operativa
+ *  lib/main.dart  ·  FCM multi-usuario / multi-dispositivo
  * ────────────────────────────────────────────────────────*/
 import 'dart:async';
 
@@ -23,10 +23,10 @@ import 'explore_screen/main_screen/explore_screen.dart';
 import 'start/welcome_screen.dart';
 
 /* ─────────────────────────────────────────────────────────
- *  FCM handler en background
+ *  Handler FCM en background
  * ────────────────────────────────────────────────────────*/
 @pragma('vm:entry-point')
-Future<void> _firebaseBgHandler(RemoteMessage message) async {
+Future<void> _firebaseBgHandler(RemoteMessage msg) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
@@ -40,96 +40,96 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseBgHandler);
 
-  // 2 ▸ Fecha/hora ES
+  // 2 ▸ Fechas ES
   await initializeDateFormatting('es');
 
-  // 3 ▸ Notificaciones locales (estado guardado por el usuario)
-  final prefs   = await SharedPreferences.getInstance();
+  // 3 ▸ Notificaciones locales (estado guardado)
+  final prefs = await SharedPreferences.getInstance();
   final enabled = prefs.getBool('notificationsEnabled') ?? true;
   await NotificationService.instance.init(enabled: enabled);
 
-  /* ─── NUEVO ─── mostrar notificaciones cuando la app está en primer plano */
+  // 4 ▸ Mostrar notificaciones en foreground
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true, badge: true, sound: true,
+    alert: true,
+    badge: true,
+    sound: true,
   );
   FirebaseMessaging.onMessage.listen(NotificationService.instance.show);
 
-  // 4 ▸ Presencia (si la sesión persiste)
-  final currentUser = FirebaseAuth.instance.currentUser;
-  if (currentUser != null) {
+  // 5 ▸ Presencia + token si hay sesión persistente
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
     PresenceService.dispose();
-    await PresenceService.init(currentUser);
-    await _registerFcmToken(currentUser); // asegura token único POR dispositivo
+    await PresenceService.init(user);
+    await _registerFcmToken(user);
   }
 
   runApp(const MyApp());
 }
 
 /* ─────────────────────────────────────────────────────────
- *  FCM ⇆ Firestore (token único por dispositivo, multi‑dispositivo soportado)
+ *  FCM ⇆ Firestore (token único por dispositivo)
  * ────────────────────────────────────────────────────────*/
 Future<void> _registerFcmToken(User user) async {
   final fcm = FirebaseMessaging.instance;
 
-  // Solicita permisos (iOS + Android ≥ 13)
-  final settings = await fcm.requestPermission(
+  final perm = await fcm.requestPermission(
     alert: true,
     badge: true,
     sound: true,
     provisional: false,
   );
-  if (settings.authorizationStatus != AuthorizationStatus.authorized) return;
+  if (perm.authorizationStatus != AuthorizationStatus.authorized) return;
 
- // Guarda el token garantizando que no quede asociado a otros usuarios
   Future<void> _save(String token) async {
     final db = FirebaseFirestore.instance;
     final batch = db.batch();
 
-    // 1 ▸ Remove token from any other user
+    // eliminar de otros usuarios
     final q = await db
         .collection('users')
         .where('tokens', arrayContains: token)
         .get();
-    for (final doc in q.docs) {
-      if (doc.id != user.uid) {
-        batch.update(doc.reference, {
+    for (final d in q.docs) {
+      if (d.id != user.uid) {
+        batch.update(d.reference, {
           'tokens': FieldValue.arrayRemove([token])
         });
       }
     }
 
-    // 2 ▸ Add token to current user
+    // añadir al usuario actual
     batch.set(
-      db.doc('users/${user.uid}'),
-      {'tokens': FieldValue.arrayUnion([token])},
-      SetOptions(merge: true),
-    );
+        db.doc('users/${user.uid}'),
+        {
+          'tokens': FieldValue.arrayUnion([token])
+        },
+        SetOptions(merge: true));
 
     await batch.commit();
   }
 
-  final token = await fcm.getToken();
-  if (token != null) await _save(token);
+  String? token = await fcm.getToken();
+  token ??= await fcm.onTokenRefresh.first;
+  await _save(token);
 
-  // Se dispara cuando el sistema renueva el token
   fcm.onTokenRefresh.listen(_save);
 }
 
-/// Llamar desde tu botón «Cerrar sesión»
+/* ─────────────────────────────────────────────────────────
+ *  Logout helper (sin borrar token local)
+ * ────────────────────────────────────────────────────────*/
 Future<void> signOutAndRemoveToken() async {
-  final user  = FirebaseAuth.instance.currentUser;
+  final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
 
-  final fcm   = FirebaseMessaging.instance;
+  final fcm = FirebaseMessaging.instance;
   final token = await fcm.getToken();
-
   if (token != null) {
-    await FirebaseFirestore.instance
-        .doc('users/${user.uid}')
-        .update({'tokens': FieldValue.arrayRemove([token])});
-    await fcm.deleteToken();
+    await FirebaseFirestore.instance.doc('users/${user.uid}').update({
+      'tokens': FieldValue.arrayRemove([token])
+    });
   }
-
   await FirebaseAuth.instance.signOut();
 }
 
@@ -145,13 +145,12 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
-  String? _fcmUserId; // para registrar token solo cuando cambia el usuario
+  String? _lastUid; // detecta cambio de usuario
 
   @override
   void initState() {
     super.initState();
 
-    // Texto compartido (Android/iOS)
     if (!kIsWeb) {
       _intentSub = ReceiveSharingIntent.instance
           .getMediaStream()
@@ -167,13 +166,11 @@ class _MyAppState extends State<MyApp> {
   void _onMedia(List<SharedMediaFile> files) {
     for (final f in files) {
       if (f.type == SharedMediaType.text) {
-        _handleSharedText(f.path);
+        setState(() => _sharedText = f.path);
         break;
       }
     }
   }
-
-  void _handleSharedText(String text) => setState(() => _sharedText = text);
 
   @override
   void dispose() {
@@ -190,24 +187,30 @@ class _MyAppState extends State<MyApp> {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
           }
           if (snap.hasError) {
-            return const Scaffold(body: Center(child: Text('Error al inicializar Firebase')));
+            return const Scaffold(body: Center(child: Text('Error Firebase')));
           }
 
           final user = snap.data;
 
-          if (user != null) {
-            if (_fcmUserId != user.uid) {
-              _fcmUserId = user.uid;
-              _registerFcmToken(user); // se registra si el usuario cambió
-            }
-          } else {
-            _fcmUserId = null; // resetea para próximas sesiones
+          // ── cambia de usuario ───────────────────────────────
+          if (user != null && user.uid != _lastUid) {
+            _lastUid = user.uid;
+
+            SharedPreferences.getInstance().then((prefs) {
+              final enabled = prefs.getBool('notificationsEnabled') ?? true;
+              NotificationService.instance.init(enabled: enabled);
+            });
+
+            _registerFcmToken(user);
           }
 
-          if (_sharedText != null) return ChatsScreen(sharedText: _sharedText!);
+          if (_sharedText != null) {
+            return ChatsScreen(sharedText: _sharedText!);
+          }
 
           return user == null ? const WelcomeScreen() : const ExploreScreen();
         },

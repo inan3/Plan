@@ -666,10 +666,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                         .update({
                       'tokens': FieldValue.arrayRemove([token])
                     });
-                    await fcm.deleteToken(); // borra el token local
+                    // await fcm.deleteToken();  // ← elimínala
                   }
 
-                  PresenceService.dispose(); // si usas presencia en tiempo real
+                  PresenceService.dispose();
                   await FirebaseAuth.instance.signOut();
 
                   if (!mounted) return;

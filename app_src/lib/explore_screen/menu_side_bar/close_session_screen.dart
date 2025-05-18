@@ -24,16 +24,18 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final fcm   = FirebaseMessaging.instance;
+        final fcm = FirebaseMessaging.instance;
         final token = await fcm.getToken();
+
         if (token != null) {
-          await FirebaseFirestore.instance
-              .doc('users/${user.uid}')
-              .update({'tokens': FieldValue.arrayRemove([token])});
-          await fcm.deleteToken();
+          await FirebaseFirestore.instance.doc('users/${user.uid}').update({
+            'tokens': FieldValue.arrayRemove([token])
+          });
+          // NO borres el token del dispositivo:
+          // await fcm.deleteToken();
         }
 
-        PresenceService.dispose();   // sin await
+        PresenceService.dispose(); // sin await
         await FirebaseAuth.instance.signOut();
       }
 
