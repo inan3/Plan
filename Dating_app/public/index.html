@@ -25,7 +25,7 @@
     header{position:fixed;top:0;width:100%;height:var(--header-height);background:var(--bg);border-bottom:1px solid #eee;z-index:100;}
     .nav-container{max-width:1200px;margin:auto;height:100%;display:flex;align-items:center;padding:0 1rem;}
     .nav-logo{margin-left:2rem;margin-right:1rem;}
-    .nav-logo img{height:60px;transform:translateX(60px);}  /* Ajustado a 3/4 de 80px */
+    .nav-logo img{height:60px;transform:translateX(60px);}
     .btn-download{background:var(--blue);color:#fff;padding:.6rem 1.2rem;border-radius:24px;font-weight:600;transition:background .2s,transform .2s,box-shadow .2s;margin-left:auto;box-shadow:0 8px 16px rgba(0,0,0,.15);}
     .btn-download:hover{background:var(--blue-dark);transform:translateY(-2px);box-shadow:0 12px 20px rgba(0,0,0,.20);}
     nav ul{display:flex;gap:1.5rem;list-style:none;}
@@ -80,10 +80,7 @@
     .img3 {transform: rotate(-10deg);margin-top: 5px;}
     .img4 {transform: rotate(8deg);margin-top: 5px;}
 
-    .cta-text {
-      text-align: center;
-      padding: 2rem 1rem;
-    }
+    .cta-text {text-align: center;padding: 2rem 1rem;}
 
     /* SECCIÓN 4: imágenes que actúan como botones */
     .download-section {
@@ -144,7 +141,16 @@
       <button class="nav-toggle" aria-label="Abrir menú">☰</button>
       <div class="nav-logo"><img src="plan-sin-fondo.png" alt="Plan Social"></div>
       <a href="#downloadSection" class="btn-download">Descargar</a>
-      <nav><ul><li><a href="#hero">Inicio</a></li><li><a href="#features">Imágenes</a></li><li><a href="#features2">Sección 3</a></li><li><a href="#downloadSection">Descargar</a></li><li><a href="#download">Regístrate</a></li></ul></nav>
+      <nav>
+        <ul>
+          <li><a href="#hero">Inicio</a></li>
+          <li><a href="#features">Imágenes</a></li>
+          <li><a href="#features2">Sección 3</a></li>
+          <li><a href="#downloadSection">Descargar</a></li>
+          <li><a href="#download">Regístrate</a></li>
+          <li><a href="reset_password.html">¿Olvidaste tu contraseña?</a></li>
+        </ul>
+      </nav>
     </div>
   </header>
   <main>
@@ -157,7 +163,11 @@
         <div class="slide"></div>
         <div class="slide"></div>
       </div>
-      <div class="hero-text"><h1>Crea planes y conecta con gente cerca</h1><p>¡PLAN es la plataforma social donde los intereses comunes se fusionan!</p><a href="#" class="hero-download" id="download">Descargar</a></div>
+      <div class="hero-text">
+        <h1>Crea planes y conecta con gente cerca</h1>
+        <p>¡PLAN es la plataforma social donde los intereses comunes se fusionan!</p>
+        <a href="#" class="hero-download" id="download">Descargar</a>
+      </div>
     </section>
     <!-- SECCIÓN 2: Imágenes sticky -->
     <section class="image-section" id="features">
@@ -169,14 +179,20 @@
           <img src="image4.png" alt="Imagen 4" class="img4">
         </div>
       </div>
-      <div class="cta-text"><h2>Crea planes, comparte y disfruta</h2><p>Organiza planes a tu medida y conecta con personas cerca dispuestas a vivirlos contigo</p></div>
+      <div class="cta-text">
+        <h2>Crea planes, comparte y disfruta</h2>
+        <p>Organiza planes a tu medida y conecta con personas cerca dispuestas a vivirlos contigo</p>
+      </div>
     </section>
     <!-- SECCIÓN 3: fondo turquesa-crema -->
     <section class="image-section image-section-3" id="features2">
       <div class="image-container">
         <img src="image-map.png" alt="Mapa de planes">
       </div>
-      <div class="cta-text"><h2>Utiliza el mapa para explorar planes cerca de ti</h2><p>¡Tienes a tu disposición el mapa para explorar planes cerca de ti y unirte al que más te llame la atención. Los planes que creas aparecen tanto en el mapa como en la pantalla de inicio!</p></div>
+      <div class="cta-text">
+        <h2>Utiliza el mapa para explorar planes cerca de ti</h2>
+        <p>¡Tienes a tu disposición el mapa para explorar planes cerca de ti y unirte al que más te llame la atención. Los planes que creas aparecen tanto en el mapa como en la pantalla de inicio!</p>
+      </div>
     </section>
     <!-- SECCIÓN 4: imágenes botones -->
     <section class="download-section" id="downloadSection">
@@ -187,7 +203,27 @@
       </div>
     </section>
   </main>
-  <footer><p>© 2025 Plan Social | <a href="#">Privacidad</a> | <a href="#">Términos</a></p></footer>
+  <footer>
+    <p>© 2025 Plan Social | <a href="#">Privacidad</a> | <a href="#">Términos</a></p>
+  </footer>
+
+  <!-- SCRIPTS FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA-BHmsMAtT4Zs2wK2BTpyu1UWKNZqoG14",
+      authDomain: "plansocialapp.es",
+      databaseURL: "https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "plan-social-app",
+      storageBucket: "plan-social-app.firebasestorage.app",
+      messagingSenderId: "861608593316",
+      appId: "1:861608593316:web:fa8964d140025bb0e96331",
+      measurementId: "G-Y9Q5WB4REW"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
   <script>
     // Menú móvil
     const navToggle = document.querySelector('.nav-toggle');
