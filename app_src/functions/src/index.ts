@@ -25,11 +25,21 @@ export const sendPushOnNotification = onDocumentCreated(
     // Evita auto-notificarse
     if (n.senderId === n.receiverId) return;
 
-    // Tokens del receptor
-    const userRef = getFirestore().doc(`users/${n.receiverId}`);
-    const userSnap = await userRef.get();
-    const tokens: string[] = userSnap.get("tokens") ?? [];
-    if (tokens.length === 0) return;
+  // Tokens del receptor
+  const receiverRef = getFirestore().doc(`users/${n.receiverId}`);
+  const receiverSnap = await receiverRef.get();
+  let tokens: string[] = receiverSnap.get("tokens") ?? [];
+  if (tokens.length === 0) return;
+
+  // Tokens del emisor
+  const senderSnap = await getFirestore()
+    .doc(`users/${n.senderId}`)
+    .get();
+  const senderTokens: string[] = senderSnap.get("tokens") ?? [];
+
+  // Evita tokens compartidos
+  tokens = tokens.filter((t) => !senderTokens.includes(t));
+  if (tokens.length === 0) return;
 
     // Envío
     const resp = await getMessaging().sendEachForMulticast({
@@ -58,7 +68,7 @@ export const sendPushOnNotification = onDocumentCreated(
     });
 
     if (invalid.length) {
-      await userRef.update({
+      await receiverRef.update({
         tokens: FieldValue.arrayRemove(...invalid),
       });
     }
