@@ -1,4 +1,6 @@
-// lib/main.dart
+/* ─────────────────────────────────────────────────────────
+ *  lib/main.dart  ·  versión con FCM completamente operativa
+ * ────────────────────────────────────────────────────────*/
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -46,6 +48,12 @@ Future<void> main() async {
   final enabled = prefs.getBool('notificationsEnabled') ?? true;
   await NotificationService.instance.init(enabled: enabled);
 
+  /* ─── NUEVO ─── mostrar notificaciones cuando la app está en primer plano */
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    alert: true, badge: true, sound: true,
+  );
+  FirebaseMessaging.onMessage.listen(NotificationService.instance.show);
+
   // 4 ▸ Presencia (si la sesión persiste)
   final currentUser = FirebaseAuth.instance.currentUser;
   if (currentUser != null) {
@@ -63,9 +71,14 @@ Future<void> main() async {
 Future<void> _registerFcmToken(User user) async {
   final fcm = FirebaseMessaging.instance;
 
-  // Solicita permisos (iOS) ─ ignora si ya concedidos / Android ≥ 13
-  final settings = await fcm.requestPermission();
-  if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+  // Solicita permisos (iOS + Android ≥ 13)
+  final settings = await fcm.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  );
+  if (settings.authorizationStatus != AuthorizationStatus.authorized) return;
 
   // Guarda token en array evitando duplicados
   Future<void> _save(String token) async {

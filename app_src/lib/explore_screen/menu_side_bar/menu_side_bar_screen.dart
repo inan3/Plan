@@ -9,7 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dating_app/main/colors.dart';
 import 'my_plans_screen.dart';
 import 'favourites_screen.dart';
-import 'seetings/settings_screen.dart';
+import 'settings/settings_screen.dart';
 import 'close_session_screen.dart';
 import 'subscribed_plans_screen.dart';
 

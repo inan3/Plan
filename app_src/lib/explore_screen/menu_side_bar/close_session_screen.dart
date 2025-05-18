@@ -1,4 +1,3 @@
-// lib/explore_screen/settings/close_session_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,26 +6,26 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../start/welcome_screen.dart';
 import '../users_managing/presence_service.dart';
 
-class CloseSessionScreen extends StatelessWidget {
+class CloseSessionScreen extends StatefulWidget {
   const CloseSessionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    _logout(context); // Ejecuta el cierre de sesión al entrar
+  State<CloseSessionScreen> createState() => _CloseSessionScreenState();
+}
 
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+class _CloseSessionScreenState extends State<CloseSessionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _logout();
   }
 
-  Future<void> _logout(BuildContext context) async {
+  Future<void> _logout() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // 1 ▸ Elimina token FCM del array de Firestore y local
         final fcm   = FirebaseMessaging.instance;
         final token = await fcm.getToken();
-
         if (token != null) {
           await FirebaseFirestore.instance
               .doc('users/${user.uid}')
@@ -34,25 +33,26 @@ class CloseSessionScreen extends StatelessWidget {
           await fcm.deleteToken();
         }
 
-        // 2 ▸ Cierra sesión y presencia
-        PresenceService.dispose();
+        PresenceService.dispose();   // sin await
         await FirebaseAuth.instance.signOut();
       }
 
-      // 3 ▸ Redirige a WelcomeScreen limpiando historial
-      if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-          (Route<dynamic> route) => false,
+          (_) => false,
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al cerrar sesión: $e')),
         );
       }
     }
   }
+
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: CircularProgressIndicator()));
 }

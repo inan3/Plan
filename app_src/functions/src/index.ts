@@ -21,17 +21,27 @@ export const sendPushOnNotification = onDocumentCreated(
   async (event) => {
     const n = event.data?.data();
     if (!n) return;
-
-    // Evita auto-notificarse
     if (n.senderId === n.receiverId) return;
 
-    // Tokens del receptor
-    const userRef = getFirestore().doc(`users/${n.receiverId}`);
-    const userSnap = await userRef.get();
-    const tokens: string[] = userSnap.get("tokens") ?? [];
-    if (tokens.length === 0) return;
+    const db = getFirestore();
 
-    // Envío
+    // --- tokens del receptor ---
+    const receiverRef = db.doc(`users/${n.receiverId}`);
+    const receiverSnap = await receiverRef.get();
+    const receiverTokens: string[] = receiverSnap.get("tokens") ?? [];
+    if (receiverTokens.length === 0) return;
+
+    // --- tokens del emisor (para no duplicar) ---
+    const senderSnap = await db.doc(`users/${n.senderId}`).get();
+    const senderTokens: string[] = senderSnap.get("tokens") ?? [];
+
+    // 1) quita duplicados
+    let tokens = receiverTokens.filter((t) => !senderTokens.includes(t));
+
+    // 2) si quedaron 0, usa los originales (prefiero notificar al receptor
+    //    aun con riesgo de duplicar en el emisor que silenciar la notificación)
+    if (tokens.length === 0) tokens = receiverTokens;
+
     const resp = await getMessaging().sendEachForMulticast({
       tokens,
       notification: {
@@ -48,17 +58,19 @@ export const sendPushOnNotification = onDocumentCreated(
       },
     });
 
-    // Limpia tokens inválidos
+    // limpia tokens inválidos
     const invalid: string[] = [];
-    resp.responses.forEach((r, i) => { //  ← flecha añadida
-      if (!r.success &&
-          r.error?.code === "messaging/registration-token-not-registered") {
+    resp.responses.forEach((r, i) => {
+      if (
+        !r.success &&
+        r.error?.code === "messaging/registration-token-not-registered"
+      ) {
         invalid.push(tokens[i]);
       }
     });
 
     if (invalid.length) {
-      await userRef.update({
+      await receiverRef.update({
         tokens: FieldValue.arrayRemove(...invalid),
       });
     }

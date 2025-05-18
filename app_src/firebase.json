@@ -31,8 +31,9 @@
         "*.local"
       ],
       "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
+        "cd \"$RESOURCE_DIR\" && npm install",
+        "cd \"$RESOURCE_DIR\" && npm run lint -- --fix",
+        "cd \"$RESOURCE_DIR\" && npm run build"
       ]
     }
   ]

@@ -21,7 +21,6 @@ import '../users_managing/presence_service.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
@@ -667,12 +666,14 @@ class ProfileScreenState extends State<ProfileScreen> {
                         .update({
                       'tokens': FieldValue.arrayRemove([token])
                     });
+                    await fcm.deleteToken(); // borra el token local
                   }
 
+                  PresenceService.dispose(); // si usas presencia en tiempo real
                   await FirebaseAuth.instance.signOut();
+
                   if (!mounted) return;
-                  Navigator.pushReplacement(
-                    context,
+                  Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                   );
                 },
