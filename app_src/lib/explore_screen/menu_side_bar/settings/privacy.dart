@@ -33,9 +33,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final data = snap.data();
       final isPublic = (data?['profile_privacy'] ?? 0) == 0;
+      final activityPublic = data?['activityStatusPublic'];
       if (mounted) {
         setState(() {
           _isVisibilityPublic = isPublic;
+          _isActivityPublic =
+              activityPublic is bool ? activityPublic : true;
           _loading = false;
         });
       }
@@ -51,6 +54,15 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         .collection('users')
         .doc(uid)
         .set({'profile_privacy': isPublic ? 0 : 1}, SetOptions(merge: true));
+  }
+
+  Future<void> _updateActivityPrivacy(bool isPublic) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .set({'activityStatusPublic': isPublic}, SetOptions(merge: true));
   }
 
   @override
@@ -149,7 +161,10 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     const SizedBox(width: 8),
                     Switch(
                       value: _isActivityPublic,
-                      onChanged: (v) => setState(() => _isActivityPublic = v),
+                      onChanged: (v) async {
+                        setState(() => _isActivityPublic = v);
+                        await _updateActivityPrivacy(v);
+                      },
                       activeTrackColor: Colors.green,
                       activeColor: Colors.white,
                       inactiveTrackColor: Colors.grey,

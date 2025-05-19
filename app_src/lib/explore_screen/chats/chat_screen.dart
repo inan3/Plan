@@ -66,6 +66,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   // Para saber si yo tengo bloqueado a mi chatPartner
   bool _isPartnerBlocked = false;
 
+  bool _partnerActivityPublic = true;
+
   // Carga futuro con icono de marcador (para ubicaciones)
   late Future<BitmapDescriptor> _markerIconFuture;
 
@@ -127,6 +129,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           theirData['deletedChats'][currentUserId] != null) {
         _theirDeletedAt = theirData['deletedChats'][currentUserId];
       }
+      _partnerActivityPublic =
+          theirData['activityStatusPublic'] != false;
     }
   }
 
@@ -345,9 +349,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              UserActivityStatus(
-                                userId: widget.chatPartnerId,
-                              ),
+                              if (_partnerActivityPublic)
+                                UserActivityStatus(
+                                  userId: widget.chatPartnerId,
+                                ),
                             ],
                           ),
                         ),
