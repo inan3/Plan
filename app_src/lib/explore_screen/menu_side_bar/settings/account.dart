@@ -1,6 +1,10 @@
 // account.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import '../../../start/welcome_screen.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -24,32 +28,32 @@ class AccountScreen extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: SvgPicture.asset(
-                      'assets/icono-email.svg',
+                      'assets/icono-escribir.svg',
                       width: 24,
                       height: 24,
                     ),
-                    title: const Text('Dirección de correo electrónico'),
+                    title: const Text('Editar perfil'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const EmailScreen()),
+                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
                       );
                     },
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: SvgPicture.asset(
-                      'assets/icono-telefono.svg',
+                      'assets/icono-candado.svg',
                       width: 24,
                       height: 24,
                     ),
-                    title: const Text('Número de teléfono'),
+                    title: const Text('Cambiar la contraseña de tu cuenta'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const PhoneScreen()),
+                        MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
                       );
                     },
                   ),
@@ -77,9 +81,9 @@ class AccountScreen extends StatelessWidget {
                               child: const Text('Cancelar'),
                             ),
                             TextButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 Navigator.of(ctx).pop();
-                                // TODO: Acción de eliminar perfil
+                                await _deleteAccount(context);
                               },
                               child: const Text('Aceptar'),
                             ),
@@ -98,49 +102,158 @@ class AccountScreen extends StatelessWidget {
   }
 }
 
-class EmailScreen extends StatelessWidget {
-  const EmailScreen({super.key});
+Future<void> _deleteAccount(BuildContext context) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final doc = await docRef.get();
+    final data = doc.data();
+    if (data != null) {
+      final urls = <String>[];
+      void addUrl(dynamic u) {
+        if (u is String && u.isNotEmpty) urls.add(u);
+      }
+      addUrl(data['photoUrl']);
+      addUrl(data['coverPhotoUrl']);
+      for (final key in ['coverPhotos', 'additionalPhotos']) {
+        final list = data[key] as List<dynamic>?;
+        if (list != null) {
+          for (final u in list) addUrl(u);
+        }
+      }
+      for (final url in urls) {
+        try {
+          await FirebaseStorage.instance.refFromURL(url).delete();
+        } catch (_) {}
+      }
+    }
+
+    await docRef.delete();
+    await user.delete();
+
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (_) => false,
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+    return;
+  }
+
+  if (context.mounted) Navigator.of(context).pop();
+}
+
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final data = doc.data();
+      if (data != null) {
+        _nameController.text = data['name'] ?? '';
+        _ageController.text = (data['age'] ?? '').toString();
+      }
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    final age = int.tryParse(_ageController.text.trim());
+    if (name.isEmpty || age == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Campos inválidos')));
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    setState(() => _saving = true);
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'name': name,
+        'nameLowercase': name.toLowerCase(),
+        'age': age,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: reemplazar con email real del usuario
-    const registeredEmail = 'usuario@ejemplo.com';
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Correo electrónico'),
-      ),
+      appBar: AppBar(title: const Text('Editar perfil')),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(registeredEmail),
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Nombre'),
             ),
-            const SizedBox(height: 12),
+            TextField(
+              controller: _ageController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Edad'),
+            ),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Cambiar dirección de correo
-                },
-                child: const Text('Cambiar dirección de correo'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Cambiar contraseña
-                },
-                child: const Text('Cambiar contraseña'),
+                onPressed: _saving ? null : _save,
+                child: const Text('Guardar'),
               ),
             ),
           ],
@@ -148,41 +261,94 @@ class EmailScreen extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _ageController.dispose();
+    super.dispose();
+  }
 }
 
-class PhoneScreen extends StatelessWidget {
-  const PhoneScreen({super.key});
+class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({super.key});
+
+  @override
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+}
+
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _currentController = TextEditingController();
+  final _newController = TextEditingController();
+  final _confirmController = TextEditingController();
+  bool _saving = false;
+
+  Future<void> _change() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email;
+    if (user == null || email == null) return;
+
+    final current = _currentController.text.trim();
+    final newPwd = _newController.text;
+    final confirm = _confirmController.text;
+    if (current.isEmpty || newPwd.isEmpty || newPwd != confirm) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Revisa los campos')));
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final cred =
+          EmailAuthProvider.credential(email: email, password: current);
+      await user.reauthenticateWithCredential(cred);
+      await user.updatePassword(newPwd);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Contraseña actualizada')));
+        Navigator.of(context).pop();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: reemplazar con teléfono real del usuario
-    const registeredPhone = '+34 600 123 456';
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Teléfono'),
-      ),
+      appBar: AppBar(title: const Text('Cambiar contraseña')),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(registeredPhone),
+            TextField(
+              controller: _currentController,
+              obscureText: true,
+              decoration:
+                  const InputDecoration(labelText: 'Contraseña actual'),
             ),
-            const SizedBox(height: 12),
+            TextField(
+              controller: _newController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Nueva contraseña'),
+            ),
+            TextField(
+              controller: _confirmController,
+              obscureText: true,
+              decoration:
+                  const InputDecoration(labelText: 'Confirmar contraseña'),
+            ),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Cambiar número de teléfono
-                },
-                child: const Text('Cambiar número de teléfono'),
+                onPressed: _saving ? null : _change,
+                child: const Text('Actualizar'),
               ),
             ),
           ],
@@ -190,4 +356,13 @@ class PhoneScreen extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
 }
+
