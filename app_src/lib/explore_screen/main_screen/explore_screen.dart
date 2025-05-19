@@ -225,15 +225,77 @@ class ExploreScreenState extends State<ExploreScreen> {
     return uids;
   }
 
+  Future<List<QueryDocumentSnapshot>> _fetchNearbyUsers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    if (snapshot.docs.isEmpty) return [];
+
+    List<QueryDocumentSnapshot> validUsers = snapshot.docs;
+
+    if (currentUser != null) {
+      validUsers = validUsers.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['uid']?.toString() != currentUser!.uid;
+      }).toList();
+    }
+
+    validUsers = validUsers.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final int userAge = int.tryParse(data['age'].toString()) ?? 0;
+      return userAge >= selectedAgeRange.start.round() &&
+          userAge <= selectedAgeRange.end.round();
+    }).toList();
+
+    final double referenceLat = (appliedFilters['userCoordinates'] != null)
+        ? (appliedFilters['userCoordinates']['lat'] as double)
+        : currentLocation['lat']!;
+    final double referenceLng = (appliedFilters['userCoordinates'] != null)
+        ? (appliedFilters['userCoordinates']['lng'] as double)
+        : currentLocation['lng']!;
+
+    validUsers.sort((a, b) {
+      final dataA = a.data() as Map<String, dynamic>;
+      final dataB = b.data() as Map<String, dynamic>;
+      final double latA =
+          double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
+      final double lngA =
+          double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
+      final double latB =
+          double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
+      final double lngB =
+          double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
+      final distanceA = computeDistance(referenceLat, referenceLng, latA, lngA);
+      final distanceB = computeDistance(referenceLat, referenceLng, latB, lngB);
+      return distanceA.compareTo(distanceB);
+    });
+
+    final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
+            (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
+        ? appliedFilters['planPredeterminado'] as String
+        : (appliedFilters['planBusqueda'] != null &&
+                (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
+            ? appliedFilters['planBusqueda'] as String
+            : null);
+
+    if (planFilter != null) {
+      final allowedUids = await _fetchUserIdsWithPlan(planFilter);
+      validUsers = validUsers.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return allowedUids.contains(data['uid'].toString());
+      }).toList();
+    }
+
+    return validUsers;
+  }
+
   Widget _buildNearbySection() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').snapshots(),
+    return FutureBuilder<List<QueryDocumentSnapshot>>( 
+      future: _fetchNearbyUsers(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
               child: CircularProgressIndicator(color: Colors.black));
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(
             child: Text(
               'No hay usuarios cercanos.',
@@ -241,85 +303,8 @@ class ExploreScreenState extends State<ExploreScreen> {
             ),
           );
         }
-
-        List<QueryDocumentSnapshot> validUsers = snapshot.data!.docs;
-
-        if (currentUser != null) {
-          validUsers = validUsers.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return data['uid']?.toString() != currentUser!.uid;
-          }).toList();
-        }
-
-        validUsers = validUsers.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final int userAge = int.tryParse(data['age'].toString()) ?? 0;
-          return userAge >= selectedAgeRange.start.round() &&
-              userAge <= selectedAgeRange.end.round();
-        }).toList();
-
-        final double referenceLat = (appliedFilters['userCoordinates'] != null)
-            ? (appliedFilters['userCoordinates']['lat'] as double)
-            : currentLocation['lat']!;
-        final double referenceLng = (appliedFilters['userCoordinates'] != null)
-            ? (appliedFilters['userCoordinates']['lng'] as double)
-            : currentLocation['lng']!;
-
-        validUsers.sort((a, b) {
-          final dataA = a.data() as Map<String, dynamic>;
-          final dataB = b.data() as Map<String, dynamic>;
-          final double latA =
-              double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
-          final double lngA =
-              double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
-          final double latB =
-              double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
-          final double lngB =
-              double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-          final distanceA =
-              computeDistance(referenceLat, referenceLng, latA, lngA);
-          final distanceB =
-              computeDistance(referenceLat, referenceLng, latB, lngB);
-          return distanceA.compareTo(distanceB);
-        });
-
-        final String? planFilter = (appliedFilters['planPredeterminado'] !=
-                    null &&
-                (appliedFilters['planPredeterminado'] as String)
-                    .trim()
-                    .isNotEmpty)
-            ? appliedFilters['planPredeterminado'] as String
-            : (appliedFilters['planBusqueda'] != null &&
-                    (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
-                ? appliedFilters['planBusqueda'] as String
-                : null);
-
-        if (planFilter != null) {
-          return FutureBuilder<List<String>>(
-            future: _fetchUserIdsWithPlan(planFilter),
-            builder: (context, planSnapshot) {
-              if (planSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'No hay planes con ese nombre.',
-                    style: TextStyle(fontSize: 18, color: Colors.black),
-                  ),
-                );
-              }
-              final allowedUids = planSnapshot.data!;
-              final filteredUsers = validUsers.where((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                return allowedUids.contains(data['uid'].toString());
-              }).toList();
-              return UsersGrid(users: filteredUsers);
-            },
-          );
-        } else {
-          return UsersGrid(users: validUsers);
-        }
+        final List<QueryDocumentSnapshot> validUsers = snapshot.data!;
+        return UsersGrid(users: validUsers);
       },
     );
   }

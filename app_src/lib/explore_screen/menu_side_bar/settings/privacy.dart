@@ -1,5 +1,7 @@
 // privacy.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({Key? key}) : super(key: key);
@@ -11,9 +13,53 @@ class PrivacyScreen extends StatefulWidget {
 class _PrivacyScreenState extends State<PrivacyScreen> {
   bool _isVisibilityPublic = true;
   bool _isActivityPublic = true;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrivacy();
+  }
+
+  Future<void> _loadPrivacy() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    try {
+      final snap =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final data = snap.data();
+      final isPublic = (data?['profile_privacy'] ?? 0) == 0;
+      if (mounted) {
+        setState(() {
+          _isVisibilityPublic = isPublic;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _updatePrivacy(bool isPublic) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .set({'profile_privacy': isPublic ? 0 : 1}, SetOptions(merge: true));
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Privacidad'),
@@ -37,7 +83,8 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 12.0),
                 child: Row(
                   children: [
                     Expanded(
@@ -56,7 +103,10 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     const SizedBox(width: 8),
                     Switch(
                       value: _isVisibilityPublic,
-                      onChanged: (v) => setState(() => _isVisibilityPublic = v),
+                      onChanged: (v) async {
+                        setState(() => _isVisibilityPublic = v);
+                        await _updatePrivacy(v);
+                      },
                       activeTrackColor: Colors.green,
                       activeColor: Colors.white,
                       inactiveTrackColor: Colors.grey,
@@ -79,7 +129,8 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 12.0),
                 child: Row(
                   children: [
                     Expanded(

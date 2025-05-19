@@ -47,8 +47,8 @@ class UsersGrid extends StatelessWidget {
   void _showBlockedSnack(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content:
-            Text('No puedes interactuar con este perfil porque te ha bloqueado.'),
+        content: Text(
+            'No puedes interactuar con este perfil porque te ha bloqueado.'),
       ),
     );
   }
@@ -73,10 +73,8 @@ class UsersGrid extends StatelessWidget {
     }
 
     // 2) Obtenemos doc del receptor
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
     if (!userDoc.exists) {
       ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
@@ -106,7 +104,8 @@ class UsersGrid extends StatelessWidget {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text("Perfil privado"),
-            content: const Text("Debes seguir a este usuario para interactuar."),
+            content:
+                const Text("Debes seguir a este usuario para interactuar."),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -166,10 +165,11 @@ class UsersGrid extends StatelessWidget {
       );
     }
 
-    return FutureBuilder<List<PlanModel>>(
-      future: fetchUserPlans(uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, userSnap) {
+        if (userSnap.connectionState == ConnectionState.waiting) {
           return const SizedBox(
             height: 330,
             child: Center(
@@ -177,30 +177,50 @@ class UsersGrid extends StatelessWidget {
             ),
           );
         }
-        if (snapshot.hasError) {
-          return SizedBox(
-            height: 330,
-            child: Center(
-              child: Text('Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.red)),
-            ),
-          );
+        if (!userSnap.hasData || !userSnap.data!.exists) {
+          return const SizedBox(height: 0);
         }
 
-        final plans = snapshot.data ?? [];
-        if (plans.isEmpty) {
-          return _buildNoPlanLayout(context, userData);
-        } else {
-          return Column(
-            children: plans
-                .map((plan) => PlanCard(
-                      plan: plan,
-                      userData: userData,
-                      fetchParticipants: fetchPlanParticipants,
-                    ))
-                .toList(),
-          );
-        }
+        final liveData =
+            userSnap.data!.data() as Map<String, dynamic>? ?? userData;
+
+        return FutureBuilder<List<PlanModel>>(
+          future: fetchUserPlans(uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 330,
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+              );
+            }
+            if (snapshot.hasError) {
+              return SizedBox(
+                height: 330,
+                child: Center(
+                  child: Text('Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red)),
+                ),
+              );
+            }
+
+            final plans = snapshot.data ?? [];
+            if (plans.isEmpty) {
+              return _buildNoPlanLayout(context, liveData);
+            } else {
+              return Column(
+                children: plans
+                    .map((plan) => PlanCard(
+                          plan: plan,
+                          userData: liveData,
+                          fetchParticipants: fetchPlanParticipants,
+                        ))
+                    .toList(),
+              );
+            }
+          },
+        );
       },
     );
   }
@@ -248,8 +268,8 @@ class UsersGrid extends StatelessWidget {
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
-                      color:
-                          const Color.fromARGB(255, 14, 14, 14).withOpacity(0.2),
+                      color: const Color.fromARGB(255, 14, 14, 14)
+                          .withOpacity(0.2),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 6),
                       child: Row(
