@@ -484,6 +484,7 @@ class PlanCardState extends State<PlanCard> {
   // ─────────────────────────────────────────────────────────────
   Widget _buildCreatorFrosted(String name, String? photoUrl) {
     final creatorUid = widget.plan.createdBy;
+    final bool showActivity = widget.userData['activityStatusPublic'] != false;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
@@ -529,7 +530,7 @@ class PlanCardState extends State<PlanCard> {
                   ),
 
                   // Solo el estado de actividad
-                  if (creatorUid.isNotEmpty)
+                  if (creatorUid.isNotEmpty && showActivity)
                     UserActivityStatus(userId: creatorUid),
                 ],
               ),

@@ -239,6 +239,7 @@ class _UsersGridState extends State<UsersGrid> {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String? uid = userData['uid']?.toString();
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
+    final bool showActivity = userData['activityStatusPublic'] != false;
 
     return Center(
       child: Container(
@@ -311,7 +312,7 @@ class _UsersGridState extends State<UsersGrid> {
                                 ],
                               ),
                               // AQUI LLAMAMOS AL WIDGET DE PRESENCIA
-                              if (uid != null)
+                              if (uid != null && showActivity)
                                 UserActivityStatus(
                                   userId: uid,
                                 ),
