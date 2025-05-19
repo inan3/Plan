@@ -17,7 +17,7 @@ import '../chats/chat_screen.dart';
 // Importa nuestro widget que usa RTDB:
 import '../users_managing/user_activity_status.dart';
 
-class UsersGrid extends StatelessWidget {
+class UsersGrid extends StatefulWidget {
   final void Function(dynamic userDoc)? onUserTap;
   final List<dynamic> users;
 
@@ -27,6 +27,12 @@ class UsersGrid extends StatelessWidget {
     this.onUserTap,
   }) : super(key: key);
 
+  @override
+  State<UsersGrid> createState() => _UsersGridState();
+}
+
+class _UsersGridState extends State<UsersGrid> {
+  final Map<String, Future<List<PlanModel>>> _plansCache = {};
   // ──────────────────────────────────────────────────────────────────────────
   //  HELPERS DE BLOQUEO
   // ──────────────────────────────────────────────────────────────────────────
@@ -140,9 +146,9 @@ class UsersGrid extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 100),
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
-      itemCount: users.length,
+      itemCount: widget.users.length,
       itemBuilder: (context, index) {
-        final userDoc = users[index];
+        final userDoc = widget.users[index];
         final Map<String, dynamic> userData = userDoc is QueryDocumentSnapshot
             ? (userDoc.data() as Map<String, dynamic>)
             : userDoc as Map<String, dynamic>;
@@ -185,7 +191,7 @@ class UsersGrid extends StatelessWidget {
             userSnap.data!.data() as Map<String, dynamic>? ?? userData;
 
         return FutureBuilder<List<PlanModel>>(
-          future: fetchUserPlans(uid),
+          future: _plansCache.putIfAbsent(uid, () => fetchUserPlans(uid)),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
