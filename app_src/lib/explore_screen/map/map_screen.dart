@@ -92,8 +92,9 @@ class MapScreenState extends State<MapScreen> {
   Future<void> _loadMarkers() async {
     final plansLoader = PlansInMapScreen();
     final planMarkers = await plansLoader.loadPlansMarkers(context);
-    final userNoPlanMarkers = await plansLoader.loadUsersWithoutPlansMarkers(context);
-    _allMarkers = [...planMarkers, ...userNoPlanMarkers];
+    // Only display markers for users that have upcoming plans. Users without
+    // future plans should not appear on the map.
+    _allMarkers = [...planMarkers];
     _updateVisibleMarkers(_currentZoom);
   }
 
