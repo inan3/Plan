@@ -76,3 +76,62 @@ export const sendPushOnNotification = onDocumentCreated(
     }
   }
 );
+
+export const sendPushOnMessage = onDocumentCreated(
+  {region: "europe-west1", document: "/messages/{id}"},
+  async (event) => {
+    const m = event.data?.data();
+    if (!m) return;
+    if (m.senderId === m.receiverId) return;
+
+    const db = getFirestore();
+
+    // --- tokens del receptor ---
+    const receiverRef = db.doc(`users/${m.receiverId}`);
+    const receiverSnap = await receiverRef.get();
+    const receiverTokens: string[] = receiverSnap.get("tokens") ?? [];
+    if (receiverTokens.length === 0) return;
+
+    // --- tokens del emisor (para no duplicar) ---
+    const senderRef = db.doc(`users/${m.senderId}`);
+    const senderSnap = await senderRef.get();
+    const senderTokens: string[] = senderSnap.get("tokens") ?? [];
+    const senderName: string = senderSnap.get("name") ?? "";
+
+    // 1) quita duplicados
+    let tokens = receiverTokens.filter((t) => !senderTokens.includes(t));
+
+    // 2) si quedaron 0, usa los originales
+    if (tokens.length === 0) tokens = receiverTokens;
+
+    const resp = await getMessaging().sendEachForMulticast({
+      tokens,
+      notification: {
+        title: "Nuevo mensaje",
+        body: `Tienes un mensaje de ${senderName}`,
+      },
+      android: {notification: {channelId: "plan_high"}},
+      data: {
+        type: "chat_message",
+        senderId: m.senderId ?? "",
+        messageId: event.params.id,
+      },
+    });
+
+    const invalid: string[] = [];
+    resp.responses.forEach((r, i) => {
+      if (
+        !r.success &&
+        r.error?.code === "messaging/registration-token-not-registered"
+      ) {
+        invalid.push(tokens[i]);
+      }
+    });
+
+    if (invalid.length) {
+      await receiverRef.update({
+        tokens: FieldValue.arrayRemove(...invalid),
+      });
+    }
+  }
+);
