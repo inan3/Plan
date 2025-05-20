@@ -741,6 +741,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
     return GestureDetector(
       onTap: () {
+        if (_isPrivate && !isFollowing) {
+          _showPrivateToast();
+          return;
+        }
         if (isFuture) {
           FuturePlansScreen.show(
             context: context,
