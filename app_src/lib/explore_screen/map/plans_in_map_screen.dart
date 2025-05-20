@@ -23,9 +23,9 @@ class PlansInMapScreen {
       if (data == null) continue;
       final sp = data['special_plan'] ?? 0;
       if (sp != 0) continue;
-      final finishTs = data['finish_timestamp'];
-      if (finishTs == null) continue;
-      if (!(finishTs as Timestamp).toDate().isAfter(now)) continue;
+      final startTs = data['start_timestamp'];
+      if (startTs == null) continue;
+      if (!(startTs as Timestamp).toDate().isAfter(now)) continue;
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
       final type = data['type'] as String?;
