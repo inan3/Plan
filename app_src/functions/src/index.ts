@@ -14,6 +14,7 @@ const titles: Record<string, string> = {
   follow_accepted: "Follow aceptado",
   follow_rejected: "Follow rechazado",
   new_plan_published: "Nuevo plan publicado",
+  plan_chat_message: "Nuevo comentario",
 };
 
 export const sendPushOnNotification = onDocumentCreated(
@@ -132,6 +133,58 @@ export const sendPushOnMessage = onDocumentCreated(
       await receiverRef.update({
         tokens: FieldValue.arrayRemove(...invalid),
       });
+    }
+  }
+);
+
+export const sendPushOnPlanChat = onDocumentCreated(
+  {region: "europe-west1", document: "/plan_chat/{id}"},
+  async (event) => {
+    const m = event.data?.data();
+    if (!m) return;
+
+    const db = getFirestore();
+    const planSnap = await db.doc(`plans/${m.planId}`).get();
+    if (!planSnap.exists) return;
+    const planData = planSnap.data()!;
+    const participants: string[] = planData.participants ?? [];
+    const creatorId: string = planData.createdBy;
+
+    const senderSnap = await db.doc(`users/${m.senderId}`).get();
+    const senderName: string = senderSnap.get("name") ?? "";
+
+    const targets = new Set<string>(participants);
+    targets.add(creatorId);
+    targets.delete(m.senderId);
+
+    for (const uid of Array.from(targets)) {
+      const userSnap = await db.doc(`users/${uid}`).get();
+      const tokens: string[] = userSnap.get("tokens") ?? [];
+      if (tokens.length === 0) continue;
+
+      const resp = await getMessaging().sendEachForMulticast({
+        tokens,
+        notification: {
+          title: "Nuevo comentario",
+          body: `${senderName} comentó en ${planData.type}`,
+        },
+        android: {notification: {channelId: "plan_high"}},
+        data: {
+          type: "plan_chat_message",
+          planId: m.planId ?? "",
+          senderId: m.senderId ?? "",
+        },
+      });
+
+      const invalid: string[] = [];
+      resp.responses.forEach((r, i) => {
+        if (!r.success && r.error?.code === "messaging/registration-token-not-registered") {
+          invalid.push(tokens[i]);
+        }
+      });
+      if (invalid.length) {
+        await userSnap.ref.update({tokens: FieldValue.arrayRemove(...invalid)});
+      }
     }
   }
 );

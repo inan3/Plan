@@ -258,16 +258,36 @@ class PlanCardState extends State<PlanCard> {
     }
   }
 
+  Future<void> _removeParticipant(String uid) async {
+    try {
+      await FirebaseFirestore.instance.collection('plans').doc(widget.plan.id).update({
+        'participants': FieldValue.arrayRemove([uid])
+      });
+
+      final q = await FirebaseFirestore.instance
+          .collection('subscriptions')
+          .where('id', isEqualTo: widget.plan.id)
+          .where('userId', isEqualTo: uid)
+          .get();
+      for (final d in q.docs) {
+        await d.reference.delete();
+      }
+    } catch (e) {
+      debugPrint('Error al eliminar participante: $e');
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────
   // (5) Abrir detalles del plan
   // ─────────────────────────────────────────────────────────────
-  void _openPlanDetails(BuildContext context, PlanModel plan) {
+  void _openPlanDetails(BuildContext context, PlanModel plan, {bool openChat = false}) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FrostedPlanDialog(
           plan: plan,
           fetchParticipants: widget.fetchParticipants,
+          openChat: openChat,
         ),
       ),
     );
@@ -353,21 +373,36 @@ class PlanCardState extends State<PlanCard> {
                   final text = data['text'] ?? '';
                   final senderName = data['senderName'] ?? 'Invitado';
                   final senderPic = data['senderPic'] ?? '';
+                  final senderId = data['senderId'] ?? '';
                   final ts = data['timestamp'] as Timestamp?;
                   final timeStr = _formatTimestamp(ts);
 
                   return ListTile(
-                    leading: CircleAvatar(
-                      radius: 20,
-                      backgroundImage:
-                          senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
-                      backgroundColor: Colors.blueGrey[100],
+                    leading: GestureDetector(
+                      onTap: () {
+                        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
+                          UserInfoCheck.open(context, senderId);
+                        }
+                      },
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundImage:
+                            senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+                        backgroundColor: Colors.blueGrey[100],
+                      ),
                     ),
-                    title: Text(
-                      senderName,
-                      style: const TextStyle(
-                        color: Colors.yellow,
-                        fontWeight: FontWeight.bold,
+                    title: GestureDetector(
+                      onTap: () {
+                        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
+                          UserInfoCheck.open(context, senderId);
+                        }
+                      },
+                      child: Text(
+                        senderName,
+                        style: const TextStyle(
+                          color: Colors.yellow,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     subtitle: Text(
@@ -418,6 +453,17 @@ class PlanCardState extends State<PlanCard> {
     final text = _chatController.text.trim();
     if (text.isEmpty) return;
 
+    // Solo el creador o un participante pueden comentar
+    final uid = _currentUser!.uid;
+    final isCreator = plan.createdBy == uid;
+    final isParticipant = plan.participants?.contains(uid) ?? false;
+    if (!isCreator && !isParticipant) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes participar en el plan para comentar.')),
+      );
+      return;
+    }
+
     String senderName = _currentUser!.uid;
     String senderPic = '';
 
@@ -439,6 +485,32 @@ class PlanCardState extends State<PlanCard> {
       'text': text,
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    // Crear notificación para cada participante y creador (excepto el emisor)
+    final planDoc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+    if (planDoc.exists && planDoc.data() != null) {
+      final pdata = planDoc.data()!;
+      final List<String> uids = List<String>.from(pdata['participants'] ?? []);
+      final String creatorId = pdata['createdBy'] ?? '';
+      if (!uids.contains(creatorId)) uids.add(creatorId);
+      for (final uid in uids) {
+        if (uid == _currentUser!.uid) continue;
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'plan_chat_message',
+          'receiverId': uid,
+          'senderId': _currentUser!.uid,
+          'senderName': senderName,
+          'senderProfilePic': senderPic,
+          'planId': plan.id,
+          'planType': plan.type,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+      }
+    }
 
     // Actualizar commentsCount en el doc del plan
     final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
@@ -746,10 +818,9 @@ class PlanCardState extends State<PlanCard> {
 
                       final bool isCheckedIn = checkedInUsers.contains(uid);
 
-                      return ListTile(
+                      final tile = ListTile(
                         onTap: () {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
-                          // Verificación / apertura de perfil
                           UserInfoCheck.open(context, uid);
                         },
                         leading: CircleAvatar(
@@ -765,7 +836,6 @@ class PlanCardState extends State<PlanCard> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        // Si está en check-in, mostramos "ASISTE"
                         trailing: isCheckedIn
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
@@ -784,6 +854,43 @@ class PlanCardState extends State<PlanCard> {
                               )
                             : null,
                       );
+
+                      final isCreator = widget.plan.createdBy == _currentUser?.uid;
+                      if (isCreator && uid != widget.plan.createdBy) {
+                        return Dismissible(
+                          key: Key(uid),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: const Icon(Icons.delete, color: Colors.white),
+                          ),
+                          confirmDismiss: (_) async {
+                            return await showDialog<bool>(
+                                  context: context,
+                                  builder: (c) => AlertDialog(
+                                    title: const Text('Eliminar participante'),
+                                    content: Text('¿Eliminar a $name del plan?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(c, false),
+                                        child: const Text('No'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(c, true),
+                                        child: const Text('Sí'),
+                                      ),
+                                    ],
+                                  ),
+                                ) ?? false;
+                          },
+                          onDismissed: (_) => _removeParticipant(uid),
+                          child: tile,
+                        );
+                      } else {
+                        return tile;
+                      }
                     },
                   ),
                 ),
