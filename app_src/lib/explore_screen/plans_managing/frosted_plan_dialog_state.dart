@@ -19,11 +19,13 @@ class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
   final Future<List<Map<String, dynamic>>> Function(PlanModel plan)
       fetchParticipants;
+  final bool openChat;
 
   const FrostedPlanDialog({
     Key? key,
     required this.plan,
     required this.fetchParticipants,
+    this.openChat = false,
   }) : super(key: key);
 
   @override
@@ -50,6 +52,26 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     _checkIfLiked();
     _fetchCreatorInfo();
     _pageController = PageController();
+    if (widget.openChat) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (_) => Dialog(
+            insetPadding: EdgeInsets.only(
+              top: MediaQuery.of(context).size.height * 0.25,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            ),
+            backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: _buildChatPopup(widget.plan),
+          ),
+        );
+      });
+    }
   }
 
   Future<void> _fetchCreatorInfo() async {
@@ -642,22 +664,37 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   final text = data['text'] ?? '';
                   final senderName = data['senderName'] ?? 'Invitado';
                   final senderPic = data['senderPic'] ?? '';
+                  final senderId = data['senderId'] ?? '';
                   final ts = data['timestamp'] as Timestamp?;
                   final timeStr = _formatTimestamp(ts);
 
                   return ListTile(
-                    leading: CircleAvatar(
-                      radius: 20,
-                      backgroundImage:
-                          senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
-                      backgroundColor: Colors.blueGrey[100],
+                    leading: GestureDetector(
+                      onTap: () {
+                        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
+                          UserInfoCheck.open(context, senderId);
+                        }
+                      },
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundImage:
+                            senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+                        backgroundColor: Colors.blueGrey[100],
+                      ),
                     ),
-                    title: Text(
-                      senderName,
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 151, 121, 215),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                    title: GestureDetector(
+                      onTap: () {
+                        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
+                          UserInfoCheck.open(context, senderId);
+                        }
+                      },
+                      child: Text(
+                        senderName,
+                        style: const TextStyle(
+                          color: Color.fromARGB(255, 151, 121, 215),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                     subtitle: Text(
@@ -706,6 +743,17 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final text = _chatController.text.trim();
     if (text.isEmpty) return;
 
+    // Solo participantes o el creador pueden enviar mensajes
+    final uid = _currentUser!.uid;
+    final isCreator = plan.createdBy == uid;
+    final isParticipant = plan.participants?.contains(uid) ?? false;
+    if (!isCreator && !isParticipant) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes participar en el plan para comentar.')),
+      );
+      return;
+    }
+
     String senderName = _currentUser!.uid;
     String senderPic = '';
 
@@ -728,6 +776,32 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    // Notificaciones para participantes y creador
+    final planDoc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+    if (planDoc.exists && planDoc.data() != null) {
+      final pdata = planDoc.data()!;
+      final List<String> uids = List<String>.from(pdata['participants'] ?? []);
+      final String creatorId = pdata['createdBy'] ?? '';
+      if (!uids.contains(creatorId)) uids.add(creatorId);
+      for (final uid in uids) {
+        if (uid == _currentUser!.uid) continue;
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'plan_chat_message',
+          'receiverId': uid,
+          'senderId': _currentUser!.uid,
+          'senderName': senderName,
+          'senderProfilePic': senderPic,
+          'planId': plan.id,
+          'planType': plan.type,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+      }
+    }
+
     final planRef = FirebaseFirestore.instance.collection('plans').doc(plan.id);
     await planRef.update({
       'commentsCount': FieldValue.increment(1),
@@ -736,6 +810,25 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     });
 
     _chatController.clear();
+  }
+
+  Future<void> _removeParticipant(String uid) async {
+    try {
+      await FirebaseFirestore.instance.collection('plans').doc(widget.plan.id).update({
+        'participants': FieldValue.arrayRemove([uid])
+      });
+
+      final q = await FirebaseFirestore.instance
+          .collection('subscriptions')
+          .where('id', isEqualTo: widget.plan.id)
+          .where('userId', isEqualTo: uid)
+          .get();
+      for (final d in q.docs) {
+        await d.reference.delete();
+      }
+    } catch (e) {
+      debugPrint('Error al eliminar participante: $e');
+    }
   }
 
   Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
@@ -922,7 +1015,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       final uid = p['uid']?.toString() ?? '';
                       final bool isCheckedIn = checkedInUsers.contains(uid);
 
-                      return ListTile(
+                      final tile = ListTile(
                         onTap: () {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
                           UserInfoCheck.open(context, uid);
@@ -958,6 +1051,43 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                               )
                             : null,
                       );
+
+                      final isCreator = widget.plan.createdBy == _currentUser?.uid;
+                      if (isCreator && uid != widget.plan.createdBy) {
+                        return Dismissible(
+                          key: Key(uid),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.red,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: const Icon(Icons.delete, color: Colors.white),
+                          ),
+                          confirmDismiss: (_) async {
+                            return await showDialog<bool>(
+                                  context: context,
+                                  builder: (c) => AlertDialog(
+                                    title: const Text('Eliminar participante'),
+                                    content: Text('¿Eliminar a $name del plan?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(c, false),
+                                        child: const Text('No'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(c, true),
+                                        child: const Text('Sí'),
+                                      ),
+                                    ],
+                                  ),
+                                ) ?? false;
+                          },
+                          onDismissed: (_) => _removeParticipant(uid),
+                          child: tile,
+                        );
+                      } else {
+                        return tile;
+                      }
                     },
                   ),
                 ),

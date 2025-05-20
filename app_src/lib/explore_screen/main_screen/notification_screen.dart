@@ -12,6 +12,7 @@ import '../../main/colors.dart';
 import '../users_managing/user_info_check.dart';
 import '../plans_managing/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
 import '../plans_managing/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
+import '../plans_managing/frosted_plan_dialog_state.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;
@@ -40,6 +41,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           'follow_accepted',
           'follow_rejected',
           'new_plan_published', // <--- Agregamos este nuevo tipo
+          'plan_chat_message',
         ])
         .snapshots();
   }
@@ -393,6 +395,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
+  Future<void> _openPlanChatFromNotification(
+      BuildContext context, String planId) async {
+    final planDoc = await _firestore.collection('plans').doc(planId).get();
+    if (!planDoc.exists) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('El plan ya no existe.')));
+      return;
+    }
+    final planData = planDoc.data() as Map<String, dynamic>;
+    final plan = PlanModel.fromMap(planData);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FrostedPlanDialog(
+          plan: plan,
+          fetchParticipants: fetchPlanParticipants,
+          openChat: true,
+        ),
+      ),
+    );
+  }
+
   //-----------------------------------------------------------------------
   // BUILD principal
   //-----------------------------------------------------------------------
@@ -710,6 +735,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       color: Colors.red),
                                   onPressed: () =>
                                       _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'plan_chat_message':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "$senderName ha hecho un comentario sobre el plan $planType",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  timeString,
+                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                                onTap: () =>
+                                    _openPlanChatFromNotification(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _handleDeleteNotification(doc),
                                 ),
                               );
                             default:
