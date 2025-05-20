@@ -39,8 +39,7 @@ export const sendPushOnNotification = onDocumentCreated(
     // 1) quita duplicados
     let tokens = receiverTokens.filter((t) => !senderTokens.includes(t));
 
-    // 2) si quedaron 0, usa los originales (prefiero notificar al receptor
-    //    aun con riesgo de duplicar en el emisor que silenciar la notificación)
+    // 2) si quedaron 0, usa los originales
     if (tokens.length === 0) tokens = receiverTokens;
 
     const resp = await getMessaging().sendEachForMulticast({
@@ -178,12 +177,18 @@ export const sendPushOnPlanChat = onDocumentCreated(
 
       const invalid: string[] = [];
       resp.responses.forEach((r, i) => {
-        if (!r.success && r.error?.code === "messaging/registration-token-not-registered") {
+        if (
+          !r.success &&
+          r.error?.code === "messaging/registration-token-not-registered"
+        ) {
           invalid.push(tokens[i]);
         }
       });
+
       if (invalid.length) {
-        await userSnap.ref.update({tokens: FieldValue.arrayRemove(...invalid)});
+        await userSnap.ref.update({
+          tokens: FieldValue.arrayRemove(...invalid),
+        });
       }
     }
   }
