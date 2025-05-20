@@ -1004,13 +1004,14 @@ class PlanCardState extends State<PlanCard> {
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             final creatorUid = plan.createdBy;
                             final currentUid =
                                 FirebaseAuth.instance.currentUser?.uid;
                             if (creatorUid.isNotEmpty &&
                                 creatorUid != currentUid) {
-                              UserInfoCheck.open(context, creatorUid);
+                              await UserInfoCheck.open(context, creatorUid);
+                              if (mounted) setState(() {});
                             }
                           },
                           child: _buildCreatorFrosted(name, fallbackPhotoUrl),

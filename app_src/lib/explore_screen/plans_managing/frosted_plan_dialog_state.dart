@@ -1117,11 +1117,12 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final String name = widget.plan.creatorName ?? 'Creador';
     final String age = _creatorAge ?? '';
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         final creatorUid = widget.plan.createdBy;
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
         if (creatorUid.isNotEmpty && creatorUid != currentUid) {
-          UserInfoCheck.open(context, creatorUid);
+          await UserInfoCheck.open(context, creatorUid);
+          if (mounted) setState(() {});
         }
       },
       child: Padding(
