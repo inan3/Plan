@@ -1001,7 +1001,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         Positioned(
           top: 10,
           right: 10,
-          child: _buildAddMediaButton(),
+          child: _buildDeleteMediaButton(),
         ),
       ],
     );
@@ -1029,6 +1029,39 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         ),
       ),
     );
+  }
+
+  /// Botón para eliminar la imagen cargada
+  Widget _buildDeleteMediaButton() {
+    if (_selectedCroppedImages.isEmpty) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: _deleteSelectedMedia,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 40,
+            height: 40,
+            color: const ui.Color.fromARGB(255, 96, 94, 94).withOpacity(0.2),
+            child: const Icon(
+              Icons.delete,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Limpia las imágenes seleccionadas
+  void _deleteSelectedMedia() {
+    setState(() {
+      _selectedCroppedImages.clear();
+      _selectedOriginalImages.clear();
+      _currentPageIndex = 0;
+    });
   }
 
   /// Bloque para la sección multimedia
