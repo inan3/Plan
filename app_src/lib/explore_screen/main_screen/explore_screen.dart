@@ -211,18 +211,21 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Future<List<String>> _fetchUserIdsWithPlan(String planFilter) async {
+  Future<List<String>> _fetchUserIdsWithPlans(List<String> planFilters) async {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('plans').get();
-    List<String> uids = [];
+    Set<String> uids = {};
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
       final String planType = data['type']?.toString().toLowerCase() ?? '';
-      if (planType.contains(planFilter.toLowerCase().trim())) {
-        uids.add(data['createdBy'].toString());
+      for (var filter in planFilters) {
+        if (planType.contains(filter.toLowerCase().trim())) {
+          uids.add(data['createdBy'].toString());
+          break;
+        }
       }
     }
-    return uids;
+    return uids.toList();
   }
 
   Future<List<QueryDocumentSnapshot>> _fetchNearbyUsers() async {
@@ -268,16 +271,17 @@ class ExploreScreenState extends State<ExploreScreen> {
       return distanceA.compareTo(distanceB);
     });
 
-    final String? planFilter = (appliedFilters['planPredeterminado'] != null &&
-            (appliedFilters['planPredeterminado'] as String).trim().isNotEmpty)
-        ? appliedFilters['planPredeterminado'] as String
-        : (appliedFilters['planBusqueda'] != null &&
-                (appliedFilters['planBusqueda'] as String).trim().isNotEmpty
-            ? appliedFilters['planBusqueda'] as String
-            : null);
+    List<String> planFilters = [];
+    if (appliedFilters['selectedPlans'] != null) {
+      planFilters.addAll(List<String>.from(appliedFilters['selectedPlans']));
+    }
+    if (appliedFilters['planBusqueda'] != null &&
+        (appliedFilters['planBusqueda'] as String).trim().isNotEmpty) {
+      planFilters.add(appliedFilters['planBusqueda'] as String);
+    }
 
-    if (planFilter != null) {
-      final allowedUids = await _fetchUserIdsWithPlan(planFilter);
+    if (planFilters.isNotEmpty) {
+      final allowedUids = await _fetchUserIdsWithPlans(planFilters);
       validUsers = validUsers.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return allowedUids.contains(data['uid'].toString());
