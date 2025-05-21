@@ -98,6 +98,7 @@ class _SearcherState extends State<Searcher> {
       final List<SearchResultItem> finalResults = [];
 
       final Set<String> matchingPlanCreators = {};
+      final Set<String> allPlanCreators = {};
 
       // Buscar plan por ID exacto
       final planDocRef =
@@ -108,6 +109,7 @@ class _SearcherState extends State<Searcher> {
         final creator = data?['createdBy']?.toString();
         if (creator != null && creator.isNotEmpty) {
           matchingPlanCreators.add(creator);
+          allPlanCreators.add(creator);
         }
       }
 
@@ -116,13 +118,15 @@ class _SearcherState extends State<Searcher> {
           await FirebaseFirestore.instance.collection('plans').get();
       for (var planDoc in plansSnap.docs) {
         final pData = planDoc.data() as Map<String, dynamic>;
-        final typeLower =
-            (pData['typeLowercase'] ?? pData['type']?.toString().toLowerCase() ?? '')
-                .toString();
-        if (!typeLower.contains(queryLower)) continue;
         final creator = pData['createdBy']?.toString();
         if (creator != null && creator.isNotEmpty) {
-          matchingPlanCreators.add(creator);
+          allPlanCreators.add(creator);
+          final typeLower =
+              (pData['typeLowercase'] ?? pData['type']?.toString().toLowerCase() ?? '')
+                  .toString();
+          if (typeLower.contains(queryLower)) {
+            matchingPlanCreators.add(creator);
+          }
         }
       }
 
@@ -139,9 +143,10 @@ class _SearcherState extends State<Searcher> {
                 .toString();
 
         final bool nameMatches = nameLower.contains(queryLower);
-        final bool hasPlan = matchingPlanCreators.contains(userId);
+        final bool planMatches = matchingPlanCreators.contains(userId);
+        final bool hasPlan = allPlanCreators.contains(userId);
 
-        if (!nameMatches && !hasPlan) continue;
+        if (!nameMatches && !planMatches) continue;
 
         final userAge = data['age']?.toString() ?? '';
         final photoUrl = data['photoUrl'] ?? '';
