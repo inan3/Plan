@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Colores principales
+
+  static const Color planColor = Color(0xFF5D17EB);
   static const Color primary = Color(0xFF6200EA);
   static const Color primaryDark = Color(0xFF3700B3);
   static const Color primaryLight = Color.fromARGB(255, 56, 42, 255);

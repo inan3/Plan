@@ -8,13 +8,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../main/colors.dart'; // Define AppColors
-import '../../main/keys.dart';   // Contiene las claves APIKeys.androidApiKey y APIKeys.iosApiKey
+import '../../main/keys.dart'; // Contiene las claves APIKeys.androidApiKey y APIKeys.iosApiKey
 import '../../utils/plans_list.dart'; // Lista de planes
 
 // El diálogo acepta opcionalmente filtros iniciales para preservar el último estado.
 class ExploreScreenFilterDialog extends StatefulWidget {
   final Map<String, dynamic>? initialFilters;
-  const ExploreScreenFilterDialog({Key? key, this.initialFilters}) : super(key: key);
+  const ExploreScreenFilterDialog({Key? key, this.initialFilters})
+      : super(key: key);
 
   @override
   _ExploreScreenFilterDialogState createState() =>
@@ -126,18 +127,19 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     }
   }
 
-
-
   Future<void> _obtenerUbicacion() async {
     try {
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
       setState(() {
         _userPosition = position;
       });
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
-        String address = "${placemark.street ?? ''} ${placemark.subThoroughfare ?? ''}, ${placemark.thoroughfare ?? ''}, ${placemark.postalCode ?? ''}, ${placemark.locality ?? ''}, ${placemark.country ?? ''}";
+        String address =
+            "${placemark.street ?? ''} ${placemark.subThoroughfare ?? ''}, ${placemark.thoroughfare ?? ''}, ${placemark.postalCode ?? ''}, ${placemark.locality ?? ''}, ${placemark.country ?? ''}";
         setState(() {
           regionBusqueda = address;
           _regionController.text = address;
@@ -165,7 +167,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Permiso de ubicación'),
-          content: const Text('El permiso de ubicación ha sido denegado permanentemente. Ve a la configuración de la app para habilitarlo.'),
+          content: const Text(
+              'El permiso de ubicación ha sido denegado permanentemente. Ve a la configuración de la app para habilitarlo.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -196,8 +199,10 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       return;
     }
 
-    final String key = Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
-    final String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$key&language=es';
+    final String key =
+        Platform.isAndroid ? APIKeys.androidApiKey : APIKeys.iosApiKey;
+    final String url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$key&language=es';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -288,347 +293,355 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.lightLilac,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: AppColors.greyBorder),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Filtrar Planes',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.blue,
-                        ),
+              width: MediaQuery.of(context).size.width * 0.9,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.lightLilac,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: AppColors.greyBorder),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Filtrar Planes',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.planColor,
                       ),
-                      const Divider(
-                        color: Colors.black,
-                        thickness: 0.2,
-                        height: 20,
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: plans.map((plan) {
-                          final String name = plan['name'];
-                          final bool selected = _selectedPlans.contains(name);
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                if (selected) {
-                                  _selectedPlans.remove(name);
-                                } else {
-                                  _selectedPlans.add(name);
-                                }
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: selected ? AppColors.blue : AppColors.lightLilac,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: AppColors.greyBorder),
-                              ),
-                              child: Text(
-                                name,
-                                style: TextStyle(
-                                  color: selected ? Colors.white : Colors.black,
-                                  fontFamily: 'Inter-Regular',
-                                  fontSize: 14,
-                                  decoration: TextDecoration.none,
-                                ),
+                    ),
+                    const Divider(
+                      color: Colors.black,
+                      thickness: 0.2,
+                      height: 20,
+                    ),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: plans.map((plan) {
+                        final String name = plan['name'];
+                        final bool selected = _selectedPlans.contains(name);
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              if (selected) {
+                                _selectedPlans.remove(name);
+                              } else {
+                                _selectedPlans.add(name);
+                              }
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.planColor
+                                  : AppColors.lightLilac,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.greyBorder),
+                            ),
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                color: selected ? Colors.white : Colors.black,
+                                fontFamily: 'Inter-Regular',
+                                fontSize: 14,
+                                decoration: TextDecoration.none,
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      '- o -',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 10),
-                      const Text(
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      width: _dropdownWidth,
+                      child: TextField(
+                        style: const TextStyle(color: Colors.black),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.lightLilac,
+                          hintText: 'Busca por nombre...',
+                          hintStyle: const TextStyle(
+                            color: Colors.black54,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            planBusqueda = value;
+                          });
+                        },
+                      ),
+                    ),
+                    if (planBusqueda.isNotEmpty && planSugeridos.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        width: _dropdownWidth,
+                        decoration: BoxDecoration(
+                          color: AppColors.lightLilac,
+                          border: Border.all(color: AppColors.greyBorder),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: planSugeridos.map((plan) {
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  final name = plan['name'];
+                                  if (_selectedPlans.contains(name)) {
+                                    _selectedPlans.remove(name);
+                                  } else {
+                                    _selectedPlans.add(name);
+                                  }
+                                  _customPlan = null;
+                                  planBusqueda = '';
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                child: Text(
+                                  plan['name'],
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontFamily: 'Inter-Regular',
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    const Divider(
+                      color: Colors.black,
+                      thickness: 0.2,
+                      height: 20,
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '¿En qué región buscas planes?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: _dropdownWidth,
+                        maxWidth: regionFieldWidth,
+                      ),
+                      child: TextField(
+                        focusNode: _regionFocusNode,
+                        controller: _regionController,
+                        style: const TextStyle(color: Colors.black),
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.lightLilac,
+                          hintText: 'Ciudad, país...',
+                          hintStyle: const TextStyle(
+                            color: Colors.black54,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.my_location,
+                            color: Color.fromARGB(255, 175, 173, 173),
+                          ),
+                          suffixIcon: _regionController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Colors.black,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _regionController.clear();
+                                      regionBusqueda = '';
+                                      _regionPredictions = [];
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        onEditingComplete: () {
+                          if (_regionController.text.isNotEmpty) {
+                            _updateUserCoordinatesFromAddress(
+                                _regionController.text);
+                          }
+                        },
+                        onChanged: (value) {
+                          setState(() {
+                            regionBusqueda = value;
+                          });
+                          _fetchRegionPredictions(value);
+                        },
+                      ),
+                    ),
+                    if (_regionPredictions.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        width: _dropdownWidth,
+                        decoration: BoxDecoration(
+                          color: AppColors.lightLilac,
+                          border: Border.all(color: AppColors.greyBorder),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: _regionPredictions.map((prediction) {
+                            return ListTile(
+                              title: Text(
+                                prediction['description'],
+                                style: const TextStyle(color: Colors.black),
+                              ),
+                              onTap: () => _onRegionPredictionTap(prediction),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
                         '- o -',
                         style: TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: _dropdownWidth,
-                        child: TextField(
-                          style: const TextStyle(color: Colors.black),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: AppColors.lightLilac,
-                            hintText: 'Busca por nombre...',
-                            hintStyle: const TextStyle(
-                              color: Colors.black54,
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: locationAllowed
+                            ? AppColors.planColor
+                            : AppColors.lightLilac,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      onPressed: _requestLocationPermission,
+                      child: Text(
+                        'Tu ubicación actual',
+                        style: TextStyle(
+                          color: locationAllowed ? Colors.white : Colors.black,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const Divider(
+                      color: Colors.black,
+                      thickness: 0.2,
+                      height: 20,
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '¿Qué rango de edad?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RangeSlider(
+                            values: edadRange,
+                            min: 18,
+                            max: 100,
+                            divisions: 82,
+                            activeColor: AppColors.planColor,
+                            inactiveColor: Colors.black26,
+                            onChanged: (RangeValues values) {
+                              setState(() {
+                                edadRange = values;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightLilac,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              planBusqueda = value;
-                            });
-                          },
-                        ),
-                      ),
-                      if (planBusqueda.isNotEmpty && planSugeridos.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          width: _dropdownWidth,
-                          decoration: BoxDecoration(
-                            color: AppColors.lightLilac,
-                            border: Border.all(color: AppColors.greyBorder),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: planSugeridos.map((plan) {
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    final name = plan['name'];
-                                    if (_selectedPlans.contains(name)) {
-                                      _selectedPlans.remove(name);
-                                    } else {
-                                      _selectedPlans.add(name);
-                                    }
-                                    _customPlan = null;
-                                    planBusqueda = '';
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  child: Text(
-                                    plan['name'],
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontFamily: 'Inter-Regular',
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      const Divider(
-                        color: Colors.black,
-                        thickness: 0.2,
-                        height: 20,
-                      ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '¿En qué región buscas planes?',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: _dropdownWidth,
-                          maxWidth: regionFieldWidth,
-                        ),
-                        child: TextField(
-                          focusNode: _regionFocusNode,
-                          controller: _regionController,
-                          style: const TextStyle(color: Colors.black),
-                          maxLines: null,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: AppColors.lightLilac,
-                            hintText: 'Ciudad, país...',
-                            hintStyle: const TextStyle(
-                              color: Colors.black54,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.my_location,
-                              color: Color.fromARGB(255, 175, 173, 173),
-                            ),
-                            suffixIcon: _regionController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.clear,
-                                      color: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _regionController.clear();
-                                        regionBusqueda = '';
-                                        _regionPredictions = [];
-                                      });
-                                    },
-                                  )
-                                : null,
-                          ),
-                          onEditingComplete: () {
-                            if (_regionController.text.isNotEmpty) {
-                              _updateUserCoordinatesFromAddress(_regionController.text);
-                            }
-                          },
-                          onChanged: (value) {
-                            setState(() {
-                              regionBusqueda = value;
-                            });
-                            _fetchRegionPredictions(value);
-                          },
-                        ),
-                      ),
-                      if (_regionPredictions.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          width: _dropdownWidth,
-                          decoration: BoxDecoration(
-                            color: AppColors.lightLilac,
-                            border: Border.all(color: AppColors.greyBorder),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: _regionPredictions.map((prediction) {
-                              return ListTile(
-                                title: Text(
-                                  prediction['description'],
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                                onTap: () => _onRegionPredictionTap(prediction),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Text(
-                          '- o -',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: locationAllowed ? AppColors.blue : AppColors.lightLilac,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        onPressed: _requestLocationPermission,
-                        child: Text(
-                          'Tu ubicación actual',
-                          style: TextStyle(
-                            color: locationAllowed ? Colors.white : Colors.black,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      const Divider(
-                        color: Colors.black,
-                        thickness: 0.2,
-                        height: 20,
-                      ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '¿Qué rango de edad?',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RangeSlider(
-                              values: edadRange,
-                              min: 18,
-                              max: 100,
-                              divisions: 82,
-                              activeColor: AppColors.blue,
-                              inactiveColor: Colors.black26,
-                              onChanged: (RangeValues values) {
-                                setState(() {
-                                  edadRange = values;
-                                });
-                              },
+                            child: Text(
+                              "${edadRange.start.round()} - ${edadRange.end.round()}",
+                              style: const TextStyle(color: Colors.black),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.lightLilac,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                "${edadRange.start.round()} - ${edadRange.end.round()}",
-                                style: const TextStyle(color: Colors.black),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      // Botón de Limpiar Filtro
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
                         ),
-                        onPressed: _limpiarFiltros,
-                        child: const Text(
-                          'Limpiar Filtro',
-                          style: TextStyle(color: Colors.white),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Botón de Limpiar Filtro
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            child: const Text(
-                              'Cancelar',
-                              style: TextStyle(color: Colors.black),
-                            ),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.blue,
-                            ),
-                            onPressed: _aplicarFiltros,
-                            child: const Text(
-                              'Aceptar',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
+                      onPressed: _limpiarFiltros,
+                      child: const Text(
+                        'Limpiar Filtro',
+                        style: TextStyle(color: Colors.white),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          child: const Text(
+                            'Cancelar',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.planColor,
+                          ),
+                          onPressed: _aplicarFiltros,
+                          child: const Text(
+                            'Aceptar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
