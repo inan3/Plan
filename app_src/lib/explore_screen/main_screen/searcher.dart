@@ -224,7 +224,7 @@ class _SearcherState extends State<Searcher> {
     return Container(
       // Quitamos constraints de altura para que se ajuste dinámicamente
       decoration: BoxDecoration(
-        color: AppColors.searchLilac,
+        color: AppColors.popularBackground,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.shade400,
@@ -251,32 +251,44 @@ class _SearcherState extends State<Searcher> {
               : ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   itemCount: _results.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) => const SizedBox(height: 4),
                   itemBuilder: (context, index) {
                     final item = _results[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 6),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          radius: 20,
-                          backgroundImage: (item.avatarUrl.isNotEmpty)
-                              ? NetworkImage(item.avatarUrl)
-                              : null,
-                          backgroundColor: Colors.grey[300],
-                        ),
-                        title: Text(
-                          item.title,
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        subtitle: Text(
-                          item.subtitle,
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                        onTap: () => _onTapSearchItem(item),
+                    Widget tile = ListTile(
+                      dense: true,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 8.0),
+                      leading: CircleAvatar(
+                        radius: 20,
+                        backgroundImage: (item.avatarUrl.isNotEmpty)
+                            ? NetworkImage(item.avatarUrl)
+                            : null,
+                        backgroundColor: Colors.grey[300],
                       ),
+                      title: Text(
+                        item.title,
+                        style: const TextStyle(color: Colors.black),
+                      ),
+                      subtitle: Text(
+                        item.subtitle,
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                      onTap: () => _onTapSearchItem(item),
                     );
+
+                    if (!item.isUser) {
+                      tile = Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.planColor,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: tile,
+                      );
+                    }
+
+                    return tile;
                   },
                 ),
     );
