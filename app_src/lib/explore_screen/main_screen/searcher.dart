@@ -326,49 +326,25 @@ class _SearcherState extends State<Searcher> {
                         style: const TextStyle(color: Colors.black54),
                       ),
                       trailing: item.upcomingPlanId != null
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                InkWell(
-                                  onTap: () => _onPlanTap(item.upcomingPlanId!),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      border:
-                                          Border.all(color: AppColors.planColor),
-                                    ),
-                                    child: Text(
-                                      item.additionalPlans > 0
-                                          ? '${item.upcomingPlanName} +${item.additionalPlans}'
-                                          : item.upcomingPlanName!,
-                                      style: const TextStyle(
-                                        color: AppColors.planColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
+                          ? InkWell(
+                              onTap: () => _onPlanTap(item.upcomingPlanId!),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.planColor),
+                                ),
+                                child: Text(
+                                  item.additionalPlans > 0
+                                      ? '${item.upcomingPlanName} +${item.additionalPlans}'
+                                      : item.upcomingPlanName!,
+                                  style: const TextStyle(
+                                    color: AppColors.planColor,
+                                    fontSize: 12,
                                   ),
                                 ),
-                                const SizedBox(width: 6),
-                                InkWell(
-                                  onTap: () => _onPlanTap(item.upcomingPlanId!),
-                                  child: Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(30),
-                                      border:
-                                          Border.all(color: AppColors.planColor),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(30),
-                                      child:
-                                          Image.asset('assets/plan-sin-fondo.png'),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             )
                           : null,
                       onTap: () => _onTapSearchItem(item),
