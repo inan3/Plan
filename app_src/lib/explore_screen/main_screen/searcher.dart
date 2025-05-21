@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
+import '../../main/colors.dart';
 
 /// Representa un resultado de búsqueda (usuario o plan).
 class SearchResultItem {
@@ -91,19 +92,22 @@ class _SearcherState extends State<Searcher> {
     });
 
     try {
+      final queryLower = cleanedQuery.toLowerCase();
       final List<SearchResultItem> finalResults = [];
 
-      // 1) BUSCAR USUARIOS POR NOMBRE
-      final usersQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('name', isGreaterThanOrEqualTo: cleanedQuery)
-          .where('name', isLessThan: cleanedQuery + '\uf8ff')
-          .get();
+      // 1) BUSCAR USUARIOS POR NOMBRE (coincidencia parcial)
+      final usersSnap =
+          await FirebaseFirestore.instance.collection('users').get();
 
-      for (var doc in usersQuery.docs) {
+      for (var doc in usersSnap.docs) {
         final data = doc.data();
         final userId = data['uid'] ?? doc.id;
         final userName = data['name'] ?? 'Usuario';
+        final nameLower =
+            (data['nameLowercase'] ?? userName.toString().toLowerCase())
+                .toString();
+        if (!nameLower.contains(queryLower)) continue;
+
         final userAge = data['age']?.toString() ?? '';
         final photoUrl = data['photoUrl'] ?? '';
 
@@ -128,13 +132,16 @@ class _SearcherState extends State<Searcher> {
       }
 
       // 3) BUSCAR PLAN POR "type" (coincidencia parcial)
-      final plansQuery = await FirebaseFirestore.instance
-          .collection('plans')
-          .where('type', isGreaterThanOrEqualTo: cleanedQuery)
-          .where('type', isLessThan: cleanedQuery + '\uf8ff')
-          .get();
+      final plansSnap =
+          await FirebaseFirestore.instance.collection('plans').get();
 
-      for (var planDoc in plansQuery.docs) {
+      for (var planDoc in plansSnap.docs) {
+        final pData = planDoc.data() as Map<String, dynamic>;
+        final typeLower =
+            (pData['typeLowercase'] ?? pData['type']?.toString().toLowerCase() ?? '')
+                .toString();
+        if (!typeLower.contains(queryLower)) continue;
+
         final planItem = await _buildSearchItemFromPlan(planDoc);
         if (planItem != null) finalResults.add(planItem);
       }
@@ -217,7 +224,7 @@ class _SearcherState extends State<Searcher> {
     return Container(
       // Quitamos constraints de altura para que se ajuste dinámicamente
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.94),
+        color: AppColors.searchLilac,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.shade400,

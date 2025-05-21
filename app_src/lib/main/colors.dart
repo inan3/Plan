@@ -32,6 +32,7 @@ class AppColors {
 
   // Nuevos colores para filtros
   static const Color lightLilac = Color(0xFFF2E6FF);
+  static const Color searchLilac = Color(0xFFE6D3FF);
   static const Color lightTurquoise = Color(0xFFCCF1F0);
   static const Color greyBorder = Color(0xFFCCCCCC);
 

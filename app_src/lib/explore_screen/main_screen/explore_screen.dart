@@ -45,6 +45,7 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   String _searchQuery = '';
   bool _showSearchResults = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -57,6 +58,12 @@ class ExploreScreenState extends State<ExploreScreen> {
     ];
     _currentIndex = 0;
     _selectedIconIndex = 0;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _setStatusBarDark() {
@@ -125,13 +132,15 @@ class ExploreScreenState extends State<ExploreScreen> {
             notificationCountStream: _notificationCountStream(),
           ),
           _buildSearchContainer(),
-          if (_showSearchResults)
-            Searcher(
-              query: _searchQuery,
-              maxHeight: 300,
-              isVisible: true,
-            ),
-          Expanded(child: _buildNearbySection()),
+          Expanded(
+            child: _showSearchResults
+                ? Searcher(
+                    query: _searchQuery,
+                    maxHeight: double.infinity,
+                    isVisible: true,
+                  )
+                : _buildNearbySection(),
+          ),
         ],
       ),
     );
@@ -170,16 +179,41 @@ class ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
             Expanded(
-              child: TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _showSearchResults = value.isNotEmpty;
-                  });
-                },
-                decoration: const InputDecoration(
-                  hintText: 'Buscar...',
-                  border: InputBorder.none,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 230, 230, 230),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                            _showSearchResults = value.isNotEmpty;
+                          });
+                        },
+                        decoration: const InputDecoration(
+                          hintText: 'Buscar...',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ),
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20, color: Colors.black54),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                            _showSearchResults = false;
+                          });
+                        },
+                      ),
+                  ],
                 ),
               ),
             ),
