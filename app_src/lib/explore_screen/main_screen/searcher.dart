@@ -15,6 +15,7 @@ class SearchResultItem {
   final String avatarUrl;
   final bool isUser;
   final PlanModel? planData;
+  final bool hasMatchingPlan;
 
   SearchResultItem({
     required this.id,
@@ -23,6 +24,7 @@ class SearchResultItem {
     required this.avatarUrl,
     required this.isUser,
     this.planData,
+    this.hasMatchingPlan = false,
   });
 }
 
@@ -95,7 +97,36 @@ class _SearcherState extends State<Searcher> {
       final queryLower = cleanedQuery.toLowerCase();
       final List<SearchResultItem> finalResults = [];
 
-      // 1) BUSCAR USUARIOS POR NOMBRE (coincidencia parcial)
+      final Set<String> matchingPlanCreators = {};
+
+      // Buscar plan por ID exacto
+      final planDocRef =
+          FirebaseFirestore.instance.collection('plans').doc(idCandidate);
+      final planDocSnap = await planDocRef.get();
+      if (planDocSnap.exists) {
+        final data = planDocSnap.data() as Map<String, dynamic>?;
+        final creator = data?['createdBy']?.toString();
+        if (creator != null && creator.isNotEmpty) {
+          matchingPlanCreators.add(creator);
+        }
+      }
+
+      // Buscar plan por nombre (coincidencia parcial)
+      final plansSnap =
+          await FirebaseFirestore.instance.collection('plans').get();
+      for (var planDoc in plansSnap.docs) {
+        final pData = planDoc.data() as Map<String, dynamic>;
+        final typeLower =
+            (pData['typeLowercase'] ?? pData['type']?.toString().toLowerCase() ?? '')
+                .toString();
+        if (!typeLower.contains(queryLower)) continue;
+        final creator = pData['createdBy']?.toString();
+        if (creator != null && creator.isNotEmpty) {
+          matchingPlanCreators.add(creator);
+        }
+      }
+
+      // Buscar usuarios por nombre y/o por planes
       final usersSnap =
           await FirebaseFirestore.instance.collection('users').get();
 
@@ -106,7 +137,11 @@ class _SearcherState extends State<Searcher> {
         final nameLower =
             (data['nameLowercase'] ?? userName.toString().toLowerCase())
                 .toString();
-        if (!nameLower.contains(queryLower)) continue;
+
+        final bool nameMatches = nameLower.contains(queryLower);
+        final bool hasPlan = matchingPlanCreators.contains(userId);
+
+        if (!nameMatches && !hasPlan) continue;
 
         final userAge = data['age']?.toString() ?? '';
         final photoUrl = data['photoUrl'] ?? '';
@@ -118,32 +153,9 @@ class _SearcherState extends State<Searcher> {
             subtitle: 'Edad: $userAge',
             avatarUrl: photoUrl,
             isUser: true,
+            hasMatchingPlan: hasPlan,
           ),
         );
-      }
-
-      // 2) BUSCAR PLAN POR ID EXACTO
-      final planDocRef =
-          FirebaseFirestore.instance.collection('plans').doc(idCandidate);
-      final planDocSnap = await planDocRef.get();
-      if (planDocSnap.exists) {
-        final planItem = await _buildSearchItemFromPlan(planDocSnap);
-        if (planItem != null) finalResults.add(planItem);
-      }
-
-      // 3) BUSCAR PLAN POR "type" (coincidencia parcial)
-      final plansSnap =
-          await FirebaseFirestore.instance.collection('plans').get();
-
-      for (var planDoc in plansSnap.docs) {
-        final pData = planDoc.data() as Map<String, dynamic>;
-        final typeLower =
-            (pData['typeLowercase'] ?? pData['type']?.toString().toLowerCase() ?? '')
-                .toString();
-        if (!typeLower.contains(queryLower)) continue;
-
-        final planItem = await _buildSearchItemFromPlan(planDoc);
-        if (planItem != null) finalResults.add(planItem);
       }
 
       if (mounted && _lastQuery == cleanedQuery) {
@@ -250,13 +262,7 @@ class _SearcherState extends State<Searcher> {
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   itemCount: _results.length,
-                  separatorBuilder: (context, index) {
-                    // Más pegados si el siguiente es usuario
-                    if (index < _results.length - 1 && _results[index + 1].isUser) {
-                      return const SizedBox(height: 2);
-                    }
-                    return const SizedBox(height: 2);
-                  },
+                  separatorBuilder: (context, index) => const SizedBox(height: 2),
                   itemBuilder: (context, index) {
                     final item = _results[index];
 
@@ -272,32 +278,28 @@ class _SearcherState extends State<Searcher> {
                       ),
                       title: Text(
                         item.title,
-                        style: TextStyle(
-                          color: item.isUser ? Colors.black : Colors.white,
-                        ),
+                        style: const TextStyle(color: Colors.black),
                       ),
                       subtitle: Text(
                         item.subtitle,
-                        style: TextStyle(
-                          color: item.isUser ? Colors.black54 : Colors.white70,
-                        ),
+                        style: const TextStyle(color: Colors.black54),
                       ),
+                      trailing: item.hasMatchingPlan
+                          ? Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: AppColors.planColor),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(30),
+                                child: Image.asset('assets/plan-sin-fondo.png'),
+                              ),
+                            )
+                          : null,
                       onTap: () => _onTapSearchItem(item),
                     );
-
-                    if (!item.isUser) {
-                      tile = Container(
-                        // Reducimos ancho del container de planes (centrado)
-                        width: MediaQuery.of(context).size.width * 0.85,
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: AppColors.planColor,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: tile,
-                      );
-                    }
-
                     return tile;
                   },
                 ),
