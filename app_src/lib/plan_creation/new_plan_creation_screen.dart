@@ -7,7 +7,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:video_player/video_player.dart';
 
 import '../main/colors.dart';
 import '../models/plan_model.dart';
@@ -53,19 +52,6 @@ Future<String?> uploadImageToFirebase(Uint8List imageData, String fileName) asyn
   }
 }
 
-/// Función para subir el video a Firebase Storage y obtener la URL.
-Future<String?> uploadVideo(Uint8List videoData, String planId) async {
-  try {
-    final ref =
-        FirebaseStorage.instance.ref().child('plan_backgrounds/$planId.mp4');
-    await ref.putData(videoData, SettableMetadata(contentType: 'video/mp4'));
-    String downloadURL = await ref.getDownloadURL();
-    return downloadURL;
-  } catch (error) {
-    print('Error al subir el video: $error');
-    return null;
-  }
-}
 
 ///
 /// [NewPlanCreationScreen.showPopup] soporta MODO EDICIÓN o CREACIÓN
@@ -175,12 +161,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   double? _latitude;
   double? _longitude;
 
-  // Sección de "fondo del plan": hasta 3 imágenes + 1 video
+  // Sección de "fondo del plan": solo 1 imagen
   final List<Uint8List> _selectedCroppedImages = [];
   final List<Uint8List> _selectedOriginalImages = [];
-  Uint8List? _selectedVideo;
 
-  // Para el carrusel de imágenes + video
+  // Para el carrusel de imágenes
   late PageController _pageController;
   int _currentPageIndex = 0;
 
@@ -256,9 +241,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
-  // Cantidad de contenidos (imágenes recortadas + posible video)
-  int get totalMedia =>
-      _selectedCroppedImages.length + (_selectedVideo == null ? 0 : 1);
+  // Cantidad de contenidos (imágenes recortadas)
+  int get totalMedia => _selectedCroppedImages.length;
 
   void _toggleDropdown() {
     _isDropdownOpen ? _closeDropdown() : _openDropdown();
@@ -434,7 +418,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Popup para subir imagen o video
+  /// Popup para subir la imagen
   void _showMediaSelectionPopup() {
     showGeneralDialog(
       context: context,
@@ -506,39 +490,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   ),
                 ),
               ),
-              const Divider(
-                color: Colors.white54,
-                height: 20,
-                thickness: 0.3,
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickVideo(ImageSource.gallery);
-                },
-                child: const Text(
-                  "Video (galería)",
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickVideo(ImageSource.camera);
-                },
-                child: const Text(
-                  "Video (cámara)",
-                  style: TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -548,8 +499,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   /// Elegir imagen y recortarla
   Future<void> _pickImage(ImageSource source) async {
-    if (_selectedCroppedImages.length >= 3) {
-      _showErrorPopup("Solo se permiten máximo 3 imágenes.");
+    if (_selectedCroppedImages.length >= 1) {
+      _showErrorPopup("Solo se permite subir una imagen.");
       return;
     }
     final picker = ImagePicker();
@@ -572,30 +523,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
-  /// Elegir video (máx 1), revisando duración máx 15 seg
-  Future<void> _pickVideo(ImageSource source) async {
-    if (_selectedVideo != null) {
-      _showErrorPopup("Ya has seleccionado un video. Máximo 1 video.");
-      return;
-    }
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickVideo(source: source);
-    if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      final controller = VideoPlayerController.file(file);
-      await controller.initialize();
-      final duration = controller.value.duration.inSeconds;
-      controller.dispose();
-      if (duration > 15) {
-        _showErrorPopup("El video excede los 15 segundos permitidos.");
-        return;
-      }
-      final videoData = await pickedFile.readAsBytes();
-      setState(() {
-        _selectedVideo = videoData;
-      });
-    }
-  }
 
   /// Error popup
   void _showErrorPopup(String message) {
@@ -1023,7 +950,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     }
   }
 
-  /// Carrusel para las imágenes recortadas y video
+  /// Carrusel para la imagen recortada
   Widget _buildMediaCarousel() {
     return Stack(
       children: [
@@ -1035,35 +962,17 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               setState(() => _currentPageIndex = index);
             },
             itemBuilder: (context, index) {
-              final isImageSection = (index < _selectedCroppedImages.length);
-              if (isImageSection) {
-                final croppedImageData = _selectedCroppedImages[index];
-                return GestureDetector(
-                  onTap: () => _onTapCroppedImage(index),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Image.memory(
-                      croppedImageData,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              } else {
-                // Vista previa de video (ícono de play)
-                return ClipRRect(
+              final croppedImageData = _selectedCroppedImages[index];
+              return GestureDetector(
+                onTap: () => _onTapCroppedImage(index),
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(30),
-                  child: Container(
-                    color: Colors.black54,
-                    child: const Center(
-                      child: Icon(
-                        Icons.play_circle_fill,
-                        color: Colors.white,
-                        size: 64,
-                      ),
-                    ),
+                  child: Image.memory(
+                    croppedImageData,
+                    fit: BoxFit.cover,
                   ),
-                );
-              }
+                ),
+              );
             },
           ),
         ),
@@ -1098,8 +1007,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
   }
 
-  /// Botón para añadir más imágenes o video
+  /// Botón para añadir la imagen
   Widget _buildAddMediaButton() {
+    if (_selectedCroppedImages.length >= 1) return const SizedBox.shrink();
     return GestureDetector(
       onTap: _showMediaSelectionPopup,
       child: ClipRRect(
@@ -1304,7 +1214,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Sección imágenes/video
+                      // Sección imagen
                       _buildImageAndVideoSection(),
                       const SizedBox(height: 20),
 
@@ -1770,14 +1680,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         }
       }
 
-      // Subir video
-      String? uploadedVideo;
-      if (_selectedVideo != null) {
-        final videoUrl = await uploadVideo(_selectedVideo!, "${planId}_vid");
-        if (videoUrl != null) {
-          uploadedVideo = videoUrl;
-        }
-      }
 
       // Fecha/hora de inicio
       DateTime finalStartDateTime;
@@ -1845,7 +1747,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           originalImages: uploadedOriginalImages.isNotEmpty
               ? uploadedOriginalImages
               : (widget.planToEdit!.originalImages ?? []),
-          videoUrl: uploadedVideo ?? widget.planToEdit!.videoUrl,
+          videoUrl: widget.planToEdit!.videoUrl,
         );
       } else {
         // -------------------------------------------------------------------
@@ -1871,7 +1773,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           special_plan: 0,
           images: uploadedCroppedImages,
           originalImages: uploadedOriginalImages,
-          videoUrl: uploadedVideo,
+          videoUrl: null,
         );
       }
 

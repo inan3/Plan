@@ -38,7 +38,7 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
   /// Controlador del scroll
   final ScrollController _scrollController = ScrollController();
 
-  /// Lista de URLs de las fotos/videos (memorias) guardadas en Firestore
+  /// Lista de URLs de las fotos (memorias) guardadas en Firestore
   List<String> _memories = [];
 
   @override
@@ -111,16 +111,26 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   /// Seleccionar varias imágenes (galería)
   Future<void> _pickMultipleImages() async {
+    if (_memories.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solo puedes subir 3 fotos.')),
+      );
+      return;
+    }
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: true,
       );
       if (result != null && result.files.isNotEmpty) {
+        final remaining = 3 - _memories.length;
         setState(() => _isLoading = true);
+        int count = 0;
         for (var file in result.files) {
           if (file.path != null) {
             await _uploadMemory(File(file.path!));
+            count++;
+            if (count >= remaining) break;
           }
         }
         setState(() => _isLoading = false);
@@ -134,6 +144,12 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   /// Tomar foto con la cámara
   Future<void> _takePhoto() async {
+    if (_memories.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solo puedes subir 3 fotos.')),
+      );
+      return;
+    }
     try {
       final pickedFile = await _imagePicker.pickImage(
         source: ImageSource.camera,
@@ -341,7 +357,7 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
       return const Padding(
         padding: EdgeInsets.all(16.0),
         child: Text(
-          "Añade fotos y videos para rememorar este plan.",
+          "Añade fotos para rememorar este plan.",
           style: TextStyle(color: Colors.black54),
           textAlign: TextAlign.center,
         ),
