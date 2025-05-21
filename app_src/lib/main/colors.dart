@@ -28,6 +28,11 @@ class AppColors {
   static const Color createPlanButton = Color.fromARGB(255, 197, 38, 38);
   static const Color joinPlanButton = Color.fromARGB(255, 38, 61, 236);
 
+  // Nuevos colores para filtros
+  static const Color lightLilac = Color(0xFFF2E6FF);
+  static const Color lightTurquoise = Color(0xFFCCF1F0);
+  static const Color greyBorder = Color(0xFFCCCCCC);
+
   // Color blanco (faltante)
   static const Color white = Color(0xFFFFFFFF);
   static const Color popularBackground = Color(0xFFF3F4F6); // Gris claro

@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
@@ -26,10 +24,8 @@ class ExploreScreenFilterDialog extends StatefulWidget {
 class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     with SingleTickerProviderStateMixin {
   String planBusqueda = '';
-  String? _selectedPlan;
+  List<String> _selectedPlans = [];
   String? _customPlan;
-  String? _selectedIconAsset;
-  IconData? _selectedIconData;
 
   String regionBusqueda = '';
   final TextEditingController _regionController = TextEditingController();
@@ -45,11 +41,6 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
 
   late AnimationController _animationController;
 
-  final LayerLink _layerLink = LayerLink();
-  final GlobalKey _dropdownKey = GlobalKey();
-  OverlayEntry? _overlayEntry;
-  bool _isDropdownOpen = false;
-
   static const double _dropdownWidth = 260;
 
   @override
@@ -59,8 +50,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     if (widget.initialFilters != null) {
       final init = widget.initialFilters!;
       planBusqueda = init['planBusqueda'] ?? '';
-      _selectedPlan = init['planPredeterminado'];
-      _selectedIconAsset = init['planIcon']; // Se carga el icono si existe
+      if (init['selectedPlans'] != null) {
+        _selectedPlans = List<String>.from(init['selectedPlans']);
+      }
       regionBusqueda = init['regionBusqueda'] ?? '';
       edadRange = RangeValues(
         (init['edadMin'] ?? 18).toDouble(),
@@ -106,7 +98,6 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     _animationController.dispose();
     _regionController.dispose();
     _regionFocusNode.dispose();
-    _overlayEntry?.remove();
     super.dispose();
   }
 
@@ -135,98 +126,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
     }
   }
 
-  OverlayEntry _createOverlayEntry() {
-    RenderBox renderBox = _dropdownKey.currentContext!.findRenderObject() as RenderBox;
-    final size = renderBox.size;
-    return OverlayEntry(
-      builder: (context) => Positioned(
-        width: _dropdownWidth,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(0, size.height + 5),
-          child: Material(
-            color: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                    border: Border.all(
-                      color: const Color.fromARGB(255, 151, 121, 215),
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  constraints: const BoxConstraints(maxHeight: 280),
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: plans.map<Widget>((plan) {
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedPlan = plan['name'];
-                              _selectedIconAsset = plan['icon'];
-                              _customPlan = null;
-                            });
-                            _toggleDropdown();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                if (plan['icon'] != null)
-                                  SvgPicture.asset(
-                                    plan['icon'],
-                                    width: 28,
-                                    height: 28,
-                                    color: Colors.white,
-                                  ),
-                                if (plan['icon'] != null)
-                                  const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    plan['name'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Inter-Regular',
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  void _toggleDropdown() {
-    if (_isDropdownOpen) {
-      _overlayEntry?.remove();
-      _overlayEntry = null;
-    } else {
-      _overlayEntry = _createOverlayEntry();
-      Overlay.of(context)?.insert(_overlayEntry!);
-    }
-    setState(() {
-      _isDropdownOpen = !_isDropdownOpen;
-    });
-  }
 
   Future<void> _obtenerUbicacion() async {
     try {
@@ -328,14 +228,13 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   }
 
   // Al aplicar filtros se devuelve un mapa que incluye:
-  // - planBusqueda o planPredeterminado (para filtrar plan)
+  // - planBusqueda y selectedPlans (para filtrar plan)
   // - regionBusqueda (texto a mostrar)
   // - edadMin, edadMax, genero y userCoordinates (para cálculos internos)
   void _aplicarFiltros() {
     Navigator.of(context).pop({
       'planBusqueda': planBusqueda,
-      'planPredeterminado': _selectedPlan,
-      'planIcon': _selectedIconAsset, // Se incluye el icono asociado
+      'selectedPlans': _selectedPlans,
       'regionBusqueda': regionBusqueda,
       'edadMin': edadRange.start,
       'edadMax': edadRange.end,
@@ -353,8 +252,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   void _limpiarFiltros() {
     setState(() {
       planBusqueda = '';
-      _selectedPlan = null;
-      _selectedIconAsset = null;
+      _selectedPlans.clear();
       _customPlan = null;
       regionBusqueda = '';
       _regionController.clear();
@@ -371,7 +269,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
           }).toList()
         : [];
 
-    final textStyle = const TextStyle(color: Colors.white, fontSize: 14);
+    final textStyle = const TextStyle(color: Colors.black, fontSize: 14);
     final textPainter = TextPainter(
       text: TextSpan(text: _regionController.text, style: textStyle),
       textDirection: TextDirection.ltr,
@@ -389,15 +287,13 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
           behavior: HitTestBehavior.opaque,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
-              child: Container(
+            child: Container(
                 width: MediaQuery.of(context).size.width * 0.9,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 68, 66, 66).withOpacity(0.2),
+                  color: AppColors.lightLilac,
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(color: AppColors.greyBorder),
                 ),
                 child: SingleChildScrollView(
                   child: Column(
@@ -433,80 +329,51 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         },
                       ),
                       const Divider(
-                        color: Colors.white,
+                        color: Colors.black,
                         thickness: 0.2,
                         height: 20,
                       ),
-                      CompositedTransformTarget(
-                        key: _dropdownKey,
-                        link: _layerLink,
-                        child: GestureDetector(
-                          onTap: _toggleDropdown,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: BackdropFilter(
-                              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                width: _dropdownWidth,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                                  border: Border.all(
-                                    color: const Color.fromARGB(255, 151, 121, 215),
-                                  ),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          if (_selectedIconAsset != null)
-                                            SvgPicture.asset(
-                                              _selectedIconAsset!,
-                                              width: 28,
-                                              height: 28,
-                                              color: Colors.white,
-                                            ),
-                                          if (_selectedIconData != null)
-                                            Icon(
-                                              _selectedIconData,
-                                              color: Colors.white,
-                                            ),
-                                          if (_selectedIconAsset != null || _selectedIconData != null)
-                                            const SizedBox(width: 10),
-                                          Flexible(
-                                            child: Text(
-                                              _customPlan ?? _selectedPlan ?? "Elige un plan",
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontFamily: 'Inter-Regular',
-                                                fontSize: 14,
-                                                decoration: TextDecoration.none,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Color.fromARGB(255, 227, 225, 231),
-                                    ),
-                                  ],
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: plans.map((plan) {
+                          final String name = plan['name'];
+                          final bool selected = _selectedPlans.contains(name);
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                if (selected) {
+                                  _selectedPlans.remove(name);
+                                } else {
+                                  _selectedPlans.add(name);
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selected ? AppColors.lightTurquoise : AppColors.lightLilac,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.greyBorder),
+                              ),
+                              child: Text(
+                                name,
+                                style: TextStyle(
+                                  color: selected ? AppColors.blue : Colors.black,
+                                  fontFamily: 'Inter-Regular',
+                                  fontSize: 14,
+                                  decoration: TextDecoration.none,
                                 ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        }).toList(),
                       ),
                       const SizedBox(height: 10),
                       const Text(
                         '- o -',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -514,13 +381,13 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       Container(
                         width: _dropdownWidth,
                         child: TextField(
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.2),
+                            fillColor: AppColors.lightLilac,
                             hintText: 'Busca por nombre...',
                             hintStyle: const TextStyle(
-                              color: Color.fromARGB(255, 207, 193, 193),
+                              color: Colors.black54,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -538,10 +405,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           margin: const EdgeInsets.only(top: 8),
                           width: _dropdownWidth,
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                            border: Border.all(
-                              color: const Color.fromARGB(255, 151, 121, 215),
-                            ),
+                            color: AppColors.lightLilac,
+                            border: Border.all(color: AppColors.greyBorder),
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Column(
@@ -550,38 +415,25 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                               return GestureDetector(
                                 onTap: () {
                                   setState(() {
-                                    _selectedPlan = plan['name'];
-                                    _selectedIconAsset = plan['icon'];
+                                    final name = plan['name'];
+                                    if (_selectedPlans.contains(name)) {
+                                      _selectedPlans.remove(name);
+                                    } else {
+                                      _selectedPlans.add(name);
+                                    }
                                     _customPlan = null;
                                     planBusqueda = '';
                                   });
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  child: Row(
-                                    children: [
-                                      if (plan['icon'] != null)
-                                        SvgPicture.asset(
-                                          plan['icon'],
-                                          width: 28,
-                                          height: 28,
-                                          color: Colors.white,
-                                        ),
-                                      if (plan['icon'] != null)
-                                        const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          plan['name'],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontFamily: 'Inter-Regular',
-                                            fontSize: 14,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                                  child: Text(
+                                    plan['name'],
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontFamily: 'Inter-Regular',
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               );
@@ -589,7 +441,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           ),
                         ),
                       const Divider(
-                        color: Colors.white,
+                        color: Colors.black,
                         thickness: 0.2,
                         height: 20,
                       ),
@@ -599,7 +451,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           '¿En qué región buscas planes?',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                         ),
                       ),
@@ -612,14 +464,14 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         child: TextField(
                           focusNode: _regionFocusNode,
                           controller: _regionController,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black),
                           maxLines: null,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.2),
+                            fillColor: AppColors.lightLilac,
                             hintText: 'Ciudad, país...',
                             hintStyle: const TextStyle(
-                              color: Color.fromARGB(255, 207, 193, 193),
+                              color: Colors.black54,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -632,7 +484,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                                 ? IconButton(
                                     icon: const Icon(
                                       Icons.clear,
-                                      color: Colors.white,
+                                      color: Colors.black,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -662,10 +514,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           margin: const EdgeInsets.only(top: 8),
                           width: _dropdownWidth,
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
-                            border: Border.all(
-                              color: const Color.fromARGB(255, 151, 121, 215),
-                            ),
+                            color: AppColors.lightLilac,
+                            border: Border.all(color: AppColors.greyBorder),
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Column(
@@ -674,7 +524,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                               return ListTile(
                                 title: Text(
                                   prediction['description'],
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(color: Colors.black),
                                 ),
                                 onTap: () => _onRegionPredictionTap(prediction),
                               );
@@ -686,7 +536,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         child: Text(
                           '- o -',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -710,7 +560,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         ),
                       ),
                       const Divider(
-                        color: Colors.white,
+                        color: Colors.black,
                         thickness: 0.2,
                         height: 20,
                       ),
@@ -720,7 +570,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           '¿Qué rango de edad?',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                         ),
                       ),
@@ -734,7 +584,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                               max: 100,
                               divisions: 82,
                               activeColor: AppColors.blue,
-                              inactiveColor: Colors.white.withOpacity(0.3),
+                              inactiveColor: Colors.black26,
                               onChanged: (RangeValues values) {
                                 setState(() {
                                   edadRange = values;
@@ -745,18 +595,15 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           const SizedBox(width: 8),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: BackdropFilter(
-                              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  "${edadRange.start.round()} - ${edadRange.end.round()}",
-                                  style: const TextStyle(color: Colors.white),
-                                ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.lightLilac,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                "${edadRange.start.round()} - ${edadRange.end.round()}",
+                                style: const TextStyle(color: Colors.black),
                               ),
                             ),
                           ),
