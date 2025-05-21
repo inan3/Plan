@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-// Importa tu modelo de plan y tus pantallas/dialogs donde quieras navegar
+// Importa tu modelo de plan y pantallas/dialogs
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
@@ -199,9 +199,7 @@ class _SearcherState extends State<Searcher> {
     String startDateString = '';
     if (planModel.startTimestamp != null) {
       final d = planModel.startTimestamp!;
-      startDateString = '${d.day.toString().padLeft(2, '0')}/'
-          '${d.month.toString().padLeft(2, '0')}/'
-          '${d.year}';
+      startDateString = '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
     }
 
     return SearchResultItem(
@@ -222,7 +220,6 @@ class _SearcherState extends State<Searcher> {
     }
 
     return Container(
-      // Quitamos constraints de altura para que se ajuste dinámicamente
       decoration: BoxDecoration(
         color: AppColors.popularBackground,
         boxShadow: [
@@ -253,13 +250,19 @@ class _SearcherState extends State<Searcher> {
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   itemCount: _results.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 4),
+                  separatorBuilder: (context, index) {
+                    // Más pegados si el siguiente es usuario
+                    if (index < _results.length - 1 && _results[index + 1].isUser) {
+                      return const SizedBox(height: 2);
+                    }
+                    return const SizedBox(height: 2);
+                  },
                   itemBuilder: (context, index) {
                     final item = _results[index];
+
                     Widget tile = ListTile(
                       dense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8.0),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
                       leading: CircleAvatar(
                         radius: 20,
                         backgroundImage: (item.avatarUrl.isNotEmpty)
@@ -269,17 +272,24 @@ class _SearcherState extends State<Searcher> {
                       ),
                       title: Text(
                         item.title,
-                        style: const TextStyle(color: Colors.black),
+                        style: TextStyle(
+                          color: item.isUser ? Colors.black : Colors.white,
+                        ),
                       ),
                       subtitle: Text(
                         item.subtitle,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(
+                          color: item.isUser ? Colors.black54 : Colors.white70,
+                        ),
                       ),
                       onTap: () => _onTapSearchItem(item),
                     );
 
                     if (!item.isUser) {
                       tile = Container(
+                        // Reducimos ancho del container de planes (centrado)
+                        width: MediaQuery.of(context).size.width * 0.85,
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
                         decoration: BoxDecoration(
                           color: AppColors.planColor,
                           borderRadius: BorderRadius.circular(30),
@@ -315,9 +325,8 @@ class _SearcherState extends State<Searcher> {
     }
   }
 
-  /// Ejemplo de función para cargar participantes de un plan
-  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
-      PlanModel plan) async {
+  /// Carga participantes de un plan
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(PlanModel plan) async {
     final List<Map<String, dynamic>> res = [];
     final uids = plan.participants ?? [];
     for (final uid in uids) {
