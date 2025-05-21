@@ -16,6 +16,9 @@ class SearchResultItem {
   final bool isUser;
   final PlanModel? planData;
   final bool hasMatchingPlan;
+  final String? upcomingPlanId;
+  final String? upcomingPlanName;
+  final int additionalPlans;
 
   SearchResultItem({
     required this.id,
@@ -25,6 +28,9 @@ class SearchResultItem {
     required this.isUser,
     this.planData,
     this.hasMatchingPlan = false,
+    this.upcomingPlanId,
+    this.upcomingPlanName,
+    this.additionalPlans = 0,
   });
 }
 
@@ -99,6 +105,9 @@ class _SearcherState extends State<Searcher> {
 
       final Set<String> matchingPlanCreators = {};
       final Set<String> allPlanCreators = {};
+      final Map<String, List<Map<String, dynamic>>> upcomingPlansByCreator = {};
+
+      final now = DateTime.now();
 
       // Buscar plan por ID exacto
       final planDocRef =
@@ -107,19 +116,26 @@ class _SearcherState extends State<Searcher> {
       if (planDocSnap.exists) {
         final data = planDocSnap.data() as Map<String, dynamic>?;
         final creator = data?['createdBy']?.toString();
-        if (creator != null && creator.isNotEmpty) {
+        final ts = data?['start_timestamp'] as Timestamp?;
+        if (creator != null && creator.isNotEmpty && ts != null && ts.toDate().isAfter(now)) {
           matchingPlanCreators.add(creator);
           allPlanCreators.add(creator);
+          upcomingPlansByCreator.putIfAbsent(creator, () => []).add({
+            'id': planDocSnap.id,
+            'type': data?['type'] ?? '',
+            'start': ts.toDate(),
+          });
         }
       }
 
-      // Buscar plan por nombre (coincidencia parcial)
+      // Buscar plan por nombre (coincidencia parcial) y registrar futuros
       final plansSnap =
           await FirebaseFirestore.instance.collection('plans').get();
       for (var planDoc in plansSnap.docs) {
         final pData = planDoc.data() as Map<String, dynamic>;
         final creator = pData['createdBy']?.toString();
-        if (creator != null && creator.isNotEmpty) {
+        final ts = pData['start_timestamp'] as Timestamp?;
+        if (creator != null && creator.isNotEmpty && ts != null && ts.toDate().isAfter(now)) {
           allPlanCreators.add(creator);
           final typeLower =
               (pData['typeLowercase'] ?? pData['type']?.toString().toLowerCase() ?? '')
@@ -127,6 +143,11 @@ class _SearcherState extends State<Searcher> {
           if (typeLower.contains(queryLower)) {
             matchingPlanCreators.add(creator);
           }
+          upcomingPlansByCreator.putIfAbsent(creator, () => []).add({
+            'id': planDoc.id,
+            'type': pData['type'] ?? '',
+            'start': ts.toDate(),
+          });
         }
       }
 
@@ -151,6 +172,18 @@ class _SearcherState extends State<Searcher> {
         final userAge = data['age']?.toString() ?? '';
         final photoUrl = data['photoUrl'] ?? '';
 
+        final userPlans = upcomingPlansByCreator[userId] ?? [];
+        userPlans.sort((a, b) => (a['start'] as DateTime)
+            .compareTo(b['start'] as DateTime));
+        String? nextPlanId;
+        String? nextPlanName;
+        int additional = 0;
+        if (userPlans.isNotEmpty) {
+          nextPlanId = userPlans.first['id'] as String?;
+          nextPlanName = userPlans.first['type'] as String?;
+          additional = userPlans.length - 1;
+        }
+
         finalResults.add(
           SearchResultItem(
             id: userId,
@@ -159,6 +192,9 @@ class _SearcherState extends State<Searcher> {
             avatarUrl: photoUrl,
             isUser: true,
             hasMatchingPlan: hasPlan,
+            upcomingPlanId: nextPlanId,
+            upcomingPlanName: nextPlanName,
+            additionalPlans: additional,
           ),
         );
       }
@@ -289,18 +325,50 @@ class _SearcherState extends State<Searcher> {
                         item.subtitle,
                         style: const TextStyle(color: Colors.black54),
                       ),
-                      trailing: item.hasMatchingPlan
-                          ? Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: AppColors.planColor),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(30),
-                                child: Image.asset('assets/plan-sin-fondo.png'),
-                              ),
+                      trailing: item.upcomingPlanId != null
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () => _onPlanTap(item.upcomingPlanId!),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border:
+                                          Border.all(color: AppColors.planColor),
+                                    ),
+                                    child: Text(
+                                      item.additionalPlans > 0
+                                          ? '${item.upcomingPlanName} +${item.additionalPlans}'
+                                          : item.upcomingPlanName!,
+                                      style: const TextStyle(
+                                        color: AppColors.planColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () => _onPlanTap(item.upcomingPlanId!),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(30),
+                                      border:
+                                          Border.all(color: AppColors.planColor),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(30),
+                                      child:
+                                          Image.asset('assets/plan-sin-fondo.png'),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             )
                           : null,
                       onTap: () => _onTapSearchItem(item),
@@ -330,6 +398,31 @@ class _SearcherState extends State<Searcher> {
         ),
       );
     }
+  }
+
+  /// Abre el detalle del plan a partir de su id
+  Future<void> _onPlanTap(String planId) async {
+    PlanModel plan;
+    if (widget.fetchFullPlanById != null) {
+      plan = await widget.fetchFullPlanById!(planId);
+    } else {
+      final doc = await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(planId)
+          .get();
+      if (!doc.exists || doc.data() == null) return;
+      plan = PlanModel.fromMap({'id': doc.id, ...doc.data()!});
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FrostedPlanDialog(
+          plan: plan,
+          fetchParticipants: _fetchAllPlanParticipants,
+        ),
+      ),
+    );
   }
 
   /// Carga participantes de un plan
