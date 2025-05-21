@@ -299,34 +299,13 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          final animValue = _animationController.value;
-                          return ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return LinearGradient(
-                                colors: [AppColors.blue, Colors.white, AppColors.blue],
-                                stops: [
-                                  (animValue - 0.1).clamp(0.0, 1.0),
-                                  animValue.clamp(0.0, 1.0),
-                                  (animValue + 0.1).clamp(0.0, 1.0),
-                                ],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ).createShader(bounds);
-                            },
-                            blendMode: BlendMode.srcIn,
-                            child: const Text(
-                              'Filtrar Planes',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          );
-                        },
+                      const Text(
+                        'Filtrar Planes',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.blue,
+                        ),
                       ),
                       const Divider(
                         color: Colors.black,
@@ -352,14 +331,14 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: selected ? AppColors.lightTurquoise : AppColors.lightLilac,
+                                color: selected ? AppColors.blue : AppColors.lightLilac,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: AppColors.greyBorder),
                               ),
                               child: Text(
                                 name,
                                 style: TextStyle(
-                                  color: selected ? AppColors.blue : Colors.black,
+                                  color: selected ? Colors.white : Colors.black,
                                   fontFamily: 'Inter-Regular',
                                   fontSize: 14,
                                   decoration: TextDecoration.none,
@@ -544,17 +523,17 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       const SizedBox(height: 10),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: locationAllowed ? AppColors.blue : AppColors.blue.withOpacity(0.5),
+                          backgroundColor: locationAllowed ? AppColors.blue : AppColors.lightLilac,
                           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         onPressed: _requestLocationPermission,
-                        child: const Text(
+                        child: Text(
                           'Tu ubicación actual',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: locationAllowed ? Colors.white : Colors.black,
                             fontSize: 16,
                           ),
                         ),
@@ -631,7 +610,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           TextButton(
                             child: const Text(
                               'Cancelar',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black),
                             ),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
