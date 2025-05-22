@@ -17,13 +17,20 @@ class _MarkerData {
 
 class PlansInMapScreen {
   final Set<String> _userIdsWithActivePlan = {};
+  final Map<String, Marker> _planMarkerCache = {};
+  final Map<String, Map<String, dynamic>> _planDataCache = {};
+  String? _lastCreatedAt;
 
   Future<Set<Marker>> loadPlansMarkers(
     BuildContext context, {
     Map<String, dynamic>? filters,
   }) async {
-    final qs = await FirebaseFirestore.instance.collection('plans').get();
-    final Set<Marker> markers = {};
+    Query query = FirebaseFirestore.instance.collection('plans').orderBy('createdAt');
+    if (_lastCreatedAt != null) {
+      query = query.startAfter([_lastCreatedAt]);
+    }
+
+    final qs = await query.get();
     final now = DateTime.now();
     for (var doc in qs.docs) {
       final data = doc.data() as Map<String, dynamic>?;
@@ -32,7 +39,17 @@ class PlansInMapScreen {
       if (sp != 0) continue;
       final startTs = data['start_timestamp'];
       if (startTs == null) continue;
-      if (!(startTs as Timestamp).toDate().isAfter(now)) continue;
+      final startDate = (startTs as Timestamp).toDate();
+      final DateTime? filterDate = filters?['planDate'];
+      if (filterDate != null) {
+        if (startDate.year != filterDate.year ||
+            startDate.month != filterDate.month ||
+            startDate.day != filterDate.day) {
+          continue;
+        }
+      } else {
+        if (!startDate.isAfter(now)) continue;
+      }
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
       final type = data['type'] as String?;
@@ -63,51 +80,88 @@ class PlansInMapScreen {
       final _MarkerData iconData =
           await _buildPlanMarker(photoUrl, type, showText: true);
       _userIdsWithActivePlan.add(uid);
-      markers.add(
-        Marker(
-          markerId: MarkerId(doc.id),
-          position: pos,
-          icon: iconData.icon,
-          anchor: iconData.anchor,
-          onTap: () {
-            showGeneralDialog(
-              context: context,
-              barrierDismissible: true,
-              barrierLabel: 'Cerrar',
-              barrierColor: Colors.black.withOpacity(0.4),
-              transitionDuration: const Duration(milliseconds: 300),
-              pageBuilder: (context, animation, secondaryAnimation) {
-                final size = MediaQuery.of(context).size;
-                final plan = PlanModel.fromMap(data)
-                  ..creatorProfilePic = photoUrl;
-                return Align(
-                  alignment: Alignment.center,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: SizedBox(
-                      width: size.width,
-                      height: size.height,
-                      child: FrostedPlanDialog(
-                        plan: plan,
-                        fetchParticipants: _fetchPlanParticipants,
-                      ),
+      final marker = Marker(
+        markerId: MarkerId(doc.id),
+        position: pos,
+        icon: iconData.icon,
+        anchor: iconData.anchor,
+        onTap: () {
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: 'Cerrar',
+            barrierColor: Colors.black.withOpacity(0.4),
+            transitionDuration: const Duration(milliseconds: 300),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              final size = MediaQuery.of(context).size;
+              final plan = PlanModel.fromMap(data)
+                ..creatorProfilePic = photoUrl;
+              return Align(
+                alignment: Alignment.center,
+                child: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: size.width,
+                    height: size.height,
+                    child: FrostedPlanDialog(
+                      plan: plan,
+                      fetchParticipants: _fetchPlanParticipants,
                     ),
                   ),
-                );
-              },
-              transitionBuilder: (context, anim1, anim2, child) {
-                return FadeTransition(
-                  opacity:
-                      CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-                  child: child,
-                );
-              },
-            );
-          },
-        ),
+                ),
+              );
+            },
+            transitionBuilder: (context, anim1, anim2, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+                child: child,
+              );
+            },
+          );
+        },
       );
+      _planMarkerCache[doc.id] = marker;
+      _planDataCache[doc.id] = data;
+      final String? createdAt = data['createdAt'] as String?;
+      if (createdAt != null) {
+        if (_lastCreatedAt == null || createdAt.compareTo(_lastCreatedAt!) > 0) {
+          _lastCreatedAt = createdAt;
+        }
+      }
     }
-    return markers;
+    final Set<Marker> result = {};
+    _planMarkerCache.forEach((id, marker) {
+      final data = _planDataCache[id];
+      if (data == null) return;
+      final DateTime? filterDate = filters?['planDate'];
+      final Timestamp? ts = data['start_timestamp'];
+      DateTime? startDate = ts?.toDate();
+      if (filterDate != null) {
+        if (startDate == null ||
+            startDate.year != filterDate.year ||
+            startDate.month != filterDate.month ||
+            startDate.day != filterDate.day) {
+          return;
+        }
+      }
+      if (filters != null) {
+        final List<String> selected =
+            (filters['selectedPlans'] as List<dynamic>?)
+                    ?.map((e) => e.toString().toLowerCase())
+                    .toList() ??
+                [];
+        final String searchText =
+            (filters['planBusqueda'] ?? '').toString().toLowerCase();
+        final String type = data['type']?.toString() ?? '';
+        if (selected.isNotEmpty) {
+          if (!selected.contains(type.toLowerCase())) return;
+        } else if (searchText.isNotEmpty) {
+          if (!type.toLowerCase().contains(searchText)) return;
+        }
+      }
+      result.add(marker);
+    });
+    return result;
   }
 
   Future<Set<Marker>> loadUsersWithoutPlansMarkers(

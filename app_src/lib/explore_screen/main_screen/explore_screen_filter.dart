@@ -40,6 +40,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   bool locationAllowed = false;
   RangeValues edadRange = const RangeValues(18, 60);
   int generoSeleccionado = 2;
+  DateTime? _selectedDate;
 
   // Posición del usuario para cálculos internos
   Position? _userPosition;
@@ -64,6 +65,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
         (init['edadMax'] ?? 60).toDouble(),
       );
       generoSeleccionado = init['genero'] ?? 2;
+      if (init['planDate'] != null && init['planDate'] is DateTime) {
+        _selectedDate = init['planDate'] as DateTime;
+      }
       if (init['userCoordinates'] != null) {
         _userPosition = Position(
           latitude: init['userCoordinates']['lat'],
@@ -245,6 +249,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       'planBusqueda': planBusqueda,
       'selectedPlans': _selectedPlans,
       'regionBusqueda': regionBusqueda,
+      'planDate': _selectedDate,
       'edadMin': edadRange.start,
       'edadMax': edadRange.end,
       'genero': generoSeleccionado,
@@ -266,6 +271,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       regionBusqueda = '';
       _regionController.clear();
       edadRange = const RangeValues(18, 60);
+      _selectedDate = null;
     });
   }
 
@@ -557,18 +563,64 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           ),
                         ),
                       ),
-                      const Divider(
-                        color: Colors.black,
-                        thickness: 0.2,
-                        height: 20,
-                      ),
-                    ],
+                    const Divider(
+                      color: Colors.black,
+                      thickness: 0.2,
+                      height: 20,
+                    ),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        '¿Qué rango de edad?',
+                        '¿Para qué fecha buscas planes?',
                         style: TextStyle(
                           fontSize: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.planColor,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      onPressed: () async {
+                        final DateTime now = DateTime.now();
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate ?? now,
+                          firstDate: now,
+                          lastDate: now.add(const Duration(days: 365)),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _selectedDate = picked;
+                          });
+                        }
+                      },
+                      child: Text(
+                        _selectedDate != null
+                            ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                            : 'Selecciona una fecha',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const Divider(
+                      color: Colors.black,
+                      thickness: 0.2,
+                      height: 20,
+                    ),
+                  ],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '¿Qué rango de edad?',
+                      style: TextStyle(
+                        fontSize: 16,
                           color: Colors.black,
                         ),
                       ),

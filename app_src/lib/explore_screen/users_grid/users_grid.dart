@@ -33,6 +33,15 @@ class UsersGrid extends StatefulWidget {
 
 class _UsersGridState extends State<UsersGrid> {
   final Map<String, Future<List<PlanModel>>> _plansCache = {};
+  final Map<String, Future<Map<String, dynamic>>> _userCache = {};
+
+  Future<Map<String, dynamic>> _fetchUserData(String uid) {
+    return _userCache.putIfAbsent(uid, () async {
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      return doc.data() as Map<String, dynamic>? ?? {};
+    });
+  }
   // ──────────────────────────────────────────────────────────────────────────
   //  HELPERS DE BLOQUEO
   // ──────────────────────────────────────────────────────────────────────────
@@ -171,9 +180,8 @@ class _UsersGridState extends State<UsersGrid> {
       );
     }
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchUserData(uid),
       builder: (context, userSnap) {
         if (userSnap.connectionState == ConnectionState.waiting) {
           return const SizedBox(
@@ -183,12 +191,11 @@ class _UsersGridState extends State<UsersGrid> {
             ),
           );
         }
-        if (!userSnap.hasData || !userSnap.data!.exists) {
+        if (!userSnap.hasData) {
           return const SizedBox(height: 0);
         }
 
-        final liveData =
-            userSnap.data!.data() as Map<String, dynamic>? ?? userData;
+        final liveData = {...userData, ...userSnap.data!};
 
         return FutureBuilder<List<PlanModel>>(
           future: _plansCache.putIfAbsent(uid, () => fetchUserPlans(uid)),
