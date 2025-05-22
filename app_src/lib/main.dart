@@ -154,6 +154,7 @@ class _MyAppState extends State<MyApp> {
     if (!kIsWeb) {
       _intentSub = ReceiveSharingIntent.instance
           .getMediaStream()
+          .listen(_onMedia); // ← ahora devuelve StreamSubscription
 
       ReceiveSharingIntent.instance.getInitialMedia().then((files) {
         if (files.isNotEmpty) _onMedia(files);
