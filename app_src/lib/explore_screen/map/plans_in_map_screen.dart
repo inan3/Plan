@@ -9,6 +9,12 @@ import '../../main/colors.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../models/plan_model.dart';
 
+class _MarkerData {
+  final BitmapDescriptor icon;
+  final Offset anchor;
+  const _MarkerData(this.icon, this.anchor);
+}
+
 class PlansInMapScreen {
   final Set<String> _userIdsWithActivePlan = {};
 
@@ -54,13 +60,15 @@ class PlansInMapScreen {
       final photoUrl = await _getUserProfilePhoto(uid);
       if (photoUrl == null) continue;
       final pos = LatLng(lat, lng);
-      final icon = await _buildPlanMarker(photoUrl, type, showText: true);
+      final _MarkerData iconData =
+          await _buildPlanMarker(photoUrl, type, showText: true);
       _userIdsWithActivePlan.add(uid);
       markers.add(
         Marker(
           markerId: MarkerId(doc.id),
           position: pos,
-          icon: icon,
+          icon: iconData.icon,
+          anchor: iconData.anchor,
           onTap: () {
             showGeneralDialog(
               context: context,
@@ -119,12 +127,13 @@ class PlansInMapScreen {
       if (lat == null || lng == null) continue;
       final photoUrl = data['photoUrl'] as String? ?? '';
       final pos = LatLng(lat, lng);
-      final icon = await _buildNoPlanMarker(photoUrl);
+      final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
       markers.add(
         Marker(
           markerId: MarkerId('noPlanUser_$uid'),
           position: pos,
-          icon: icon,
+          icon: iconData.icon,
+          anchor: iconData.anchor,
           onTap: () {},
         ),
       );
@@ -183,7 +192,7 @@ class PlansInMapScreen {
     throw Exception("No se pudo descargar imagen");
   }
 
-  Future<BitmapDescriptor> _buildPlanMarker(
+  Future<_MarkerData> _buildPlanMarker(
     String photoUrl,
     String planType, {
     bool showText = true,
@@ -265,13 +274,14 @@ class PlansInMapScreen {
       final img = await pic.toImage(mw.toInt(), mh.toInt());
       final bd = await img.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = bd!.buffer.asUint8List();
-      return BitmapDescriptor.fromBytes(pngBytes);
+      final icon = BitmapDescriptor.fromBytes(pngBytes);
+      return _MarkerData(icon, Offset(0.5, cy / mh));
     } catch (_) {
-      return BitmapDescriptor.defaultMarker;
+      return const _MarkerData(BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
     }
   }
 
-  Future<BitmapDescriptor> _buildNoPlanMarker(String photoUrl) async {
+  Future<_MarkerData> _buildNoPlanMarker(String photoUrl) async {
     try {
       // Aumentamos el tamaño base del marcador de usuario sin plan para que la
       // imagen no se muestre achatada en vertical.
@@ -320,9 +330,10 @@ class PlansInMapScreen {
       final img = await pic.toImage(sz.toInt(), sz.toInt());
       final bd = await img.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = bd!.buffer.asUint8List();
-      return BitmapDescriptor.fromBytes(pngBytes);
+      final icon = BitmapDescriptor.fromBytes(pngBytes);
+      return _MarkerData(icon, const Offset(0.5, 0.5));
     } catch (_) {
-      return BitmapDescriptor.defaultMarker;
+      return const _MarkerData(BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
     }
   }
 }
