@@ -14,8 +14,12 @@ import '../../utils/plans_list.dart'; // Lista de planes
 // El diálogo acepta opcionalmente filtros iniciales para preservar el último estado.
 class ExploreScreenFilterDialog extends StatefulWidget {
   final Map<String, dynamic>? initialFilters;
-  const ExploreScreenFilterDialog({Key? key, this.initialFilters})
-      : super(key: key);
+  final bool showRegionFilter;
+  const ExploreScreenFilterDialog({
+    Key? key,
+    this.initialFilters,
+    this.showRegionFilter = true,
+  }) : super(key: key);
 
   @override
   _ExploreScreenFilterDialogState createState() =>
@@ -433,129 +437,132 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       thickness: 0.2,
                       height: 20,
                     ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '¿En qué región buscas planes?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black,
+                    if (widget.showRegionFilter) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '¿En qué región buscas planes?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: _dropdownWidth,
-                        maxWidth: regionFieldWidth,
-                      ),
-                      child: TextField(
-                        focusNode: _regionFocusNode,
-                        controller: _regionController,
-                        style: const TextStyle(color: Colors.black),
-                        maxLines: null,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: AppColors.lightLilac,
-                          hintText: 'Ciudad, país...',
-                          hintStyle: const TextStyle(
-                            color: Colors.black54,
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: _dropdownWidth,
+                          maxWidth: regionFieldWidth,
+                        ),
+                        child: TextField(
+                          focusNode: _regionFocusNode,
+                          controller: _regionController,
+                          style: const TextStyle(color: Colors.black),
+                          maxLines: null,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.lightLilac,
+                            hintText: 'Ciudad, país...',
+                            hintStyle: const TextStyle(
+                              color: Colors.black54,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.my_location,
+                              color: Color.fromARGB(255, 175, 173, 173),
+                            ),
+                            suffixIcon: _regionController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      color: Colors.black,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _regionController.clear();
+                                        regionBusqueda = '';
+                                        _regionPredictions = [];
+                                      });
+                                    },
+                                  )
+                                : null,
                           ),
-                          border: OutlineInputBorder(
+                          onEditingComplete: () {
+                            if (_regionController.text.isNotEmpty) {
+                              _updateUserCoordinatesFromAddress(
+                                  _regionController.text);
+                            }
+                          },
+                          onChanged: (value) {
+                            setState(() {
+                              regionBusqueda = value;
+                            });
+                            _fetchRegionPredictions(value);
+                          },
+                        ),
+                      ),
+                      if (_regionPredictions.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          width: _dropdownWidth,
+                          decoration: BoxDecoration(
+                            color: AppColors.lightLilac,
+                            border: Border.all(color: AppColors.greyBorder),
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          prefixIcon: const Icon(
-                            Icons.my_location,
-                            color: Color.fromARGB(255, 175, 173, 173),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _regionPredictions.map((prediction) {
+                              return ListTile(
+                                title: Text(
+                                  prediction['description'],
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                                onTap: () => _onRegionPredictionTap(prediction),
+                              );
+                            }).toList(),
                           ),
-                          suffixIcon: _regionController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear,
-                                    color: Colors.black,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _regionController.clear();
-                                      regionBusqueda = '';
-                                      _regionPredictions = [];
-                                    });
-                                  },
-                                )
-                              : null,
                         ),
-                        onEditingComplete: () {
-                          if (_regionController.text.isNotEmpty) {
-                            _updateUserCoordinatesFromAddress(
-                                _regionController.text);
-                          }
-                        },
-                        onChanged: (value) {
-                          setState(() {
-                            regionBusqueda = value;
-                          });
-                          _fetchRegionPredictions(value);
-                        },
-                      ),
-                    ),
-                    if (_regionPredictions.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        width: _dropdownWidth,
-                        decoration: BoxDecoration(
-                          color: AppColors.lightLilac,
-                          border: Border.all(color: AppColors.greyBorder),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: _regionPredictions.map((prediction) {
-                            return ListTile(
-                              title: Text(
-                                prediction['description'],
-                                style: const TextStyle(color: Colors.black),
-                              ),
-                              onTap: () => _onRegionPredictionTap(prediction),
-                            );
-                          }).toList(),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Text(
+                          '- o -',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Text(
-                        '- o -',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: locationAllowed
+                              ? AppColors.planColor
+                              : AppColors.lightLilac,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: _requestLocationPermission,
+                        child: Text(
+                          'Tu ubicación actual',
+                          style: TextStyle(
+                            color:
+                                locationAllowed ? Colors.white : Colors.black,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: locationAllowed
-                            ? AppColors.planColor
-                            : AppColors.lightLilac,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
+                      const Divider(
+                        color: Colors.black,
+                        thickness: 0.2,
+                        height: 20,
                       ),
-                      onPressed: _requestLocationPermission,
-                      child: Text(
-                        'Tu ubicación actual',
-                        style: TextStyle(
-                          color: locationAllowed ? Colors.white : Colors.black,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const Divider(
-                      color: Colors.black,
-                      thickness: 0.2,
-                      height: 20,
-                    ),
+                    ],
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -652,15 +659,20 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   }
 }
 
-Future<Map<String, dynamic>?> showExploreFilterDialog(BuildContext context,
-    {Map<String, dynamic>? initialFilters}) {
+Future<Map<String, dynamic>?> showExploreFilterDialog(
+    BuildContext context,
+    {Map<String, dynamic>? initialFilters,
+    bool showRegionFilter = true}) {
   return showDialog<Map<String, dynamic>>(
     context: context,
     barrierDismissible: true,
     builder: (context) => Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(10),
-      child: ExploreScreenFilterDialog(initialFilters: initialFilters),
+      child: ExploreScreenFilterDialog(
+        initialFilters: initialFilters,
+        showRegionFilter: showRegionFilter,
+      ),
     ),
   );
 }

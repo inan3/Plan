@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import '../../main/keys.dart';
 import 'plans_in_map_screen.dart';
+import '../main_screen/explore_screen_filter.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -32,6 +33,7 @@ class MapScreenState extends State<MapScreen> {
   List<Marker> _allMarkers = [];
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
+  Map<String, dynamic> _appliedFilters = {};
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(41.3851, 2.1734),
@@ -85,13 +87,14 @@ class MapScreenState extends State<MapScreen> {
           ),
         );
       }
-      await _loadMarkers();
+      await _loadMarkers(filters: _appliedFilters);
     }
   }
 
-  Future<void> _loadMarkers() async {
+  Future<void> _loadMarkers({Map<String, dynamic>? filters}) async {
     final plansLoader = PlansInMapScreen();
-    final planMarkers = await plansLoader.loadPlansMarkers(context);
+    final planMarkers =
+        await plansLoader.loadPlansMarkers(context, filters: filters);
     // Only display markers for users that have upcoming plans. Users without
     // future plans should not appear on the map.
     _allMarkers = [...planMarkers];
@@ -215,6 +218,20 @@ class MapScreenState extends State<MapScreen> {
     } catch (_) {}
   }
 
+  Future<void> _onFilterPressed() async {
+    final result = await showExploreFilterDialog(
+      context,
+      initialFilters: _appliedFilters,
+      showRegionFilter: false,
+    );
+    if (result != null) {
+      setState(() {
+        _appliedFilters = result;
+      });
+      await _loadMarkers(filters: _appliedFilters);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -258,31 +275,61 @@ class MapScreenState extends State<MapScreen> {
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    style: const TextStyle(color: Colors.black),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar dirección...',
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.grey),
-                              onPressed: () {
-                                setState(() {
-                                  _searchController.clear();
-                                  _predictions = [];
-                                });
-                              },
-                            )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 15,
-                        horizontal: 20,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          style: const TextStyle(color: Colors.black),
+                          decoration: InputDecoration(
+                            hintText: 'Buscar dirección o planes...',
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            prefixIcon:
+                                const Icon(Icons.search, color: Colors.grey),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon:
+                                        const Icon(Icons.clear, color: Colors.grey),
+                                    onPressed: () {
+                                      setState(() {
+                                        _searchController.clear();
+                                        _predictions = [];
+                                      });
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                              horizontal: 20,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      IconButton(
+                        icon: ShaderMask(
+                          shaderCallback: (Rect bounds) {
+                            return const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color.fromARGB(255, 13, 32, 53),
+                                Color.fromARGB(255, 72, 38, 38),
+                                Color(0xFF12232E),
+                              ],
+                            ).createShader(bounds);
+                          },
+                          blendMode: BlendMode.srcIn,
+                          child: Image.asset(
+                            'assets/filter.png',
+                            width: 24,
+                            height: 24,
+                          ),
+                        ),
+                        onPressed: _onFilterPressed,
+                      ),
+                    ],
                   ),
                 ),
                 if (_predictions.isNotEmpty)
