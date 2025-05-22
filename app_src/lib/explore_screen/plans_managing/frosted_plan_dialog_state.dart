@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
@@ -1261,11 +1262,20 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundImage:
-                  (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
-                      ? NetworkImage(widget.plan.creatorProfilePic!)
-                      : null,
               backgroundColor: Colors.blueGrey[400],
+              child: ClipOval(
+                child: (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
+                    ? CachedNetworkImage(
+                        imageUrl: widget.plan.creatorProfilePic!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                        errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.white),
+                      )
+                    : const Icon(Icons.person, color: Colors.white),
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(

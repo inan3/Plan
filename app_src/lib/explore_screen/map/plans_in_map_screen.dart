@@ -32,17 +32,20 @@ class PlansInMapScreen {
       final uid = data['createdBy'] as String?;
       if (lat == null || lng == null || type == null || uid == null) continue;
       if (filters != null) {
-        if (filters['planPredeterminado'] != null &&
-            filters['planPredeterminado'].toString().isNotEmpty) {
-          if (type.toLowerCase() !=
-              filters['planPredeterminado'].toString().toLowerCase()) {
+        final List<String> selected =
+            (filters['selectedPlans'] as List<dynamic>?)
+                    ?.map((e) => e.toString().toLowerCase())
+                    .toList() ??
+                [];
+        final String searchText =
+            (filters['planBusqueda'] ?? '').toString().toLowerCase();
+
+        if (selected.isNotEmpty) {
+          if (!selected.contains(type.toLowerCase())) {
             continue;
           }
-        } else if (filters['planBusqueda'] != null &&
-            filters['planBusqueda'].toString().isNotEmpty) {
-          if (!type
-              .toLowerCase()
-              .contains(filters['planBusqueda'].toString().toLowerCase())) {
+        } else if (searchText.isNotEmpty) {
+          if (!type.toLowerCase().contains(searchText)) {
             continue;
           }
         }
