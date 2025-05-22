@@ -1253,7 +1253,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
         if (creatorUid.isNotEmpty && creatorUid != currentUid) {
           await UserInfoCheck.open(context, creatorUid);
-          if (mounted) setState(() {});
+          if (mounted) await _fetchCreatorInfo();
         }
       },
       child: Padding(
