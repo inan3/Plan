@@ -192,7 +192,14 @@ class PlansInMapScreen {
           targetWidth: 256, targetHeight: 256);
       final frame = await codec.getNextFrame();
       final avatar = frame.image;
-      const double mw = 120, padding = 4, fs = 20, tm = 10, avatarArea = 110;
+      // Ajustamos las dimensiones del marcador para que el avatar no se
+      // vea comprimido verticalmente en el mapa. Se incrementa la zona
+      // destinada al avatar y su radio para mejorar la proporción final.
+      const double mw = 140,
+          padding = 4,
+          fs = 20,
+          tm = 10,
+          avatarArea = 130;
       double textH = 0;
       TextPainter? tp;
       if (showText) {
@@ -229,7 +236,7 @@ class PlansInMapScreen {
         tp.paint(canvas, Offset(tx, ty));
       }
       final cy = (showText ? textH : 0) + avatarArea / 2;
-      const cr = 40.0;
+      const cr = 50.0;
       final center = Offset(mw / 2, cy);
       final clipPath = Path()
         ..addOval(Rect.fromCircle(center: center, radius: cr));
@@ -264,7 +271,9 @@ class PlansInMapScreen {
 
   Future<BitmapDescriptor> _buildNoPlanMarker(String photoUrl) async {
     try {
-      const double sz = 100, r = 40;
+      // Aumentamos el tamaño base del marcador de usuario sin plan para que la
+      // imagen no se muestre achatada en vertical.
+      const double sz = 120, r = 50;
       Uint8List? bytes;
       if (photoUrl.isNotEmpty) {
         bytes = await _downloadImageAsBytes(photoUrl);
