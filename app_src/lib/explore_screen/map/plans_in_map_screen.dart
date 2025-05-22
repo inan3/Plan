@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../models/plan_model.dart';
@@ -199,7 +200,9 @@ class PlansInMapScreen {
           text: TextSpan(
             text: planType,
             style: const TextStyle(
-                fontSize: fs, color: Colors.black, fontWeight: FontWeight.bold),
+                fontSize: fs,
+                color: Colors.white,
+                fontWeight: FontWeight.bold),
           ),
           textDirection: TextDirection.ltr,
           textAlign: TextAlign.center,
@@ -215,10 +218,11 @@ class PlansInMapScreen {
         final ty = tm;
         final bgRect = Rect.fromLTWH(tx - padding, ty - padding,
             tp.width + 2 * padding, tp.height + 2 * padding);
-        final rrect = RRect.fromRectAndRadius(bgRect, const Radius.circular(8));
-        canvas.drawRRect(rrect, Paint()..color = Colors.white);
+        final rrect =
+            RRect.fromRectAndRadius(bgRect, const Radius.circular(30));
+        canvas.drawRRect(rrect, Paint()..color = AppColors.planColor);
         final border = Paint()
-          ..color = Colors.orange
+          ..color = AppColors.greyBorder
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1;
         canvas.drawRRect(rrect, border);
