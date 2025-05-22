@@ -224,7 +224,6 @@ mixin AnswerAMessageMixin<T extends StatefulWidget> on State<T> {
                   final text = messageData['text'] ?? '';
                   if (text.toString().isNotEmpty) {
                     Clipboard.setData(ClipboardData(text: text));
-                    debugPrint('¡Mensaje copiado al portapapeles!');
                   }
                 },
               ),
@@ -239,7 +238,6 @@ mixin AnswerAMessageMixin<T extends StatefulWidget> on State<T> {
                   if (onDelete != null) {
                     onDelete();
                   } else {
-                    debugPrint('El usuario quiere eliminar el mensaje');
                   }
                 },
               ),

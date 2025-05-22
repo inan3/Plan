@@ -68,7 +68,6 @@ class PlanShareSheetState extends State<PlanShareSheet> {
       _following = await _fetchUsersData(followedUids);
       setState(() {});
     } catch (e) {
-      debugPrint("Error al cargar followers/following: $e");
     }
   }
 

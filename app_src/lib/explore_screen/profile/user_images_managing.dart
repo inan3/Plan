@@ -27,7 +27,6 @@ class UserImagesManaging {
           .get();
       return doc.data()?['photoUrl'] ?? "";
     } catch (e) {
-      debugPrint("Error al cargar la foto de perfil: $e");
       return null;
     }
   }
@@ -159,7 +158,6 @@ class UserImagesManaging {
       final covers = doc.data()?['coverPhotos'] as List<dynamic>?;
       return (covers != null) ? List<String>.from(covers) : [];
     } catch (e) {
-      debugPrint("Error al cargar imágenes de portada: $e");
       return [];
     }
   }
@@ -308,7 +306,6 @@ class UserImagesManaging {
       final photos = doc.data()?['additionalPhotos'] as List<dynamic>?;
       return (photos != null) ? List<String>.from(photos) : [];
     } catch (e) {
-      debugPrint("Error al cargar fotos adicionales: $e");
       return [];
     }
   }

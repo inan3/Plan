@@ -121,13 +121,10 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
             _predictionList = data['predictions'];
           });
         } else {
-          debugPrint('Error en la API de Autocomplete: ${data['status']}');
         }
       } else {
-        debugPrint('Error HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error al obtener predicciones: $e');
     }
   }
 
@@ -147,19 +144,15 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
             _predictionList = [];
             _searchController.text = _selectedAddress!;
           });
-          debugPrint('Lugar seleccionado: $_selectedAddress ($_selectedLocation)');
           // Centrar la cámara en la ubicación seleccionada
           _mapController?.animateCamera(
             CameraUpdate.newLatLng(_selectedLocation!),
           );
         } else {
-          debugPrint('Error en la API de Place Details: ${data['status']}');
         }
       } else {
-        debugPrint('Error HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error al obtener detalles del lugar: $e');
     }
   }
 
@@ -196,7 +189,6 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
       String address;
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('Respuesta de reverse geocoding: $data');
         if (data['status'] == 'OK' &&
             data['results'] != null &&
             (data['results'] as List).isNotEmpty) {
@@ -213,12 +205,10 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
         _selectedAddress = address;
         _searchController.text = address;
       });
-      debugPrint('Ubicación actual: $_selectedAddress ($_selectedLocation)');
       _mapController?.animateCamera(
         CameraUpdate.newLatLng(_selectedLocation!),
       );
     } catch (e) {
-      debugPrint("Error al obtener la ubicación: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error al obtener la ubicación")),
       );
@@ -238,7 +228,6 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
     widget.plan.location = _selectedAddress!;
     widget.plan.latitude = _selectedLocation!.latitude;
     widget.plan.longitude = _selectedLocation!.longitude;
-    debugPrint('Ubicación confirmada: ${widget.plan.location} (${widget.plan.latitude}, ${widget.plan.longitude})');
     Navigator.pop(context, widget.plan);
   }
 
@@ -291,7 +280,6 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
                         _mapController?.animateCamera(
                           CameraUpdate.newLatLng(pos),
                         );
-                        debugPrint('Ubicación seleccionada manualmente: $pos');
                       },
                       initialCameraPosition: CameraPosition(
                         target: _initialPosition,

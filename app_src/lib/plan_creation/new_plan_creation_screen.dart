@@ -47,7 +47,6 @@ Future<String?> uploadImageToFirebase(Uint8List imageData, String fileName) asyn
     String downloadURL = await ref.getDownloadURL();
     return downloadURL;
   } catch (error) {
-    print('Error al subir la imagen: $error');
     return null;
   }
 }
@@ -1813,7 +1812,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       // Regresar y cerrar el popup
       Navigator.pop(context);
     } catch (error) {
-      print("Error al crear/editar plan: $error");
       _showErrorPopup("Ocurrió un error al procesar el plan.");
     }
   }

@@ -64,7 +64,6 @@ class _SearcherState extends State<Searcher> {
     super.initState();
     if (widget.query.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        debugPrint('Texto introducido en el buscador (init): ${widget.query}');
         _performSearch(widget.query);
       });
     }
@@ -74,7 +73,6 @@ class _SearcherState extends State<Searcher> {
   void didUpdateWidget(covariant Searcher oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.query != oldWidget.query) {
-      debugPrint("Texto introducido en el buscador: ${widget.query}");
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _performSearch(widget.query);
       });
@@ -83,7 +81,6 @@ class _SearcherState extends State<Searcher> {
 
   /// Realiza la búsqueda de usuarios y planes en Firestore.
   Future<void> _performSearch(String rawQuery) async {
-    debugPrint("Entramos a _performSearch con: '$rawQuery'");
 
     final cleanedQuery = rawQuery.trim();
     if (cleanedQuery.isEmpty) {
@@ -206,7 +203,6 @@ class _SearcherState extends State<Searcher> {
         });
       }
     } catch (e) {
-      debugPrint("Error al buscar: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }

@@ -16,6 +16,5 @@ Future<void> openLocation({
     await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
   } else {
     // Fallback
-    print("No se pudo abrir la ubicación en Google Maps");
   }
 }

@@ -63,7 +63,6 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
         height: 48,
       );
     } catch (e) {
-      print("Error cargando ícono de marcador: $e");
       _markerIcon = BitmapDescriptor.defaultMarker;
     }
     setState(() {});
@@ -98,7 +97,6 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
         _moveCameraTo(pos.latitude, pos.longitude);
         await _reverseGeocode(pos.latitude, pos.longitude);
       } catch (e) {
-        print("Error al obtener ubicación actual: $e");
       }
     }
   }
@@ -121,7 +119,6 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
         });
       }
     } catch (e) {
-      print("Error en reverseGeocode: $e");
       _selectedAddress = null;
     }
   }
@@ -159,7 +156,6 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
         await _moveCameraTo(loc.latitude, loc.longitude);
       }
     } catch (e) {
-      print("Error al buscar dirección: $e");
     }
 
     setState(() => _isSearching = false);

@@ -90,7 +90,6 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         _plansByDate = tempMap;
       });
     } catch (e) {
-      debugPrint("[_fetchUserPlans] Error: $e");
     }
   }
 

@@ -45,8 +45,6 @@ class PrivilegeLevelDetails extends StatefulWidget {
     });
     // OJO: Ya no tocamos total_created_plans aquí,
     // porque se recalcula en user_info_check.
-    // ignore: avoid_print
-    print("Estadísticas de suscripción actualizadas para userId=$userId");
   }
 
   @override
@@ -155,8 +153,6 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
           .collection('users')
           .doc(widget.userId)
           .update({'privilegeLevel': newLevel});
-      // ignore: avoid_print
-      print("Nivel actualizado de $_privilegeLevel a $newLevel");
     }
   }
 

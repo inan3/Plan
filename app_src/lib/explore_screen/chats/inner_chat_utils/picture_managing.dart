@@ -51,7 +51,6 @@ class _FullImageViewerScreenState extends State<FullImageViewerScreen> {
         _onScreenRecord,
       );
     } catch (e) {
-      debugPrint("Error al bloquear capturas: $e");
     }
   }
 
@@ -62,21 +61,18 @@ class _FullImageViewerScreenState extends State<FullImageViewerScreen> {
       ScreenProtector.removeListener();
       _screenRecordSubscription?.cancel();
     } catch (e) {
-      debugPrint("Error al desbloquear capturas: $e");
     }
   }
 
   /// Callback que se dispara en iOS cuando se toma una captura.
   /// En Android NO existe el callback, solo se bloquea (FLAG_SECURE).
   void _onScreenshotTaken() {
-    debugPrint("Captura detectada en iOS!");
     _showPrivacyWarning();
   }
 
   /// Callback que se dispara en iOS cuando inicia/termina una grabación de pantalla.
   /// [isRecording] es true si se está grabando, false si terminó.
   void _onScreenRecord(bool isRecording) {
-    debugPrint("Screen recording: $isRecording");
     // Si quisieras mostrar el mismo mensaje cuando empieza a grabar, podrías:
     // if (isRecording) _showPrivacyWarning();
   }

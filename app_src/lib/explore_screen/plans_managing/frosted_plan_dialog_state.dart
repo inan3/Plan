@@ -95,7 +95,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         });
       }
     } catch (e) {
-      debugPrint('Error al obtener info creador: $e');
     }
   }
 
@@ -831,7 +830,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         await d.reference.delete();
       }
     } catch (e) {
-      debugPrint('Error al eliminar participante: $e');
     }
   }
 
@@ -960,7 +958,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       final planData = planSnap.data();
       checkedInUsers = planData?['checkedInUsers'] ?? [];
     } catch (e) {
-      debugPrint('Error al cargar checkedInUsers: $e');
     }
 
     showDialog(
@@ -1660,7 +1657,6 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
       _following = await _fetchUsersData(followedUids);
       setState(() {});
     } catch (e) {
-      print("Error al cargar followers/following: $e");
     }
   }
 

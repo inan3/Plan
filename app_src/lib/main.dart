@@ -154,7 +154,6 @@ class _MyAppState extends State<MyApp> {
     if (!kIsWeb) {
       _intentSub = ReceiveSharingIntent.instance
           .getMediaStream()
-          .listen(_onMedia, onError: (e) => debugPrint('RSI error: $e'));
 
       ReceiveSharingIntent.instance.getInitialMedia().then((files) {
         if (files.isNotEmpty) _onMedia(files);

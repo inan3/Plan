@@ -107,7 +107,6 @@ class ProfileScreenState extends State<ProfileScreen> {
         setState(() => _privilegeLevel = newLevel);
       }
     } catch (e) {
-      debugPrint("[_fetchPrivilegeLevel] Error: $e");
     }
   }
 

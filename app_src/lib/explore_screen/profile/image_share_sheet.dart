@@ -68,7 +68,6 @@ class _ImageShareSheetState extends State<ImageShareSheet> {
 
       setState(() {});
     } catch (e) {
-      debugPrint("Error al cargar followers/following: $e");
     }
   }
 
