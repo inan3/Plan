@@ -39,6 +39,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
   String? _creatorAge;
+  String? _creatorPhotoUrl;
   bool _liked = false;
   int _likeCount = 0;
 
@@ -50,6 +51,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     super.initState();
     _futureParticipants = widget.fetchParticipants(widget.plan);
     _likeCount = widget.plan.likes;
+    _creatorPhotoUrl = widget.plan.creatorProfilePic;
     _checkIfLiked();
     _fetchCreatorInfo();
     _pageController = PageController();
@@ -88,6 +90,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         setState(() {
           widget.plan.creatorName = data['name'] ?? 'Creador';
           widget.plan.creatorProfilePic = data['photoUrl'] ?? '';
+          _creatorPhotoUrl = widget.plan.creatorProfilePic;
           _creatorAge = ageCreador;
         });
       }
@@ -851,7 +854,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       }
 
       return GestureDetector(
-        onTap: () => _showParticipantsModal(participants),
+        onTap: () async {
+          await _showParticipantsModal(participants);
+          if (mounted) setState(() {});
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -887,7 +893,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           : (avatarSize + overlapOffset);
 
       return GestureDetector(
-        onTap: () => _showParticipantsModal(participants),
+        onTap: () async {
+          await _showParticipantsModal(participants);
+          if (mounted) setState(() {});
+        },
         child: SizedBox(
           width: containerWidth,
           height: avatarSize,
@@ -1264,15 +1273,18 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               radius: 20,
               backgroundColor: Colors.blueGrey[400],
               child: ClipOval(
-                child: (widget.plan.creatorProfilePic?.isNotEmpty ?? false)
+                child: (_creatorPhotoUrl?.isNotEmpty ?? false)
                     ? CachedNetworkImage(
-                        imageUrl: widget.plan.creatorProfilePic!,
+                        imageUrl: _creatorPhotoUrl!,
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                        errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.white),
+                        placeholder: (context, url) => const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.person, color: Colors.white),
                       )
                     : const Icon(Icons.person, color: Colors.white),
               ),

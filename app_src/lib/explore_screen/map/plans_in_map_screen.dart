@@ -70,6 +70,8 @@ class PlansInMapScreen {
               transitionDuration: const Duration(milliseconds: 300),
               pageBuilder: (context, animation, secondaryAnimation) {
                 final size = MediaQuery.of(context).size;
+                final plan = PlanModel.fromMap(data)
+                  ..creatorProfilePic = photoUrl;
                 return Align(
                   alignment: Alignment.center,
                   child: Material(
@@ -78,7 +80,7 @@ class PlansInMapScreen {
                       width: size.width,
                       height: size.height,
                       child: FrostedPlanDialog(
-                        plan: PlanModel.fromMap(data),
+                        plan: plan,
                         fetchParticipants: _fetchPlanParticipants,
                       ),
                     ),
