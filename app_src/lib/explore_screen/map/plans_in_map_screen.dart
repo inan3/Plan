@@ -70,6 +70,8 @@ class PlansInMapScreen {
               transitionDuration: const Duration(milliseconds: 300),
               pageBuilder: (context, animation, secondaryAnimation) {
                 final size = MediaQuery.of(context).size;
+                final plan = PlanModel.fromMap(data)
+                  ..creatorProfilePic = photoUrl;
                 return Align(
                   alignment: Alignment.center,
                   child: Material(
@@ -78,7 +80,7 @@ class PlansInMapScreen {
                       width: size.width,
                       height: size.height,
                       child: FrostedPlanDialog(
-                        plan: PlanModel.fromMap(data),
+                        plan: plan,
                         fetchParticipants: _fetchPlanParticipants,
                       ),
                     ),
@@ -198,8 +200,8 @@ class PlansInMapScreen {
       const double mw = 140,
           padding = 4,
           fs = 20,
-          tm = 10,
-          avatarArea = 130;
+          tm = 29,
+          avatarArea = 140;
       double textH = 0;
       TextPainter? tp;
       if (showText) {
@@ -236,14 +238,14 @@ class PlansInMapScreen {
         tp.paint(canvas, Offset(tx, ty));
       }
       final cy = (showText ? textH : 0) + avatarArea / 2;
-      const cr = 50.0;
+      const cr = 45.0;
       final center = Offset(mw / 2, cy);
       final clipPath = Path()
         ..addOval(Rect.fromCircle(center: center, radius: cr));
       canvas.save();
       canvas.clipPath(clipPath);
       final imgRect =
-          Rect.fromCenter(center: center, width: cr * 2, height: cr * 2);
+          Rect.fromCenter(center: center, width: cr * 2, height: cr * 2 + 10);
       paintImage(
         canvas: canvas,
         rect: imgRect,
@@ -273,7 +275,7 @@ class PlansInMapScreen {
     try {
       // Aumentamos el tamaño base del marcador de usuario sin plan para que la
       // imagen no se muestre achatada en vertical.
-      const double sz = 120, r = 50;
+      const double sz = 120, r = 45;
       Uint8List? bytes;
       if (photoUrl.isNotEmpty) {
         bytes = await _downloadImageAsBytes(photoUrl);
