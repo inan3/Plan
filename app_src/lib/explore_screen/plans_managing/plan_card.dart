@@ -273,7 +273,6 @@ class PlanCardState extends State<PlanCard> {
         await d.reference.delete();
       }
     } catch (e) {
-      debugPrint('Error al eliminar participante: $e');
     }
   }
 
@@ -748,7 +747,6 @@ class PlanCardState extends State<PlanCard> {
       final planData = planSnap.data();
       checkedInUsers = planData?['checkedInUsers'] ?? [];
     } catch (e) {
-      debugPrint('Error al cargar checkedInUsers: $e');
     }
 
     showDialog(

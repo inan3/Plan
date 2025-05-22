@@ -2,7 +2,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -50,7 +50,6 @@ class AuthService {
 
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      debugPrint('Error en Google Sign In: $e');
       rethrow;
     }
   }

@@ -175,7 +175,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
           await batch.commit();
         }
       } catch (e) {
-        print("Error al eliminar mensajes antiguos: $e");
       }
     }
   }
@@ -196,7 +195,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       }
       await batch.commit();
     } catch (e) {
-      print("❌ Error al marcar mensajes como leídos: $e");
     }
   }
 
@@ -225,7 +223,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       try {
         await batch.commit();
       } catch (e) {
-        print("❌ Error al actualizar isRead: $e");
       }
     }
   }
@@ -250,7 +247,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     try {
       return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
     } catch (e) {
-      print("Error al cargar icono del marcador: $e");
       return BitmapDescriptor.defaultMarker;
     }
   }
@@ -699,7 +695,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                           'text': 'El mensaje original ha sido eliminado.',
                         });
                       } catch (e) {
-                        debugPrint('Error al eliminar mensaje: $e');
                       }
                     },
                   );
@@ -733,7 +728,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     try {
       await batch.commit();
     } catch (e) {
-      print("❌ Error al marcar mensajes como entregados: $e");
     }
   }
 
@@ -1449,7 +1443,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
         ),
       );
     } catch (e) {
-      print("Error al abrir plan: $e");
     }
   }
 
@@ -1825,7 +1818,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
       cancelReply();
     } catch (e) {
-      print("Error subiendo/enviando imagen: $e");
     }
   }
 
@@ -1843,7 +1835,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
     if (blockedDoc.exists) {
       // Significa que tu chatPartnerId ha bloqueado a currentUserId
-      print("La otra persona te ha bloqueado, no puedes enviar mensajes.");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("La otra persona te ha bloqueado.")),
       );
@@ -1877,7 +1868,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
       cancelReply();
     } catch (e) {
-      print("❌ Error al enviar mensaje: $e");
     }
   }
 }

@@ -143,7 +143,6 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
 
       Navigator.pop(context); // cierra la pantalla
     } catch (e) {
-      print("Error al enviar reporte: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Ocurrió un error al enviar reporte.")),
       );
@@ -353,9 +352,7 @@ class ReportAndBlockUser {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    print("Usuario $chatPartnerId bloqueado por $currentUserId (doc $docId)");
   } catch (e) {
-    print("Error bloqueando usuario: $e");
   }
 }
 
@@ -368,9 +365,7 @@ static Future<void> _unblockUser(String currentUserId, String chatPartnerId) asy
         .doc(docId)
         .delete();
 
-    print("Usuario $chatPartnerId desbloqueado por $currentUserId (doc $docId)");  
   } catch (e) {
-    print("Error desbloqueando usuario: $e");
   }
 }
 }

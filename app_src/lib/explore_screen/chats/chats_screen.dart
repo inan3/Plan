@@ -89,7 +89,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
         const SnackBar(content: Text("Chat eliminado.")),
       );
     } catch (e) {
-      print("❌ Error al eliminar chat: $e");
     }
   }
 
@@ -582,7 +581,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
         _searchResults = filtered;
       });
     } catch (e) {
-      print("Error al buscar usuarios: $e");
     }
   }
 

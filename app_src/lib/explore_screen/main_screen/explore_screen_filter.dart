@@ -131,7 +131,6 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
         });
       }
     } catch (e) {
-      debugPrint("Error al convertir dirección a coordenadas: $e");
     }
   }
 
@@ -155,7 +154,6 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
         });
       }
     } catch (e) {
-      debugPrint("Error al obtener ubicación: $e");
     }
   }
 
@@ -221,13 +219,10 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
             _regionPredictions = data['predictions'];
           });
         } else {
-          debugPrint('Error en la API de Google Places: ${data['status']}');
         }
       } else {
-        debugPrint('Error HTTP: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error al obtener predicciones: $e');
     }
   }
 

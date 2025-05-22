@@ -125,7 +125,6 @@ class _FollowingScreenState extends State<FollowingScreen> {
         _loading = false;
       });
     } catch (e) {
-      debugPrint('[FollowingScreen] Error cargando datos: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al cargar datos: $e')),

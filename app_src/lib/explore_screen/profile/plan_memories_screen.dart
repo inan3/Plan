@@ -67,7 +67,6 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error al cargar memories: $e');
     }
   }
 

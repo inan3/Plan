@@ -148,7 +148,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         });
       });
     } catch (e) {
-      debugPrint('[updateStatsBasedOnAllPlans] $e');
     }
   }
 
@@ -187,7 +186,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
       _isRequestPending = (q.docs.isNotEmpty && !isFollowing);
     } catch (e) {
-      debugPrint('[checkIfFollowRequestIsPending] Error: $e');
     }
   }
 
@@ -981,7 +979,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
       isFollowing = false;
     } catch (e) {
-      debugPrint('[unfollowUser] $e');
     }
   }
 
@@ -1037,7 +1034,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         _isRequestPending = true;
       }
     } catch (e) {
-      debugPrint('[followUser] $e');
     }
   }
 
@@ -1076,7 +1072,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         const SnackBar(content: Text('Solicitud de seguimiento cancelada.')),
       );
     } catch (e) {
-      debugPrint('[cancelFollowRequest] error: $e');
     }
   }
 

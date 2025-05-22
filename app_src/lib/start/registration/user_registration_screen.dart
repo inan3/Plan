@@ -117,7 +117,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       await ref.putFile(file);
       return await ref.getDownloadURL();
     } catch (error) {
-      debugPrint('Error al subir archivo: $error');
       return null;
     }
   }
@@ -270,7 +269,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         (_) => false,
       );
     } catch (e) {
-      debugPrint("Error al crear usuario: $e");
       _showErrorPopup("Error al crear usuario: $e");
     } finally {
       setState(() => _isSaving = false);
@@ -627,7 +625,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           });
         }
       } catch (e) {
-        debugPrint("Error al hacer reverse geocoding: $e");
       }
     } else {
       // Si falla (usuario deniega permisos o no obtiene ubicación)

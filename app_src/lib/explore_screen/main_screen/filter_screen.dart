@@ -63,7 +63,6 @@ class _FilterScreenState extends State<FilterScreen> {
         });
       }
     } catch (e) {
-      print("Error obteniendo ubicación: $e");
     }
   }
 
@@ -121,7 +120,6 @@ class _FilterScreenState extends State<FilterScreen> {
                         });
                       }
                     } catch (e) {
-                      print("Error obteniendo ubicación seleccionada: $e");
                     }
                   }
                   Navigator.pop(context);
