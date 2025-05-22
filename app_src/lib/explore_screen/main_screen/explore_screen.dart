@@ -245,17 +245,33 @@ class ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Future<List<String>> _fetchUserIdsWithPlans(List<String> planFilters) async {
+  Future<List<String>> _fetchUserIdsWithPlans(
+      List<String> planFilters, DateTime? dateFilter) async {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('plans').get();
     Set<String> uids = {};
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
-      final String planType = data['type']?.toString().toLowerCase() ?? '';
-      for (var filter in planFilters) {
-        if (planType.contains(filter.toLowerCase().trim())) {
-          uids.add(data['createdBy'].toString());
-          break;
+      final Timestamp? ts = data['start_timestamp'];
+      if (dateFilter != null && ts != null) {
+        final d = ts.toDate();
+        if (d.year != dateFilter.year ||
+            d.month != dateFilter.month ||
+            d.day != dateFilter.day) {
+          continue;
+        }
+      } else if (dateFilter != null && ts == null) {
+        continue;
+      }
+      if (planFilters.isEmpty) {
+        uids.add(data['createdBy'].toString());
+      } else {
+        final String planType = data['type']?.toString().toLowerCase() ?? '';
+        for (var filter in planFilters) {
+          if (planType.contains(filter.toLowerCase().trim())) {
+            uids.add(data['createdBy'].toString());
+            break;
+          }
         }
       }
     }
@@ -313,9 +329,10 @@ class ExploreScreenState extends State<ExploreScreen> {
         (appliedFilters['planBusqueda'] as String).trim().isNotEmpty) {
       planFilters.add(appliedFilters['planBusqueda'] as String);
     }
+    final DateTime? dateFilter = appliedFilters['planDate'];
 
-    if (planFilters.isNotEmpty) {
-      final allowedUids = await _fetchUserIdsWithPlans(planFilters);
+    if (planFilters.isNotEmpty || dateFilter != null) {
+      final allowedUids = await _fetchUserIdsWithPlans(planFilters, dateFilter);
       validUsers = validUsers.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return allowedUids.contains(data['uid'].toString());
