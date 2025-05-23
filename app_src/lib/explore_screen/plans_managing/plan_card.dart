@@ -320,21 +320,24 @@ class PlanCardState extends State<PlanCard> {
         // Header
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Row(
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              const Expanded(
-                child: Text(
-                  "Chat del Plan",
-                  style: TextStyle(
-                    color: AppColors.planColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+              const Text(
+                "Chat del Plan",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.planColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: AppColors.planColor),
-                onPressed: () => Navigator.pop(context),
+              Positioned(
+                right: 0,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.planColor),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
             ],
           ),
