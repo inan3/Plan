@@ -1172,6 +1172,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         "createdAt": DateTime.now().toIso8601String(),
         "privateInvite": true,
         "likes": 0,
+        "views": 0,
+        "viewedBy": [],
         "special_plan": 1,
       };
 

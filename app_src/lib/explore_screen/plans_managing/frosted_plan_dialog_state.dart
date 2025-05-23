@@ -46,6 +46,26 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   late PageController _pageController;
   int _currentPageIndex = 0;
 
+  Future<void> _incrementViewCount() async {
+    final user = _currentUser;
+    if (user == null) return;
+    if (user.uid == widget.plan.createdBy) return;
+    final planRef =
+        FirebaseFirestore.instance.collection('plans').doc(widget.plan.id);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(planRef);
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+      final viewedBy = List<String>.from(data['viewedBy'] ?? []);
+      if (!viewedBy.contains(user.uid)) {
+        tx.update(planRef, {
+          'views': (data['views'] ?? 0) + 1,
+          'viewedBy': FieldValue.arrayUnion([user.uid])
+        });
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +75,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     _checkIfLiked();
     _fetchCreatorInfo();
     _pageController = PageController();
+    _incrementViewCount();
     if (widget.openChat) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(
