@@ -34,6 +34,8 @@ class PlanModel {
   List<String>? participants;
   int likes;
   int special_plan;
+  int views;
+  List<String>? viewedBy;
 
   // Varias imágenes + video
   List<String>? images;
@@ -76,6 +78,8 @@ class PlanModel {
     this.participants,
     this.likes = 0,
     this.special_plan = 0,
+    this.views = 0,
+    this.viewedBy,
     this.images,
     this.originalImages,
     this.videoUrl,
@@ -132,6 +136,8 @@ class PlanModel {
       'participants': participants ?? [],
       'likes': likes,
       'special_plan': special_plan,
+      'views': views,
+      'viewedBy': viewedBy ?? [],
       'images': images ?? [],
       'originalImages': originalImages ?? [],
       'videoUrl': videoUrl ?? '',
@@ -176,6 +182,10 @@ class PlanModel {
           : <String>[],
       likes: map['likes'] ?? 0,
       special_plan: map['special_plan'] ?? 0,
+      views: map['views'] ?? 0,
+      viewedBy: map['viewedBy'] != null
+          ? List<String>.from(map['viewedBy'] as List)
+          : <String>[],
       images: map['images'] != null
           ? List<String>.from(map['images'] as List)
           : <String>[],
@@ -294,6 +304,8 @@ class PlanModel {
       participants: [],
       likes: 0,
       special_plan: special_plan,
+      views: 0,
+      viewedBy: [],
       images: images ?? [],
       originalImages: originalImages ?? [],
       videoUrl: videoUrl ?? '',

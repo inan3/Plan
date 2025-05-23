@@ -1161,47 +1161,72 @@ class PlanCardState extends State<PlanCard> {
                       top: 8,
                       bottom: 8,
                     ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildFrostedAction(
-                            iconPath: 'assets/corazon.svg',
-                            countText: '$_likeCount',
-                            onTap: _toggleLike,
-                            iconColor: _liked ? Colors.red : Colors.white,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFrostedAction(
+                                iconPath: 'assets/corazon.svg',
+                                countText: '$_likeCount',
+                                onTap: _toggleLike,
+                                iconColor: _liked ? Colors.red : Colors.white,
+                              ),
+                              const SizedBox(width: 16),
+                              StreamBuilder<DocumentSnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('plans')
+                                    .doc(plan.id)
+                                    .snapshots(),
+                                builder: (ctx, snapMsg) {
+                                  String countText = '0';
+                                  if (snapMsg.hasData && snapMsg.data!.exists) {
+                                    final d = snapMsg.data!.data()
+                                        as Map<String, dynamic>;
+                                    final c = d['commentsCount'] ?? 0;
+                                    countText = c.toString();
+                                  }
+                                  return _buildFrostedAction(
+                                    iconPath: 'assets/mensaje.svg',
+                                    countText: countText,
+                                    onTap: _onMessageButtonTap,
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 16),
+                              _buildFrostedAction(
+                                iconPath: 'assets/icono-compartir.svg',
+                                countText: '',
+                                onTap: _onShareButtonTap,
+                              ),
+                              const SizedBox(width: 16),
+                              StreamBuilder<DocumentSnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('plans')
+                                    .doc(plan.id)
+                                    .snapshots(),
+                                builder: (ctx, snapView) {
+                                  String countText = '0';
+                                  if (snapView.hasData && snapView.data!.exists) {
+                                    final d = snapView.data!.data()
+                                        as Map<String, dynamic>;
+                                    final c = d['views'] ?? 0;
+                                    countText = c.toString();
+                                  }
+                                  return _buildFrostedAction(
+                                    iconPath: 'assets/icono-ojo.svg',
+                                    countText: countText,
+                                    onTap: () {},
+                                  );
+                                },
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 16),
-                          StreamBuilder<DocumentSnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('plans')
-                                .doc(plan.id)
-                                .snapshots(),
-                            builder: (ctx, snapMsg) {
-                              String countText = '0';
-                              if (snapMsg.hasData && snapMsg.data!.exists) {
-                                final d =
-                                    snapMsg.data!.data() as Map<String, dynamic>;
-                                final c = d['commentsCount'] ?? 0;
-                                countText = c.toString();
-                              }
-                              return _buildFrostedAction(
-                                iconPath: 'assets/mensaje.svg',
-                                countText: countText,
-                                onTap: _onMessageButtonTap,
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 16),
-                          _buildFrostedAction(
-                            iconPath: 'assets/icono-compartir.svg',
-                            countText: '',
-                            onTap: _onShareButtonTap,
-                          ),
-                          const SizedBox(width: 16),
-                          _buildParticipantsCorner(),
-                        ],
-                      ),
+                        ),
+                        _buildParticipantsCorner(),
+                      ],
                     ),
                   ),
 
