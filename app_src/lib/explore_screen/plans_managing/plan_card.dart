@@ -353,7 +353,7 @@ class PlanCardState extends State<PlanCard> {
               if (snap.hasError) {
                 return const Center(
                   child: Text('Error al cargar mensajes',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: Colors.black)),
                 );
               }
               if (snap.connectionState == ConnectionState.waiting) {
@@ -363,7 +363,7 @@ class PlanCardState extends State<PlanCard> {
               if (docs.isEmpty) {
                 return const Center(
                   child: Text('No hay mensajes todavía',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: Colors.black)),
                 );
               }
               return ListView(
@@ -399,14 +399,14 @@ class PlanCardState extends State<PlanCard> {
                       child: Text(
                         senderName,
                         style: const TextStyle(
-                          color: Colors.yellow,
+                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     subtitle: Text(
                       '$text\n$timeStr',
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.black),
                     ),
                   );
                 }).toList(),
@@ -426,18 +426,18 @@ class PlanCardState extends State<PlanCard> {
                   decoration: InputDecoration(
                     hintText: "Escribe un mensaje...",
                     filled: true,
-                    fillColor: Colors.white24,
-                    hintStyle: const TextStyle(color: Colors.white70),
+                    fillColor: Colors.grey.shade800, // dark gray background
+                    hintStyle: const TextStyle(color: Colors.black54),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.black),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
+                icon: const Icon(Icons.send, color: AppColors.planColor),
                 onPressed: () => _sendMessage(plan),
               ),
             ],

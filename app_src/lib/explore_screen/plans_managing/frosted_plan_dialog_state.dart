@@ -693,7 +693,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               if (snap.hasError) {
                 return const Center(
                   child: Text('Error al cargar mensajes',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: Colors.black)),
                 );
               }
               if (snap.connectionState == ConnectionState.waiting) {
@@ -703,7 +703,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               if (docs.isEmpty) {
                 return const Center(
                   child: Text('No hay mensajes todavía',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: Colors.black)),
                 );
               }
               return ListView(
@@ -739,7 +739,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       child: Text(
                         senderName,
                         style: const TextStyle(
-                          color: Color.fromARGB(255, 151, 121, 215),
+                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -747,7 +747,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ),
                     subtitle: Text(
                       '$text\n$timeStr',
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: const TextStyle(color: Colors.black, fontSize: 13),
                     ),
                   );
                 }).toList(),
@@ -765,18 +765,18 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   decoration: InputDecoration(
                     hintText: "Escribe un mensaje...",
                     filled: true,
-                    fillColor: Colors.white24,
-                    hintStyle: const TextStyle(color: Colors.white70),
+                    fillColor: Colors.grey.shade800,
+                    hintStyle: const TextStyle(color: Colors.black54),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.black),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
+                icon: const Icon(Icons.send, color: AppColors.planColor),
                 onPressed: () => _sendMessage(plan),
               ),
             ],
