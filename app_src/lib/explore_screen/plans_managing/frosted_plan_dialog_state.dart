@@ -87,7 +87,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               right: 0,
               bottom: 0,
             ),
-            backgroundColor: AppColors.lightLilac,
+            backgroundColor: AppColors.lightTurquoise,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -440,7 +440,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     right: 0,
                     bottom: 0,
                   ),
-                  backgroundColor: AppColors.lightLilac,
+                  backgroundColor: AppColors.lightTurquoise,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -668,20 +668,20 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 child: Text(
                   "Chat del Plan",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.planColor,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: AppColors.planColor),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
         ),
-        const Divider(color: Colors.white38),
+        const Divider(color: AppColors.planColor),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -765,7 +765,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   decoration: InputDecoration(
                     hintText: "Escribe un mensaje...",
                     filled: true,
-                    fillColor: Colors.grey.shade800,
+                    fillColor: const ui.Color.fromARGB(255, 177, 177, 177),
                     hintStyle: const TextStyle(color: Colors.black54),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -1055,7 +1055,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ],
                   ),
                 ),
-                const Divider(color: Colors.white38),
+                const Divider(color: AppColors.planColor),
                 Expanded(
                   child: ListView.builder(
                     itemCount: participants.length,

@@ -303,7 +303,7 @@ class PlanCardState extends State<PlanCard> {
           insetPadding: EdgeInsets.only(
             top: MediaQuery.of(context).size.height * 0.25,
           ),
-          backgroundColor: AppColors.lightLilac,
+          backgroundColor: AppColors.lightTurquoise,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -326,20 +326,20 @@ class PlanCardState extends State<PlanCard> {
                 child: Text(
                   "Chat del Plan",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.planColor,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: AppColors.planColor),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
         ),
-        const Divider(color: Colors.white38),
+        const Divider(color: AppColors.planColor),
 
         // Lista de mensajes
         Expanded(
@@ -426,7 +426,7 @@ class PlanCardState extends State<PlanCard> {
                   decoration: InputDecoration(
                     hintText: "Escribe un mensaje...",
                     filled: true,
-                    fillColor: Colors.grey.shade800, // dark gray background
+                    fillColor: const ui.Color.fromARGB(255, 177, 177, 177), // dark gray background
                     hintStyle: const TextStyle(color: Colors.black54),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -795,13 +795,13 @@ class PlanCardState extends State<PlanCard> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: const Icon(Icons.close, color: AppColors.planColor),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
                 ),
-                const Divider(color: Colors.white38),
+                const Divider(color: AppColors.planColor),
 
                 // Lista
                 Expanded(
