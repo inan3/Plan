@@ -87,7 +87,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               right: 0,
               bottom: 0,
             ),
-            backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
+            backgroundColor: AppColors.lightLilac,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -440,7 +440,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     right: 0,
                     bottom: 0,
                   ),
-                  backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
+                  backgroundColor: AppColors.lightLilac,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
