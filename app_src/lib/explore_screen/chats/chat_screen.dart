@@ -17,6 +17,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
+import '../plans_managing/firebase_services.dart';
 import '../users_managing/user_info_check.dart';
 import 'select_plan_screen.dart';
 import 'location_pick_screen.dart';
@@ -1432,6 +1433,9 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
       final planData = planDoc.data()!;
       final plan = PlanModel.fromMap(planData);
+
+      // Increment unique views ignoring the creator
+      incrementPlanViewIfNeeded(plan.id, plan.createdBy);
 
       Navigator.push(
         context,

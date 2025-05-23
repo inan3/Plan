@@ -13,6 +13,7 @@ import '../users_grid/users_grid_helpers.dart'; // buildPlaceholder, buildProfil
 import 'plan_share_sheet.dart';
 import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
+import 'firebase_services.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
@@ -279,15 +280,11 @@ class PlanCardState extends State<PlanCard> {
   // ─────────────────────────────────────────────────────────────
   // (5) Abrir detalles del plan
   // ─────────────────────────────────────────────────────────────
-  void _openPlanDetails(BuildContext context, PlanModel plan, {bool openChat = false}) {
-    FirebaseFirestore.instance.collection('plans').doc(plan.id).update({
-      'views': FieldValue.increment(1),
-    }).catchError((_) {
-      FirebaseFirestore.instance
-          .collection('plans')
-          .doc(plan.id)
-          .set({'views': 1}, SetOptions(merge: true));
-    });
+  Future<void> _openPlanDetails(BuildContext context, PlanModel plan,
+      {bool openChat = false}) async {
+    // Increment view count only once per user and ignore creator views
+    incrementPlanViewIfNeeded(plan.id, plan.createdBy);
+
     Navigator.push(
       context,
       MaterialPageRoute(
