@@ -325,6 +325,7 @@ class PlanCardState extends State<PlanCard> {
               const Expanded(
                 child: Text(
                   "Chat del Plan",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.planColor,
                     fontSize: 18,
