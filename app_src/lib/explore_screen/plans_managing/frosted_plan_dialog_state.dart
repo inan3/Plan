@@ -462,6 +462,28 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
+  Widget _buildViewButton(PlanModel plan) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(plan.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        String countText = '0';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final count = data['views'] ?? 0;
+          countText = count.toString();
+        }
+        return _buildActionButton(
+          iconPath: 'assets/icono-ojo.svg',
+          countText: countText,
+          onTap: () {},
+        );
+      },
+    );
+  }
+
   void _openCustomShareModal(PlanModel plan) {
     showModalBottomSheet(
       context: context,
@@ -539,6 +561,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         _buildMessageButton(plan),
         const SizedBox(width: 16),
         _buildShareButton(plan),
+        const SizedBox(width: 16),
+        _buildViewButton(plan),
       ],
     );
   }
@@ -1249,15 +1273,15 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         pageIndicator,
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildActionButtonsRow(plan),
-                const SizedBox(width: 12),
-                _buildParticipantsCorner(participants),
-              ],
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _buildActionButtonsRow(plan),
+              ),
+              _buildParticipantsCorner(participants),
+            ],
           ),
         ),
         if (!isUserCreator)
