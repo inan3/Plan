@@ -33,6 +33,7 @@ class PlanModel {
   String? iconAsset;
   List<String>? participants;
   int likes;
+  int views;
   int special_plan;
 
   // Varias imágenes + video
@@ -75,6 +76,7 @@ class PlanModel {
     this.iconAsset,
     this.participants,
     this.likes = 0,
+    this.views = 0,
     this.special_plan = 0,
     this.images,
     this.originalImages,
@@ -131,6 +133,7 @@ class PlanModel {
       'iconAsset': iconAsset,
       'participants': participants ?? [],
       'likes': likes,
+      'views': views,
       'special_plan': special_plan,
       'images': images ?? [],
       'originalImages': originalImages ?? [],
@@ -175,6 +178,7 @@ class PlanModel {
           ? List<String>.from(map['participants'] as List)
           : <String>[],
       likes: map['likes'] ?? 0,
+      views: map['views'] ?? 0,
       special_plan: map['special_plan'] ?? 0,
       images: map['images'] != null
           ? List<String>.from(map['images'] as List)
