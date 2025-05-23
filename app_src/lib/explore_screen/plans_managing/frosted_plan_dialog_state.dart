@@ -664,6 +664,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
+              const SizedBox(width: 48),
               const Expanded(
                 child: Text(
                   "Chat del Plan",
