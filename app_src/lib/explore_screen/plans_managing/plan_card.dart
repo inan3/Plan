@@ -371,46 +371,7 @@ class PlanCardState extends State<PlanCard> {
               return ListView(
                 children: docs.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final text = data['text'] ?? '';
-                  final senderName = data['senderName'] ?? 'Invitado';
-                  final senderPic = data['senderPic'] ?? '';
-                  final senderId = data['senderId'] ?? '';
-                  final ts = data['timestamp'] as Timestamp?;
-                  final timeStr = _formatTimestamp(ts);
-
-                  return ListTile(
-                    leading: GestureDetector(
-                      onTap: () {
-                        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
-                          UserInfoCheck.open(context, senderId);
-                        }
-                      },
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundImage:
-                            senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
-                        backgroundColor: Colors.blueGrey[100],
-                      ),
-                    ),
-                    title: GestureDetector(
-                      onTap: () {
-                        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
-                          UserInfoCheck.open(context, senderId);
-                        }
-                      },
-                      child: Text(
-                        senderName,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    subtitle: Text(
-                      '$text\n$timeStr',
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                  );
+                  return _buildMessageItem(data);
                 }).toList(),
               );
             },
@@ -446,6 +407,83 @@ class PlanCardState extends State<PlanCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMessageItem(Map<String, dynamic> data) {
+    final String text = data['text'] ?? '';
+    final String senderName = data['senderName'] ?? 'Invitado';
+    final String senderPic = data['senderPic'] ?? '';
+    final String senderId = data['senderId'] ?? '';
+    final Timestamp? ts = data['timestamp'] as Timestamp?;
+    final String timeStr = _formatTimestamp(ts);
+
+    final bool isMe = senderId == _currentUser?.uid;
+
+    final avatar = GestureDetector(
+      onTap: () {
+        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
+          UserInfoCheck.open(context, senderId);
+        }
+      },
+      child: CircleAvatar(
+        radius: 20,
+        backgroundImage: senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+        backgroundColor: Colors.blueGrey[100],
+      ),
+    );
+
+    final nameWidget = GestureDetector(
+      onTap: () {
+        if (senderId.isNotEmpty && senderId != _currentUser?.uid) {
+          UserInfoCheck.open(context, senderId);
+        }
+      },
+      child: Text(
+        senderName,
+        textAlign: isMe ? TextAlign.right : TextAlign.left,
+        style: const TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+
+    final msgWidget = Text(
+      text,
+      textAlign: isMe ? TextAlign.right : TextAlign.left,
+      style: const TextStyle(color: Colors.black),
+    );
+
+    final timeWidget = Text(
+      timeStr,
+      style: const TextStyle(color: Colors.black54, fontSize: 12),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isMe) avatar,
+          if (!isMe) const SizedBox(width: 8),
+          if (isMe) timeWidget,
+          if (isMe) const SizedBox(width: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [nameWidget, msgWidget],
+            ),
+          ),
+          if (!isMe) const SizedBox(width: 4),
+          if (!isMe) timeWidget,
+          if (isMe) const SizedBox(width: 8),
+          if (isMe) avatar,
+        ],
+      ),
     );
   }
 
