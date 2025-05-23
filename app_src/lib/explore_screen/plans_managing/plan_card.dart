@@ -303,7 +303,7 @@ class PlanCardState extends State<PlanCard> {
           insetPadding: EdgeInsets.only(
             top: MediaQuery.of(context).size.height * 0.25,
           ),
-          backgroundColor: const ui.Color.fromARGB(255, 35, 57, 80),
+          backgroundColor: AppColors.lightLilac,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
