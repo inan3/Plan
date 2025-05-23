@@ -667,6 +667,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               const Expanded(
                 child: Text(
                   "Chat del Plan",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.planColor,
                     fontSize: 18,
