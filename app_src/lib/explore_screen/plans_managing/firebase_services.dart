@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../models/plan_model.dart';
 
 /// Obtiene los planes de un usuario (que no sean especiales,
@@ -57,4 +59,27 @@ Future<List<Map<String, dynamic>>> fetchPlanParticipants(PlanModel plan) async {
     }
   }
   return participants;
+}
+
+/// Increments the view count of a plan only once per user. The creator's own
+/// views are ignored.
+Future<void> incrementPlanViewIfNeeded(String planId, String createdBy) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+  if (user.uid == createdBy) return;
+
+  final viewRef = FirebaseFirestore.instance
+      .collection('plans')
+      .doc(planId)
+      .collection('views')
+      .doc(user.uid);
+
+  final snap = await viewRef.get();
+  if (snap.exists) return;
+
+  await viewRef.set({'viewedAt': FieldValue.serverTimestamp()});
+  await FirebaseFirestore.instance
+      .collection('plans')
+      .doc(planId)
+      .update({'views': FieldValue.increment(1)});
 }
