@@ -469,17 +469,18 @@ class PlanCardState extends State<PlanCard> {
         children: [
           if (!isMe) avatar,
           if (!isMe) const SizedBox(width: 8),
-          if (isMe) timeWidget,
-          if (isMe) const SizedBox(width: 4),
           Expanded(
             child: Column(
               crossAxisAlignment:
                   isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [nameWidget, msgWidget],
+              children: [
+                nameWidget,
+                msgWidget,
+                const SizedBox(height: 2),
+                timeWidget,
+              ],
             ),
           ),
-          if (!isMe) const SizedBox(width: 4),
-          if (!isMe) timeWidget,
           if (isMe) const SizedBox(width: 8),
           if (isMe) avatar,
         ],
