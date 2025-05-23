@@ -349,12 +349,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   Widget _buildActionButton({
     required String iconPath,
     required String countText,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
     Color iconColor = Colors.white,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
+    final content = ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
@@ -382,8 +380,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             ),
           ),
         ),
-      ),
-    );
+      );
+    if (onTap == null) {
+      return content;
+    }
+    return GestureDetector(onTap: onTap, child: content);
   }
 
   Widget _buildLikeButton() {
@@ -438,6 +439,26 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       iconPath: 'assets/icono-compartir.svg',
       countText: "",
       onTap: () => _openCustomShareModal(plan),
+    );
+  }
+
+  Widget _buildViewsButton(PlanModel plan) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
+      builder: (context, snapshot) {
+        String countText = '0';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final count = data['views'] ?? 0;
+          countText = count.toString();
+        }
+        return _buildActionButton(
+          iconPath: 'assets/icono-ojo.svg',
+          countText: countText,
+          onTap: null,
+        );
+      },
     );
   }
 
@@ -511,13 +532,23 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
   Widget _buildActionButtonsRow(PlanModel plan) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        _buildLikeButton(),
-        const SizedBox(width: 16),
-        _buildMessageButton(plan),
-        const SizedBox(width: 16),
-        _buildShareButton(plan),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildLikeButton(),
+                const SizedBox(width: 16),
+                _buildMessageButton(plan),
+                const SizedBox(width: 16),
+                _buildShareButton(plan),
+                const SizedBox(width: 16),
+                _buildViewsButton(plan),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1228,15 +1259,17 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         pageIndicator,
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildActionButtonsRow(plan),
-                const SizedBox(width: 12),
-                _buildParticipantsCorner(participants),
-              ],
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _buildActionButtonsRow(plan),
+                ),
+              ),
+              const SizedBox(width: 12),
+              _buildParticipantsCorner(participants),
+            ],
           ),
         ),
         if (!isUserCreator)

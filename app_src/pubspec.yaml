@@ -125,6 +125,7 @@ flutter:
     - assets/icono-fecha-creacion.svg
     - assets/icono-restriccion-edad.svg
     - assets/icono-compartir.svg
+    - assets/icono-ojo.svg
     - assets/icono-candado.svg
     - assets/icono-informacion.svg
     - assets/icono-escribir.svg
