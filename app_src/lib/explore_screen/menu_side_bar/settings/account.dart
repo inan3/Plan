@@ -140,10 +140,28 @@ Future<void> _deleteAccount(BuildContext context) async {
     await user.delete();
 
     if (context.mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (_) => false,
+      Navigator.of(context).pop(); // Cerrar el indicador de carga
+
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          content: const Text('Tu cuenta se ha eliminado correctamente.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
       );
+
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          (_) => false,
+        );
+      }
     }
   } catch (e) {
     if (context.mounted) {
@@ -154,7 +172,6 @@ Future<void> _deleteAccount(BuildContext context) async {
     return;
   }
 
-  if (context.mounted) Navigator.of(context).pop();
 }
 
 class EditProfileScreen extends StatefulWidget {
