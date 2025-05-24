@@ -30,6 +30,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final user = cred.user;
       if (user != null && !user.emailVerified) {
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Verifica tu correo'),
+            content: Text(
+              'Se ha enviado un correo de verificación a ${emailController.text.trim()}. '
+              'Sigue el enlace recibido para continuar.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Aceptar'),
+              ),
+            ],
+          ),
+        );
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
