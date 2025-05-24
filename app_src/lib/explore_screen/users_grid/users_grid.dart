@@ -32,14 +32,40 @@ class UsersGrid extends StatefulWidget {
 }
 
 class _UsersGridState extends State<UsersGrid> {
-  final Map<String, Future<List<PlanModel>>> _plansCache = {};
-  final Map<String, Future<Map<String, dynamic>>> _userCache = {};
+  bool _loading = true;
+  final List<Map<String, dynamic>> _processedUsers = [];
+  final Map<String, List<PlanModel>> _plansData = {};
 
-  Future<Map<String, dynamic>> _fetchUserData(String uid) {
-    return _userCache.putIfAbsent(uid, () async {
+  @override
+  void initState() {
+    super.initState();
+    _prepareData();
+  }
+
+  Future<void> _prepareData() async {
+    final List<Map<String, dynamic>> tempUsers = [];
+    final Map<String, List<PlanModel>> tempPlans = {};
+
+    for (final u in widget.users) {
+      final baseData = u is QueryDocumentSnapshot
+          ? (u.data() as Map<String, dynamic>)
+          : u as Map<String, dynamic>;
+      final uid = baseData['uid']?.toString();
+      if (uid == null) continue;
+
       final doc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      return doc.data() as Map<String, dynamic>? ?? {};
+      final liveData = doc.data() as Map<String, dynamic>? ?? {};
+      tempUsers.add({...baseData, ...liveData});
+
+      tempPlans[uid] = await fetchUserPlans(uid);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _processedUsers.addAll(tempUsers);
+      _plansData.addAll(tempPlans);
+      _loading = false;
     });
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -151,17 +177,20 @@ class _UsersGridState extends State<UsersGrid> {
   // ──────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 100),
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
-      itemCount: widget.users.length,
+      itemCount: _processedUsers.length,
       itemBuilder: (context, index) {
-        final userDoc = widget.users[index];
-        final Map<String, dynamic> userData = userDoc is QueryDocumentSnapshot
-            ? (userDoc.data() as Map<String, dynamic>)
-            : userDoc as Map<String, dynamic>;
-        return _buildUserCard(userData, context);
+        final userData = _processedUsers[index];
+        final uid = userData['uid']?.toString();
+        final plans = (uid != null) ? _plansData[uid] ?? [] : <PlanModel>[];
+        return _buildUserCard(userData, plans, context);
       },
     );
   }
@@ -169,7 +198,8 @@ class _UsersGridState extends State<UsersGrid> {
   // ──────────────────────────────────────────────────────────────────────────
   //  Tarjeta por usuario
   // ──────────────────────────────────────────────────────────────────────────
-  Widget _buildUserCard(Map<String, dynamic> userData, BuildContext context) {
+  Widget _buildUserCard(
+      Map<String, dynamic> userData, List<PlanModel> plans, BuildContext context) {
     final String? uid = userData['uid']?.toString();
     if (uid == null) {
       return const SizedBox(
@@ -180,62 +210,19 @@ class _UsersGridState extends State<UsersGrid> {
       );
     }
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _fetchUserData(uid),
-      builder: (context, userSnap) {
-        if (userSnap.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 330,
-            child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          );
-        }
-        if (!userSnap.hasData) {
-          return const SizedBox(height: 0);
-        }
-
-        final liveData = {...userData, ...userSnap.data!};
-
-        return FutureBuilder<List<PlanModel>>(
-          future: _plansCache.putIfAbsent(uid, () => fetchUserPlans(uid)),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(
-                height: 330,
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              );
-            }
-            if (snapshot.hasError) {
-              return SizedBox(
-                height: 330,
-                child: Center(
-                  child: Text('Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red)),
-                ),
-              );
-            }
-
-            final plans = snapshot.data ?? [];
-            if (plans.isEmpty) {
-              return _buildNoPlanLayout(context, liveData);
-            } else {
-              return Column(
-                children: plans
-                    .map((plan) => PlanCard(
-                          plan: plan,
-                          userData: liveData,
-                          fetchParticipants: fetchPlanParticipants,
-                        ))
-                    .toList(),
-              );
-            }
-          },
-        );
-      },
-    );
+    if (plans.isEmpty) {
+      return _buildNoPlanLayout(context, userData);
+    } else {
+      return Column(
+        children: plans
+            .map((plan) => PlanCard(
+                  plan: plan,
+                  userData: userData,
+                  fetchParticipants: fetchPlanParticipants,
+                ))
+            .toList(),
+      );
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────────────
