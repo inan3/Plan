@@ -54,10 +54,10 @@ class AuthService {
     }
   }
 
-  /// Reenvía correo de verificación (si no está verificado).
+  /// Reenvía correo de verificación al usuario actual.
   static Future<void> resendEmailVerification() async {
     final user = _auth.currentUser;
-    if (user != null && !user.emailVerified) {
+    if (user != null) {
       await user.sendEmailVerification();
     }
   }
