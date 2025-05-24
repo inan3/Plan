@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dating_app/main/colors.dart';
 import 'package:dating_app/start/registration/user_registration_screen.dart';
 import 'verification_provider.dart';
+import 'email_verification_screen.dart';
 import 'auth_service.dart';
 
 class RegisterWithGoogle extends StatefulWidget {
@@ -33,17 +34,48 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
         return;
       }
 
-      // Directo a UserRegistrationScreen
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => UserRegistrationScreen(
-            provider: VerificationProvider.google,
-            firebaseUser: user,
+
+      if (!user.emailVerified) {
+        await user.sendEmailVerification();
+
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Verifica tu correo'),
+            content: Text(
+              'Se ha enviado un correo de verificación a ${user.email}. '
+              'Sigue el enlace recibido para continuar.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Aceptar'),
+              ),
+            ],
           ),
-        ),
-      );
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationScreen(
+              email: user.email ?? '',
+              provider: VerificationProvider.google,
+            ),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UserRegistrationScreen(
+              provider: VerificationProvider.google,
+              firebaseUser: user,
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
