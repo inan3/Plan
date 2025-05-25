@@ -270,14 +270,14 @@
         }, slideSpeed);
       }
     }, stepTime);
-
-    // Desvanecer la sección solo cuando la primera imagen deje de ser visible
+    // Desvanecer la sección solo al pasar a la siguiente
     const section = document.querySelector('.image-section');
+    const nextSection = document.querySelector('.image-section-3');
     const firstImg = document.querySelector('.img1');
     const stickyRef = parseFloat(getComputedStyle(firstImg).top) || 0;
     const fadeOut = () => {
-      const rect = firstImg.getBoundingClientRect();
-      section.classList.toggle('fade-out', rect.bottom <= stickyRef);
+      const rect = nextSection.getBoundingClientRect();
+      section.classList.toggle('fade-out', rect.top <= stickyRef);
     };
     window.addEventListener('scroll', fadeOut);
     fadeOut();
