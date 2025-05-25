@@ -145,6 +145,15 @@
     .footer-links a{color:#fff;font-size:.875rem;}
     .footer-logo{height:40px;}
     .lang-select{background:#000;color:#fff;border:1px solid #fff;padding:.3rem;}
+
+    /* MODAL REGISTRO */
+    .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5);overflow:auto;}
+    .modal-content{background:#fff;margin:5% auto;padding:2rem;max-width:400px;border-radius:8px;position:relative;}
+    .modal-content .close{position:absolute;right:10px;top:10px;cursor:pointer;font-size:1.5rem;}
+    .modal-content input{width:100%;padding:.8rem;margin:.5rem 0;border:1px solid #ccc;border-radius:4px;}
+    .modal-content button{width:100%;padding:.8rem;margin-top:.5rem;background:var(--blue);color:#fff;border:none;border-radius:4px;cursor:pointer;}
+    .modal-content button.google-btn{background:#4285F4;}
+    .separator{text-align:center;margin:1rem 0;}
   </style>
 </head>
 <body>
@@ -156,8 +165,7 @@
         <ul>
           <li><a href="#hero">Inicio</a></li>
           <li><a href="#downloadSection">Descargar</a></li>
-          <li><a href="#download">Regístrate</a></li>
-          <li><a href="reset_password.html">¿Olvidaste tu contraseña?</a></li>
+          <li><a href="#" id="openRegister">Regístrate</a></li>
         </ul>
       </nav>
       <a href="#downloadSection" class="btn-download">Descargar</a>
@@ -213,6 +221,34 @@
       </div>
     </section>
   </main>
+
+  <div id="registerModal" class="modal" aria-hidden="true">
+    <div class="modal-content" id="registerStep1">
+      <span class="close">&times;</span>
+      <h2>Regístrate en Plan Social</h2>
+      <button id="googleRegister" class="google-btn">Continuar con Google</button>
+      <p class="separator">- o -</p>
+      <input type="email" id="regEmail" placeholder="Correo electrónico" />
+      <input type="password" id="regPwd" placeholder="Contraseña" />
+      <button id="emailRegisterBtn">Registrarse</button>
+      <button id="checkVerificationBtn">Ya verifiqué</button>
+      <p id="regMsg"></p>
+    </div>
+    <div class="modal-content" id="registerStep2" style="display:none">
+      <span class="close">&times;</span>
+      <h2>Completa tu perfil</h2>
+      <input type="text" id="nameInput" placeholder="Nombre" />
+      <input type="number" id="ageInput" placeholder="Edad" min="18" />
+      <label>Foto de perfil
+        <input type="file" id="profilePhoto" accept="image/*" />
+      </label>
+      <label>Fotos de portada
+        <input type="file" id="coverPhotos" accept="image/*" multiple />
+      </label>
+      <button id="completeProfileBtn">Guardar</button>
+      <p id="completeMsg"></p>
+    </div>
+  </div>
   <footer class="site-footer">
     <div class="footer-container">
       <img class="footer-logo" src="plan-sin-fondo.png" alt="Plan Social">
@@ -237,6 +273,22 @@
     const navToggle = document.querySelector('.nav-toggle');
     const navList = document.querySelector('nav ul');
     navToggle.addEventListener('click', () => navList.classList.toggle('open'));
+
+    // Modal registro
+    const registerModal = document.getElementById('registerModal');
+    const registerStep1 = document.getElementById('registerStep1');
+    const registerStep2 = document.getElementById('registerStep2');
+    const openRegister = document.getElementById('openRegister');
+    const closeBtns = registerModal.querySelectorAll('.close');
+
+    openRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      registerStep1.style.display = 'block';
+      registerStep2.style.display = 'none';
+      registerModal.style.display = 'block';
+    });
+    closeBtns.forEach(btn => btn.addEventListener('click', () => registerModal.style.display = 'none'));
+    window.addEventListener('click', (e) => { if (e.target === registerModal) registerModal.style.display = 'none'; });
 
     // Slider automático continuo
     const slider = document.getElementById('heroSlider');
