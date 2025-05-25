@@ -71,7 +71,10 @@
       display: grid;
       grid-template-columns: 1fr;
       row-gap: 3rem;
+      grid-template-rows: auto;
     }
+    .image-container > * { grid-area: 1 / 1; }
+    .right-stack{display:contents;}
     .image-container img {
       width: 100%;
       max-width: 300px;
@@ -80,9 +83,10 @@
       position: sticky;
       top: calc(var(--header-height) + 1rem);
     }
-    .img2 {transform: rotate(15deg);margin-top: 5px;}
-    .img3 {transform: rotate(-10deg);margin-top: 5px;}
-    .img4 {transform: rotate(8deg);margin-top: 5px;}
+    .img2 {transform: rotate(15deg);margin-top: 30vh;}
+    .img3 {transform: rotate(-10deg);margin-top: 60vh;}
+    .img4 {transform: rotate(8deg);margin-top: 90vh;}
+    .image-section.fade-out{opacity:0;transform:translateY(-100px);transition:opacity .6s ease,transform .6s ease;}
 
     .cta-text {
       text-align: center;
@@ -267,20 +271,16 @@
       }
     }, stepTime);
 
-    // Movimiento espejo del texto respecto a image1
-    const img1 = document.querySelector('.img1');
-    const ctaText = document.querySelector('.cta-text');
-    if (img1 && ctaText) {
-      const stickyTop = parseFloat(getComputedStyle(img1).top) || 0;
-      const mirror = () => {
-        const rect = img1.getBoundingClientRect();
-        const diff = rect.top - stickyTop;
-        ctaText.style.transform = `translateY(${-diff}px)`;
-        ctaText.style.opacity = rect.bottom <= stickyTop ? 0 : 1;
-      };
-      window.addEventListener('scroll', mirror);
-      mirror();
-    }
+    // Desvanecer conjunto al superponerse la última imagen
+    const section = document.querySelector('.image-section');
+    const lastImg = document.querySelector('.img4');
+    const stickyRef = parseFloat(getComputedStyle(lastImg).top) || 0;
+    const fadeOut = () => {
+      const rect = lastImg.getBoundingClientRect();
+      section.classList.toggle('fade-out', rect.bottom <= stickyRef);
+    };
+    window.addEventListener('scroll', fadeOut);
+    fadeOut();
   </script>
 </body>
 </html>
