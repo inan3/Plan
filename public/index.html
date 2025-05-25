@@ -32,6 +32,10 @@
     nav ul li a{font-weight:500;color:var(--gray-dark);transition:color .2s;}
     nav ul li a:hover{color:var(--green);}
     .nav-toggle{display:none;background:none;border:none;font-size:1.5rem;cursor:pointer;}
+    @media(min-width:768px){
+      nav{flex:1;display:flex;justify-content:center;}
+      nav ul{justify-content:center;}
+    }
 
     /* HERO */
     .hero{position:relative;overflow:hidden;height:100vh;padding:0 1rem;display:flex;flex-direction:column;justify-content:center;}
