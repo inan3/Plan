@@ -271,13 +271,14 @@
       }
     }, stepTime);
 
-    // Desvanecer conjunto al superponerse la última imagen
+    // Desvanecer la sección solo al pasar a la siguiente
     const section = document.querySelector('.image-section');
-    const lastImg = document.querySelector('.img4');
-    const stickyRef = parseFloat(getComputedStyle(lastImg).top) || 0;
+    const nextSection = document.querySelector('.image-section-3');
+    const firstImg = document.querySelector('.img1');
+    const stickyRef = parseFloat(getComputedStyle(firstImg).top) || 0;
     const fadeOut = () => {
-      const rect = lastImg.getBoundingClientRect();
-      section.classList.toggle('fade-out', rect.bottom <= stickyRef);
+      const rect = nextSection.getBoundingClientRect();
+      section.classList.toggle('fade-out', rect.top <= stickyRef);
     };
     window.addEventListener('scroll', fadeOut);
     fadeOut();
