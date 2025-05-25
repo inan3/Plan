@@ -87,6 +87,7 @@
     .img3 {transform: rotate(-10deg);margin-top: 60vh;}
     .img4 {transform: rotate(8deg);margin-top: 90vh;}
     .image-section.fade-out{opacity:0;transform:translateY(-100px);transition:opacity .6s ease,transform .6s ease;}
+    .fade-trigger{position:absolute;bottom:0;left:0;width:100%;height:1px;}
 
     .cta-text {
       text-align: center;
@@ -203,6 +204,7 @@
         <h2>Crea planes, comparte y disfruta</h2>
         <p>Organiza planes a tu medida y conecta con personas cerca dispuestas a vivirlos contigo</p>
       </div>
+      <div class="fade-trigger"></div>
     </section>
     <!-- SECCIÓN 3: fondo turquesa-crema -->
     <section class="image-section image-section-3" id="features2">
@@ -270,17 +272,16 @@
         }, slideSpeed);
       }
     }, stepTime);
-    // Desvanecer la sección solo al pasar a la siguiente
+    // Desvanecer la sección y el texto juntos
     const section = document.querySelector('.image-section');
-    const nextSection = document.querySelector('.image-section-3');
+    const trigger = document.querySelector('.fade-trigger');
     const firstImg = document.querySelector('.img1');
     const stickyRef = parseFloat(getComputedStyle(firstImg).top) || 0;
-    const fadeOut = () => {
-      const rect = nextSection.getBoundingClientRect();
-      section.classList.toggle('fade-out', rect.top <= stickyRef);
-    };
-    window.addEventListener('scroll', fadeOut);
-    fadeOut();
+    const observer = new IntersectionObserver(
+      ([entry]) => section.classList.toggle('fade-out', entry.isIntersecting),
+      { rootMargin: `-${stickyRef}px 0px 0px 0px` }
+    );
+    observer.observe(trigger);
   </script>
 </body>
 </html>
