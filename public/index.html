@@ -271,12 +271,12 @@
       }
     }, stepTime);
 
-    // Desvanecer conjunto al superponerse la última imagen
+    // Desvanecer la sección solo cuando la primera imagen deje de ser visible
     const section = document.querySelector('.image-section');
-    const lastImg = document.querySelector('.img4');
-    const stickyRef = parseFloat(getComputedStyle(lastImg).top) || 0;
+    const firstImg = document.querySelector('.img1');
+    const stickyRef = parseFloat(getComputedStyle(firstImg).top) || 0;
     const fadeOut = () => {
-      const rect = lastImg.getBoundingClientRect();
+      const rect = firstImg.getBoundingClientRect();
       section.classList.toggle('fade-out', rect.bottom <= stickyRef);
     };
     window.addEventListener('scroll', fadeOut);
