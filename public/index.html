@@ -22,10 +22,10 @@
     *{margin:0;padding:0;box-sizing:border-box;}
     body{font-family:var(--font-body);background:var(--bg);color:var(--gray-dark);}
     a{text-decoration:none;color:inherit;}
-    header{position:fixed;top:0;width:100%;height:var(--header-height);background:var(--bg);border-bottom:1px solid #eee;z-index:100;}
+    header{position:fixed;top:0;width:100%;height:var(--header-height);background:#000;border-bottom:1px solid #eee;z-index:100;}
     .nav-container{max-width:1200px;margin:auto;height:100%;display:flex;align-items:center;padding:0 1rem;}
     .nav-logo{margin-left:2rem;margin-right:1rem;}
-    .nav-logo img{height:60px;transform:translateX(60px);}
+    .nav-logo img{height:60px;transform:none;}
     .btn-download{background:var(--blue);color:#fff;padding:.6rem 1.2rem;border-radius:24px;font-weight:600;transition:background .2s,transform .2s,box-shadow .2s;margin-left:auto;box-shadow:0 8px 16px rgba(0,0,0,.15);}
     .btn-download:hover{background:var(--blue-dark);transform:translateY(-2px);box-shadow:0 12px 20px rgba(0,0,0,.20);}
     nav ul{display:flex;gap:1.5rem;list-style:none;}
@@ -126,7 +126,7 @@
       .nav-logo{order:2;flex:1;display:flex;justify-content:center;margin-left:0;}
       .btn-download{order:3;margin:0;}
       nav{order:4;}
-      nav ul{position:fixed;top:60px;left:-100%;width:200px;height:calc(100%-60px);background:var(--bg);flex-direction:column;align-items:flex-start;padding:1rem;gap:1rem;transition:left .3s ease;box-shadow:4px 0 8px rgba(0,0,0,.1);}
+      nav ul{position:fixed;top:60px;left:-100%;width:200px;height:calc(100%-60px);background:#000;flex-direction:column;align-items:flex-start;padding:1rem;gap:1rem;transition:left .3s ease;box-shadow:4px 0 8px rgba(0,0,0,.1);}
       nav ul.open{left:0;}
       .hero-text h1{font-size:2rem;}
       .hero-text p{font-size:1rem;}
@@ -148,17 +148,15 @@
     <div class="nav-container">
       <button class="nav-toggle" aria-label="Abrir menú">☰</button>
       <div class="nav-logo"><img src="plan-sin-fondo.png" alt="Plan Social"></div>
-      <a href="#downloadSection" class="btn-download">Descargar</a>
       <nav>
         <ul>
           <li><a href="#hero">Inicio</a></li>
-          <li><a href="#features">Imágenes</a></li>
-          <li><a href="#features2">Sección 3</a></li>
           <li><a href="#downloadSection">Descargar</a></li>
           <li><a href="#download">Regístrate</a></li>
           <li><a href="reset_password.html">¿Olvidaste tu contraseña?</a></li>
         </ul>
       </nav>
+      <a href="#downloadSection" class="btn-download">Descargar</a>
     </div>
   </header>
   <main>
