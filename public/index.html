@@ -89,6 +89,7 @@
       padding: 2rem 1rem;
       position: sticky;
       top: calc(var(--header-height) + 1rem);
+      transition: transform .2s linear, opacity .2s linear;
     }
 
     /* SECCIÓN 4: imágenes que actúan como botones */
@@ -126,7 +127,7 @@
       .right-stack{display:flex;flex-direction:column;gap:5px;}
       .right-stack img{max-width:300px;}
       .image-section .cta-text,
-      .image-section-3 .cta-text{flex:1;margin-left:2rem;text-align:left;align-self:flex-start;position:sticky;top:calc(var(--header-height)+2rem);}
+      .image-section-3 .cta-text{flex:1;margin-left:2rem;text-align:left;align-self:flex-start;position:sticky;top:calc(var(--header-height)+2rem);transition:transform .2s linear,opacity .2s linear;}
     }
     @media(max-width:992px){.hero-text{max-width:90%;}}
     @media(max-width:768px){
@@ -265,6 +266,21 @@
         }, slideSpeed);
       }
     }, stepTime);
+
+    // Movimiento espejo del texto respecto a image1
+    const img1 = document.querySelector('.img1');
+    const ctaText = document.querySelector('.cta-text');
+    if (img1 && ctaText) {
+      const stickyTop = parseFloat(getComputedStyle(img1).top) || 0;
+      const mirror = () => {
+        const rect = img1.getBoundingClientRect();
+        const diff = rect.top - stickyTop;
+        ctaText.style.transform = `translateY(${-diff}px)`;
+        ctaText.style.opacity = rect.bottom <= stickyTop ? 0 : 1;
+      };
+      window.addEventListener('scroll', mirror);
+      mirror();
+    }
   </script>
 </body>
 </html>
