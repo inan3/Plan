@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ayuda - Plan Social</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Poppins',sans-serif;padding:1em;line-height:1.5;color:#444;}
+    h1{font-size:1.5rem;}
+    h2{margin-top:1.5rem;}
+    .site-footer{background:#000;color:#fff;padding:2rem 1rem;text-align:center;}
+    .footer-container{max-width:1200px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:1rem;}
+    .footer-links{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;}
+    .footer-links a{color:#fff;font-size:.875rem;}
+    .footer-logo{height:40px;}
+    .lang-select{background:#000;color:#fff;border:1px solid #fff;padding:.3rem;}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="plan-sin-fondo.png" alt="Plan Social" style="height:40px;">
+    <h1>Ayuda</h1>
+  </header>
+  <main>
+    <h2>Preguntas frecuentes</h2>
+    <div>
+      <h3>¿Cómo creo un nuevo plan?</h3>
+      <ol>
+        <li>Toca el botón “+” para abrir el formulario de creación de plan.</li>
+        <li>Selecciona o escribe el tipo de plan en el selector.</li>
+        <li>Añade hasta 3 imágenes o 1 vídeo tocando en “Contenido multimedia” y elige desde galería o cámara (vídeo máximo 15 s).</li>
+        <li>Pulsa “Fecha y hora del plan” para escoger fecha(s) y hora(s); marca “Todo el día” o “Incluir fecha final” si lo deseas.</li>
+        <li>Selecciona el punto de encuentro en el mapa para fijar la ubicación.</li>
+        <li>Ajusta la restricción de edad con el control deslizante y define el número máximo de participantes.</li>
+        <li>Escribe una breve descripción del plan.</li>
+        <li>Elige la visibilidad (Público, Privado o Solo para mis seguidores).</li>
+        <li>Finalmente pulsa “Finalizar Plan” y tu plan se publicará. Puedes ver tu plan en la sección “Mis planes” y compartirlo con amigos.</li>
+      </ol>
+
+      <h3>¿Cómo busco planes cerca de mí?</h3>
+      <ol>
+        <li>Abre la sección Explorar tocando el icono de la casa en la barra inferior.</li>
+        <li>La lista de usuarios se ordena por proximidad usando tu ubicación y la función computeDistance.</li>
+        <li>Ajusta filtros: toca el ícono de embudo para filtrar por edad o distancia.</li>
+        <li>Si prefieres un mapa, toca el icono de mapa en la barra inferior para ver marcadores de usuarios con planes públicos.</li>
+        <li>Pulsa un marcador o un perfil en la lista para ver sus planes (PlanCard) y unirte.</li>
+      </ol>
+
+      <h3>¿Cómo invito a alguien a un plan?</h3>
+      <ol>
+        <li>En el perfil de un usuario sin planes, toca el botón “Invítale a un Plan”.</li>
+        <li>Elige “Existente” para seleccionar uno de tus planes activos o “Nuevo” para crear un plan privado.</li>
+        <li>Si seleccionas Existente, escoge un plan de la lista y confirma la invitación en el diálogo.</li>
+        <li>Si seleccionas Nuevo, completa el formulario rápido de plan privado (tipo, fecha, ubicación y descripción) y finaliza.</li>
+        <li>Al confirmar, se envía una notificación al usuario invitado y verás un mensaje de éxito.</li>
+      </ol>
+
+      <h3>¿Qué es un plan privado?</h3>
+      <p>Un plan privado solo es visible para ti y para las personas con quien lo compartes. Nadie más podrá verlo ni unirse.</p>
+
+      <h3>¿Cómo funciona el mapa?</h3>
+      <p>El mapa muestra todos los planes públicos con los que puedes interactuar y unirte si lo deseas. Puedes ver la ubicación de los planes en el mapa y tocar los marcadores para ver más detalles sobre cada plan. Además, puedes filtrar los planes según tus intereses y preferencias. Puedes acercar, alejar y mover el mapa para ver planes en todo el mundo.</p>
+
+      <h3>¿Cómo funcionan los niveles de privilegio?</h3>
+      <p>Los niveles definen ventajas y herramientas adicionales según tu actividad en la app:</p>
+      <p><strong>Básico</strong><br>
+      • Crear 1 plan activo a la vez.<br>
+      • Unirse a planes públicos sin límite.<br>
+      • Chat básico dentro del plan.<br>
+      • Soporte mediante FAQ y correo.</p>
+      <p><strong>Premium</strong><br>
+      • Todo lo anterior y más funciones para mejorar tu experiencia:<br>
+      • Crear hasta 3 planes activos a la vez y opción de planes recurrentes (p. ej. todos los viernes).<br>
+      • Añadir hasta 10 fotos + 1 vídeo largo (30 s) para promocionar tus planes.<br>
+      • Co-organizadores: asigna a 1 persona para ayudarte a gestionar el plan.<br>
+      • Notificaciones push personalizadas (elige cuándo se envían recordatorios).</p>
+      <p><strong>Golden</strong><br>
+      • Crear eventos con precio (ticketing in-app); la app cobra la comisión estándar.<br>
+      • Combinar cuenta como usuario normal y empresa creadora de planes/eventos.<br>
+      • Crear planes ilimitados activos a la vez.<br>
+      • Configurar admisión de participantes basada en su nivel de privilegio (p. ej. solo usuarios Golden/VIP pueden participar).<br>
+      • Destacar tu plan (“boost”) 1 vez por semana para aparecer arriba en la lista y con pin dorado en el mapa.<br>
+      • Analítica: ver quién ha visitado tus planes, tasa de confirmación y mapa de calor de intereses.<br>
+      • Atención al cliente por chat con respuesta en menos de 24 horas.</p>
+      <p><strong>VIP</strong><br>
+      • Todos los beneficios anteriores sin límites + prioridad absoluta en el algoritmo de descubrimiento.<br>
+      • Marca verificada (insignia) y URL corta única para compartir planes.<br>
+      • Posibilidad de patrocinar planes (tu logo visible en portada de la sección Explorar).<br>
+      • Múltiples co-organizadores y roles personalizados (moderador, fotógrafo, etc.).<br>
+      • Dashboard avanzado con exportación CSV y reportes mensuales.<br>
+      • Atención al cliente en tiempo real y acceso anticipado a funcionalidades beta.</p>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-container">
+      <img class="footer-logo" src="plan-sin-fondo.png" alt="Plan Social">
+      <div class="footer-links">
+        <a href="help.html">Ayuda</a>
+        <a href="privacy_policy.html">Privacidad</a>
+        <a href="terms_and_conditions.html">Condiciones</a>
+        <select class="lang-select">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <p>© 2025 Plan Social</p>
+    </div>
+  </footer>
+</body>
+</html>
