@@ -9,7 +9,7 @@
     body{font-family:'Poppins',sans-serif;padding:1em;line-height:1.5;color:#444;}
     h1{font-size:1.5rem;}
     h2{margin-top:1.5rem;}
-    .site-footer{background:#000;color:#fff;padding:2rem 1rem;text-align:center;}
+    .site-footer{background:#000;color:#fff;padding:2rem 1rem;text-align:center;margin-left:-1em;margin-right:-1em;}
     .footer-container{max-width:1200px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:1rem;}
     .footer-links{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;}
     .footer-links a{color:#fff;font-size:.875rem;}
@@ -202,17 +202,17 @@
   </div>
   <script>
     (function(){
-      const select=document.querySelector('.lang-select');
+      const selects=document.querySelectorAll('.lang-select');
       function setLang(l){
         document.documentElement.lang=l;
         document.querySelectorAll('[data-lang]').forEach(el=>{
           el.style.display=el.getAttribute('data-lang')===l?'':'none';
         });
-        select.value=l;
+        selects.forEach(s=>s.value=l);
       }
       const initial=((navigator.language||navigator.userLanguage)||'en').startsWith('es')?'es':'en';
       setLang(initial);
-      select.addEventListener('change',e=>setLang(e.target.value));
+      selects.forEach(sel=>sel.addEventListener('change',e=>setLang(e.target.value)));
     })();
   </script>
 </body>
