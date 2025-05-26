@@ -20,6 +20,7 @@
 </head>
 
 <body>
+  <div data-lang="en">
     <strong>Terms &amp; Conditions</strong><br>
     <p>These terms and conditions apply to the Plan app (hereby referred to as "Application") for mobile devices that
         was created by Inan Ilik Ilik (hereby referred to as "Service Provider") as a Freemium service.</p><br>
@@ -101,6 +102,58 @@
             <p>© 2025 Plan Social</p>
         </div>
     </footer>
+  </div>
+  <div data-lang="es">
+    <strong>Términos y Condiciones</strong><br>
+    <p>Estos términos y condiciones se aplican a la app Plan (en adelante, "Aplicación") para dispositivos móviles creada por Inan Ilik Ilik (en adelante, "Proveedor del Servicio") como servicio Freemium.</p><br>
+    <p>Al descargar o utilizar la Aplicación aceptas automáticamente los siguientes términos. Se recomienda leerlos detenidamente antes de usar la Aplicación. Queda estrictamente prohibido copiar o modificar la Aplicación, cualquier parte de ella o nuestras marcas. Tampoco está permitido extraer el código fuente de la Aplicación, traducirla a otros idiomas ni crear versiones derivadas. Todas las marcas, derechos de autor, derechos sobre bases de datos y demás derechos de propiedad intelectual relacionados con la Aplicación siguen siendo propiedad del Proveedor del Servicio.</p><br>
+    <p>El Proveedor del Servicio se esfuerza por que la Aplicación sea lo más útil y eficiente posible, por lo que se reserva el derecho de modificarla o cobrar por sus servicios en cualquier momento y por cualquier motivo. Cualquier cargo por la Aplicación o sus servicios será claramente comunicado.</p><br>
+    <p>La Aplicación almacena y procesa los datos personales que proporcionas al Proveedor del Servicio para prestar el Servicio. Es tu responsabilidad mantener la seguridad de tu teléfono y el acceso a la Aplicación. Se desaconseja hacer jailbreak o root a tu teléfono, ya que podría exponerlo a malware, virus y programas maliciosos, comprometer las funciones de seguridad y provocar que la Aplicación no funcione correctamente o deje de funcionar.</p>
+    <div>
+        <p>Ten en cuenta que la Aplicación utiliza servicios de terceros que tienen sus propios Términos y Condiciones. A continuación se muestran los enlaces a los Términos y Condiciones de los proveedores de servicios utilizados por la Aplicación:</p>
+        <ul>
+            <li><a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Google Play Services</a></li>
+        </ul>
+    </div><br>
+    <p>Ten en cuenta que algunas funciones de la Aplicación requieren conexión a Internet, ya sea Wi-Fi o datos móviles. El Proveedor del Servicio no se hace responsable si la Aplicación no funciona a pleno rendimiento por falta de acceso a Wi-Fi o por haber agotado tu tarifa de datos.</p><br>
+    <p>Si utilizas la Aplicación fuera de una zona Wi-Fi, recuerda que los términos del proveedor de tu red móvil siguen vigentes. Por ello podrías incurrir en cargos por datos durante el uso de la Aplicación u otros cargos de terceros. Al utilizar la Aplicación aceptas la responsabilidad de dichos cargos, incluido el roaming si no desactivas los datos en el extranjero. Si no eres el titular del dispositivo, asumimos que cuentas con su permiso.</p><br>
+    <p>De igual manera, el Proveedor del Servicio no siempre puede responsabilizarse de tu uso de la Aplicación. Por ejemplo, debes asegurarte de que tu dispositivo permanezca cargado; si se agota la batería y no puedes acceder al Servicio, el Proveedor del Servicio no puede responsabilizarse.</p><br>
+    <p>El Proveedor del Servicio puede actualizar la Aplicación en algún momento. Los requisitos para el sistema operativo (y para cualquier sistema adicional al que se extienda la disponibilidad) pueden cambiar, y deberás descargar las actualizaciones si deseas seguir usando la Aplicación. El Proveedor del Servicio no garantiza actualizar siempre la Aplicación para que sea relevante para ti y/o sea compatible con la versión concreta de tu sistema operativo. Sin embargo, aceptas recibir actualizaciones cuando se ofrezcan. El Proveedor del Servicio también puede dejar de proporcionar la Aplicación y terminar su uso en cualquier momento sin avisarte. Salvo que se indique lo contrario, al finalizarse (a) los derechos y licencias otorgados en estos términos terminarán y (b) deberás dejar de usar la Aplicación y eliminarla de tu dispositivo si es necesario.</p><br><strong>Cambios en estos Términos y Condiciones</strong>
+    <p>El Proveedor del Servicio puede actualizar periódicamente estos Términos y Condiciones. Por ello se recomienda revisar esta página con regularidad para ver posibles cambios. El Proveedor del Servicio notificará cualquier cambio publicando los nuevos Términos y Condiciones en esta página.</p><br>
+    <p>Estos términos y condiciones están vigentes desde el 26-05-2025</p><br><strong>Contacto</strong>
+    <p>Si tienes preguntas o sugerencias sobre estos Términos y Condiciones, no dudes en contactar al Proveedor del Servicio en soporte@plansocialapp.es.</p>
+    <hr>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <img class="footer-logo" src="plan-sin-fondo.png" alt="Plan Social">
+            <div class="footer-links">
+                <a href="help.html">Ayuda</a>
+                <a href="privacy_policy.html">Privacidad</a>
+                <a href="terms_and_conditions.html">Condiciones</a>
+                <select class="lang-select">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <p>© 2025 Plan Social</p>
+        </div>
+    </footer>
+  </div>
+  <script>
+    (function(){
+      const select=document.querySelector('.lang-select');
+      function setLang(l){
+        document.documentElement.lang=l;
+        document.querySelectorAll('[data-lang]').forEach(el=>{
+          el.style.display=el.getAttribute('data-lang')===l?'':'none';
+        });
+        select.value=l;
+      }
+      const initial=((navigator.language||navigator.userLanguage)||'en').startsWith('es')?'es':'en';
+      setLang(initial);
+      select.addEventListener('change',e=>setLang(e.target.value));
+    })();
+  </script>
 </body>
 
 </html>
