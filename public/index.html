@@ -385,21 +385,16 @@
         order: 1;
       }
 
-      .nav-close {
-        display: none;
+      nav ul .nav-close {
+        display: block;
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
+        top: .5rem;
+        right: .5rem;
         background: none;
         border: none;
         color: #fff;
         font-size: 1.5rem;
-        padding: 0;
         z-index: 101;
-      }
-
-      .nav-close.show {
-        display: block;
       }
 
       .nav-logo {
@@ -523,9 +518,10 @@
       <button class="nav-toggle" aria-label="Abrir menú">☰</button>
       <div class="nav-logo"><img src="plan-sin-fondo.png" alt="Plan Social"></div>
       <nav>
-        <button class="nav-close" aria-label="Cerrar menú">&#8592;</button>
         <ul>
-            <li class="close-item"><button class="nav-close" aria-label="Cerrar menú">&#8592;</button></li>
+          <li>
+            <button class="nav-close" aria-label="Cerrar menú">×</button>
+          </li>
           <li><a href="#hero">Inicio</a></li>
           <li><a href="#downloadSection">Descargar</a></li>
           <li><a href="help.html">Ayuda</a></li>
@@ -614,20 +610,16 @@
   <script>
     // Menú móvil
     const navToggle = document.querySelector('.nav-toggle');
-    const navClose = document.querySelector('.nav-close');
-    const navList = document.querySelector('nav ul');
+    const navClose = document.querySelector('nav ul .nav-close');
+    const navList  = document.querySelector('nav ul');
+
     navToggle.addEventListener('click', () => {
       navList.classList.toggle('open');
-      navClose.classList.toggle('show');
     });
+
     navClose.addEventListener('click', () => {
       navList.classList.remove('open');
-      navClose.classList.remove('show');
     });
-    if (window.location.hash === '#menu') {
-      navList.classList.add('open');
-      navClose.classList.add('show');
-    }
 
     // Modal registro eliminado
 
