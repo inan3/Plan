@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'my_plans_selection.dart';
 import 'subscribed_plans_selection.dart';
+import '../../l10n/app_localizations.dart';
 
 class SelectPlanScreen extends StatefulWidget {
   const SelectPlanScreen({Key? key}) : super(key: key);
@@ -34,14 +35,15 @@ class _SelectPlanScreenState extends State<SelectPlanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Seleccionar Planes'),
+        title: Text(t.selectPlans),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Mis Planes'),
-            Tab(text: 'Suscritos'),
+          tabs: [
+            Tab(text: t.myPlansTab),
+            Tab(text: t.subscribedTab),
           ],
         ),
         actions: [

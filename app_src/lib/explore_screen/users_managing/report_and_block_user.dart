@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla a pantalla completa para reportar a un usuario.
 /// Se seleccionan hasta 6 motivos y un comentario opcional.
@@ -20,14 +21,7 @@ class ReportUserScreen extends StatefulWidget {
 }
 
 class _ReportUserScreenState extends State<ReportUserScreen> {
-  final List<String> _reasons = [
-    'Contenido inapropiado',
-    'Suplantación de identidad',
-    'Spam o publicitario',
-    'Lenguaje o comportamiento abusivo',
-    'Imágenes inapropiadas',
-    'Otro (especificar)',
-  ];
+  late List<String> _reasons;
 
   // booleans para cada motivo
   final List<bool> _selected = [false, false, false, false, false, false];
@@ -35,10 +29,24 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    final t = AppLocalizations.of(context);
+    _reasons = [
+      t.reasonInappropriateContent,
+      t.reasonImpersonation,
+      t.reasonSpam,
+      t.reasonAbusiveBehavior,
+      t.reasonInappropriateImages,
+      t.reasonOtherSpecify,
+    ];
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reportar Usuario"),
+        title: Text(AppLocalizations.of(context).reportUserTitle),
       ),
       body: Column(
         children: [
@@ -46,7 +54,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "Selecciona los motivos por los que deseas reportar este perfil",
+              AppLocalizations.of(context).reportReasonsPrompt,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
@@ -75,7 +83,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                "¿Por qué quieres reportar este perfil? (opcional)",
+                AppLocalizations.of(context).whyReportQuestion,
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
             ),
@@ -87,7 +95,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
               controller: _optionalCommentController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                hintText: 'Describe brevemente...',
+                hintText: AppLocalizations.of(context).describeBriefly,
               ),
               maxLines: 3,
             ),
@@ -99,11 +107,11 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             children: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Volver"),
+                child: Text(AppLocalizations.of(context).back),
               ),
               ElevatedButton(
                 onPressed: _sendReport,
-                child: const Text("Enviar"),
+                child: Text(AppLocalizations.of(context).send),
               ),
             ],
           ),
@@ -138,13 +146,13 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Reporte enviado con éxito")),
+        SnackBar(content: Text(AppLocalizations.of(context).reportSuccess)),
       );
 
       Navigator.pop(context); // cierra la pantalla
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Ocurrió un error al enviar reporte.")),
+        SnackBar(content: Text(AppLocalizations.of(context).reportError)),
       );
     }
   }
@@ -222,7 +230,7 @@ class ReportAndBlockUser {
                                       const SizedBox(width: 12),
                                       const Expanded(
                                         child: Text(
-                                          'Reportar Perfil',
+                                          'AppLocalizations.of(context).reportProfile',
                                           style: TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
@@ -261,8 +269,8 @@ class ReportAndBlockUser {
                                       Expanded(
                                         child: Text(
                                           isBlocked
-                                              ? 'Desbloquear Perfil'
-                                              : 'Bloquear Perfil',
+                                              ? AppLocalizations.of(context).unblockProfile
+                                              : AppLocalizations.of(context).blockProfile,
                                           style: const TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
@@ -322,16 +330,16 @@ class ReportAndBlockUser {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text(isBlocked ? "Perfil Bloqueado" : "Perfil Desbloqueado"),
+          title: Text(isBlocked ? AppLocalizations.of(context).profileBlocked : AppLocalizations.of(context).profileUnblocked),
           content: Text(
             isBlocked
-                ? "Este perfil ha sido bloqueado, ya no podrá interactuar contigo."
-                : "Has desbloqueado a este usuario.",
+                ? AppLocalizations.of(context).profileBlockedMsg
+                : AppLocalizations.of(context).profileUnblockedMsg,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
+              child: Text(AppLocalizations.of(context).ok),
             ),
           ],
         );
