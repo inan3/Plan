@@ -145,6 +145,7 @@ flutter:
     - assets/icono-telefono.svg
     - assets/icono-email.svg
     - assets/icono-preguntas.svg
+    - assets/icono-languages.svg
 
     - assets/verificado.svg
 
