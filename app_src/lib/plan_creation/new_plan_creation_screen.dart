@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../l10n/app_localizations.dart';
 
 import '../main/colors.dart';
 import '../models/plan_model.dart';
@@ -1127,6 +1128,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   /// Bloque principal
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Material(
       type: MaterialType.transparency,
       child: Stack(
@@ -1413,9 +1415,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           controller: widget.isEditMode && widget.planToEdit != null
                               ? TextEditingController(text: _planDescription ?? '')
                               : null,
-                          decoration: const InputDecoration(
-                            hintText: "Describe brevemente tu plan...",
-                            hintStyle: TextStyle(
+                          decoration: InputDecoration(
+                            hintText: t.describePlanHint,
+                            hintStyle: const TextStyle(
                               color: Colors.white70,
                               fontFamily: 'Inter-Regular',
                               decoration: TextDecoration.none,
@@ -1448,7 +1450,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             onTap: () {
                               setState(() => _selectedVisibility = "Público");
                               _showVisibilityPopup(
-                                "Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él",
+                                t.publicPlansInfo,
                               );
                             },
                             child: Container(
@@ -1492,8 +1494,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             onTap: () {
                               setState(() => _selectedVisibility = "Privado");
                               _showVisibilityPopup(
-                                "Los planes privados son visibles solo por aquellos a quienes se lo compartas. "
-                                'Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.',
+                                t.privatePlansInfo,
                               );
                             },
                             child: Container(

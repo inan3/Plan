@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:dating_app/main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'my_plans_screen.dart';
 import 'favourites_screen.dart';
 import 'settings/settings_screen.dart';
@@ -41,6 +42,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final Size screenSize = MediaQuery.of(context).size;
 
     return Stack(
@@ -100,8 +102,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildProfileHeader(),
                       _buildMenuItemWithBadge(
+                        context: context,
                         icon: 'assets/icono-calendario.svg',
-                        title: 'Mis Planes',
+                        title: t.myPlans,
                         destination: const MyPlansScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -112,8 +115,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             .snapshots(),
                       ),
                       _buildMenuItemWithBadge(
+                        context: context,
                         icon: 'assets/union.svg',
-                        title: 'Planes Suscritos',
+                        title: t.subscribedPlans,
                         destination: SubscribedPlansScreen(
                           userId: currentUserId ?? '',
                         ),
@@ -126,8 +130,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             .snapshots(),
                       ),
                       _buildMenuItemWithBadge(
+                        context: context,
                         icon: 'assets/icono-corazon.svg',
-                        title: 'Favoritos',
+                        title: t.favourites,
                         destination: const FavouritesScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -139,7 +144,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-ajustes.svg',
-                        title: 'Ajustes',
+                        title: t.settings,
                         destination: const SettingsScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -147,7 +152,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-cerrar-sesion.svg',
-                        title: 'Cerrar Sesión',
+                        title: t.logout,
                         destination: const CloseSessionScreen(),
                         iconColor: Colors.red,
                         textColor: Colors.red,
@@ -336,6 +341,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   }
 
   Widget _buildMenuItemWithBadge({
+    required BuildContext context,
     required dynamic icon,
     required String title,
     required Widget destination,
@@ -344,12 +350,13 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     required Stream stream,
     required int index,
   }) {
+    final t = AppLocalizations.of(context);
     return StreamBuilder(
       stream: stream,
       builder: (context, AsyncSnapshot snapshot) {
         int count = 0;
         if (snapshot.hasData) {
-          if (title == 'Favoritos') {
+          if (title == t.favourites) {
             final data = (snapshot.data as DocumentSnapshot?)?.data()
                 as Map<String, dynamic>?;
             count = (data?['favourites'] as List<dynamic>?)?.length ?? 0;
@@ -400,7 +407,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     )
                   : const SizedBox(),
               onTap: () {
-                if (title == 'Mis Planes') {
+                if (title == t.myPlans) {
                   showDialog(
                     context: context,
                     builder: (context) => Dialog(
@@ -412,8 +419,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
-                            const Text(
-                              'Mi lista de planes creados',
+                            Text(
+                              t.createdPlansList,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -441,7 +448,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                     ),
                   );
-                } else if (title == 'Planes Suscritos') {
+                } else if (title == t.subscribedPlans) {
                   showDialog(
                     context: context,
                     builder: (context) => Dialog(
@@ -452,8 +459,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
-                            const Text(
-                              'Mi lista de planes suscritos',
+                            Text(
+                              t.subscribedPlansList,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -482,7 +489,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                     ),
                   );
-                } else if (title == 'Favoritos') {
+                } else if (title == t.favourites) {
                   showDialog(
                     context: context,
                     builder: (context) => Dialog(
@@ -493,8 +500,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
-                            const Text(
-                              'Mi lista de planes favoritos',
+                            Text(
+                              t.favouritePlansList,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,

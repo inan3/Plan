@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../models/plan_model.dart';
 import '../../main/colors.dart';
+import '../../l10n/app_localizations.dart';
 
 // Importaciones necesarias:
 import '../users_managing/user_info_check.dart';
@@ -353,8 +354,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Future<void> _showPlanDetails(BuildContext context, String planId) async {
     final planDoc = await _firestore.collection('plans').doc(planId).get();
     if (!planDoc.exists) {
+      final t = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El plan ya no existe.')),
+        SnackBar(content: Text(t.planDoesNotExist)),
       );
       return;
     }
@@ -375,7 +377,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         builder: (_) => Scaffold(
           backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
           appBar: AppBar(
-            title: const Text("Detalle del Plan"),
+            title: Text(AppLocalizations.of(context).planDetail),
             backgroundColor: const ui.Color.fromARGB(221, 255, 255, 255),
           ),
           body: SingleChildScrollView(
@@ -399,8 +401,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       BuildContext context, String planId) async {
     final planDoc = await _firestore.collection('plans').doc(planId).get();
     if (!planDoc.exists) {
+      final t = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('El plan ya no existe.')));
+          .showSnackBar(SnackBar(content: Text(t.planDoesNotExist)));
       return;
     }
     final planData = planDoc.data() as Map<String, dynamic>;
@@ -423,10 +426,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
   //-----------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Center(
-        child: Text("Debes iniciar sesión para ver notificaciones"),
+      return Center(
+        child: Text(t.signInToViewNotifications),
       );
     }
 
@@ -447,9 +451,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Notificaciones",
-                        style: TextStyle(
+                      Text(
+                        t.notificationsTitle,
+                        style: const TextStyle(
                           color: Colors.black,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -468,14 +472,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     stream: _getAllNotifications(),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        return _buildErrorWidget();
+                        return _buildErrorWidget(t);
                       }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return _buildLoading();
                       }
                       final docs = snapshot.data?.docs ?? [];
                       if (docs.isEmpty) {
-                        return _buildEmpty("No tienes notificaciones nuevas");
+                        return _buildEmpty(t.noNewNotifications);
                       }
 
                       // Ordenar manualmente por timestamp descendente
@@ -779,15 +783,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
         child: CircularProgressIndicator(color: Colors.blue, strokeWidth: 2.5),
       );
 
-  Widget _buildErrorWidget() => const Center(
+  Widget _buildErrorWidget(AppLocalizations t) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: Colors.red, size: 40),
-            SizedBox(height: 10),
+            const Icon(Icons.error_outline, color: Colors.red, size: 40),
+            const SizedBox(height: 10),
             Text(
-              'Error al cargar datos',
-              style: TextStyle(color: Colors.red, fontSize: 16),
+              t.errorLoadingData,
+              style: const TextStyle(color: Colors.red, fontSize: 16),
             ),
           ],
         ),

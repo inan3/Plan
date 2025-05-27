@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla a pantalla completa para reportar a un usuario.
 /// Se seleccionan hasta 6 motivos y un comentario opcional.
@@ -20,14 +21,6 @@ class ReportUserScreen extends StatefulWidget {
 }
 
 class _ReportUserScreenState extends State<ReportUserScreen> {
-  final List<String> _reasons = [
-    'Contenido inapropiado',
-    'Suplantación de identidad',
-    'Spam o publicitario',
-    'Lenguaje o comportamiento abusivo',
-    'Imágenes inapropiadas',
-    'Otro (especificar)',
-  ];
 
   // booleans para cada motivo
   final List<bool> _selected = [false, false, false, false, false, false];
@@ -36,27 +29,36 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final reasons = [
+      t.inappropriateContent,
+      t.impersonation,
+      t.spam,
+      t.abusiveBehavior,
+      t.inappropriateImages,
+      t.otherSpecify,
+    ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reportar Usuario"),
+        title: Text(t.reportUser),
       ),
       body: Column(
         children: [
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "Selecciona los motivos por los que deseas reportar este perfil",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              t.reportReasonsPrompt,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
-              itemCount: _reasons.length,
+              itemCount: reasons.length,
               itemBuilder: (ctx, i) {
                 return ListTile(
-                  title: Text(_reasons[i]),
+                  title: Text(reasons[i]),
                   trailing: Checkbox(
                     value: _selected[i],
                     onChanged: (val) {
@@ -75,7 +77,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                "¿Por qué quieres reportar este perfil? (opcional)",
+                t.whyReportOptional,
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
             ),
@@ -85,9 +87,9 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _optionalCommentController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Describe brevemente...',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: t.describeBriefly,
               ),
               maxLines: 3,
             ),
@@ -99,11 +101,11 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             children: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Volver"),
+                child: Text(t.back),
               ),
               ElevatedButton(
                 onPressed: _sendReport,
-                child: const Text("Enviar"),
+                child: Text(t.send),
               ),
             ],
           ),
@@ -138,13 +140,13 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Reporte enviado con éxito")),
+        SnackBar(content: Text(t.reportSentSuccess)),
       );
 
       Navigator.pop(context); // cierra la pantalla
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Ocurrió un error al enviar reporte.")),
+        SnackBar(content: Text(t.reportSendError)),
       );
     }
   }
@@ -220,10 +222,10 @@ class ReportAndBlockUser {
                                         height: 24,
                                       ),
                                       const SizedBox(width: 12),
-                                      const Expanded(
+                                      Expanded(
                                         child: Text(
-                                          'Reportar Perfil',
-                                          style: TextStyle(
+                                          t.reportProfile,
+                                          style: const TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
                                           ),
@@ -261,8 +263,8 @@ class ReportAndBlockUser {
                                       Expanded(
                                         child: Text(
                                           isBlocked
-                                              ? 'Desbloquear Perfil'
-                                              : 'Bloquear Perfil',
+                                              ? t.unblockProfile
+                                              : t.blockProfile,
                                           style: const TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
@@ -321,17 +323,16 @@ class ReportAndBlockUser {
     showDialog(
       context: context,
       builder: (ctx) {
+        final t = AppLocalizations.of(context);
         return AlertDialog(
-          title: Text(isBlocked ? "Perfil Bloqueado" : "Perfil Desbloqueado"),
+          title: Text(isBlocked ? t.profileBlocked : t.profileUnblocked),
           content: Text(
-            isBlocked
-                ? "Este perfil ha sido bloqueado, ya no podrá interactuar contigo."
-                : "Has desbloqueado a este usuario.",
+            isBlocked ? t.profileBlockedDesc : t.profileUnblockedDesc,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
+              child: Text(t.ok),
             ),
           ],
         );

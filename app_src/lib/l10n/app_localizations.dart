@@ -64,6 +64,59 @@ class AppLocalizations {
       ,'no_profile_body': 'No hay ningún perfil en la base de datos para este usuario. Debes registrarte primero.'
       ,'login_error_title': 'Error de inicio de sesión'
       ,'invalid_credentials': 'Correo o contraseña incorrectos.'
+      ,'my_plans': 'Mis Planes'
+      ,'subscribed_plans': 'Planes Suscritos'
+      ,'favourites': 'Favoritos'
+      ,'logout': 'Cerrar Sesión'
+      ,'created_plans_list': 'Mi lista de planes creados'
+      ,'subscribed_plans_list': 'Mi lista de planes suscritos'
+      ,'favourite_plans_list': 'Mi lista de planes favoritos'
+      ,'select_plans': 'Seleccionar Planes'
+      ,'my_plans_tab': 'Mis Planes'
+      ,'subscribed_tab': 'Suscritos'
+      ,'go_to_my_plans': 'Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.'
+      ,'private_plans_info': 'Los planes privados son visibles solo por aquellos a quienes se lo compartas. Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.'
+      ,'public_plans_info': 'Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él'
+      ,'check_in_for_attendees': 'Check-in para asistentes'
+      ,'plan_detail': 'Detalle del Plan'
+      ,'plan_does_not_exist': 'El plan ya no existe.'
+      ,'check_in_not_active': 'El check-in no está activo.\nPresiona atrás para iniciar.'
+      ,'generating_code': 'Generando código...'
+      ,'finalize_check_in': 'Finalizar Check-in'
+      ,'manual_input_prompt': 'Si no puedes escanear el código QR,\ningrésalo manualmente:'
+      ,'alphanumeric_code': 'Código alfanumérico'
+      ,'validate_code': 'Validar código'
+      ,'invalid_code': 'El código es incorrecto o el check-in no está activo.'
+      ,'no_logged_in_user': 'No se encontró un usuario logueado.'
+      ,'attendance_confirmed': 'Tu asistencia se ha confirmado con éxito.\n¡Disfruta del evento!'
+      ,'start_check_in': 'Iniciar Check-in'
+      ,'view_check_in': 'Ver Check-in (QR)'
+      ,'confirm_attendance': 'Confirmar asistencia'
+      ,'report_user': 'Reportar Usuario'
+      ,'report_reasons_prompt': 'Selecciona los motivos por los que deseas reportar este perfil'
+      ,'inappropriate_content': 'Contenido inapropiado'
+      ,'impersonation': 'Suplantación de identidad'
+      ,'spam': 'Spam o publicitario'
+      ,'abusive_behavior': 'Lenguaje o comportamiento abusivo'
+      ,'inappropriate_images': 'Imágenes inapropiadas'
+      ,'other_specify': 'Otro (especificar)'
+      ,'why_report_optional': '¿Por qué quieres reportar este perfil? (opcional)'
+      ,'describe_briefly': 'Describe brevemente...'
+      ,'back': 'Volver'
+      ,'report_sent_success': 'Reporte enviado con éxito'
+      ,'report_send_error': 'Ocurrió un error al enviar reporte.'
+      ,'report_profile': 'Reportar Perfil'
+      ,'block_profile': 'Bloquear Perfil'
+      ,'unblock_profile': 'Desbloquear Perfil'
+      ,'profile_blocked': 'Perfil Bloqueado'
+      ,'profile_unblocked': 'Perfil Desbloqueado'
+      ,'profile_blocked_desc': 'Este perfil ha sido bloqueado, ya no podrá interactuar contigo.'
+      ,'profile_unblocked_desc': 'Has desbloqueado a este usuario.'
+      ,'ok': 'OK'
+      ,'notifications_title': 'Notificaciones'
+      ,'sign_in_to_view_notifications': 'Debes iniciar sesión para ver notificaciones'
+      ,'no_new_notifications': 'No tienes notificaciones nuevas'
+      ,'error_loading_data': 'Error al cargar datos'
     },
     'en': {
       'settings': 'Settings',
@@ -124,6 +177,59 @@ class AppLocalizations {
       ,'no_profile_body': 'No profile found for this user. Please register first.'
       ,'login_error_title': 'Login error'
       ,'invalid_credentials': 'Incorrect email or password.'
+      ,'my_plans': 'My Plans'
+      ,'subscribed_plans': 'Subscribed Plans'
+      ,'favourites': 'Favourites'
+      ,'logout': 'Log out'
+      ,'created_plans_list': 'My created plans list'
+      ,'subscribed_plans_list': 'My subscribed plans list'
+      ,'favourite_plans_list': 'My favorite plans list'
+      ,'select_plans': 'Select Plans'
+      ,'my_plans_tab': 'My Plans'
+      ,'subscribed_tab': 'Subscribed'
+      ,'go_to_my_plans': 'Go to the "My Plans" section to share it with anyone you want.'
+      ,'private_plans_info': 'Private plans are visible only to those you share them with. Go to the "My Plans" section to share it with anyone you want.'
+      ,'public_plans_info': 'Public plans are visible to everyone and anyone can join'
+      ,'check_in_for_attendees': 'Check-in for attendees'
+      ,'plan_detail': 'Plan Detail'
+      ,'plan_does_not_exist': 'The plan no longer exists.'
+      ,'check_in_not_active': 'Check-in is not active.\nPress back to start.'
+      ,'generating_code': 'Generating code...'
+      ,'finalize_check_in': 'Finalize Check-in'
+      ,'manual_input_prompt': 'If you cannot scan the QR code,\nenter it manually:'
+      ,'alphanumeric_code': 'Alphanumeric code'
+      ,'validate_code': 'Validate code'
+      ,'invalid_code': 'The code is incorrect or check-in is not active.'
+      ,'no_logged_in_user': 'No logged in user found.'
+      ,'attendance_confirmed': 'Your attendance has been successfully confirmed.\nEnjoy the event!'
+      ,'start_check_in': 'Start Check-in'
+      ,'view_check_in': 'View Check-in (QR)'
+      ,'confirm_attendance': 'Confirm attendance'
+      ,'report_user': 'Report User'
+      ,'report_reasons_prompt': 'Select the reasons why you want to report this profile'
+      ,'inappropriate_content': 'Inappropriate content'
+      ,'impersonation': 'Impersonation'
+      ,'spam': 'Spam or advertising'
+      ,'abusive_behavior': 'Abusive language or behavior'
+      ,'inappropriate_images': 'Inappropriate images'
+      ,'other_specify': 'Other (specify)'
+      ,'why_report_optional': 'Why do you want to report this profile? (optional)'
+      ,'describe_briefly': 'Describe briefly...'
+      ,'back': 'Back'
+      ,'report_sent_success': 'Report sent successfully'
+      ,'report_send_error': 'An error occurred while sending the report.'
+      ,'report_profile': 'Report Profile'
+      ,'block_profile': 'Block Profile'
+      ,'unblock_profile': 'Unblock Profile'
+      ,'profile_blocked': 'Profile Blocked'
+      ,'profile_unblocked': 'Profile Unblocked'
+      ,'profile_blocked_desc': 'This profile has been blocked and can no longer interact with you.'
+      ,'profile_unblocked_desc': 'You have unblocked this user.'
+      ,'ok': 'OK'
+      ,'notifications_title': 'Notifications'
+      ,'sign_in_to_view_notifications': 'You must log in to see notifications'
+      ,'no_new_notifications': 'You have no new notifications'
+      ,'error_loading_data': 'Error loading data'
     },
   };
 
@@ -193,6 +299,59 @@ class AppLocalizations {
   String get noProfileBody => _t('no_profile_body');
   String get loginErrorTitle => _t('login_error_title');
   String get invalidCredentials => _t('invalid_credentials');
+  String get myPlans => _t('my_plans');
+  String get subscribedPlans => _t('subscribed_plans');
+  String get favourites => _t('favourites');
+  String get logout => _t('logout');
+  String get createdPlansList => _t('created_plans_list');
+  String get subscribedPlansList => _t('subscribed_plans_list');
+  String get favouritePlansList => _t('favourite_plans_list');
+  String get selectPlans => _t('select_plans');
+  String get myPlansTab => _t('my_plans_tab');
+  String get subscribedTab => _t('subscribed_tab');
+  String get goToMyPlans => _t('go_to_my_plans');
+  String get privatePlansInfo => _t('private_plans_info');
+  String get publicPlansInfo => _t('public_plans_info');
+  String get checkInForAttendees => _t('check_in_for_attendees');
+  String get planDetail => _t('plan_detail');
+  String get planDoesNotExist => _t('plan_does_not_exist');
+  String get checkInNotActive => _t('check_in_not_active');
+  String get generatingCode => _t('generating_code');
+  String get finalizeCheckIn => _t('finalize_check_in');
+  String get manualInputPrompt => _t('manual_input_prompt');
+  String get alphanumericCode => _t('alphanumeric_code');
+  String get validateCode => _t('validate_code');
+  String get invalidCode => _t('invalid_code');
+  String get noLoggedInUser => _t('no_logged_in_user');
+  String get attendanceConfirmed => _t('attendance_confirmed');
+  String get startCheckIn => _t('start_check_in');
+  String get viewCheckIn => _t('view_check_in');
+  String get confirmAttendance => _t('confirm_attendance');
+  String get reportUser => _t('report_user');
+  String get reportReasonsPrompt => _t('report_reasons_prompt');
+  String get inappropriateContent => _t('inappropriate_content');
+  String get impersonation => _t('impersonation');
+  String get spam => _t('spam');
+  String get abusiveBehavior => _t('abusive_behavior');
+  String get inappropriateImages => _t('inappropriate_images');
+  String get otherSpecify => _t('other_specify');
+  String get whyReportOptional => _t('why_report_optional');
+  String get describeBriefly => _t('describe_briefly');
+  String get back => _t('back');
+  String get reportSentSuccess => _t('report_sent_success');
+  String get reportSendError => _t('report_send_error');
+  String get reportProfile => _t('report_profile');
+  String get blockProfile => _t('block_profile');
+  String get unblockProfile => _t('unblock_profile');
+  String get profileBlocked => _t('profile_blocked');
+  String get profileUnblocked => _t('profile_unblocked');
+  String get profileBlockedDesc => _t('profile_blocked_desc');
+  String get profileUnblockedDesc => _t('profile_unblocked_desc');
+  String get ok => _t('ok');
+  String get notificationsTitle => _t('notifications_title');
+  String get signInToViewNotifications => _t('sign_in_to_view_notifications');
+  String get noNewNotifications => _t('no_new_notifications');
+  String get errorLoadingData => _t('error_loading_data');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
