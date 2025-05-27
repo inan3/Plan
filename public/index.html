@@ -385,12 +385,33 @@
         order: 1;
       }
 
+      .nav-close {
+        display: none;
+        position: fixed;
+        top: var(--header-height);
+        right: 0;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        padding: 0.5rem 1rem;
+        z-index: 101;
+      }
+
+      .nav-close.show {
+        display: block;
+      }
+
       .nav-logo {
         order: 2;
         flex: 1;
         display: flex;
         justify-content: center;
         margin-left: 0;
+      }
+
+      .nav-logo img {
+        transform: translateX(20px);
       }
 
       .btn-download {
@@ -404,14 +425,14 @@
 
       nav ul {
         position: fixed;
-        top: 60px;
+        top: var(--header-height);
         left: -100%;
         width: 200px;
-        height: calc(100%-60px);
+        height: calc(100% - var(--header-height));
         background: #000;
         flex-direction: column;
         align-items: flex-start;
-        padding: 1rem;
+        padding: 3rem 1rem 1rem;
         gap: 1rem;
         transition: left .3s ease;
         box-shadow: 4px 0 8px rgba(0, 0, 0, .1);
@@ -502,6 +523,7 @@
       <button class="nav-toggle" aria-label="Abrir menú">☰</button>
       <div class="nav-logo"><img src="plan-sin-fondo.png" alt="Plan Social"></div>
       <nav>
+        <button class="nav-close" aria-label="Cerrar menú">&#8592;</button>
         <ul>
           <li><a href="#hero">Inicio</a></li>
           <li><a href="#downloadSection">Descargar</a></li>
@@ -591,10 +613,19 @@
   <script>
     // Menú móvil
     const navToggle = document.querySelector('.nav-toggle');
+    const navClose = document.querySelector('.nav-close');
     const navList = document.querySelector('nav ul');
-    navToggle.addEventListener('click', () => navList.classList.toggle('open'));
+    navToggle.addEventListener('click', () => {
+      navList.classList.toggle('open');
+      navClose.classList.toggle('show');
+    });
+    navClose.addEventListener('click', () => {
+      navList.classList.remove('open');
+      navClose.classList.remove('show');
+    });
     if (window.location.hash === '#menu') {
       navList.classList.add('open');
+      navClose.classList.add('show');
     }
 
     // Modal registro eliminado
