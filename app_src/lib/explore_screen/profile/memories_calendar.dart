@@ -153,11 +153,11 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(formattedDate),
-          content: const Text("No hay memorias para este día."),
+          content: Text(AppLocalizations.of(context).noMemoriesDay),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+              child: Text(AppLocalizations.of(context).close),
             ),
           ],
         ),
@@ -233,7 +233,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+              child: Text(AppLocalizations.of(context).close),
             ),
           ],
         );
@@ -308,7 +308,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                           ),
                         ),
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text("Cerrar"),
+                        child: Text(AppLocalizations.of(context).close),
                       ),
                     ],
                   ),

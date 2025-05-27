@@ -77,6 +77,7 @@ class AppLocalizations {
       ,'go_to_my_plans': 'Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.'
       ,'private_plans_info': 'Los planes privados son visibles solo por aquellos a quienes se lo compartas. Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.'
       ,'public_plans_info': 'Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él'
+
       ,'check_in_for_attendees': 'Check-in para asistentes'
       ,'plan_detail': 'Detalle del Plan'
       ,'plan_does_not_exist': 'El plan ya no existe.'
@@ -105,11 +106,13 @@ class AppLocalizations {
       ,'back': 'Volver'
       ,'report_sent_success': 'Reporte enviado con éxito'
       ,'report_send_error': 'Ocurrió un error al enviar reporte.'
+
       ,'report_profile': 'Reportar Perfil'
       ,'block_profile': 'Bloquear Perfil'
       ,'unblock_profile': 'Desbloquear Perfil'
       ,'profile_blocked': 'Perfil Bloqueado'
       ,'profile_unblocked': 'Perfil Desbloqueado'
+
       ,'profile_blocked_desc': 'Este perfil ha sido bloqueado, ya no podrá interactuar contigo.'
       ,'profile_unblocked_desc': 'Has desbloqueado a este usuario.'
       ,'ok': 'OK'
@@ -117,6 +120,7 @@ class AppLocalizations {
       ,'sign_in_to_view_notifications': 'Debes iniciar sesión para ver notificaciones'
       ,'no_new_notifications': 'No tienes notificaciones nuevas'
       ,'error_loading_data': 'Error al cargar datos'
+
     },
     'en': {
       'settings': 'Settings',
@@ -190,6 +194,7 @@ class AppLocalizations {
       ,'go_to_my_plans': 'Go to the "My Plans" section to share it with anyone you want.'
       ,'private_plans_info': 'Private plans are visible only to those you share them with. Go to the "My Plans" section to share it with anyone you want.'
       ,'public_plans_info': 'Public plans are visible to everyone and anyone can join'
+
       ,'check_in_for_attendees': 'Check-in for attendees'
       ,'plan_detail': 'Plan Detail'
       ,'plan_does_not_exist': 'The plan no longer exists.'
@@ -218,11 +223,13 @@ class AppLocalizations {
       ,'back': 'Back'
       ,'report_sent_success': 'Report sent successfully'
       ,'report_send_error': 'An error occurred while sending the report.'
+
       ,'report_profile': 'Report Profile'
       ,'block_profile': 'Block Profile'
       ,'unblock_profile': 'Unblock Profile'
       ,'profile_blocked': 'Profile Blocked'
       ,'profile_unblocked': 'Profile Unblocked'
+
       ,'profile_blocked_desc': 'This profile has been blocked and can no longer interact with you.'
       ,'profile_unblocked_desc': 'You have unblocked this user.'
       ,'ok': 'OK'
@@ -230,6 +237,7 @@ class AppLocalizations {
       ,'sign_in_to_view_notifications': 'You must log in to see notifications'
       ,'no_new_notifications': 'You have no new notifications'
       ,'error_loading_data': 'Error loading data'
+
     },
   };
 
@@ -312,12 +320,15 @@ class AppLocalizations {
   String get goToMyPlans => _t('go_to_my_plans');
   String get privatePlansInfo => _t('private_plans_info');
   String get publicPlansInfo => _t('public_plans_info');
+
   String get checkInForAttendees => _t('check_in_for_attendees');
   String get planDetail => _t('plan_detail');
+
   String get planDoesNotExist => _t('plan_does_not_exist');
   String get checkInNotActive => _t('check_in_not_active');
   String get generatingCode => _t('generating_code');
   String get finalizeCheckIn => _t('finalize_check_in');
+
   String get manualInputPrompt => _t('manual_input_prompt');
   String get alphanumericCode => _t('alphanumeric_code');
   String get validateCode => _t('validate_code');
@@ -340,11 +351,13 @@ class AppLocalizations {
   String get back => _t('back');
   String get reportSentSuccess => _t('report_sent_success');
   String get reportSendError => _t('report_send_error');
+
   String get reportProfile => _t('report_profile');
   String get blockProfile => _t('block_profile');
   String get unblockProfile => _t('unblock_profile');
   String get profileBlocked => _t('profile_blocked');
   String get profileUnblocked => _t('profile_unblocked');
+
   String get profileBlockedDesc => _t('profile_blocked_desc');
   String get profileUnblockedDesc => _t('profile_unblocked_desc');
   String get ok => _t('ok');
@@ -352,6 +365,7 @@ class AppLocalizations {
   String get signInToViewNotifications => _t('sign_in_to_view_notifications');
   String get noNewNotifications => _t('no_new_notifications');
   String get errorLoadingData => _t('error_loading_data');
+
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();

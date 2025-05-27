@@ -356,7 +356,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (!planDoc.exists) {
       final t = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
+
         SnackBar(content: Text(t.planDoesNotExist)),
+
       );
       return;
     }
@@ -403,7 +405,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (!planDoc.exists) {
       final t = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
+
           .showSnackBar(SnackBar(content: Text(t.planDoesNotExist)));
+
       return;
     }
     final planData = planDoc.data() as Map<String, dynamic>;

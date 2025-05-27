@@ -22,10 +22,25 @@ class ReportUserScreen extends StatefulWidget {
 
 class _ReportUserScreenState extends State<ReportUserScreen> {
 
+
   // booleans para cada motivo
   final List<bool> _selected = [false, false, false, false, false, false];
   final TextEditingController _optionalCommentController =
       TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final t = AppLocalizations.of(context);
+    _reasons = [
+      t.reasonInappropriateContent,
+      t.reasonImpersonation,
+      t.reasonSpam,
+      t.reasonAbusiveBehavior,
+      t.reasonInappropriateImages,
+      t.reasonOtherSpecify,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +55,9 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
     ];
     return Scaffold(
       appBar: AppBar(
+
         title: Text(t.reportUser),
+
       ),
       body: Column(
         children: [
@@ -48,8 +65,10 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
+
               t.reportReasonsPrompt,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+
             ),
           ),
           const SizedBox(height: 8),
@@ -77,7 +96,9 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
+
                 t.whyReportOptional,
+
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
             ),
@@ -87,9 +108,11 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _optionalCommentController,
+
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 hintText: t.describeBriefly,
+
               ),
               maxLines: 3,
             ),
@@ -101,11 +124,13 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             children: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
+
                 child: Text(t.back),
               ),
               ElevatedButton(
                 onPressed: _sendReport,
                 child: Text(t.send),
+
               ),
             ],
           ),
@@ -140,13 +165,17 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
+
         SnackBar(content: Text(t.reportSentSuccess)),
+
       );
 
       Navigator.pop(context); // cierra la pantalla
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
+
         SnackBar(content: Text(t.reportSendError)),
+
       );
     }
   }
@@ -224,8 +253,10 @@ class ReportAndBlockUser {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
+
                                           t.reportProfile,
                                           style: const TextStyle(
+
                                             color: Colors.black87,
                                             fontSize: 16,
                                           ),
@@ -263,8 +294,10 @@ class ReportAndBlockUser {
                                       Expanded(
                                         child: Text(
                                           isBlocked
+
                                               ? t.unblockProfile
                                               : t.blockProfile,
+
                                           style: const TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
@@ -325,14 +358,18 @@ class ReportAndBlockUser {
       builder: (ctx) {
         final t = AppLocalizations.of(context);
         return AlertDialog(
+
           title: Text(isBlocked ? t.profileBlocked : t.profileUnblocked),
           content: Text(
             isBlocked ? t.profileBlockedDesc : t.profileUnblockedDesc,
+
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
+
               child: Text(t.ok),
+
             ),
           ],
         );

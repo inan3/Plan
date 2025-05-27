@@ -139,7 +139,9 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
     final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
+
         title: Text(t.checkInForAttendees),
+
         backgroundColor: Colors.black87,
         foregroundColor: Colors.white,
       ),
@@ -155,7 +157,9 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
           }
           final data = snapshot.data!.data() as Map<String, dynamic>?;
           if (data == null) {
+
             return Center(child: Text(t.planDoesNotExist));
+
           }
 
           final code = data['checkInCode'] ?? '';
@@ -163,8 +167,10 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
           if (!isActive) {
             return Center(
               child: Text(
+
                 t.checkInNotActive,
                 style: const TextStyle(color: Colors.white),
+
               ),
             );
           }
@@ -189,9 +195,11 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
                           size: 200.0,
                           backgroundColor: Colors.white,
                         )
+
                       : Text(
                           t.generatingCode,
                           style: const TextStyle(color: Colors.white),
+
                         ),
                 ),
               ),
@@ -221,7 +229,9 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
                     await AttendanceManaging.finalizeCheckIn(widget.planId);
                     Navigator.pop(context);
                   },
+
                   child: Text(t.finalizeCheckIn),
+
                 ),
               ),
             ],
@@ -285,7 +295,9 @@ class _CheckInParticipantScreenState extends State<CheckInParticipantScreen> {
     final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
+
         title: Text(t.confirmAttendance),
+
         backgroundColor: Colors.black87,
       ),
       backgroundColor: Colors.black87,
@@ -320,7 +332,9 @@ class _CheckInParticipantScreenState extends State<CheckInParticipantScreen> {
                     decoration: InputDecoration(
                       fillColor: Colors.white10,
                       filled: true,
+
                       hintText: t.alphanumericCode,
+
                       hintStyle: const TextStyle(color: Colors.white54),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -379,7 +393,9 @@ class _CheckInParticipantScreenState extends State<CheckInParticipantScreen> {
     final isValid = await AttendanceManaging.validateCode(widget.planId, code);
     if (!isValid) {
       setState(() {
+
         _errorMsg = t.invalidCode;
+
         _scannedOk = false;
       });
       return;
@@ -465,7 +481,9 @@ class CheckInActionArea extends StatelessWidget {
           // 2A) No está activo => botón "Iniciar"
           if (!checkInActive) {
             return _buildButton(
+
               label: t.startCheckIn,
+
               color: Colors.green,
               onTap: () async {
                 await AttendanceManaging.startCheckIn(planId);
@@ -486,7 +504,9 @@ class CheckInActionArea extends StatelessWidget {
             return Column(
               children: [
                 _buildButton(
+
                   label: t.viewCheckIn,
+
                   color: Colors.blueAccent,
                   onTap: () {
                     Navigator.push(
@@ -499,7 +519,9 @@ class CheckInActionArea extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 _buildButton(
+
                   label: t.finalizeCheckIn,
+
                   color: Colors.redAccent,
                   onTap: () async {
                     await AttendanceManaging.finalizeCheckIn(planId);
@@ -518,7 +540,9 @@ class CheckInActionArea extends StatelessWidget {
           } else {
             // Botón "Confirmar asistencia"
             return _buildButton(
+
               label: t.confirmAttendance,
+
               color: Colors.orangeAccent,
               onTap: () {
                 Navigator.push(
