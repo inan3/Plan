@@ -290,7 +290,7 @@ class MyPlansScreen extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text("¿Eliminar este plan?"),
+          title: Text(AppLocalizations.of(context).delete),
           content: Text(
             "Esta acción eliminará el plan ${plan.type} de forma permanente.",
           ),
@@ -315,10 +315,10 @@ class MyPlansScreen extends StatelessWidget {
                 }
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Plan ${plan.type} eliminado.')),
+                  SnackBar(content: Text(AppLocalizations.of(context).planDeleted(plan.type))),
                 );
               },
-              child: const Text("Eliminar"),
+              child: Text(AppLocalizations.of(context).delete),
             ),
           ],
         );

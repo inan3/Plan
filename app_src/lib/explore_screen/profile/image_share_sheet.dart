@@ -141,13 +141,13 @@ class _ImageShareSheetState extends State<ImageShareSheet> {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Text("Cancelar",
+                        child: Text(AppLocalizations.of(context).cancel,
                             style: TextStyle(color: Colors.red, fontSize: 16)),
                       ),
                       const Spacer(),
                       GestureDetector(
                         onTap: _sendImageToSelectedUsers,
-                        child: const Text("Enviar",
+                        child: Text(AppLocalizations.of(context).send,
                             style: TextStyle(color: Colors.green, fontSize: 16)),
                       ),
                     ],
@@ -159,7 +159,7 @@ class _ImageShareSheetState extends State<ImageShareSheet> {
                     controller: _searchController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: "Buscar usuario...",
+                      hintText: AppLocalizations.of(context).searchUserHint,
                       hintStyle: const TextStyle(color: Colors.white60),
                       prefixIcon: const Icon(Icons.search, color: Colors.white60),
                       filled: true,
@@ -174,12 +174,12 @@ class _ImageShareSheetState extends State<ImageShareSheet> {
                   const SizedBox(height: 12),
 
                   // Seguidores
-                  _buildSectionTitle("Mis seguidores"),
+                  _buildSectionTitle(AppLocalizations.of(context).followers),
                   _buildUserList(_filterUsers(_followers)),
                   const SizedBox(height: 12),
 
                   // Seguidos
-                  _buildSectionTitle("A quienes sigo"),
+                  _buildSectionTitle(AppLocalizations.of(context).following),
                   _buildUserList(_filterUsers(_following)),
                 ],
               ),

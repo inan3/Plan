@@ -37,7 +37,7 @@ class InviteUsersToPlanScreen {
   static void showPopup(BuildContext context, String invitedUserId) {
     showGeneralDialog(
       context: context,
-      barrierLabel: "Invitar a un Plan",
+      barrierLabel: AppLocalizations.of(context).invitePlanLabel,
       barrierDismissible: true,
       barrierColor: Colors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 400),
@@ -103,9 +103,9 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Invítale a un plan",
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).invitePlanTitle,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   decoration: TextDecoration.none,
@@ -121,9 +121,9 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                   ),
                 ),
                 onPressed: _onInviteExistingPlan,
-                child: const Text(
-                  "Existente",
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).existing,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     decoration: TextDecoration.none,
@@ -140,9 +140,9 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                   ),
                 ),
                 onPressed: _onInviteNewPlan,
-                child: const Text(
-                  "Nuevo",
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).newLabel,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     decoration: TextDecoration.none,
@@ -215,9 +215,9 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 12),
-                const Text(
-                  "Selecciona uno de tus planes",
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).selectOneOfYourPlans,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -243,14 +243,15 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                                   style: const TextStyle(color: Colors.white),
                                 ),
                                 subtitle: Text(
-                                  "Creado el: ${plan.formattedDate(plan.createdAt)}",
+                                  AppLocalizations.of(context)
+                                      .createdOn(plan.formattedDate(plan.createdAt)),
                                   style: const TextStyle(color: Colors.white70),
                                 ),
                                 onTap: () {
                                   showGeneralDialog(
                                     context: context,
                                     barrierDismissible: false,
-                                    barrierLabel: "Confirmar invitación",
+                                    barrierLabel: AppLocalizations.of(context).confirmInvitation,
                                     barrierColor: Colors.black54,
                                     transitionDuration:
                                         const Duration(milliseconds: 300),
@@ -345,7 +346,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
 void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
   showGeneralDialog(
     context: context,
-    barrierLabel: "Nuevo Plan Privado",
+      barrierLabel: AppLocalizations.of(context).newPrivatePlanLabel,
     barrierDismissible: true,
     barrierColor: Colors.black.withOpacity(0.5),
     transitionDuration: const Duration(milliseconds: 500),
@@ -459,9 +460,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               child: Image.asset('assets/plan-sin-fondo.png', height: 70),
             ),
             const SizedBox(height: 20),
-            const Center(
+            Center(
               child: Text(
-                "¡Crea tu Plan Privado e Invita!",
+                AppLocalizations.of(context).privatePlanInviteTitle,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -1275,7 +1276,8 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Todo el día", style: TextStyle(color: Colors.white)),
+                      Text(AppLocalizations.of(context).allDay,
+                          style: const TextStyle(color: Colors.white)),
                       GestureDetector(
                         onTap: () {
                           setState(() {
@@ -1299,7 +1301,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Incluir fecha final", style: TextStyle(color: Colors.white)),
+                      Text(AppLocalizations.of(context).includeEndDate, style: TextStyle(color: Colors.white)),
                       GestureDetector(
                         onTap: () {
                           setState(() {
@@ -1328,11 +1330,11 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Fecha de inicio", style: TextStyle(color: Colors.white)),
+                      Text(AppLocalizations.of(context).startDate, style: TextStyle(color: Colors.white)),
                       Row(
                         children: [
                           _buildButton(
-                            label: (startDate == null) ? "Elige Día"
+                            label: (startDate == null) ? AppLocalizations.of(context).pickDay
                                 : _numericDate(startDate!),
                             onTap: _pickStartDate,
                           ),
@@ -1340,7 +1342,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                           if (!allDay)
                             _buildButton(
                               label: (startTime == null)
-                                  ? "Elige Hora"
+                                  ? AppLocalizations.of(context).pickTime
                                   : _numericTime(startTime!),
                               onTap: _pickStartTime,
                             ),
@@ -1353,27 +1355,27 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Fecha final", style: TextStyle(color: Colors.white)),
+                      Text(AppLocalizations.of(context).endDate, style: TextStyle(color: Colors.white)),
                       includeEndDate
                           ? Row(
                               children: [
                                 _buildButton(
                                   label: (endDate == null)
-                                      ? "Elige Día"
+                                      ? AppLocalizations.of(context).pickDay
                                       : _numericDate(endDate!),
                                   onTap: _pickEndDate,
                                 ),
                                 const SizedBox(width: 8),
                                 _buildButton(
                                   label: (endTime == null)
-                                      ? "Elige Hora"
+                                      ? AppLocalizations.of(context).pickTime
                                       : _numericTime(endTime!),
                                   onTap: _pickEndTime,
                                 ),
                               ],
                             )
                           : _buildButton(
-                              label: "Sin elegir",
+                              label: AppLocalizations.of(context).notChosen,
                               onTap: () {},
                             ),
                     ],
@@ -1391,12 +1393,12 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                       });
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.blue),
-                    child: const Text("Aceptar", style: TextStyle(color: Colors.white)),
+                    child: Text(AppLocalizations.of(context).accept, style: TextStyle(color: Colors.white)),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context, null),
-                    child: const Text(
-                      "Cancelar",
+                    child: Text(
+                      AppLocalizations.of(context).cancel,
                       style: TextStyle(color: Colors.white70),
                     ),
                   )
@@ -1493,14 +1495,14 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
-              title: const Text("Error"),
+              title: Text(AppLocalizations.of(context).error),
               content: const Text(
                 "La fecha final debe ser posterior a la fecha/hora de inicio.",
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Aceptar"),
+                  child: Text(AppLocalizations.of(context).accept),
                 )
               ],
             ),
@@ -1600,8 +1602,8 @@ class _FrostedConfirmDialog extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  "Confirmar invitación",
+                Text(
+                  AppLocalizations.of(context).confirmInvitation,
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.white,
@@ -1609,8 +1611,8 @@ class _FrostedConfirmDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  "¿Confirmas invitarle a este plan?",
+                Text(
+                  AppLocalizations.of(context).inviteConfirmationQuestion,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
@@ -1649,25 +1651,25 @@ class _FrostedConfirmDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      onPressed: onCancel,
-                      child: const Text(
-                        "No",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                    onPressed: onCancel,
+                    child: Text(
+                      AppLocalizations.of(context).cancel,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.blue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: onConfirm,
-                      child: const Text(
-                        "Sí",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
+                    onPressed: onConfirm,
+                    child: Text(
+                      AppLocalizations.of(context).accept,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
+                  ),
                   ],
                 ),
               ],

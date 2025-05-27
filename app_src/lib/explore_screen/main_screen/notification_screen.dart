@@ -354,7 +354,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final planDoc = await _firestore.collection('plans').doc(planId).get();
     if (!planDoc.exists) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El plan ya no existe.')),
+        SnackBar(content: Text(AppLocalizations.of(context).planDoesNotExist)),
       );
       return;
     }
@@ -375,7 +375,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         builder: (_) => Scaffold(
           backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
           appBar: AppBar(
-            title: const Text("Detalle del Plan"),
+            title: Text(AppLocalizations.of(context).planDetail),
             backgroundColor: const ui.Color.fromARGB(221, 255, 255, 255),
           ),
           body: SingleChildScrollView(
@@ -400,7 +400,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final planDoc = await _firestore.collection('plans').doc(planId).get();
     if (!planDoc.exists) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('El plan ya no existe.')));
+          .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).planDoesNotExist)));
       return;
     }
     final planData = planDoc.data() as Map<String, dynamic>;

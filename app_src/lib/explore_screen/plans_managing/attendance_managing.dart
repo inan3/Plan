@@ -137,7 +137,7 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Check-in para asistentes"),
+        title: Text(AppLocalizations.of(context).checkInForAttendees),
         backgroundColor: Colors.black87,
         foregroundColor: Colors.white,
       ),
@@ -153,7 +153,7 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
           }
           final data = snapshot.data!.data() as Map<String, dynamic>?;
           if (data == null) {
-            return const Center(child: Text("Plan no existe"));
+            return Center(child: Text(AppLocalizations.of(context).planDoesNotExist));
           }
 
           final code = data['checkInCode'] ?? '';
@@ -161,7 +161,7 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
           if (!isActive) {
             return const Center(
               child: Text(
-                "El check-in no está activo.\nPresiona atrás para iniciar.",
+                AppLocalizations.of(context).checkInNotActive,
                 style: TextStyle(color: Colors.white),
               ),
             );
@@ -188,7 +188,7 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
                           backgroundColor: Colors.white,
                         )
                       : const Text(
-                          "Generando código...",
+                          AppLocalizations.of(context).generatingCode,
                           style: TextStyle(color: Colors.white),
                         ),
                 ),
@@ -219,7 +219,7 @@ class _CheckInCreatorScreenState extends State<CheckInCreatorScreen> {
                     await AttendanceManaging.finalizeCheckIn(widget.planId);
                     Navigator.pop(context);
                   },
-                  child: const Text("Finalizar Check-in"),
+                  child: Text(AppLocalizations.of(context).finalizeCheckIn),
                 ),
               ),
             ],
@@ -282,7 +282,7 @@ class _CheckInParticipantScreenState extends State<CheckInParticipantScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Confirmar asistencia"),
+        title: Text(AppLocalizations.of(context).confirmAttendance),
         backgroundColor: Colors.black87,
       ),
       backgroundColor: Colors.black87,
@@ -317,7 +317,7 @@ class _CheckInParticipantScreenState extends State<CheckInParticipantScreen> {
                     decoration: InputDecoration(
                       fillColor: Colors.white10,
                       filled: true,
-                      hintText: "Código alfanumérico",
+                      hintText: AppLocalizations.of(context).alphanumericCode,
                       hintStyle: const TextStyle(color: Colors.white54),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -375,7 +375,7 @@ class _CheckInParticipantScreenState extends State<CheckInParticipantScreen> {
     final isValid = await AttendanceManaging.validateCode(widget.planId, code);
     if (!isValid) {
       setState(() {
-        _errorMsg = "El código es incorrecto o el check-in no está activo.";
+        _errorMsg = AppLocalizations.of(context).invalidCode;
         _scannedOk = false;
       });
       return;
@@ -460,7 +460,7 @@ class CheckInActionArea extends StatelessWidget {
           // 2A) No está activo => botón "Iniciar"
           if (!checkInActive) {
             return _buildButton(
-              label: "Iniciar Check-in",
+              label: AppLocalizations.of(context).startCheckIn,
               color: Colors.green,
               onTap: () async {
                 await AttendanceManaging.startCheckIn(planId);
@@ -481,7 +481,7 @@ class CheckInActionArea extends StatelessWidget {
             return Column(
               children: [
                 _buildButton(
-                  label: "Ver Check-in (QR)",
+                  label: AppLocalizations.of(context).viewCheckIn,
                   color: Colors.blueAccent,
                   onTap: () {
                     Navigator.push(
@@ -494,7 +494,7 @@ class CheckInActionArea extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 _buildButton(
-                  label: "Finalizar Check-in",
+                  label: AppLocalizations.of(context).finalizeCheckIn,
                   color: Colors.redAccent,
                   onTap: () async {
                     await AttendanceManaging.finalizeCheckIn(planId);
@@ -513,7 +513,7 @@ class CheckInActionArea extends StatelessWidget {
           } else {
             // Botón "Confirmar asistencia"
             return _buildButton(
-              label: "Confirmar asistencia",
+              label: AppLocalizations.of(context).confirmAttendance,
               color: Colors.orangeAccent,
               onTap: () {
                 Navigator.push(
