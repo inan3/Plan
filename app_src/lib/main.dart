@@ -15,6 +15,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
+import 'services/language_service.dart';
+
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'explore_screen/users_managing/presence_service.dart';
@@ -47,6 +51,7 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final enabled = prefs.getBool('notificationsEnabled') ?? true;
   await NotificationService.instance.init(enabled: enabled);
+  await LanguageService.loadLocale();
 
   // 4 ▸ Mostrar notificaciones en foreground
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
@@ -180,10 +185,21 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Plan',
-      theme: ThemeData(primarySwatch: Colors.pink),
-      home: StreamBuilder<User?>(
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LanguageService.locale,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          locale: locale,
+          supportedLocales: const [Locale('es'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          title: 'Plan',
+          theme: ThemeData(primarySwatch: Colors.pink),
+          home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
@@ -215,6 +231,8 @@ class _MyAppState extends State<MyApp> {
           return user == null ? const WelcomeScreen() : const ExploreScreen();
         },
       ),
+    );
+      },
     );
   }
 }

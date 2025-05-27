@@ -10,6 +10,8 @@ import 'account.dart';
 import 'privacy.dart';
 import 'general_notifications.dart';
 import 'help_center.dart';
+import 'language_selector.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -67,9 +69,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Ajustes',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          AppLocalizations.of(context).settings,
+          style: const TextStyle(color: Colors.black),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -87,9 +89,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Sección: Configuración general
-              const Text(
-                'Configuración general',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).general,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.black54,
@@ -110,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 24,
                         height: 24,
                       ),
-                      title: const Text('Cuenta'),
+                      title: Text(AppLocalizations.of(context).account),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
@@ -127,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 24,
                         height: 24,
                       ),
-                      title: const Text('Privacidad'),
+                      title: Text(AppLocalizations.of(context).privacy),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
@@ -144,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 24,
                         height: 24,
                       ),
-                      title: const Text('Notificaciones'),
+                      title: Text(AppLocalizations.of(context).notifications),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
@@ -155,6 +157,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                       },
                     ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: SvgPicture.asset(
+                        'assets/icono-languages.svg',
+                        width: 24,
+                        height: 24,
+                      ),
+                      title: Text(AppLocalizations.of(context).languages),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const LanguageSelectorScreen()),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -162,9 +181,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
 
               // Sección: Soporte
-              const Text(
-                'Soporte',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).support,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.black54,
@@ -185,7 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 24,
                         height: 24,
                       ),
-                      title: const Text('Centro de ayuda'),
+                      title: Text(AppLocalizations.of(context).helpCenter),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
@@ -202,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 24,
                         height: 24,
                       ),
-                      title: const Text('Acerca de Plan'),
+                      title: Text(AppLocalizations.of(context).aboutPlan),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () async {
                         final uri = Uri.parse('https://plansocialapp.es/#menu');
@@ -227,7 +246,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 24,
                         height: 24,
                       ),
-                      title: const Text('Valora Plan'),
+                      title: Text(AppLocalizations.of(context).ratePlan),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         // TODO: Navegar a valora_plan.dart
@@ -258,8 +277,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Expanded(
                           // <- clave
                           child: Text(
-                            'Reportar fallos de la aplicación',
-                            style: TextStyle(
+                            AppLocalizations.of(context).reportFailures,
+                            style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600),
                             softWrap: true,
                           ),
@@ -288,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _sendFailureReport,
-                        child: const Text('Enviar'),
+                        child: Text(AppLocalizations.of(context).send),
                       ),
                     ),
                   ],
