@@ -57,11 +57,15 @@
       display: flex;
       align-items: center;
       padding: 0 1rem;
+      position: relative;
     }
 
     .nav-logo {
       margin-left: 2rem;
       margin-right: 1rem;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     .nav-logo img {
@@ -403,6 +407,8 @@
         display: flex;
         justify-content: center;
         margin-left: 0;
+        position: static;
+        transform: none;
       }
 
       .nav-logo img {
