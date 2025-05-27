@@ -67,9 +67,11 @@
       justify-self: center;
     }
 
-    .nav-logo img {
-      height: 60px;
-      transform: none;
+    header .nav-logo img {
+      height: 64px;
+      /* más grande (antes: 60 px) */
+      margin-top: 4px;
+      /* lo bajas 4 px */
     }
 
     .btn-download {
@@ -601,7 +603,9 @@
           <option value="en">English</option>
         </select>
         <div class="footer-social">
-          <div>Síguenos en <button onclick="window.open('https://www.instagram.com/plan0525/', '_blank')" style="background:none;border:none;padding:0"><img src="instagram.png" alt="Instagram" class="social-icon"></button></div>
+          <div>Síguenos en <button onclick="window.open('https://www.instagram.com/plan0525/', '_blank')"
+              style="background:none;border:none;padding:0"><img src="instagram.png" alt="Instagram"
+                class="social-icon"></button></div>
         </div>
       </div>
       <p>© 2025 Plan</p>
@@ -615,7 +619,7 @@
     // Menú móvil
     const navToggle = document.querySelector('.nav-toggle');
     const navClose = document.querySelector('nav ul .nav-close');
-    const navList  = document.querySelector('nav ul');
+    const navList = document.querySelector('nav ul');
 
     navToggle.addEventListener('click', () => {
       navList.classList.toggle('open');
