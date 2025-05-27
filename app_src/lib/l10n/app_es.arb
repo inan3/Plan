@@ -1,0 +1,21 @@
+{
+  "verify_email_title": "Verifica tu correo",
+  "verify_email_body": "Se ha enviado un correo de verificación a {email}. Sigue el enlace recibido para continuar.",
+  "error_register": "Error al registrarte: {error}",
+  "create_account": "Crea tu cuenta",
+  "continue_with_google": "Continuar con Google",
+  "or": "- o -",
+  "email_hint": "Correo electrónico",
+  "password_hint": "Contraseña",
+  "register_button": "Registrarse",
+  "have_account": "¿Ya tienes una cuenta? Inicia sesión",
+  "login_title": "Inicio de sesión",
+  "login_button": "Iniciar sesión",
+  "forgot_password": "¿Olvidaste tu contraseña?",
+  "google_login_error": "Error de inicio de sesión con Google.",
+  "no_profile_title": "No estás registrado",
+  "no_profile_body": "No hay ningún perfil en la base de datos para este usuario. Debes registrarte primero.",
+  "login_error_title": "Error de inicio de sesión",
+  "invalid_credentials": "Correo o contraseña incorrectos.",
+  "accept": "Aceptar"
+}

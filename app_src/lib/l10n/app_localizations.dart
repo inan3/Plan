@@ -46,6 +46,24 @@ class AppLocalizations {
       'select_location_prompt': 'Por favor, selecciona una ubicación.',
       'describe_plan_hint': 'Describe brevemente tu plan...'
       ,'profile_updated': 'Perfil actualizado'
+      ,'verify_email_title': 'Verifica tu correo'
+      ,'verify_email_body': 'Se ha enviado un correo de verificación a {email}. Sigue el enlace recibido para continuar.'
+      ,'error_register': 'Error al registrarte: {error}'
+      ,'create_account': 'Crea tu cuenta'
+      ,'continue_with_google': 'Continuar con Google'
+      ,'or': '- o -'
+      ,'email_hint': 'Correo electrónico'
+      ,'password_hint': 'Contraseña'
+      ,'register_button': 'Registrarse'
+      ,'have_account': '¿Ya tienes una cuenta? Inicia sesión'
+      ,'login_title': 'Inicio de sesión'
+      ,'login_button': 'Iniciar sesión'
+      ,'forgot_password': '¿Olvidaste tu contraseña?'
+      ,'google_login_error': 'Error de inicio de sesión con Google.'
+      ,'no_profile_title': 'No estás registrado'
+      ,'no_profile_body': 'No hay ningún perfil en la base de datos para este usuario. Debes registrarte primero.'
+      ,'login_error_title': 'Error de inicio de sesión'
+      ,'invalid_credentials': 'Correo o contraseña incorrectos.'
     },
     'en': {
       'settings': 'Settings',
@@ -88,6 +106,24 @@ class AppLocalizations {
       'select_location_prompt': 'Please select a location.',
       'describe_plan_hint': 'Briefly describe your plan...'
       ,'profile_updated': 'Profile updated'
+      ,'verify_email_title': 'Verify your email'
+      ,'verify_email_body': 'A verification email has been sent to {email}. Follow the link to continue.'
+      ,'error_register': 'Error registering: {error}'
+      ,'create_account': 'Create your account'
+      ,'continue_with_google': 'Continue with Google'
+      ,'or': '- or -'
+      ,'email_hint': 'Email'
+      ,'password_hint': 'Password'
+      ,'register_button': 'Sign up'
+      ,'have_account': 'Already have an account? Log in'
+      ,'login_title': 'Log in'
+      ,'login_button': 'Log in'
+      ,'forgot_password': 'Forgot your password?'
+      ,'google_login_error': 'Google sign-in error.'
+      ,'no_profile_title': 'Not registered'
+      ,'no_profile_body': 'No profile found for this user. Please register first.'
+      ,'login_error_title': 'Login error'
+      ,'invalid_credentials': 'Incorrect email or password.'
     },
   };
 
@@ -137,6 +173,26 @@ class AppLocalizations {
   String get selectLocationPrompt => _t('select_location_prompt');
   String get describePlanHint => _t('describe_plan_hint');
   String get profileUpdated => _t('profile_updated');
+  String get verifyEmailTitle => _t('verify_email_title');
+  String verifyEmailBody(String email) =>
+      _t('verify_email_body').replaceAll('{email}', email);
+  String errorRegister(String error) =>
+      _t('error_register').replaceAll('{error}', error);
+  String get createAccount => _t('create_account');
+  String get continueWithGoogle => _t('continue_with_google');
+  String get or => _t('or');
+  String get emailHint => _t('email_hint');
+  String get passwordHint => _t('password_hint');
+  String get registerButton => _t('register_button');
+  String get haveAccount => _t('have_account');
+  String get loginTitle => _t('login_title');
+  String get loginButton => _t('login_button');
+  String get forgotPassword => _t('forgot_password');
+  String get googleLoginError => _t('google_login_error');
+  String get noProfileTitle => _t('no_profile_title');
+  String get noProfileBody => _t('no_profile_body');
+  String get loginErrorTitle => _t('login_error_title');
+  String get invalidCredentials => _t('invalid_credentials');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();

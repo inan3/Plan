@@ -1,0 +1,21 @@
+{
+  "verify_email_title": "Verify your email",
+  "verify_email_body": "A verification email has been sent to {email}. Follow the link to continue.",
+  "error_register": "Error registering: {error}",
+  "create_account": "Create your account",
+  "continue_with_google": "Continue with Google",
+  "or": "- or -",
+  "email_hint": "Email",
+  "password_hint": "Password",
+  "register_button": "Sign up",
+  "have_account": "Already have an account? Log in",
+  "login_title": "Log in",
+  "login_button": "Log in",
+  "forgot_password": "Forgot your password?",
+  "google_login_error": "Google sign-in error.",
+  "no_profile_title": "Not registered",
+  "no_profile_body": "No profile found for this user. Please register first.",
+  "login_error_title": "Login error",
+  "invalid_credentials": "Incorrect email or password.",
+  "accept": "Accept"
+}

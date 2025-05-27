@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../../../services/language_service.dart';
+import 'package:provider/provider.dart';
+import '../../../services/locale_provider.dart';
 
 class LanguageSelectorScreen extends StatefulWidget {
   const LanguageSelectorScreen({Key? key}) : super(key: key);
@@ -54,7 +55,7 @@ class _LanguageSelectorScreenState extends State<LanguageSelectorScreen> {
                   title: Text(lang),
                   onTap: () {
                     final code = lang.startsWith('English') ? 'en' : 'es';
-                    LanguageService.updateLocale(code);
+                    context.read<LocaleProvider>().updateLocale(code);
                     Navigator.pop(context);
                   },
                 );

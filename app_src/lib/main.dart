@@ -17,7 +17,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
-import 'services/language_service.dart';
+import 'services/locale_provider.dart';
+import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
@@ -51,7 +52,6 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final enabled = prefs.getBool('notificationsEnabled') ?? true;
   await NotificationService.instance.init(enabled: enabled);
-  await LanguageService.loadLocale();
 
   // 4 ▸ Mostrar notificaciones en foreground
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
@@ -148,6 +148,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final LocaleProvider _localeProvider = LocaleProvider();
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
   String? _lastUid; // detecta cambio de usuario
@@ -155,6 +156,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    _localeProvider.loadLocale();
 
     if (!kIsWeb) {
       _intentSub = ReceiveSharingIntent.instance
@@ -185,54 +187,60 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale>(
-      valueListenable: LanguageService.locale,
-      builder: (context, locale, _) {
-        return MaterialApp(
-          locale: locale,
-          supportedLocales: const [Locale('es'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          title: 'Plan',
-          theme: ThemeData(primarySwatch: Colors.pink),
-          home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-                body: Center(child: CircularProgressIndicator()));
-          }
-          if (snap.hasError) {
-            return const Scaffold(body: Center(child: Text('Error Firebase')));
-          }
+    return ChangeNotifierProvider.value(
+      value: _localeProvider,
+      child: Consumer<LocaleProvider>(
+        builder: (context, provider, _) {
+          return MaterialApp(
+            locale: provider.locale,
+            supportedLocales: const [Locale('es'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            title: 'Plan',
+            theme: ThemeData(primarySwatch: Colors.pink),
+            home: StreamBuilder<User?>(
+              stream: FirebaseAuth.instance.authStateChanges(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()));
+                }
+                if (snap.hasError) {
+                  return const Scaffold(
+                      body: Center(child: Text('Error Firebase')));
+                }
 
-          final user = snap.data;
+                final user = snap.data;
 
-          // ── cambia de usuario ───────────────────────────────
-          if (user != null && user.uid != _lastUid) {
-            _lastUid = user.uid;
+                // ── cambia de usuario ───────────────────────────────
+                if (user != null && user.uid != _lastUid) {
+                  _lastUid = user.uid;
 
-            SharedPreferences.getInstance().then((prefs) {
-              final enabled = prefs.getBool('notificationsEnabled') ?? true;
-              NotificationService.instance.init(enabled: enabled);
-            });
+                  SharedPreferences.getInstance().then((prefs) {
+                    final enabled =
+                        prefs.getBool('notificationsEnabled') ?? true;
+                    NotificationService.instance.init(enabled: enabled);
+                  });
 
-            _registerFcmToken(user);
-          }
+                  _registerFcmToken(user);
+                }
 
-          if (_sharedText != null) {
-            return ChatsScreen(sharedText: _sharedText!);
-          }
+                if (_sharedText != null) {
+                  return ChatsScreen(sharedText: _sharedText!);
+                }
 
-          return user == null ? const WelcomeScreen() : const ExploreScreen();
+                return user == null
+                    ? const WelcomeScreen()
+                    : const ExploreScreen();
+              },
+            ),
+          );
         },
       ),
-    );
-      },
     );
   }
 }

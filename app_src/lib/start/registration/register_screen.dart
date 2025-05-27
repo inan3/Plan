@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dating_app/main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'email_verification_screen.dart';
 import 'register_with_google.dart';
 import 'verification_provider.dart';
@@ -33,15 +34,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Verifica tu correo'),
-            content: Text(
-              'Se ha enviado un correo de verificación a ${emailController.text.trim()}. '
-              'Sigue el enlace recibido para continuar.',
-            ),
+            title: Text(AppLocalizations.of(context)!.verifyEmailTitle),
+            content: Text(AppLocalizations.of(context)!
+                .verifyEmailBody(emailController.text.trim())),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Aceptar'),
+                child: Text(AppLocalizations.of(context)!.accept),
               ),
             ],
           ),
@@ -60,7 +59,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al registrarte: $e')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.errorRegister('$e')),
+        ),
       );
     } finally {
       setState(() => isLoading = false);
@@ -97,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // Título
                     Text(
-                      'Crea tu cuenta',
+                      AppLocalizations.of(context)!.createAccount,
                       style: GoogleFonts.roboto(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -125,7 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: 24,
                         ),
                         label: Text(
-                          'Continuar con Google',
+                          AppLocalizations.of(context)!.continueWithGoogle,
                           style: GoogleFonts.roboto(
                             fontSize: 18,
                             color: Colors.white,
@@ -147,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // Separador
                     Text(
-                      '- o -',
+                      AppLocalizations.of(context)!.or,
                       style: GoogleFonts.roboto(
                         fontSize: 18,
                         color: Colors.black,
@@ -173,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
-                          hintText: 'Correo electrónico',
+                          hintText: AppLocalizations.of(context)!.emailHint,
                           hintStyle: GoogleFonts.roboto(
                             fontSize: 16,
                             color: Colors.grey,
@@ -204,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          hintText: 'Contraseña',
+                          hintText: AppLocalizations.of(context)!.passwordHint,
                           hintStyle: GoogleFonts.roboto(
                             fontSize: 16,
                             color: Colors.grey,
@@ -233,7 +234,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           elevation: 10,
                         ),
                         child: Text(
-                          'Registrarse',
+                          AppLocalizations.of(context)!.registerButton,
                           style: GoogleFonts.roboto(
                             fontSize: 20,
                             color: Colors.white,
@@ -247,9 +248,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onTap: () {
                         Navigator.pop(context);
                       },
-                      child: const Text(
-                        '¿Ya tienes una cuenta? Inicia sesión',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.haveAccount,
+                        style: const TextStyle(
                           color: Colors.black,
                           decoration: TextDecoration.underline,
                         ),

@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';           // (si lo usas)
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';          // ← NUEVO
+import '../../l10n/app_localizations.dart';
 import '../../services/notification_service.dart';                    // ← NUEVO
 
 import '../../explore_screen/main_screen/explore_screen.dart';
@@ -77,7 +78,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await _goToExplore();
     } on FirebaseAuthException {
-      if (mounted) _showErrorDialog('Correo o contraseña incorrectos.');
+      if (mounted)
+        _showErrorDialog(AppLocalizations.of(context)!.invalidCredentials);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -122,7 +124,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error de inicio de sesión con Google.')),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.googleLoginError)),
         );
       }
     } finally {
@@ -137,13 +141,12 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('No estás registrado'),
-        content: const Text(
-          'No hay ningún perfil en la base de datos para este usuario. '
-          'Debes registrarte primero.',
-        ),
+        title: Text(AppLocalizations.of(context)!.noProfileTitle),
+        content: Text(AppLocalizations.of(context)!.noProfileBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Aceptar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.accept)),
         ],
       ),
     );
@@ -153,10 +156,12 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Error de inicio de sesión'),
+        title: Text(AppLocalizations.of(context)!.loginErrorTitle),
         content: Text(msg),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Aceptar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.accept)),
         ],
       ),
     );
@@ -201,17 +206,18 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             SizedBox(height: 150, child: Image.asset('assets/plan-sin-fondo.png')),
             const SizedBox(height: 30),
-            Text('Inicio de sesión',
+            Text(AppLocalizations.of(context)!.loginTitle,
                 style: GoogleFonts.roboto(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             _googleButton(),
             const SizedBox(height: 10),
-            Text('- o -', style: GoogleFonts.roboto(fontSize: 18)),
+            Text(AppLocalizations.of(context)!.or,
+                style: GoogleFonts.roboto(fontSize: 18)),
             const SizedBox(height: 10),
-            _inputField(controller: emailController, hint: 'Correo electrónico',
+            _inputField(controller: emailController, hint: AppLocalizations.of(context)!.emailHint,
                 keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 20),
-            _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
+            _inputField(controller: passwordController, hint: AppLocalizations.of(context)!.passwordHint, obscure: true),
             const SizedBox(height: 30),
             SizedBox(
               width: 200,
@@ -223,15 +229,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   elevation: 10,
                 ),
-                child: const Text('Iniciar sesión', style: TextStyle(fontSize: 20)),
+                child: Text(AppLocalizations.of(context)!.loginButton,
+                    style: const TextStyle(fontSize: 20)),
               ),
             ),
             const SizedBox(height: 20),
             GestureDetector(
               onTap: () => Navigator.push(
                   context, MaterialPageRoute(builder: (_) => const RecoverPasswordScreen())),
-              child: const Text('¿Olvidaste tu contraseña?',
-                  style: TextStyle(decoration: TextDecoration.underline)),
+              child: Text(AppLocalizations.of(context)!.forgotPassword,
+                  style: const TextStyle(decoration: TextDecoration.underline)),
             ),
             const SizedBox(height: 40),
           ],
@@ -247,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: ElevatedButton.icon(
         onPressed: _loginWithGoogle,
         icon: Image.asset('assets/google_logo.png', height: 24, width: 24),
-        label: Text('Continuar con Google',
+        label: Text(AppLocalizations.of(context)!.continueWithGoogle,
             style: GoogleFonts.roboto(fontSize: 18, color: Colors.white)),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
