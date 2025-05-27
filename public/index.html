@@ -387,14 +387,14 @@
 
       .nav-close {
         display: none;
-        position: fixed;
-        top: var(--header-height);
-        right: 0;
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
         background: none;
         border: none;
         color: #fff;
         font-size: 1.5rem;
-        padding: 0.5rem 1rem;
+        padding: 0;
         z-index: 101;
       }
 
@@ -525,6 +525,7 @@
       <nav>
         <button class="nav-close" aria-label="Cerrar menú">&#8592;</button>
         <ul>
+            <li class="close-item"><button class="nav-close" aria-label="Cerrar menú">&#8592;</button></li>
           <li><a href="#hero">Inicio</a></li>
           <li><a href="#downloadSection">Descargar</a></li>
           <li><a href="help.html">Ayuda</a></li>
