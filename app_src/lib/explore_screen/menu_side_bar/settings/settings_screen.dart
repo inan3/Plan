@@ -205,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('Acerca de Plan'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () async {
-                        final uri = Uri.parse('https://plansocialapp.es//');
+                        final uri = Uri.parse('https://plansocialapp.es/#menu');
                         try {
                           await launchUrl(
                             uri,

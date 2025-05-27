@@ -30,6 +30,7 @@ class MainSideBarScreen extends StatefulWidget {
 class MainSideBarScreenState extends State<MainSideBarScreen> {
   bool isOpen = false;
   final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  int _pressedIndex = -1;
 
   void toggleMenu() {
     setState(() {
@@ -104,6 +105,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         destination: const MyPlansScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
+                        index: 0,
                         stream: FirebaseFirestore.instance
                             .collection('plans')
                             .where('createdBy', isEqualTo: currentUserId)
@@ -117,6 +119,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         ),
                         iconColor: Colors.white,
                         textColor: Colors.white,
+                        index: 1,
                         stream: FirebaseFirestore.instance
                             .collection('subscriptions')
                             .where('userId', isEqualTo: currentUserId)
@@ -128,6 +131,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         destination: const FavouritesScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
+                        index: 2,
                         stream: FirebaseFirestore.instance
                             .collection('users')
                             .doc(currentUserId)
@@ -139,6 +143,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         destination: const SettingsScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
+                        index: 3,
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-cerrar-sesion.svg',
@@ -146,6 +151,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         destination: const CloseSessionScreen(),
                         iconColor: Colors.red,
                         textColor: Colors.red,
+                        index: 4,
                       ),
                     ],
                   ),
@@ -292,25 +298,13 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     required Widget destination,
     required Color iconColor,
     required Color textColor,
+    required int index,
   }) {
-    return ListTile(
-      dense: true,
-      leading: icon is String
-          ? SvgPicture.asset(
-              icon,
-              width: 28,
-              height: 28,
-              color: iconColor,
-              colorBlendMode: BlendMode.srcIn,
-            )
-          : Icon(icon, color: iconColor, size: 24),
-      title: Text(
-        title,
-        style: GoogleFonts.roboto(
-          color: textColor,
-          fontSize: 16,
-        ),
-      ),
+    final bool isPressed = _pressedIndex == index;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressedIndex = index),
+      onTapUp: (_) => setState(() => _pressedIndex = -1),
+      onTapCancel: () => setState(() => _pressedIndex = -1),
       onTap: () {
         toggleMenu();
         Navigator.push(
@@ -318,6 +312,26 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
           MaterialPageRoute(builder: (context) => destination),
         );
       },
+      child: ListTile(
+        dense: true,
+        leading: icon is String
+            ? SvgPicture.asset(
+                icon,
+                width: 28,
+                height: 28,
+                color: isPressed ? AppColors.planColor : iconColor,
+                colorBlendMode: BlendMode.srcIn,
+              )
+            : Icon(icon,
+                color: isPressed ? AppColors.planColor : iconColor, size: 24),
+        title: Text(
+          title,
+          style: GoogleFonts.roboto(
+            color: isPressed ? AppColors.planColor : textColor,
+            fontSize: 16,
+          ),
+        ),
+      ),
     );
   }
 
@@ -328,6 +342,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     required Color iconColor,
     required Color textColor,
     required Stream stream,
+    required int index,
   }) {
     return StreamBuilder(
       stream: stream,
@@ -342,25 +357,35 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
             count = (snapshot.data as QuerySnapshot?)?.docs.length ?? 0;
           }
         }
-        return ListTile(
-          dense: true,
-          leading: icon is String
-              ? SvgPicture.asset(
-                  icon,
-                  width: 28,
-                  height: 28,
-                  color: iconColor,
-                  colorBlendMode: BlendMode.srcIn,
-                )
-              : Icon(icon, color: iconColor, size: 24),
-          title: Text(
-            title,
-            style: GoogleFonts.roboto(
-              color: textColor,
-              fontSize: 16,
+        final bool isPressed = _pressedIndex == index;
+        return GestureDetector(
+          onTapDown: (_) => setState(() => _pressedIndex = index),
+          onTapUp: (_) => setState(() => _pressedIndex = -1),
+          onTapCancel: () => setState(() => _pressedIndex = -1),
+          child: ListTile(
+            dense: true,
+            leading: icon is String
+                ? SvgPicture.asset(
+                    icon,
+                    width: 28,
+                    height: 28,
+                    color:
+                        isPressed ? AppColors.planColor : iconColor,
+                    colorBlendMode: BlendMode.srcIn,
+                  )
+                : Icon(icon,
+                    color:
+                        isPressed ? AppColors.planColor : iconColor,
+                    size: 24),
+            title: Text(
+              title,
+              style: GoogleFonts.roboto(
+                color:
+                    isPressed ? AppColors.planColor : textColor,
+                fontSize: 16,
+              ),
             ),
-          ),
-          trailing: count > 0
+            trailing: count > 0
               ? Container(
                   padding: const EdgeInsets.all(6),
                   decoration: const BoxDecoration(
@@ -377,10 +402,10 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                   ),
                 )
               : const SizedBox(),
-          onTap: () {
-            if (title == 'Mis Planes') {
-              showDialog(
-                context: context,
+            onTap: () {
+              if (title == 'Mis Planes') {
+                showDialog(
+                  context: context,
                 builder: (context) => Dialog(
                   backgroundColor: const Color.fromARGB(0, 255, 255, 255),
                   insetPadding: const EdgeInsets.all(16.0),
