@@ -12,6 +12,8 @@
       --green-dark: #128C7E;
       --blue: #007bff;
       --blue-dark: #0069d9;
+      --brand: #5D17EB;
+      --brand-dark: #4D07DB;
       --gray-dark: #444;
       --gray-light: #999;
       --bg: #fff;
@@ -43,7 +45,7 @@
       top: 0;
       width: 100%;
       height: var(--header-height);
-      background: #000;
+      background: #fff;
       border-bottom: 1px solid #eee;
       z-index: 100;
     }
@@ -68,7 +70,7 @@
     }
 
     .btn-download {
-      background: var(--blue);
+      background: var(--brand);
       color: #fff;
       padding: .6rem 1.2rem;
       border-radius: 24px;
@@ -79,7 +81,7 @@
     }
 
     .btn-download:hover {
-      background: var(--blue-dark);
+      background: var(--brand-dark);
       transform: translateY(-2px);
       box-shadow: 0 12px 20px rgba(0, 0, 0, .20);
     }
@@ -197,7 +199,7 @@
 
     .hero-download {
       display: inline-block;
-      background: var(--green);
+      background: var(--brand);
       color: #fff;
       padding: .8rem 1.6rem;
       border-radius: 24px;
@@ -207,7 +209,7 @@
     }
 
     .hero-download:hover {
-      background: var(--green-dark);
+      background: var(--brand-dark);
       transform: translateY(-2px);
       box-shadow: 0 12px 20px rgba(0, 0, 0, .20);
     }
@@ -501,6 +503,9 @@
         <ul>
           <li><a href="#hero">Inicio</a></li>
           <li><a href="#downloadSection">Descargar</a></li>
+          <li><a href="ayuda.html">Ayuda</a></li>
+          <li><a href="privacy_policy.html">Privacidad</a></li>
+          <li><a href="terms_and_conditions.html">Condiciones</a></li>
         </ul>
       </nav>
       <a href="#downloadSection" class="btn-download">Descargar</a>
