@@ -359,180 +359,177 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
         }
         final bool isPressed = _pressedIndex == index;
         return GestureDetector(
-          onTapDown: (_) => setState(() => _pressedIndex = index),
-          onTapUp: (_) => setState(() => _pressedIndex = -1),
-          onTapCancel: () => setState(() => _pressedIndex = -1),
-          child: ListTile(
-            dense: true,
-            leading: icon is String
-                ? SvgPicture.asset(
-                    icon,
-                    width: 28,
-                    height: 28,
-                    color:
-                        isPressed ? AppColors.planColor : iconColor,
-                    colorBlendMode: BlendMode.srcIn,
-                  )
-                : Icon(icon,
-                    color:
-                        isPressed ? AppColors.planColor : iconColor,
-                    size: 24),
-            title: Text(
-              title,
-              style: GoogleFonts.roboto(
-                color:
-                    isPressed ? AppColors.planColor : textColor,
-                fontSize: 16,
+            onTapDown: (_) => setState(() => _pressedIndex = index),
+            onTapUp: (_) => setState(() => _pressedIndex = -1),
+            onTapCancel: () => setState(() => _pressedIndex = -1),
+            child: ListTile(
+              dense: true,
+              leading: icon is String
+                  ? SvgPicture.asset(
+                      icon,
+                      width: 28,
+                      height: 28,
+                      color: isPressed ? AppColors.planColor : iconColor,
+                      colorBlendMode: BlendMode.srcIn,
+                    )
+                  : Icon(icon,
+                      color: isPressed ? AppColors.planColor : iconColor,
+                      size: 24),
+              title: Text(
+                title,
+                style: GoogleFonts.roboto(
+                  color: isPressed ? AppColors.planColor : textColor,
+                  fontSize: 16,
+                ),
               ),
-            ),
-            trailing: count > 0
-              ? Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: AppColors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              : const SizedBox(),
-            onTap: () {
-              if (title == 'Mis Planes') {
-                showDialog(
-                  context: context,
-                builder: (context) => Dialog(
-                  backgroundColor: const Color.fromARGB(0, 255, 255, 255),
-                  insetPadding: const EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    // Evita overflow en pantallas pequeñas
-                    height: MediaQuery.of(context).size.height * 0.8,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Mi lista de planes creados',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                          ),
+              trailing: count > 0
+                  ? Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: AppColors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20.0),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
-                                ),
-                              ),
-                              // MyPlansScreen es un ListView que ya controla su scroll
-                              child: const MyPlansScreen(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            } else if (title == 'Planes Suscritos') {
-              showDialog(
-                context: context,
-                builder: (context) => Dialog(
-                  backgroundColor: const Color.fromARGB(0, 255, 255, 255),
-                  insetPadding: const EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.8,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Mi lista de planes suscritos',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20.0),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
-                                ),
-                              ),
-                              child: SubscribedPlansScreen(
-                                userId: currentUserId ?? '',
+                      ),
+                    )
+                  : const SizedBox(),
+              onTap: () {
+                if (title == 'Mis Planes') {
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+                      insetPadding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        // Evita overflow en pantallas pequeñas
+                        height: MediaQuery.of(context).size.height * 0.8,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Mi lista de planes creados',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            } else if (title == 'Favoritos') {
-              showDialog(
-                context: context,
-                builder: (context) => Dialog(
-                  backgroundColor: const Color.fromARGB(0, 255, 255, 255),
-                  insetPadding: const EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.8,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Mi lista de planes favoritos',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: ClipRRect(
                                 borderRadius: BorderRadius.circular(20.0),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20.0),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  // MyPlansScreen es un ListView que ya controla su scroll
+                                  child: const MyPlansScreen(),
                                 ),
                               ),
-                              child: const FavouritesScreen(),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              );
-            } else {
-              toggleMenu();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => destination),
-              );
-            }
-          },
-        );
+                  );
+                } else if (title == 'Planes Suscritos') {
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+                      insetPadding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.8,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Mi lista de planes suscritos',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20.0),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: SubscribedPlansScreen(
+                                    userId: currentUserId ?? '',
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                } else if (title == 'Favoritos') {
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+                      insetPadding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.8,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Mi lista de planes favoritos',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(20.0),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: const FavouritesScreen(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                } else {
+                  toggleMenu();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => destination),
+                  );
+                }
+              },
+            ));
       },
     );
   }
