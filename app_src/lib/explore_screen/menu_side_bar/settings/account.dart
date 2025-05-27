@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../../start/welcome_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -13,7 +14,7 @@ class AccountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cuenta'),
+        title: Text(AppLocalizations.of(context).accountTitle),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
@@ -32,7 +33,7 @@ class AccountScreen extends StatelessWidget {
                       width: 24,
                       height: 24,
                     ),
-                    title: const Text('Editar perfil'),
+                    title: Text(AppLocalizations.of(context).editProfile),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
@@ -48,7 +49,7 @@ class AccountScreen extends StatelessWidget {
                       width: 24,
                       height: 24,
                     ),
-                    title: const Text('Cambiar la contraseña de tu cuenta'),
+                    title: Text(AppLocalizations.of(context).changePassword),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
@@ -65,27 +66,29 @@ class AccountScreen extends StatelessWidget {
                       height: 24,
                       color: Colors.red,
                     ),
-                    title: const Text(
-                      'Eliminar mi perfil',
-                      style: TextStyle(color: Colors.red),
+                    title: Text(
+                      AppLocalizations.of(context).deleteProfile,
+                      style: const TextStyle(color: Colors.red),
                     ),
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Confirmar eliminación'),
-                          content: const Text('¿Estás seguro de que quieres eliminar tu perfil?'),
+                          title:
+                              Text(AppLocalizations.of(context).deleteConfirmation),
+                          content: Text(
+                              AppLocalizations.of(context).deleteQuestion),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('Cancelar'),
+                              child: Text(AppLocalizations.of(context).cancel),
                             ),
                             TextButton(
                               onPressed: () async {
                                 Navigator.of(ctx).pop();
                                 await _deleteAccount(context);
                               },
-                              child: const Text('Aceptar'),
+                              child: Text(AppLocalizations.of(context).accept),
                             ),
                           ],
                         ),
@@ -146,11 +149,11 @@ Future<void> _deleteAccount(BuildContext context) async {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          content: const Text('Tu cuenta se ha eliminado correctamente.'),
+          content: Text(AppLocalizations.of(context).accountDeleted),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Aceptar'),
+              child: Text(AppLocalizations.of(context).accept),
             ),
           ],
         ),
@@ -166,8 +169,15 @@ Future<void> _deleteAccount(BuildContext context) async {
   } catch (e) {
     if (context.mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)
+                .planCreationError
+                .replaceFirst('{error}', e.toString()),
+          ),
+        ),
+      );
     }
     return;
   }
@@ -228,8 +238,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'age': age,
       });
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).profileUpdated)),
+        );
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -251,7 +262,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar perfil')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).editProfile)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -338,7 +349,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cambiar contraseña')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).changePassword)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -10,6 +10,8 @@ import '../../../utils/plans_list.dart';
 import '../../../models/plan_model.dart';
 import '../../plan_creation/meeting_location_screen.dart';
 import '../../../main/colors.dart';
+import '../../services/language_service.dart';
+import '../../l10n/app_localizations.dart';
 
 /// ***************************************************************************
 /// CONSTANTES DE ANCHOS Y ALTOS FIJOS (SIN MEDIAQUERY)
@@ -172,19 +174,19 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
       barrierDismissible: false,
       builder: (_) {
         return AlertDialog(
-          title: const Text("No tienes planes creados aún..."),
-          content: const Text("¿Creamos uno nuevo?"),
+          title: Text(AppLocalizations.of(context).noPlansTitle),
+          content: Text(AppLocalizations.of(context).createNewQuestion),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
                 _onInviteNewPlan();
               },
-              child: const Text("Aceptar"),
+              child: Text(AppLocalizations.of(context).accept),
             ),
           ],
         );
@@ -323,7 +325,11 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
 
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Has invitado a tu plan: ${plan.type}")),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)
+            .planInvited
+            .replaceFirst('{plan}', plan.type)),
+      ),
     );
   }
 
@@ -1098,9 +1104,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
           child: TextField(
             maxLines: 3,
             onChanged: (value) => _planDescription = value,
-            decoration: const InputDecoration(
-              hintText: "Describe brevemente tu plan...",
-              hintStyle: TextStyle(color: Colors.white70),
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context).describePlanHint,
+              hintStyle: const TextStyle(color: Colors.white70),
               border: InputBorder.none,
             ),
             style: const TextStyle(color: Colors.white),
@@ -1116,25 +1122,25 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   Future<void> _onFinishPlan() async {
     if (_selectedPlan == null && (_customPlan == null || _customPlan!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta elegir tipo de plan.")),
+        SnackBar(content: Text(AppLocalizations.of(context).choosePlanTypeMissing)),
       );
       return;
     }
     if (_startDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta elegir la fecha/hora del plan.")),
+        SnackBar(content: Text(AppLocalizations.of(context).chooseDateMissing)),
       );
       return;
     }
     if (_location == null || _location!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta elegir ubicación del plan.")),
+        SnackBar(content: Text(AppLocalizations.of(context).chooseLocationMissing)),
       );
       return;
     }
     if (_planDescription == null || _planDescription!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta la breve descripción del plan.")),
+        SnackBar(content: Text(AppLocalizations.of(context).chooseDescriptionMissing)),
       );
       return;
     }
@@ -1189,11 +1195,15 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("¡Plan creado! Has invitado al usuario.")),
+        SnackBar(content: Text(AppLocalizations.of(context).planCreatedInvitedUser)),
       );
     } catch (err) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al crear el plan: $err")),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)
+              .planCreationError
+              .replaceFirst('{error}', err.toString())),
+        ),
       );
     }
   }

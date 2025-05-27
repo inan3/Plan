@@ -12,6 +12,8 @@ import 'package:geolocator/geolocator.dart';
 import '../../main/colors.dart';
 import '../../main/keys.dart';
 import '../models/plan_model.dart';
+import '../services/language_service.dart';
+import '../l10n/app_localizations.dart';
 
 /// Extensión para convertir Color a hexadecimal (incluyendo alfa)
 extension ColorExtension on Color {
@@ -110,7 +112,7 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
 
     final encodedInput = Uri.encodeComponent(input);
     final url =
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$encodedInput&key=$googleAPIKey&language=es';
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$encodedInput&key=$googleAPIKey&language=${LanguageService.locale.value.languageCode}';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -163,16 +165,19 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Permiso de ubicación denegado")),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)
+                  .locationPermissionDenied)),
         );
         return;
       }
     }
     if (permission == LocationPermission.deniedForever) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                "El permiso de ubicación está denegado permanentemente, no se puede solicitar")),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)
+              .locationPermissionDeniedForever),
+        ),
       );
       return;
     }
@@ -183,7 +188,7 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
       LatLng currentLatLng = LatLng(position.latitude, position.longitude);
 
       final url =
-          'https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$googleAPIKey&language=es';
+          'https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$googleAPIKey&language=${LanguageService.locale.value.languageCode}';
       final response = await http.get(Uri.parse(url));
 
       String address;
@@ -194,10 +199,10 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
             (data['results'] as List).isNotEmpty) {
           address = data['results'][0]['formatted_address'];
         } else {
-          address = "Dirección no encontrada";
+          address = AppLocalizations.of(context).addressNotFound;
         }
       } else {
-        address = "Dirección no disponible";
+        address = AppLocalizations.of(context).addressNotAvailable;
       }
 
       setState(() {
@@ -210,7 +215,7 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error al obtener la ubicación")),
+        SnackBar(content: Text(AppLocalizations.of(context).errorGettingLocation)),
       );
     }
   }
@@ -218,9 +223,7 @@ class _MeetingLocationPopupState extends State<MeetingLocationPopup> {
   void _onConfirmLocation() {
     if (_selectedLocation == null || _selectedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor, selecciona una ubicación."),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context).selectLocationPrompt)),
       );
       return;
     }
