@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import '../../main/colors.dart';
@@ -32,6 +33,20 @@ class PlansInMapScreen {
 
     final qs = await query.get();
     final now = DateTime.now();
+
+    // Identificamos a qué usuarios sigue el usuario actual
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    final Set<String> followedUids = {};
+    if (currentUser != null) {
+      final snap = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: currentUser.uid)
+          .get();
+      for (final doc in snap.docs) {
+        final fid = doc.data()['followedId'] as String?;
+        if (fid != null) followedUids.add(fid);
+      }
+    }
     for (var doc in qs.docs) {
       final data = doc.data() as Map<String, dynamic>?;
       if (data == null) continue;
@@ -55,6 +70,15 @@ class PlansInMapScreen {
       final type = data['type'] as String?;
       final uid = data['createdBy'] as String?;
       if (lat == null || lng == null || type == null || uid == null) continue;
+      final String visibility = data['visibility']?.toString() ?? 'Público';
+      if (visibility.toLowerCase() == 'privado') {
+        continue;
+      }
+      if (visibility.toLowerCase() == 'solo para mis seguidores') {
+        if (currentUser == null || !followedUids.contains(uid)) {
+          continue;
+        }
+      }
       if (filters != null) {
         final List<String> selected =
             (filters['selectedPlans'] as List<dynamic>?)
@@ -153,10 +177,17 @@ class PlansInMapScreen {
         final String searchText =
             (filters['planBusqueda'] ?? '').toString().toLowerCase();
         final String type = data['type']?.toString() ?? '';
+        final String visibility = data['visibility']?.toString() ?? 'Público';
         if (selected.isNotEmpty) {
           if (!selected.contains(type.toLowerCase())) return;
         } else if (searchText.isNotEmpty) {
           if (!type.toLowerCase().contains(searchText)) return;
+        }
+        if (visibility.toLowerCase() == 'privado') return;
+        if (visibility.toLowerCase() == 'solo para mis seguidores') {
+          if (currentUser == null || !followedUids.contains(data['createdBy'])) {
+            return;
+          }
         }
       }
       result.add(marker);
