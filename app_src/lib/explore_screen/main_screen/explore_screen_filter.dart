@@ -32,6 +32,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   List<String> _selectedPlans = [];
   String? _customPlan;
 
+  bool _onlyFollowed = false;
+
   String regionBusqueda = '';
   final TextEditingController _regionController = TextEditingController();
   final FocusNode _regionFocusNode = FocusNode();
@@ -59,6 +61,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       if (init['selectedPlans'] != null) {
         _selectedPlans = List<String>.from(init['selectedPlans']);
       }
+      _onlyFollowed = init['onlyFollowed'] ?? false;
       regionBusqueda = init['regionBusqueda'] ?? '';
       edadRange = RangeValues(
         (init['edadMin'] ?? 18).toDouble(),
@@ -248,6 +251,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       'edadMin': edadRange.start,
       'edadMax': edadRange.end,
       'genero': generoSeleccionado,
+      'onlyFollowed': _onlyFollowed,
       'userCoordinates': _userPosition != null
           ? {
               'lat': _userPosition!.latitude,
@@ -267,6 +271,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       _regionController.clear();
       edadRange = const RangeValues(18, 60);
       _selectedDate = null;
+      _onlyFollowed = false;
     });
   }
 
@@ -325,7 +330,36 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: plans.map((plan) {
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _onlyFollowed = !_onlyFollowed;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _onlyFollowed
+                                  ? AppColors.planColor
+                                  : AppColors.lightLilac,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.greyBorder),
+                            ),
+                            child: Text(
+                              'Solo de personas que sigo',
+                              style: TextStyle(
+                                color:
+                                    _onlyFollowed ? Colors.white : Colors.black,
+                                fontFamily: 'Inter-Regular',
+                                fontSize: 14,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        ...plans.map((plan) {
                         final String name = plan['name'];
                         final bool selected = _selectedPlans.contains(name);
                         return InkWell(
@@ -360,6 +394,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           ),
                         );
                       }).toList(),
+                    ],
                     ),
                     const SizedBox(height: 10),
                     const Text(
@@ -563,53 +598,53 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       thickness: 0.2,
                       height: 20,
                     ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '¿Para qué fecha buscas planes?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.planColor,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      onPressed: () async {
-                        final DateTime now = DateTime.now();
-                        final DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDate ?? now,
-                          firstDate: now,
-                          lastDate: now.add(const Duration(days: 365)),
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            _selectedDate = picked;
-                          });
-                        }
-                      },
-                      child: Text(
-                        _selectedDate != null
-                            ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                            : 'Selecciona una fecha',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const Divider(
-                      color: Colors.black,
-                      thickness: 0.2,
-                      height: 20,
-                    ),
                   ],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '¿Para qué fecha buscas planes?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.planColor,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final DateTime now = DateTime.now();
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate ?? now,
+                        firstDate: now,
+                        lastDate: now.add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedDate = picked;
+                        });
+                      }
+                    },
+                    child: Text(
+                      _selectedDate != null
+                          ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                          : 'Selecciona una fecha',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Divider(
+                    color: Colors.black,
+                    thickness: 0.2,
+                    height: 20,
+                  ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
