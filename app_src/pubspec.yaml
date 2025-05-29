@@ -17,6 +17,7 @@ dependencies:
   firebase_storage: ^12.3.6
   cloud_firestore: ^5.5.0
   firebase_database: ^11.3.5
+  firebase_crashlytics: ^3.5.4
   geolocator: ^10.0.3
   image_picker: ^0.8.7+5
   google_fonts: ^4.0.3

@@ -1,6 +1,8 @@
 // welcome_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -264,6 +266,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
         ],
       ),
+      floatingActionButton: kDebugMode
+          ? FloatingActionButton(
+              onPressed: () => FirebaseCrashlytics.instance.crash(),
+              child: const Icon(Icons.warning),
+            )
+          : null,
     );
   }
 }

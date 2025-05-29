@@ -2,6 +2,19 @@
 
 A new Flutter project.
 
+## Crashlytics
+
+Esta app está lista para usar Firebase Crashlytics. Tras instalar las
+dependencias y configurar los archivos de Google, asegúrate de ejecutar
+
+```bash
+flutterfire configure
+flutter pub get
+```
+
+Luego ejecuta la aplicación con `flutter run` y genera un fallo para
+verlo reflejado en la consola de Firebase.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
