@@ -1300,9 +1300,9 @@ class PlanCardState extends State<PlanCard> {
                           Text(
                             plan.type.isNotEmpty ? plan.type : 'Plan',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Colors.amber,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 18,
                             ),
                           ),
                           Text(
