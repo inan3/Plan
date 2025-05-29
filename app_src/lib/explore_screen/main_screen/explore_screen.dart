@@ -291,6 +291,24 @@ class ExploreScreenState extends State<ExploreScreen> {
       }).toList();
     }
 
+    // Filtrar solo usuarios seguidos si la opción está activada
+    final bool onlyFollowed = appliedFilters['onlyFollowed'] == true;
+    Set<String> followedIds = {};
+    if (onlyFollowed && currentUser != null) {
+      final snap = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: currentUser!.uid)
+          .get();
+      for (final doc in snap.docs) {
+        final fid = doc.data()['followedId'] as String?;
+        if (fid != null) followedIds.add(fid);
+      }
+      validUsers = validUsers.where((doc) {
+        final uid = (doc.data() as Map<String, dynamic>)['uid']?.toString();
+        return uid != null && followedIds.contains(uid);
+      }).toList();
+    }
+
     validUsers = validUsers.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
       final int userAge = int.tryParse(data['age'].toString()) ?? 0;
@@ -335,7 +353,10 @@ class ExploreScreenState extends State<ExploreScreen> {
       final allowedUids = await _fetchUserIdsWithPlans(planFilters, dateFilter);
       validUsers = validUsers.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return allowedUids.contains(data['uid'].toString());
+        final uid = data['uid'].toString();
+        final matchesPlan = allowedUids.contains(uid);
+        final matchesFollow = !onlyFollowed || followedIds.contains(uid);
+        return matchesPlan && matchesFollow;
       }).toList();
     }
 
