@@ -348,7 +348,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                               border: Border.all(color: AppColors.greyBorder),
                             ),
                             child: Text(
-                              'Planes de personas que sigo',
+                              'Solo de personas que sigo',
                               style: TextStyle(
                                 color:
                                     _onlyFollowed ? Colors.white : Colors.black,
@@ -598,53 +598,53 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       thickness: 0.2,
                       height: 20,
                     ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '¿Para qué fecha buscas planes?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.planColor,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      onPressed: () async {
-                        final DateTime now = DateTime.now();
-                        final DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDate ?? now,
-                          firstDate: now,
-                          lastDate: now.add(const Duration(days: 365)),
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            _selectedDate = picked;
-                          });
-                        }
-                      },
-                      child: Text(
-                        _selectedDate != null
-                            ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                            : 'Selecciona una fecha',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const Divider(
-                      color: Colors.black,
-                      thickness: 0.2,
-                      height: 20,
-                    ),
                   ],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '¿Para qué fecha buscas planes?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.planColor,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final DateTime now = DateTime.now();
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate ?? now,
+                        firstDate: now,
+                        lastDate: now.add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedDate = picked;
+                        });
+                      }
+                    },
+                    child: Text(
+                      _selectedDate != null
+                          ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                          : 'Selecciona una fecha',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Divider(
+                    color: Colors.black,
+                    thickness: 0.2,
+                    height: 20,
+                  ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
