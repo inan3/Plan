@@ -32,6 +32,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   List<String> _selectedPlans = [];
   String? _customPlan;
 
+  bool _onlyFollowed = false;
+
   String regionBusqueda = '';
   final TextEditingController _regionController = TextEditingController();
   final FocusNode _regionFocusNode = FocusNode();
@@ -59,6 +61,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       if (init['selectedPlans'] != null) {
         _selectedPlans = List<String>.from(init['selectedPlans']);
       }
+      _onlyFollowed = init['onlyFollowed'] ?? false;
       regionBusqueda = init['regionBusqueda'] ?? '';
       edadRange = RangeValues(
         (init['edadMin'] ?? 18).toDouble(),
@@ -248,6 +251,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       'edadMin': edadRange.start,
       'edadMax': edadRange.end,
       'genero': generoSeleccionado,
+      'onlyFollowed': _onlyFollowed,
       'userCoordinates': _userPosition != null
           ? {
               'lat': _userPosition!.latitude,
@@ -267,6 +271,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       _regionController.clear();
       edadRange = const RangeValues(18, 60);
       _selectedDate = null;
+      _onlyFollowed = false;
     });
   }
 
@@ -325,7 +330,36 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: plans.map((plan) {
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _onlyFollowed = !_onlyFollowed;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _onlyFollowed
+                                  ? AppColors.planColor
+                                  : AppColors.lightLilac,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.greyBorder),
+                            ),
+                            child: Text(
+                              'Planes de personas que sigo',
+                              style: TextStyle(
+                                color:
+                                    _onlyFollowed ? Colors.white : Colors.black,
+                                fontFamily: 'Inter-Regular',
+                                fontSize: 14,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        ...plans.map((plan) {
                         final String name = plan['name'];
                         final bool selected = _selectedPlans.contains(name);
                         return InkWell(
@@ -360,6 +394,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           ),
                         );
                       }).toList(),
+                    ],
                     ),
                     const SizedBox(height: 10),
                     const Text(

@@ -37,6 +37,7 @@ class PlansInMapScreen {
     // Identificamos a qué usuarios sigue el usuario actual
     final User? currentUser = FirebaseAuth.instance.currentUser;
     final Set<String> followedUids = {};
+    final bool onlyFollowed = filters?['onlyFollowed'] == true;
     if (currentUser != null) {
       final snap = await FirebaseFirestore.instance
           .collection('followed')
@@ -70,6 +71,9 @@ class PlansInMapScreen {
       final type = data['type'] as String?;
       final uid = data['createdBy'] as String?;
       if (lat == null || lng == null || type == null || uid == null) continue;
+      if (onlyFollowed && !followedUids.contains(uid)) {
+        continue;
+      }
       final String visibility = data['visibility']?.toString() ?? 'Público';
       if (visibility.toLowerCase() == 'privado') {
         continue;
@@ -178,6 +182,9 @@ class PlansInMapScreen {
             (filters['planBusqueda'] ?? '').toString().toLowerCase();
         final String type = data['type']?.toString() ?? '';
         final String visibility = data['visibility']?.toString() ?? 'Público';
+        if (onlyFollowed && !followedUids.contains(data['createdBy'])) {
+          return;
+        }
         if (selected.isNotEmpty) {
           if (!selected.contains(type.toLowerCase())) return;
         } else if (searchText.isNotEmpty) {
