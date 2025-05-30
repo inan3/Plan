@@ -652,22 +652,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       child: SafeArea(
         child: Stack(
           children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                color: MyColors.AppColors.blue,
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegisterScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
             SingleChildScrollView(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -879,6 +863,23 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 40),
                 ],
+              ),
+            ),
+
+            Positioned(
+              top: 0,
+              left: 0,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                color: MyColors.AppColors.blue,
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RegisterScreen(),
+                    ),
+                  );
+                },
               ),
             ),
 
