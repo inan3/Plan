@@ -67,9 +67,14 @@ Future<void> main() async {
   // 5 ▸ Presencia + token si hay sesión persistente
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
-    PresenceService.dispose();
-    await PresenceService.init(user);
-    await _registerFcmToken(user);
+    final hasProfile = await _hasCompleteProfile(user.uid);
+    if (hasProfile) {
+      PresenceService.dispose();
+      await PresenceService.init(user);
+      await _registerFcmToken(user);
+    } else {
+      await signOutAndRemoveToken();
+    }
   }
 
   runApp(const MyApp());
@@ -135,6 +140,7 @@ Future<void> signOutAndRemoveToken() async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
 
+
   try {
     final fcm = FirebaseMessaging.instance;
     final token = await fcm.getToken();
@@ -148,6 +154,7 @@ Future<void> signOutAndRemoveToken() async {
   try {
     await FirebaseAuth.instance.signOut();
   } catch (_) {}
+
 }
 
 Future<bool> _hasCompleteProfile(String uid) async {
@@ -262,8 +269,6 @@ class _MyAppState extends State<MyApp> {
               final enabled = prefs.getBool('notificationsEnabled') ?? true;
               NotificationService.instance.init(enabled: enabled);
             });
-
-            _registerFcmToken(user);
           }
 
           if (_sharedText != null) {
@@ -284,6 +289,7 @@ class _MyAppState extends State<MyApp> {
 
               final hasProfile = profileSnap.data == true;
               if (hasProfile) {
+                _registerFcmToken(user);
                 return const ExploreScreen();
               }
 
@@ -299,6 +305,7 @@ class _MyAppState extends State<MyApp> {
                   return const WelcomeScreen();
                 },
               );
+
             },
           );
         },

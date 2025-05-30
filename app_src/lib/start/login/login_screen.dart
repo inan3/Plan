@@ -65,6 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
+
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
@@ -75,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           (_) => false,
-        );
+
         return;
       }
 
@@ -88,8 +89,21 @@ class _LoginScreenState extends State<LoginScreen> {
       /* ──────────────────────────────────────────────────────── */
 
       await _goToExplore();
-    } on FirebaseAuthException {
-      if (mounted) _showErrorDialog('Correo o contraseña incorrectos.');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        if (!mounted) return;
+        final create = await _showAccountNotFoundDialog();
+        if (create == true && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+          );
+        }
+      } else {
+        if (mounted) {
+          _showErrorDialog('Correo o contraseña incorrectos.');
+        }
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -118,6 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!await _userDocExists(user.uid)) {
         if (!mounted) return;
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -128,6 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           (_) => false,
         );
+
         return;
       }
 
@@ -152,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /* ───────────────────────────────────────────────────────────
-   *  Diálogos de error
+   *  Diálogos
    * ───────────────────────────────────────────────────────── */
   void _showErrorDialog(String msg) {
     showDialog(
