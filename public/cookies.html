@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width'>
+    <title>Política de cookies</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding: 1em;
+        }
+        .site-footer{background:#000;color:#fff;padding:2rem 1rem;text-align:center;margin-left:-1em;margin-right:-1em;}
+        .footer-container{max-width:1200px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:1rem;}
+        .footer-links{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;}
+        .footer-links a{color:#fff;font-size:.875rem;}
+        .footer-logo{height:40px;}
+        .lang-select{background:#000;color:#fff;border:1px solid #fff;padding:.3rem;}
+        .footer-social{display:flex;flex-direction:column;gap:.5rem;align-items:center;font-size:.875rem;}
+        .social-icon{height:20px;}
+    </style>
+</head>
+<body>
+<div data-lang='es'>
+    <h1>Política de cookies</h1>
+    <p>Contenido provisional. Próximamente añadiremos la información completa.</p>
+    <img src='plan-sin-fondo.png' alt='Plan Social' style='max-width:200px;'>
+    <hr>
+    <footer class='site-footer'>
+        <div class='footer-container'>
+            <img class='footer-logo' src='plan-sin-fondo.png' alt='Plan Social'>
+            <div class='footer-links'>
+                <a href='help.html'>Ayuda</a>
+                <a href='privacy_policy.html'>Privacidad</a>
+                <a href='terms_and_conditions.html'>Condiciones</a>
+                <select class='lang-select'>
+                    <option value='es'>Español</option>
+                    <option value='en'>English</option>
+                </select>
+                <div class='footer-social'>
+                    <div>Síguenos en <button onclick="window.open('https://www.instagram.com/plan0525/', '_blank')" style='background:none;border:none;padding:0'><img src='instagram.png' alt='Instagram' class='social-icon'></button></div>
+                </div>
+            </div>
+            <p>© 2025 Plan</p>
+        </div>
+    </footer>
+</div>
+<script>
+(function(){
+  const selects=document.querySelectorAll('.lang-select');
+  function setLang(l){
+    document.documentElement.lang=l;
+    document.querySelectorAll('[data-lang]').forEach(el=>{
+      el.style.display=el.getAttribute('data-lang')===l?'':'none';
+    });
+    selects.forEach(s=>s.value=l);
+  }
+  const initial=((navigator.language||navigator.userLanguage)||'en').startsWith('es')?'es':'en';
+  setLang(initial);
+  selects.forEach(sel=>sel.addEventListener('change',e=>setLang(e.target.value)));
+})();
+</script>
+</body>
+</html>
