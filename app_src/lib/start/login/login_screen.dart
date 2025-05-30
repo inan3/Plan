@@ -81,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           await _auth.signOut();
         }
+
         return;
       }
 
@@ -136,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!await _userDocExists(user.uid)) {
         if (!mounted) return;
+
         final create = await _showGoogleNoProfileDialog();
         if (create == true && mounted) {
           Navigator.pushAndRemoveUntil(
@@ -151,6 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           await _auth.signOut();
         }
+
         return;
       }
 
@@ -177,6 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /* ───────────────────────────────────────────────────────────
    *  Diálogos
    * ───────────────────────────────────────────────────────── */
+
   Future<bool?> _showAccountNotFoundDialog() {
     return showDialog<bool>(
       context: context,
@@ -246,6 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /* ───────────────────────────────────────────────────────────
    *  Diálogos de error
    * ───────────────────────────────────────────────────────── */
+
   void _showErrorDialog(String msg) {
     showDialog(
       context: context,
