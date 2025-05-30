@@ -20,6 +20,7 @@ import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
 
 // Enum de proveedor (google/password)
 import 'verification_provider.dart';
+import 'terms_modal.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
@@ -167,6 +168,13 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   }
 
   /// Botón "Completar registro"
+  Future<void> _onAcceptTermsAndRegister() async {
+    final accepted = await showTermsModal(context);
+    if (accepted == true) {
+      await _onCompleteRegistration();
+    }
+  }
+
   Future<void> _onCompleteRegistration() async {
     setState(() => _isSaving = true);
 
@@ -834,7 +842,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isSaving ? null : _onCompleteRegistration,
+                      onPressed: _isSaving ? null : _onAcceptTermsAndRegister,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyColors.AppColors.blue,
                         padding: const EdgeInsets.symmetric(vertical: 14),
