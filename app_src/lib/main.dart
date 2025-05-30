@@ -282,15 +282,9 @@ class _MyAppState extends State<MyApp> {
                 return const ExploreScreen();
               }
 
-              final providerId =
-                  user.providerData.isNotEmpty ? user.providerData.first.providerId : '';
-              final provider = providerId == 'google.com'
-                  ? VerificationProvider.google
-                  : VerificationProvider.password;
-              return UserRegistrationScreen(
-                provider: provider,
-                firebaseUser: user,
-              );
+              // Si no hay perfil completo, cerramos sesión y mostramos bienvenida
+              signOutAndRemoveToken();
+              return const WelcomeScreen();
             },
           );
         },
