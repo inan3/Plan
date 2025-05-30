@@ -105,7 +105,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         if (!hasInfo) {
           // No hay doc completo → vamos a UserRegistrationScreen
           if (mounted) {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => const UserRegistrationScreen(
