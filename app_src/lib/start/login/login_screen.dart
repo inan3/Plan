@@ -14,6 +14,8 @@ import '../../explore_screen/main_screen/explore_screen.dart';
 import '../../main/colors.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 import 'recover_password.dart';
+import '../registration/register_screen.dart';
+import '../registration/register_with_google.dart';
 
 const Color backgroundColor = AppColors.background;
 
@@ -106,7 +108,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!await _userDocExists(user.uid)) {
         await _auth.signOut();
-        if (mounted) _showNoProfileDialog();
+        if (!mounted) return;
+        final create = await _showGoogleNoProfileDialog();
+        if (create == true && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RegisterWithGoogle()),
+          );
+        }
         return;
       }
 
@@ -144,6 +153,27 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Aceptar')),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showGoogleNoProfileDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('No hay perfil'),
+        content: const Text(
+          'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Aceptar'),
+          ),
         ],
       ),
     );
@@ -232,6 +262,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   context, MaterialPageRoute(builder: (_) => const RecoverPasswordScreen())),
               child: const Text('¿Olvidaste tu contraseña?',
                   style: TextStyle(decoration: TextDecoration.underline)),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RegisterScreen()),
+              ),
+              child: const Text(
+                '¿No tienes una cuenta? Regístrate.',
+                style: TextStyle(decoration: TextDecoration.underline),
+              ),
             ),
             const SizedBox(height: 40),
           ],
