@@ -21,6 +21,8 @@ import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
 // Enum de proveedor (google/password)
 import 'verification_provider.dart';
 import 'terms_modal.dart';
+import 'auth_service.dart';
+import 'local_registration_service.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
@@ -146,26 +148,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     );
   }
 
-  Future<bool> _ensureUserIsLoggedIn() async {
-    // 1) Ya hay un usuario en FirebaseAuth
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) return true;
-
-    // 2) Te llegó un User por parámetro ⇒ confíalo
-    if (widget.firebaseUser != null) return true;
-
-    // 3) Solo si usas email+password
-    if (widget.provider == VerificationProvider.password &&
-        widget.email != null &&
-        widget.password != null) {
-      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: widget.email!.trim(),
-        password: widget.password!.trim(),
-      );
-      return cred.user != null;
-    }
-    return false;
-  }
 
   /// Botón "Completar registro"
   Future<void> _onAcceptTermsAndRegister() async {
@@ -178,28 +160,33 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   Future<void> _onCompleteRegistration() async {
     setState(() => _isSaving = true);
 
-    // 1) Asegurar que hay un usuario logueado
-    final okLogged = await _ensureUserIsLoggedIn();
-    if (!okLogged) {
+    User? user;
+    try {
+      if (widget.provider == VerificationProvider.password &&
+          widget.email != null &&
+          widget.password != null) {
+        final cred = await AuthService.createUserWithEmail(
+          email: widget.email!.trim(),
+          password: widget.password!.trim(),
+        );
+        user = cred.user;
+      } else if (widget.provider == VerificationProvider.google) {
+        final cred = await AuthService.signInWithGoogle();
+        user = cred.user;
+      }
+      if (user == null) throw Exception('No user');
+      await user.sendEmailVerification();
+    } catch (e) {
       setState(() => _isSaving = false);
-      _showErrorPopup("No se ha podido iniciar sesión con el usuario.\n"
-          "Revisa tus credenciales o tu conexión.");
+      _showErrorPopup('Error al crear usuario: $e');
       return;
     }
 
-    // 2) Tomar el usuario final
-    final user = FirebaseAuth.instance.currentUser ?? widget.firebaseUser;
-    if (user == null) {
-      setState(() => _isSaving = false);
-      _showErrorPopup("No hay usuario logueado para completar el registro.");
-      return;
-    }
-
-    // 3) Revisar campos obligatorios (nombre y edad)
+    // Revisar campos obligatorios (nombre y edad)
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() => _isSaving = false);
-      _showErrorPopup("Por favor, ingresa un nombre.");
+      _showErrorPopup('Por favor, ingresa un nombre.');
       return;
     }
 
@@ -240,28 +227,27 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
       // Creamos o actualizamos doc en Firestore
       final userData = <String, dynamic>{
-        "uid": user.uid,
-        "name": name,
-        "nameLowercase": name.toLowerCase(),
-        "age": _age.toInt(),
-        "photoUrl": profilePhotoUrl ?? "",
-        "coverPhotoUrl":
-            coverPhotoUrls.isNotEmpty ? coverPhotoUrls.first : "",
-        "coverPhotos": coverPhotoUrls,
-        "latitude": latitude,
-        "longitude": longitude,
-        "privilegeLevel": "Básico",
-        "profile_privacy": 0,
-        "total_created_plans": 0,
-        "total_participants_until_now": 0,
-        "max_participants_in_one_plan": 0,
-        "favourites": [],
-        "deletedChats": [],
-        "dateCreatedData": FieldValue.serverTimestamp(),
+        'uid': user.uid,
+        'name': name,
+        'nameLowercase': name.toLowerCase(),
+        'age': _age.toInt(),
+        'photoUrl': profilePhotoUrl ?? '',
+        'coverPhotoUrl': coverPhotoUrls.isNotEmpty ? coverPhotoUrls.first : '',
+        'coverPhotos': coverPhotoUrls,
+        'latitude': latitude,
+        'longitude': longitude,
+        'privilegeLevel': 'Básico',
+        'profile_privacy': 0,
+        'total_created_plans': 0,
+        'total_participants_until_now': 0,
+        'max_participants_in_one_plan': 0,
+        'favourites': [],
+        'deletedChats': [],
+        'dateCreatedData': FieldValue.serverTimestamp(),
 
         // NUEVOS CAMPOS DE PRESENCIA:
-        "online": true,
-        "lastActive": FieldValue.serverTimestamp(),
+        'online': true,
+        'lastActive': FieldValue.serverTimestamp(),
       };
 
       await FirebaseFirestore.instance
@@ -269,15 +255,16 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           .doc(user.uid)
           .set(userData);
 
+      await LocalRegistrationService.clear();
+
       if (!mounted) return;
-      // Navegamos a ExploreScreen (limpiando el stack)
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const ExploreScreen()),
         (_) => false,
       );
     } catch (e) {
-      _showErrorPopup("Error al crear usuario: $e");
+      _showErrorPopup('Error al crear usuario: $e');
     } finally {
       setState(() => _isSaving = false);
     }

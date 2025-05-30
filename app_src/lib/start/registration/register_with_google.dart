@@ -1,11 +1,10 @@
 // lib/start/registration/register_with_google.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dating_app/main/colors.dart';
 import 'package:dating_app/start/registration/user_registration_screen.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'verification_provider.dart';
-import 'email_verification_screen.dart';
-import 'auth_service.dart';
+import 'local_registration_service.dart';
 
 class RegisterWithGoogle extends StatefulWidget {
   const RegisterWithGoogle({Key? key}) : super(key: key);
@@ -27,40 +26,22 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
     setState(() => _loading = true);
 
     try {
-      final credential = await AuthService.signInWithGoogle();
-      final user = credential.user;
-      if (user == null) {
+      await GoogleSignIn().signOut();
+      final account = await GoogleSignIn().signIn();
+      if (account == null) {
         Navigator.pop(context);
         return;
       }
 
+      await LocalRegistrationService.saveGoogle(email: account.email);
+
       if (!mounted) return;
-
-      await user.sendEmailVerification();
-
-      await showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Verifica tu correo'),
-          content: Text(
-            'Se ha enviado un correo de verificación a ${user.email}. '
-            'Sigue el enlace recibido para continuar.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Aceptar'),
-            ),
-          ],
-        ),
-      );
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(
-            email: user.email ?? '',
+          builder: (_) => UserRegistrationScreen(
             provider: VerificationProvider.google,
+            email: account.email,
           ),
         ),
       );
