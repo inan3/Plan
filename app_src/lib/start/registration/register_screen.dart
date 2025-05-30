@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dating_app/main/colors.dart';
-import 'email_verification_screen.dart';
 import 'register_with_google.dart';
 import 'verification_provider.dart';
-import 'auth_service.dart';
+import 'user_registration_screen.dart';
+import 'local_registration_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -23,44 +23,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => isLoading = true);
 
     try {
-      final cred = await AuthService.createUserWithEmail(
-        email: emailController.text,
-        password: passwordController.text,
+      await LocalRegistrationService.saveEmailPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
 
-      final user = cred.user;
-      if (user != null && !user.emailVerified) {
-        await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Verifica tu correo'),
-            content: Text(
-              'Se ha enviado un correo de verificación a ${emailController.text.trim()}. '
-              'Sigue el enlace recibido para continuar.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Aceptar'),
-              ),
-            ],
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UserRegistrationScreen(
+            provider: VerificationProvider.password,
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
           ),
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EmailVerificationScreen(
-              email: emailController.text.trim(),
-              password: passwordController.text.trim(),
-              provider: VerificationProvider.password,
-            ),
-          ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al registrarte: $e')),
+        SnackBar(content: Text('Error al iniciar registro: $e')),
       );
     } finally {
       setState(() => isLoading = false);
