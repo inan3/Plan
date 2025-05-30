@@ -26,6 +26,8 @@ import 'explore_screen/chats/chats_screen.dart';
 import 'explore_screen/main_screen/explore_screen.dart';
 import 'start/welcome_screen.dart';
 import 'start/registration/terms_modal.dart';
+import 'start/registration/user_registration_screen.dart';
+import 'start/registration/verification_provider.dart';
 
 /* ─────────────────────────────────────────────────────────
  *  Handler FCM en background
@@ -143,6 +145,20 @@ Future<void> signOutAndRemoveToken() async {
   await FirebaseAuth.instance.signOut();
 }
 
+Future<bool> _hasCompleteProfile(String uid) async {
+  try {
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (!doc.exists) return false;
+    final data = doc.data();
+    if (data == null) return false;
+    final name = data['name']?.toString().trim() ?? '';
+    final age = data['age'];
+    return name.isNotEmpty && age != null;
+  } catch (_) {
+    return false;
+  }
+}
+
 /* ─────────────────────────────────────────────────────────
  *  ROOT APP
  * ────────────────────────────────────────────────────────*/
@@ -249,7 +265,34 @@ class _MyAppState extends State<MyApp> {
             return ChatsScreen(sharedText: _sharedText!);
           }
 
-          return user == null ? const WelcomeScreen() : const ExploreScreen();
+          if (user == null) {
+            return const WelcomeScreen();
+          }
+
+          return FutureBuilder<bool>(
+            future: _hasCompleteProfile(user.uid),
+            builder: (context, profileSnap) {
+              if (profileSnap.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()));
+              }
+
+              final hasProfile = profileSnap.data == true;
+              if (hasProfile) {
+                return const ExploreScreen();
+              }
+
+              final providerId =
+                  user.providerData.isNotEmpty ? user.providerData.first.providerId : '';
+              final provider = providerId == 'google.com'
+                  ? VerificationProvider.google
+                  : VerificationProvider.password;
+              return UserRegistrationScreen(
+                provider: provider,
+                firebaseUser: user,
+              );
+            },
+          );
         },
       ),
     );
