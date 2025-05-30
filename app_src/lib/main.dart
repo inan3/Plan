@@ -149,6 +149,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
   String? _lastUid; // detecta cambio de usuario
@@ -189,7 +190,10 @@ class _MyAppState extends State<MyApp> {
     final version = prefs.getString('termsVersion');
     if (!(accepted && version == '2024-05')) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showTermsModal(context);
+        final ctx = _navigatorKey.currentContext;
+        if (ctx != null) {
+          showTermsModal(ctx);
+        }
       });
     }
   }
@@ -206,6 +210,7 @@ class _MyAppState extends State<MyApp> {
       valueListenable: LanguageService.locale,
       builder: (context, locale, _) {
         return MaterialApp(
+          navigatorKey: _navigatorKey,
           locale: locale,
           supportedLocales: const [Locale('es'), Locale('en')],
           localizationsDelegates: const [
