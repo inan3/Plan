@@ -163,15 +163,88 @@ Future<void> _deleteAccount(BuildContext context) async {
         );
       }
     }
+  } on FirebaseAuthException catch (e) {
+    Navigator.of(context).pop();
+    if (e.code == 'requires-recent-login') {
+      final success = await _showReauthDialog(context);
+      if (success) {
+        // Intentar de nuevo
+        await _deleteAccount(context);
+      }
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+    }
   } catch (e) {
     if (context.mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
-    return;
   }
+}
 
+Future<bool> _showReauthDialog(BuildContext context) async {
+  final emailCtrl = TextEditingController();
+  final passCtrl = TextEditingController();
+  bool success = false;
+
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) {
+      return AlertDialog(
+        title: const Text('Reautenticación requerida'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+                'Por cuestiones de seguridad debes introducir tus credenciales de inicio de sesión para eliminar tu cuenta definitivamente'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Correo electrónico o teléfono'),
+            ),
+            TextField(
+              controller: passCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Contraseña'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final email = emailCtrl.text.trim();
+              final pwd = passCtrl.text;
+              if (email.isEmpty || pwd.isEmpty) return;
+              try {
+                final cred =
+                    EmailAuthProvider.credential(email: email, password: pwd);
+                await FirebaseAuth.instance.currentUser
+                    ?.reauthenticateWithCredential(cred);
+                success = true;
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              } on FirebaseAuthException catch (e) {
+                ScaffoldMessenger.of(ctx)
+                    .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+              }
+            },
+            child: const Text('Continuar con la eliminación'),
+          ),
+        ],
+      );
+    },
+  );
+
+  emailCtrl.dispose();
+  passCtrl.dispose();
+  return success;
 }
 
 class EditProfileScreen extends StatefulWidget {
