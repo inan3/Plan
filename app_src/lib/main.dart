@@ -135,14 +135,23 @@ Future<void> signOutAndRemoveToken() async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
 
-  final fcm = FirebaseMessaging.instance;
-  final token = await fcm.getToken();
-  if (token != null) {
-    await FirebaseFirestore.instance.doc('users/${user.uid}').update({
-      'tokens': FieldValue.arrayRemove([token])
-    });
+  try {
+    final fcm = FirebaseMessaging.instance;
+    final token = await fcm.getToken();
+    if (token != null) {
+      await FirebaseFirestore.instance.doc('users/${user.uid}').update({
+        'tokens': FieldValue.arrayRemove([token])
+      });
+    }
+  } catch (_) {
+    // Ignoramos fallos al eliminar el token
   }
-  await FirebaseAuth.instance.signOut();
+
+  try {
+    await FirebaseAuth.instance.signOut();
+  } catch (_) {
+    // Ignoramos fallos de signOut
+  }
 }
 
 Future<bool> _hasCompleteProfile(String uid) async {
