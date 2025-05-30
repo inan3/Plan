@@ -65,10 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
+
+        await _auth.signOut();
         if (!mounted) return;
-        final create = await _showNoProfileDialog();
+        final create = await _showCreateProfileDialog();
         if (create == true && mounted) {
-          Navigator.pushAndRemoveUntil(
+          Navigator.pushReplacement(
+
             context,
             MaterialPageRoute(
               builder: (_) => UserRegistrationScreen(
@@ -76,10 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 firebaseUser: user,
               ),
             ),
-            (_) => false,
+
           );
-        } else {
-          await _auth.signOut();
         }
 
         return;
@@ -138,9 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!await _userDocExists(user.uid)) {
         if (!mounted) return;
 
-        final create = await _showGoogleNoProfileDialog();
+        final create = await _showCreateProfileDialog();
         if (create == true && mounted) {
-          Navigator.pushAndRemoveUntil(
+          Navigator.pushReplacement(
+
             context,
             MaterialPageRoute(
               builder: (_) => UserRegistrationScreen(
@@ -148,7 +150,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 firebaseUser: user,
               ),
             ),
-            (_) => false,
           );
         } else {
           await _auth.signOut();
@@ -181,58 +182,14 @@ class _LoginScreenState extends State<LoginScreen> {
    *  Diálogos
    * ───────────────────────────────────────────────────────── */
 
-  Future<bool?> _showAccountNotFoundDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('No existe la cuenta'),
-        content: const Text(
-          'No hay ninguna cuenta asociada a ese correo. ¿Crear un nuevo perfil?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Aceptar'),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<bool?> _showCreateProfileDialog() {
 
-  Future<bool?> _showNoProfileDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('No estás registrado'),
-        content: const Text(
-          'No hay ningún perfil en la base de datos para este usuario. ¿Crear uno nuevo?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Aceptar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<bool?> _showGoogleNoProfileDialog() {
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('No hay perfil'),
         content: const Text(
-          'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?',
-        ),
+          'No existe un perfil asociado a esta cuenta. ¿Crear uno nuevo?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
