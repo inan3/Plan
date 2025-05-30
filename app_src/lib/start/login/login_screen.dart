@@ -15,7 +15,8 @@ import '../../main/colors.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 import 'recover_password.dart';
 import '../registration/register_screen.dart';
-import '../registration/register_with_google.dart';
+import '../registration/user_registration_screen.dart';
+import '../registration/verification_provider.dart';
 
 const Color backgroundColor = AppColors.background;
 
@@ -64,8 +65,17 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
-        await _auth.signOut();
-        if (mounted) _showNoProfileDialog();
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UserRegistrationScreen(
+              provider: VerificationProvider.password,
+              firebaseUser: user,
+            ),
+          ),
+          (_) => false,
+        );
         return;
       }
 
@@ -107,15 +117,17 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
-        await _auth.signOut();
         if (!mounted) return;
-        final create = await _showGoogleNoProfileDialog();
-        if (create == true && mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const RegisterWithGoogle()),
-          );
-        }
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => UserRegistrationScreen(
+              provider: VerificationProvider.google,
+              firebaseUser: user,
+            ),
+          ),
+          (_) => false,
+        );
         return;
       }
 
@@ -142,43 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
   /* ───────────────────────────────────────────────────────────
    *  Diálogos de error
    * ───────────────────────────────────────────────────────── */
-  void _showNoProfileDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('No estás registrado'),
-        content: const Text(
-          'No hay ningún perfil en la base de datos para este usuario. '
-          'Debes registrarte primero.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Aceptar')),
-        ],
-      ),
-    );
-  }
-
-  Future<bool?> _showGoogleNoProfileDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('No hay perfil'),
-        content: const Text(
-          'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Aceptar'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showErrorDialog(String msg) {
     showDialog(
       context: context,

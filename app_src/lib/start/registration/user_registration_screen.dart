@@ -14,7 +14,7 @@ import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates, Placema
 
 // Importa tus colores desde tu archivo principal (ajusta el import si lo requieres)
 import 'package:dating_app/main/colors.dart' as MyColors;
-import 'register_screen.dart';
+import '../welcome_screen.dart';
 
 // Pantalla final (la que verás tras completar registro):
 import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
@@ -647,10 +647,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      child: SafeArea(
-        child: Stack(
+    return WillPopScope(
+      onWillPop: () async {
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+            (_) => false,
+          );
+        }
+        return false;
+      },
+      child: Material(
+        color: Colors.white,
+        child: SafeArea(
+          child: Stack(
           children: [
             SingleChildScrollView(
               padding: EdgeInsets.only(
@@ -872,13 +884,15 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: MyColors.AppColors.blue,
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegisterScreen(),
-                    ),
-                  );
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                      (_) => false,
+                    );
+                  }
                 },
               ),
             ),
