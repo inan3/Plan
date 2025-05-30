@@ -65,11 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
+
         await _auth.signOut();
         if (!mounted) return;
         final create = await _showCreateProfileDialog();
         if (create == true && mounted) {
           Navigator.pushReplacement(
+
             context,
             MaterialPageRoute(
               builder: (_) => UserRegistrationScreen(
@@ -77,8 +79,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 firebaseUser: user,
               ),
             ),
+
           );
         }
+
         return;
       }
 
@@ -91,8 +95,21 @@ class _LoginScreenState extends State<LoginScreen> {
       /* ──────────────────────────────────────────────────────── */
 
       await _goToExplore();
-    } on FirebaseAuthException {
-      if (mounted) _showErrorDialog('Correo o contraseña incorrectos.');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        if (!mounted) return;
+        final create = await _showAccountNotFoundDialog();
+        if (create == true && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+          );
+        }
+      } else {
+        if (mounted) {
+          _showErrorDialog('Correo o contraseña incorrectos.');
+        }
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -120,11 +137,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
-        await _auth.signOut();
         if (!mounted) return;
+
         final create = await _showCreateProfileDialog();
         if (create == true && mounted) {
           Navigator.pushReplacement(
+
             context,
             MaterialPageRoute(
               builder: (_) => UserRegistrationScreen(
@@ -133,7 +151,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           );
+        } else {
+          await _auth.signOut();
         }
+
         return;
       }
 
@@ -158,9 +179,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /* ───────────────────────────────────────────────────────────
-   *  Diálogos de error
+   *  Diálogos
    * ───────────────────────────────────────────────────────── */
+
   Future<bool?> _showCreateProfileDialog() {
+
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -180,6 +203,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  /* ───────────────────────────────────────────────────────────
+   *  Diálogos de error
+   * ───────────────────────────────────────────────────────── */
 
   void _showErrorDialog(String msg) {
     showDialog(
