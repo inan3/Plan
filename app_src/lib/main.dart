@@ -105,12 +105,16 @@ Future<void> _registerFcmToken(User user) async {
     }
 
     // añadir al usuario actual
-    batch.set(
-        db.doc('users/${user.uid}'),
-        {
-          'tokens': FieldValue.arrayUnion([token])
-        },
-        SetOptions(merge: true));
+    final userDoc = db.doc('users/${user.uid}');
+    final exists = await userDoc.get().then((d) => d.exists).catchError((_) => false);
+    if (exists) {
+      batch.set(
+          userDoc,
+          {
+            'tokens': FieldValue.arrayUnion([token])
+          },
+          SetOptions(merge: true));
+    }
 
     await batch.commit();
   }
