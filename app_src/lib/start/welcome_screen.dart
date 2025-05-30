@@ -91,15 +91,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         }
 
         // Si está verificado, revisamos si ya hay doc en Firestore
-        final exists = await FirebaseFirestore.instance
+        final docSnap = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get()
-            .then((d) => d.exists)
-            .catchError((_) => false);
+            .catchError((_) => null);
 
-        if (!exists) {
-          // No hay doc → vamos a UserRegistrationScreen
+        final hasInfo = docSnap != null &&
+            docSnap.exists &&
+            (docSnap.data()?['name']?.toString().trim().isNotEmpty ?? false) &&
+            (docSnap.data()?['age'] != null);
+
+        if (!hasInfo) {
+          // No hay doc completo → vamos a UserRegistrationScreen
           if (mounted) {
             Navigator.pushReplacement(
               context,
