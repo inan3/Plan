@@ -26,6 +26,8 @@ import 'explore_screen/chats/chats_screen.dart';
 import 'explore_screen/main_screen/explore_screen.dart';
 import 'start/welcome_screen.dart';
 import 'start/registration/terms_modal.dart';
+import 'start/registration/user_registration_screen.dart';
+import 'start/registration/verification_provider.dart';
 
 /* ─────────────────────────────────────────────────────────
  *  Handler FCM en background
@@ -246,15 +248,30 @@ class _MyAppState extends State<MyApp> {
             _registerFcmToken(user);
           }
 
-          if (_sharedText != null) {
-            return ChatsScreen(sharedText: _sharedText!);
-          }
+if (user == null) {
+  return const WelcomeScreen();
+}
 
-          return user == null ? const WelcomeScreen() : const ExploreScreen();
-        },
-      ),
-    );
-      },
+return FutureBuilder<DocumentSnapshot>(
+  future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Si no hay documento, el registro no está completo
+    if (!snapshot.hasData || !snapshot.data!.exists) {
+      return const UserRegistrationScreen(
+        provider: VerificationProvider.password,
+      );
+    }
+
+    // Perfil completo
+    return const ExploreScreen();
+  },
+);
     );
   }
 }
