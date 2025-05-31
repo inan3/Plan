@@ -1,10 +1,10 @@
 // lib/start/registration/register_with_google.dart
 import 'package:flutter/material.dart';
 import 'package:dating_app/main/colors.dart';
-import 'package:dating_app/start/registration/user_registration_screen.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:dating_app/start/registration/email_verification_screen.dart';
 import 'verification_provider.dart';
 import 'local_registration_service.dart';
+import 'auth_service.dart';
 
 class RegisterWithGoogle extends StatefulWidget {
   const RegisterWithGoogle({Key? key}) : super(key: key);
@@ -26,22 +26,22 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
     setState(() => _loading = true);
 
     try {
-      await GoogleSignIn().signOut();
-      final account = await GoogleSignIn().signIn();
-      if (account == null) {
-        Navigator.pop(context);
-        return;
-      }
+      final cred = await AuthService.signInWithGoogle();
+      final user = cred.user;
+      if (user == null) throw Exception('No se pudo iniciar sesión');
 
-      await LocalRegistrationService.saveGoogle(email: account.email);
+      await LocalRegistrationService.saveGoogle(email: user.email);
+
+      // Enviamos correo de verificación siempre
+      await user.sendEmailVerification();
 
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => UserRegistrationScreen(
+          builder: (_) => EmailVerificationScreen(
+            email: user.email ?? '',
             provider: VerificationProvider.google,
-            email: account.email,
           ),
         ),
       );

@@ -174,15 +174,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             await user.sendEmailVerification();
           }
         } else if (widget.provider == VerificationProvider.google) {
-          final cred = await AuthService.signInWithGoogle();
-          user = cred.user;
-          // Las cuentas de Google ya vienen verificadas por defecto
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Cuenta de Google verificada automáticamente'),
-              ),
-            );
+          if (widget.firebaseUser != null) {
+            user = widget.firebaseUser;
+          } else {
+            final cred = await AuthService.signInWithGoogle();
+            user = cred.user;
           }
         }
         if (user == null) throw Exception('No user');
