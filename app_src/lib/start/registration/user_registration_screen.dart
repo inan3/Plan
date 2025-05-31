@@ -162,20 +162,30 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
     User? user;
     try {
-      if (widget.provider == VerificationProvider.password &&
-          widget.email != null &&
-          widget.password != null) {
-        final cred = await AuthService.createUserWithEmail(
-          email: widget.email!.trim(),
-          password: widget.password!.trim(),
-        );
-        user = cred.user;
-      } else if (widget.provider == VerificationProvider.google) {
-        final cred = await AuthService.signInWithGoogle();
-        user = cred.user;
-      }
-      if (user == null) throw Exception('No user');
-      await user.sendEmailVerification();
+        if (widget.provider == VerificationProvider.password &&
+            widget.email != null &&
+            widget.password != null) {
+          final cred = await AuthService.createUserWithEmail(
+            email: widget.email!.trim(),
+            password: widget.password!.trim(),
+          );
+          user = cred.user;
+          if (user != null) {
+            await user.sendEmailVerification();
+          }
+        } else if (widget.provider == VerificationProvider.google) {
+          final cred = await AuthService.signInWithGoogle();
+          user = cred.user;
+          // Las cuentas de Google ya vienen verificadas por defecto
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Cuenta de Google verificada automáticamente'),
+              ),
+            );
+          }
+        }
+        if (user == null) throw Exception('No user');
     } catch (e) {
       setState(() => _isSaving = false);
       _showErrorPopup('Error al crear usuario: $e');
