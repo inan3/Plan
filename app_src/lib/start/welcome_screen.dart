@@ -11,6 +11,8 @@ import '../explore_screen/main_screen/explore_screen.dart';
 import 'registration/user_registration_screen.dart';
 import 'registration/verification_provider.dart';
 import 'registration/email_verification_screen.dart';
+import 'registration/local_registration_service.dart';
+import 'registration/register_with_google.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -65,8 +67,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _authSub = FirebaseAuth.instance.authStateChanges().listen(
       (user) async {
         if (user == null) {
-          // Sin sesión → mostramos bienvenida
-          if (mounted) setState(() => _isLoading = false);
+          final pending = await LocalRegistrationService.getPending();
+          final provider = pending.$1;
+          final email = pending.$2;
+          final password = pending.$3;
+
+          if (provider != null) {
+            if (!mounted) return;
+            Widget screen;
+            if (provider == VerificationProvider.google) {
+              screen = const RegisterWithGoogle();
+            } else {
+              screen = UserRegistrationScreen(
+                provider: provider,
+                email: email,
+                password: password,
+              );
+            }
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => screen),
+            );
+          } else {
+            if (mounted) setState(() => _isLoading = false);
+          }
           return;
         }
 
