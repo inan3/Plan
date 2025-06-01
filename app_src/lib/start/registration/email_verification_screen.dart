@@ -31,7 +31,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     setState(() => _checking = true);
 
     try {
-      final isVerified = await AuthService.checkIfEmailVerified();
+      bool isVerified = await AuthService.checkIfEmailVerified();
+      if (!isVerified) {
+        await Future.delayed(const Duration(seconds: 2));
+        isVerified = await AuthService.checkIfEmailVerified();
+      }
       if (isVerified) {
         final user = AuthService.currentUser;
         Navigator.pushAndRemoveUntil(
