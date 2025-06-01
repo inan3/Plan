@@ -66,7 +66,17 @@ Future<void> main() async {
   FirebaseMessaging.onMessage.listen(NotificationService.instance.show);
 
   // 5 ▸ Presencia + token si hay sesión persistente
-  final user = FirebaseAuth.instance.currentUser;
+  final auth = FirebaseAuth.instance;
+  User? user = auth.currentUser;
+  if (user != null) {
+    try {
+      await user.reload();
+      user = auth.currentUser;
+    } on FirebaseAuthException {
+      await auth.signOut();
+      user = null;
+    }
+  }
   if (user != null) {
     PresenceService.dispose();
     await PresenceService.init(user);
