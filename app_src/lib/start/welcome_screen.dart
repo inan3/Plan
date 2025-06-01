@@ -101,17 +101,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             doc != null && doc.exists && (doc.data()?['name'] ?? '').toString().isNotEmpty;
 
         if (!hasProfile) {
-          // Perfil incompleto → vamos a UserRegistrationScreen
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const UserRegistrationScreen(
-                  provider: VerificationProvider.password,
-                ),
-              ),
-            );
-          }
+          // Si no hay perfil, cerramos la sesión para volver a la bienvenida
+          await FirebaseAuth.instance.signOut();
+          if (mounted) setState(() => _isLoading = false);
           return;
         }
 
