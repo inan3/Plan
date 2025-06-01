@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dating_app/main/colors.dart';
 import 'register_with_google.dart';
 import 'verification_provider.dart';
-import 'user_registration_screen.dart';
+import 'email_verification_screen.dart';
+import 'auth_service.dart';
 import 'local_registration_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -23,6 +24,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => isLoading = true);
 
     try {
+      // Crea el usuario y envía el correo de verificación
+      await AuthService.createUserWithEmail(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // Guardamos que hay un registro pendiente
       await LocalRegistrationService.saveEmailPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
@@ -32,10 +40,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => UserRegistrationScreen(
-            provider: VerificationProvider.password,
+          builder: (_) => EmailVerificationScreen(
             email: emailController.text.trim(),
             password: passwordController.text.trim(),
+            provider: VerificationProvider.password,
           ),
         ),
       );
