@@ -58,7 +58,14 @@ Future<void> main() async {
   await NotificationService.instance.init(enabled: enabled);
   await LanguageService.loadLocale();
 
-  // 4 ▸ Mostrar notificaciones en foreground
+  // 4 ▸ Cancelar registro pendiente y cerrar sesión
+  final (provider, _, __) = await LocalRegistrationService.getPending();
+  if (provider != null) {
+    await LocalRegistrationService.clear();
+    await signOutAndRemoveToken();
+  }
+
+  // 5 ▸ Mostrar notificaciones en foreground
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
@@ -66,7 +73,7 @@ Future<void> main() async {
   );
   FirebaseMessaging.onMessage.listen(NotificationService.instance.show);
 
-  // 5 ▸ Presencia + token si hay sesión persistente
+  // 6 ▸ Presencia + token si hay sesión persistente
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
     PresenceService.dispose();
@@ -95,6 +102,8 @@ Future<void> signOutAndRemoveToken() async {
       'tokens': FieldValue.arrayRemove([token])
     });
   }
+  // Stop presence updates for the current user before signing out.
+  PresenceService.dispose();
   await FirebaseAuth.instance.signOut();
 }
 
@@ -130,7 +139,6 @@ class _MyAppState extends State<MyApp> {
     }
 
     _checkTerms();
-    _checkPendingRegistration();
   }
 
   void _onMedia(List<SharedMediaFile> files) {
@@ -158,13 +166,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _checkPendingRegistration() async {
-    final (provider, _, __) = await LocalRegistrationService.getPending();
-    if (provider != null) {
-      await LocalRegistrationService.clear();
-      await signOutAndRemoveToken();
-    }
-  }
 
   @override
   void dispose() {
