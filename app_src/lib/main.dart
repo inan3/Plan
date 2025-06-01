@@ -189,66 +189,9 @@ class _MyAppState extends State<MyApp> {
           ],
           title: 'Plan',
           theme: ThemeData(primarySwatch: Colors.pink),
-          home: StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (snap.hasError) {
-                return const Scaffold(
-                  body: Center(child: Text('Error Firebase')),
-                );
-              }
-
-              final user = snap.data;
-
-              // ── cambia de usuario ───────────────────────────────
-              if (user != null && user.uid != _lastUid) {
-                _lastUid = user.uid;
-
-                SharedPreferences.getInstance().then((prefs) {
-                  final enabled = prefs.getBool('notificationsEnabled') ?? true;
-                  NotificationService.instance.init(enabled: enabled);
-                });
-
-                FcmTokenService.register(user);
-              }
-
-              if (user == null) {
-                return const WelcomeScreen();
-              }
-
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .get(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Scaffold(
-                      body: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  final data =
-                      snapshot.data?.data() as Map<String, dynamic>?;
-
-                  if (!snapshot.hasData ||
-                      !snapshot.data!.exists ||
-                      (data?['name'] ?? '').toString().isEmpty) {
-                    return const UserRegistrationScreen(
-                      provider: VerificationProvider.password,
-                    );
-                  }
-
-                  return const ExploreScreen();
-                },
-              );
-            },
-          ),
+          // Always start at WelcomeScreen. It handles auth changes internally.
+          // This ensures that every app launch shows the welcome screen first.
+          home: const WelcomeScreen(),
         );
       },
     );
