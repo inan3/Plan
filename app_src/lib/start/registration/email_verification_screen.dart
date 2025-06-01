@@ -32,10 +32,23 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     setState(() => _checking = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      await user?.reload();
-      final refreshed = FirebaseAuth.instance.currentUser;
-      if (refreshed != null && refreshed.emailVerified) {
+      await FirebaseAuth.instance.currentUser?.reload();
+      User? user = FirebaseAuth.instance.currentUser;
+
+      // Si la sesión se cerró, reintentamos con las credenciales guardadas
+      if (user == null &&
+          widget.provider == VerificationProvider.password &&
+          widget.password != null) {
+        final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: widget.email.trim(),
+          password: widget.password!.trim(),
+        );
+        user = cred.user;
+        await user?.reload();
+        user = FirebaseAuth.instance.currentUser;
+      }
+
+      if (user != null && user.emailVerified) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const ExploreScreen()),
