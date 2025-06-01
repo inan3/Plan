@@ -120,7 +120,7 @@ class _MyAppState extends State<MyApp> {
     if (!kIsWeb) {
       _intentSub = ReceiveSharingIntent.instance
           .getMediaStream()
-          .listen(_onMedia); // ← ahora devuelve StreamSubscription
+          .listen(_onMedia);
 
       ReceiveSharingIntent.instance.getInitialMedia().then((files) {
         if (files.isNotEmpty) _onMedia(files);
@@ -180,56 +180,67 @@ class _MyAppState extends State<MyApp> {
           title: 'Plan',
           theme: ThemeData(primarySwatch: Colors.pink),
           home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-                body: Center(child: CircularProgressIndicator()));
-          }
-          if (snap.hasError) {
-            return const Scaffold(body: Center(child: Text('Error Firebase')));
-          }
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snap.hasError) {
+                return const Scaffold(
+                  body: Center(child: Text('Error Firebase')),
+                );
+              }
 
-          final user = snap.data;
+              final user = snap.data;
 
-          // ── cambia de usuario ───────────────────────────────
-          if (user != null && user.uid != _lastUid) {
-            _lastUid = user.uid;
+              // ── cambia de usuario ───────────────────────────────
+              if (user != null && user.uid != _lastUid) {
+                _lastUid = user.uid;
 
-            SharedPreferences.getInstance().then((prefs) {
-              final enabled = prefs.getBool('notificationsEnabled') ?? true;
-              NotificationService.instance.init(enabled: enabled);
-            });
+                SharedPreferences.getInstance().then((prefs) {
+                  final enabled = prefs.getBool('notificationsEnabled') ?? true;
+                  NotificationService.instance.init(enabled: enabled);
+                });
 
-            FcmTokenService.register(user);
-          }
+                FcmTokenService.register(user);
+              }
 
-if (user == null) {
-  return const WelcomeScreen();
-}
+              if (user == null) {
+                return const WelcomeScreen();
+              }
 
-return FutureBuilder<DocumentSnapshot>(
-  future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
 
-    final data = snapshot.data?.data() as Map<String, dynamic>?;
+                  final data =
+                      snapshot.data?.data() as Map<String, dynamic>?;
 
-    // Si no hay documento o falta el nombre, el registro no está completo
-    if (!snapshot.hasData || !snapshot.data!.exists || (data?['name'] ?? '').toString().isEmpty) {
-      return const UserRegistrationScreen(
-        provider: VerificationProvider.password,
-      );
-    }
+                  if (!snapshot.hasData ||
+                      !snapshot.data!.exists ||
+                      (data?['name'] ?? '').toString().isEmpty) {
+                    return const UserRegistrationScreen(
+                      provider: VerificationProvider.password,
+                    );
+                  }
 
-    // Perfil completo
-    return const ExploreScreen();
-  },
-);
+                  return const ExploreScreen();
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
