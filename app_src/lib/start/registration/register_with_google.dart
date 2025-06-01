@@ -1,7 +1,7 @@
 // lib/start/registration/register_with_google.dart
 import 'package:flutter/material.dart';
 import 'package:dating_app/main/colors.dart';
-import 'package:dating_app/start/registration/email_verification_screen.dart';
+import 'user_registration_screen.dart';
 import 'verification_provider.dart';
 import 'local_registration_service.dart';
 import 'auth_service.dart';
@@ -32,16 +32,13 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
 
       await LocalRegistrationService.saveGoogle(email: user.email);
 
-      // Enviamos correo de verificación siempre
-      await user.sendEmailVerification();
-
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(
-            email: user.email ?? '',
+          builder: (_) => UserRegistrationScreen(
             provider: VerificationProvider.google,
+            firebaseUser: user,
           ),
         ),
       );
