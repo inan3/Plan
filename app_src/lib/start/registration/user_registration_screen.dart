@@ -23,6 +23,7 @@ import 'verification_provider.dart';
 import 'terms_modal.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
+import '../../services/fcm_token_service.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
@@ -260,6 +261,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           .collection('users')
           .doc(user.uid)
           .set(userData);
+
+      // Guardamos token de notificaciones
+      await FcmTokenService.register(user);
 
       await LocalRegistrationService.clear();
 
