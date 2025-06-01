@@ -15,7 +15,6 @@ import '../../main/colors.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 import 'recover_password.dart';
 import '../registration/register_screen.dart';
-import '../registration/register_with_google.dart';
 
 const Color backgroundColor = AppColors.background;
 
@@ -116,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (create == true && mounted) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const RegisterWithGoogle()),
+            MaterialPageRoute(builder: (_) => const RegisterScreen()),
           );
         }
         return;
