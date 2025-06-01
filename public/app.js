@@ -83,6 +83,10 @@ googleRegisterBtn?.addEventListener('click', async () => {
 checkVerificationBtn?.addEventListener('click', async () => {
   if (!auth.currentUser) return;
   await reload(auth.currentUser);
+  if (!auth.currentUser.emailVerified) {
+    await new Promise(r => setTimeout(r, 2000));
+    await reload(auth.currentUser);
+  }
   if (auth.currentUser.emailVerified) {
     step1.style.display = 'none';
     step2.style.display = 'block';
