@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/gestures.dart';
-import '../login/login_screen.dart';
 
 Future<bool?> showTermsModal(BuildContext context) {
   return showDialog<bool>(
@@ -58,24 +57,6 @@ class _TermsModal extends StatelessWidget {
                     if (context.mounted) Navigator.of(context).pop(true);
                   },
                   child: const Text('Acepto'),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pop(false);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    );
-                  },
-                  child: const Text(
-                    'Buscar mi cuenta',
-                    style: TextStyle(
-                      decoration: TextDecoration.underline,
-                      color: Colors.blue,
-                    ),
-                  ),
                 ),
               ),
             ],
