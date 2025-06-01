@@ -106,8 +106,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (_) => const UserRegistrationScreen(
+                builder: (_) => UserRegistrationScreen(
                   provider: VerificationProvider.password,
+                  firebaseUser: user,
                 ),
               ),
             );
