@@ -35,8 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
 
   Future<bool> _userDocExists(String uid) async {
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.exists;
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (!doc.exists) return false;
+    final name = (doc.data()?['name'] ?? '').toString();
+    return name.isNotEmpty;
   }
 
   Future<void> _goToExplore() async {
