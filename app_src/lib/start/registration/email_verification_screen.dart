@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:dating_app/main/colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
 import 'verification_provider.dart';
-import 'user_registration_screen.dart';
 import 'auth_service.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
@@ -31,24 +32,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     setState(() => _checking = true);
 
     try {
-      final isVerified = await AuthService.checkIfEmailVerified();
-      if (isVerified) {
-        final user = AuthService.currentUser;
-        Navigator.pushAndRemoveUntil(
+      final user = FirebaseAuth.instance.currentUser;
+      await user?.reload();
+      final refreshed = FirebaseAuth.instance.currentUser;
+      if (refreshed != null && refreshed.emailVerified) {
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => UserRegistrationScreen(
-              provider: widget.provider,
-              email: widget.email,
-              password: widget.password,
-              firebaseUser: user,
-            ),
-          ),
-          (_) => false,
+          MaterialPageRoute(builder: (_) => const ExploreScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tu correo aún no está verificado.')),
+          const SnackBar(content: Text('Aún no has verificado el correo.')),
         );
       }
     } catch (e) {
