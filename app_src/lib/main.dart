@@ -29,6 +29,7 @@ import 'start/welcome_screen.dart';
 import 'start/registration/terms_modal.dart';
 import 'start/registration/user_registration_screen.dart';
 import 'start/registration/verification_provider.dart';
+import 'start/registration/local_registration_service.dart';
 
 /* ─────────────────────────────────────────────────────────
  *  Handler FCM en background
@@ -129,6 +130,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     _checkTerms();
+    _checkPendingRegistration();
   }
 
   void _onMedia(List<SharedMediaFile> files) {
@@ -153,6 +155,14 @@ class _MyAppState extends State<MyApp> {
           showTermsModal(ctx);
         }
       });
+    }
+  }
+
+  void _checkPendingRegistration() async {
+    final (provider, _, __) = await LocalRegistrationService.getPending();
+    if (provider != null) {
+      await LocalRegistrationService.clear();
+      await signOutAndRemoveToken();
     }
   }
 

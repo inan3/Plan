@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 // Importación para "reverse geocoding"
 import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates, Placemark;
 
@@ -57,8 +58,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   /// Texto que mostramos en el "botón" de Ubicación actual
   String _locationLabel = "Ubicación actual";
 
-  /// Edad del usuario
-  double _age = 25;
+  /// Fecha de nacimiento
+  DateTime? _birthDate;
 
   /// Fotos de portada
   final List<File> _coverImages = [];
@@ -73,6 +74,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   /// Indicador de guardando
   bool _isSaving = false;
+
+  int _calculateAge(DateTime date) {
+    final now = DateTime.now();
+    int age = now.year - date.year;
+    if (now.month < date.month ||
+        (now.month == date.month && now.day < date.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  bool get _isFormValid {
+    final name = _nameController.text.trim();
+    if (name.isEmpty || _birthDate == null) return false;
+    return _calculateAge(_birthDate!) >= 18;
+  }
 
   @override
   void initState() {
@@ -189,11 +206,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       return;
     }
 
-    // Revisar campos obligatorios (nombre y edad)
+    // Revisar campos obligatorios
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() => _isSaving = false);
       _showErrorPopup('Por favor, ingresa un nombre.');
+      return;
+    }
+    if (_birthDate == null) {
+      setState(() => _isSaving = false);
+      _showErrorPopup('Por favor, selecciona tu fecha de nacimiento.');
+      return;
+    }
+    final age = _calculateAge(_birthDate!);
+    if (age < 18) {
+      setState(() => _isSaving = false);
+      _showErrorPopup('Debes ser mayor de 18 años para registrarte.');
       return;
     }
 
@@ -237,7 +265,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         'uid': user.uid,
         'name': name,
         'nameLowercase': name.toLowerCase(),
-        'age': _age.toInt(),
+        'age': age,
         'photoUrl': profilePhotoUrl ?? '',
         'coverPhotoUrl': coverPhotoUrls.isNotEmpty ? coverPhotoUrls.first : '',
         'coverPhotos': coverPhotoUrls,
@@ -385,6 +413,23 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           // Forzamos el rebuild inmediato
           _coverPageController.jumpToPage(_currentCoverIndex);
         }
+      });
+    }
+  }
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final initial = DateTime(now.year - 18, now.month, now.day);
+    final first = DateTime(now.year - 100);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: first,
+      lastDate: now,
+    );
+    if (picked != null) {
+      setState(() {
+        _birthDate = picked;
       });
     }
   }
@@ -670,14 +715,23 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   _buildProfilePhotoPicker(),
                   const SizedBox(height: 20),
 
-                  Text(
-                    "Nombre de usuario",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: MyColors.AppColors.blue,
-                      decoration: TextDecoration.none,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Nombre de usuario",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: MyColors.AppColors.blue,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const Text(
+                        '*',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
 
@@ -706,43 +760,65 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  Text(
-                    "Edad",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: MyColors.AppColors.blue,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Slider para edad
-                  Column(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "${_age.toInt()} años",
+                        "Fecha de nacimiento",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: MyColors.AppColors.blue,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const Text('*', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: _pickBirthDate,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                          color: MyColors.AppColors.blue,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _birthDate != null
+                                ? DateFormat('dd/MM/yyyy').format(_birthDate!)
+                                : 'Seleccione su fecha...',
+                            style:
+                                TextStyle(color: MyColors.AppColors.blue),
+                          ),
+                          Icon(Icons.calendar_today,
+                              color: MyColors.AppColors.blue),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_birthDate != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Tienes ${_calculateAge(_birthDate!)} años',
                         style: TextStyle(
                           color: MyColors.AppColors.blue,
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Slider(
-                        value: _age,
-                        min: 18,
-                        max: 100,
-                        divisions: 82,
-                        label: "${_age.toInt()} años",
-                        activeColor: MyColors.AppColors.blue,
-                        inactiveColor:
-                            MyColors.AppColors.blue.withOpacity(0.3),
-                        onChanged: (double value) {
-                          setState(() => _age = value);
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
                   const SizedBox(height: 20),
 
                   Text(
@@ -839,7 +915,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isSaving ? null : _onAcceptTermsAndRegister,
+                      onPressed:
+                          _isSaving || !_isFormValid ? null : _onAcceptTermsAndRegister,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyColors.AppColors.blue,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -856,6 +933,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '*Campos obligatorios',
+                    style: TextStyle(color: Colors.red),
                   ),
                   const SizedBox(height: 40),
                 ],
