@@ -39,6 +39,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _isLoading = true;
   StreamSubscription<User?>? _authSub;
 
+  void _cancelAuthListener() {
+    _authSub?.cancel();
+    _authSub = null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -209,10 +214,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   SizedBox(
                     width: 200,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      ),
+                      onPressed: () async {
+                        _cancelAuthListener();
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        );
+                        if (mounted) _listenAuthChanges();
+                      },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: const Color.fromARGB(236, 0, 4, 227),
@@ -235,11 +244,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   SizedBox(
                     width: 200,
                     child: OutlinedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const RegisterScreen()),
-                      ),
+                      onPressed: () async {
+                        _cancelAuthListener();
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const RegisterScreen()),
+                        );
+                        if (mounted) _listenAuthChanges();
+                      },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.white,
