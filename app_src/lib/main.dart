@@ -21,6 +21,7 @@ import 'services/language_service.dart';
 
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
+import 'services/fcm_token_service.dart';
 import 'explore_screen/users_managing/presence_service.dart';
 import 'explore_screen/chats/chats_screen.dart';
 import 'explore_screen/main_screen/explore_screen.dart';
@@ -69,7 +70,7 @@ Future<void> main() async {
   if (user != null) {
     PresenceService.dispose();
     await PresenceService.init(user);
-    await _registerFcmToken(user);
+    await FcmTokenService.register(user);
   }
 
   runApp(const MyApp());
@@ -78,51 +79,6 @@ Future<void> main() async {
 /* ─────────────────────────────────────────────────────────
  *  FCM ⇆ Firestore (token único por dispositivo)
  * ────────────────────────────────────────────────────────*/
-Future<void> _registerFcmToken(User user) async {
-  final fcm = FirebaseMessaging.instance;
-
-  final perm = await fcm.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-    provisional: false,
-  );
-  if (perm.authorizationStatus != AuthorizationStatus.authorized) return;
-
-  Future<void> _save(String token) async {
-    final db = FirebaseFirestore.instance;
-    final batch = db.batch();
-
-    // eliminar de otros usuarios
-    final q = await db
-        .collection('users')
-        .where('tokens', arrayContains: token)
-        .get();
-    for (final d in q.docs) {
-      if (d.id != user.uid) {
-        batch.update(d.reference, {
-          'tokens': FieldValue.arrayRemove([token])
-        });
-      }
-    }
-
-    // añadir al usuario actual
-    batch.set(
-        db.doc('users/${user.uid}'),
-        {
-          'tokens': FieldValue.arrayUnion([token])
-        },
-        SetOptions(merge: true));
-
-    await batch.commit();
-  }
-
-  String? token = await fcm.getToken();
-  token ??= await fcm.onTokenRefresh.first;
-  await _save(token);
-
-  fcm.onTokenRefresh.listen(_save);
-}
 
 /* ─────────────────────────────────────────────────────────
  *  Logout helper (sin borrar token local)
@@ -245,7 +201,7 @@ class _MyAppState extends State<MyApp> {
               NotificationService.instance.init(enabled: enabled);
             });
 
-            _registerFcmToken(user);
+            FcmTokenService.register(user);
           }
 
 if (user == null) {
@@ -261,8 +217,10 @@ return FutureBuilder<DocumentSnapshot>(
       );
     }
 
-    // Si no hay documento, el registro no está completo
-    if (!snapshot.hasData || !snapshot.data!.exists) {
+    final data = snapshot.data?.data() as Map<String, dynamic>?;
+
+    // Si no hay documento o falta el nombre, el registro no está completo
+    if (!snapshot.hasData || !snapshot.data!.exists || (data?['name'] ?? '').toString().isEmpty) {
       return const UserRegistrationScreen(
         provider: VerificationProvider.password,
       );
