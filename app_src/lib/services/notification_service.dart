@@ -93,6 +93,11 @@ class NotificationService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || token == null) return;
 
+    final profileDoc = await _firestore.doc('users/${user.uid}').get();
+    final hasProfile = profileDoc.exists &&
+        (profileDoc.data()?['name'] ?? '').toString().isNotEmpty;
+    if (!hasProfile) return;
+
     final batch = _firestore.batch();
 
     // 1 ▸ Elimina el token de cualquier otro usuario
