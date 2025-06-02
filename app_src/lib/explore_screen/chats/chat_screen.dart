@@ -184,6 +184,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     try {
       QuerySnapshot unreadMessages = await FirebaseFirestore.instance
           .collection('messages')
+          .where('participants', arrayContains: currentUserId)
           .where('senderId', isEqualTo: widget.chatPartnerId)
           .where('receiverId', isEqualTo: currentUserId)
           .where('isRead', isEqualTo: false)

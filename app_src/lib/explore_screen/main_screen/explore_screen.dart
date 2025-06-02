@@ -396,6 +396,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   Stream<int> _unreadMessagesCountStream() {
     return FirebaseFirestore.instance
         .collection('messages')
+        .where('participants', arrayContains: currentUser?.uid)
         .where('receiverId', isEqualTo: currentUser?.uid)
         .where('isRead', isEqualTo: false)
         .snapshots()
