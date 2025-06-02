@@ -293,6 +293,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 return FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
                       .collection('messages')
+                      .where('participants', arrayContains: currentUserId)
                       .where('senderId', isEqualTo: otherUserId)
                       .where('receiverId', isEqualTo: currentUserId)
                       .where('isRead', isEqualTo: false)
