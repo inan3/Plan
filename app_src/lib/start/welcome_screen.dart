@@ -75,11 +75,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           return;
         }
 
-        // Recargamos info para asegurar que emailVerified está actualizado
+        // Recargamos info para asegurar que emailVerified y providerData están actualizados
         await user.reload();
 
-        // Si el correo NO está verificado
-        if (!user.emailVerified) {
+        final providers = user.providerData.map((p) => p.providerId).toList();
+        final isGoogle = providers.contains('google.com');
+        final provider =
+            isGoogle ? VerificationProvider.google : VerificationProvider.password;
+
+        // Si el correo NO está verificado y no es usuario de Google, pedimos verificación
+        if (!user.emailVerified && !isGoogle) {
           if (mounted) {
             Navigator.pushReplacement(
               context,
@@ -87,7 +92,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 builder: (_) => EmailVerificationScreen(
                   email: user.email ?? '',
                   password: null,
-                  provider: VerificationProvider.password,
+                  provider: provider,
                 ),
               ),
             );
@@ -112,7 +117,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => UserRegistrationScreen(
-                  provider: VerificationProvider.password,
+                  provider: provider,
                   firebaseUser: user,
                 ),
               ),
