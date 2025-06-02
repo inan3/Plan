@@ -197,6 +197,18 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       }
 
       if (user == null) throw Exception('No user');
+
+      if (widget.provider == VerificationProvider.google &&
+          widget.password != null &&
+          widget.password!.isNotEmpty) {
+        try {
+          final cred = EmailAuthProvider.credential(
+            email: user.email ?? '',
+            password: widget.password!.trim(),
+          );
+          await user.linkWithCredential(cred);
+        } catch (_) {}
+      }
     } catch (e) {
       setState(() => _isSaving = false);
       _showErrorPopup('Error al crear usuario: $e');

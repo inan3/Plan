@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:dating_app/main/colors.dart';
 import 'user_registration_screen.dart';
+import 'password_selection_screen.dart';
 import 'verification_provider.dart';
 import 'local_registration_service.dart';
 import 'auth_service.dart';
@@ -36,10 +37,7 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => UserRegistrationScreen(
-            provider: VerificationProvider.google,
-            firebaseUser: user,
-          ),
+          builder: (_) => PasswordSelectionScreen(firebaseUser: user),
         ),
       );
     } catch (e) {
