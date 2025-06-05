@@ -252,10 +252,14 @@ class UserImagesManaging {
       final updatedList = List<String>.from(currentCoverImages);
       updatedList.add(imageUrl);
 
+      final updateData = {'coverPhotos': updatedList};
+      if (updatedList.length == 1) {
+        updateData['coverPhotoUrl'] = updatedList.first;
+      }
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .update({'coverPhotos': updatedList});
+          .update(updateData);
 
       onImagesUpdated(updatedList);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -502,10 +506,15 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
       // Portada
       final updatedList = List<String>.from(widget.images);
       updatedList.removeAt(_currentPage);
+      final updateData = {'coverPhotos': updatedList};
+      if (updatedList.length <= 1) {
+        updateData['coverPhotoUrl'] =
+            updatedList.isNotEmpty ? updatedList.first : '';
+      }
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .update({'coverPhotos': updatedList});
+          .update(updateData);
       widget.onCoverImagesUpdated?.call(updatedList);
 
       if (updatedList.isEmpty) {
