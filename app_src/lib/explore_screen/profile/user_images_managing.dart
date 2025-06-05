@@ -252,7 +252,7 @@ class UserImagesManaging {
       final updatedList = List<String>.from(currentCoverImages);
       updatedList.add(imageUrl);
 
-      final updateData = {'coverPhotos': updatedList};
+      final Map<String, dynamic> updateData = {'coverPhotos': updatedList};
       if (updatedList.length == 1) {
         updateData['coverPhotoUrl'] = updatedList.first;
       }
@@ -506,7 +506,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
       // Portada
       final updatedList = List<String>.from(widget.images);
       updatedList.removeAt(_currentPage);
-      final updateData = {'coverPhotos': updatedList};
+      final Map<String, dynamic> updateData = {'coverPhotos': updatedList};
       if (updatedList.length <= 1) {
         updateData['coverPhotoUrl'] =
             updatedList.isNotEmpty ? updatedList.first : '';
