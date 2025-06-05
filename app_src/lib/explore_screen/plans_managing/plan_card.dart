@@ -1215,7 +1215,7 @@ class PlanCardState extends State<PlanCard> {
                                 onTap: _toggleLike,
                                 iconColor: _liked ? Colors.red : Colors.white,
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 8),
                               StreamBuilder<DocumentSnapshot>(
                                 stream: FirebaseFirestore.instance
                                     .collection('plans')
@@ -1236,13 +1236,13 @@ class PlanCardState extends State<PlanCard> {
                                   );
                                 },
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 8),
                               _buildFrostedAction(
                                 iconPath: 'assets/icono-compartir.svg',
                                 countText: '',
                                 onTap: _onShareButtonTap,
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 8),
                               StreamBuilder<DocumentSnapshot>(
                                 stream: FirebaseFirestore.instance
                                     .collection('plans')
