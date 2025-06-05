@@ -1237,10 +1237,26 @@ class PlanCardState extends State<PlanCard> {
                                 },
                               ),
                               const SizedBox(width: 8),
-                              _buildFrostedAction(
-                                iconPath: 'assets/icono-compartir.svg',
-                                countText: '',
-                                onTap: _onShareButtonTap,
+                              StreamBuilder<DocumentSnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('plans')
+                                    .doc(plan.id)
+                                    .snapshots(),
+                                builder: (ctx, snapShare) {
+                                  String countText = '0';
+                                  if (snapShare.hasData &&
+                                      snapShare.data!.exists) {
+                                    final d = snapShare.data!.data()
+                                        as Map<String, dynamic>;
+                                    final c = d['share_count'] ?? 0;
+                                    countText = c.toString();
+                                  }
+                                  return _buildFrostedAction(
+                                    iconPath: 'assets/icono-compartir.svg',
+                                    countText: countText,
+                                    onTap: _onShareButtonTap,
+                                  );
+                                },
                               ),
                               const SizedBox(width: 8),
                               StreamBuilder<DocumentSnapshot>(

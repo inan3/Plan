@@ -330,6 +330,11 @@ class PlanShareSheetState extends State<PlanShareSheet> {
       });
     }
 
+    await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(widget.plan.id)
+        .update({'share_count': FieldValue.increment(1)});
+
     Navigator.pop(context);
   }
 }
