@@ -455,10 +455,24 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   Widget _buildShareButton(PlanModel plan) {
-    return _buildActionButton(
-      iconPath: 'assets/icono-compartir.svg',
-      countText: "",
-      onTap: () => _openCustomShareModal(plan),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(plan.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        String countText = '0';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final count = data['share_count'] ?? 0;
+          countText = count.toString();
+        }
+        return _buildActionButton(
+          iconPath: 'assets/icono-compartir.svg',
+          countText: countText,
+          onTap: () => _openCustomShareModal(plan),
+        );
+      },
     );
   }
 
