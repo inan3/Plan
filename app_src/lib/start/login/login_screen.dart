@@ -32,6 +32,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   bool isLoading = false;
+  bool _rememberLogin = false;
+
+  static const _rememberKey = 'rememberLogin';
+  static const _emailKey = 'rememberEmail';
+  static const _passwordKey = 'rememberPassword';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool(_rememberKey) ?? false;
+    if (!remember) return;
+    setState(() {
+      _rememberLogin = true;
+      emailController.text = prefs.getString(_emailKey) ?? '';
+      passwordController.text = prefs.getString(_passwordKey) ?? '';
+    });
+  }
 
   Future<bool> _userDocExists(String uid) async {
     final doc =
@@ -78,6 +100,16 @@ class _LoginScreenState extends State<LoginScreen> {
       final enabled = prefs.getBool('notificationsEnabled') ?? true;
       await NotificationService.instance.init(enabled: enabled);
       /* ──────────────────────────────────────────────────────── */
+
+      if (_rememberLogin) {
+        await prefs.setBool(_rememberKey, true);
+        await prefs.setString(_emailKey, emailController.text.trim());
+        await prefs.setString(_passwordKey, passwordController.text.trim());
+      } else {
+        await prefs.setBool(_rememberKey, false);
+        await prefs.remove(_emailKey);
+        await prefs.remove(_passwordKey);
+      }
 
       await _goToExplore();
     } on FirebaseAuthException {
@@ -128,6 +160,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final enabled = prefs.getBool('notificationsEnabled') ?? true;
       await NotificationService.instance.init(enabled: enabled);
       /* ──────────────────────────────────────────────────────── */
+
+      await prefs.setBool(_rememberKey, false);
+      await prefs.remove(_emailKey);
+      await prefs.remove(_passwordKey);
+      if (mounted) setState(() => _rememberLogin = false);
 
       await _goToExplore();
     } catch (_) {
@@ -244,7 +281,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 20),
             _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
+            _rememberCheckbox(),
+            const SizedBox(height: 20),
             SizedBox(
               width: 200,
               child: ElevatedButton(
@@ -325,6 +364,27 @@ class _LoginScreenState extends State<LoginScreen> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
         ),
+      ),
+    );
+  }
+
+  Widget _rememberCheckbox() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 30),
+      child: Row(
+        children: [
+          Checkbox(
+            value: _rememberLogin,
+            onChanged: (v) => setState(() => _rememberLogin = v ?? false),
+            activeColor: AppColors.planColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            side: const BorderSide(color: AppColors.planColor),
+          ),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text('Recordar datos de inicio de sesión'),
+          ),
+        ],
       ),
     );
   }
