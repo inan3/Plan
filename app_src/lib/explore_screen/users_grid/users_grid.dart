@@ -233,6 +233,7 @@ class _UsersGridState extends State<UsersGrid> {
     final String name = userData['name']?.toString().trim() ?? 'Usuario';
     final String? uid = userData['uid']?.toString();
     final String? fallbackPhotoUrl = userData['photoUrl']?.toString();
+    final String? coverPhotoUrl = userData['coverPhotoUrl']?.toString();
     final bool showActivity = userData['activityStatusPublic'] != false;
 
     return Center(
@@ -245,15 +246,23 @@ class _UsersGridState extends State<UsersGrid> {
             // Imagen de fondo
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
-              child: (fallbackPhotoUrl != null && fallbackPhotoUrl.isNotEmpty)
+              child: (coverPhotoUrl != null && coverPhotoUrl.isNotEmpty)
                   ? Image.network(
-                      fallbackPhotoUrl,
+                      coverPhotoUrl,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
                       errorBuilder: (_, __, ___) => buildPlaceholder(),
                     )
-                  : buildPlaceholder(),
+                  : (fallbackPhotoUrl != null && fallbackPhotoUrl.isNotEmpty)
+                      ? Image.network(
+                          fallbackPhotoUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, __, ___) => buildPlaceholder(),
+                        )
+                      : buildPlaceholder(),
             ),
 
             // Bloque superior con avatar + nombre + estado de actividad
