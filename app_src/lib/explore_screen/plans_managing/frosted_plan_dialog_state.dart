@@ -1789,12 +1789,16 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
         'planDescription': planDesc,
         'planImage': planImage ?? '',
         'planLink': shareUrl,
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-      });
-    }
-    Navigator.pop(context);
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
+    await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(widget.plan.id)
+        .update({'share_count': FieldValue.increment(1)});
+  Navigator.pop(context);
+}
 
   @override
   Widget build(BuildContext context) {
