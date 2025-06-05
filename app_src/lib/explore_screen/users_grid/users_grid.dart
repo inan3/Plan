@@ -36,17 +36,42 @@ class _UsersGridState extends State<UsersGrid> {
   final List<Map<String, dynamic>> _processedUsers = [];
   final Map<String, List<PlanModel>> _plansData = {};
 
+  final ScrollController _scrollController = ScrollController();
+  int _currentIndex = 0;
+  final int _batchSize = 10;
+  bool _loadingMore = false;
+
   @override
   void initState() {
     super.initState();
-    _prepareData();
+    _scrollController.addListener(_onScroll);
+    _loadNextBatch();
   }
 
-  Future<void> _prepareData() async {
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadNextBatch() async {
+    if (_currentIndex >= widget.users.length) {
+      setState(() => _loadingMore = false);
+      return;
+    }
+
+    final end =
+        (_currentIndex + _batchSize) > widget.users.length
+            ? widget.users.length
+            : _currentIndex + _batchSize;
+    final batch = widget.users.sublist(_currentIndex, end);
+    _currentIndex = end;
+
     final List<Map<String, dynamic>> tempUsers = [];
     final Map<String, List<PlanModel>> tempPlans = {};
 
-    for (final u in widget.users) {
+    for (final u in batch) {
       final baseData = u is QueryDocumentSnapshot
           ? (u.data() as Map<String, dynamic>)
           : u as Map<String, dynamic>;
@@ -66,7 +91,20 @@ class _UsersGridState extends State<UsersGrid> {
       _processedUsers.addAll(tempUsers);
       _plansData.addAll(tempPlans);
       _loading = false;
+      _loadingMore = false;
     });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_loadingMore &&
+        _currentIndex < widget.users.length) {
+      setState(() {
+        _loadingMore = true;
+      });
+      _loadNextBatch();
+    }
   }
   // ──────────────────────────────────────────────────────────────────────────
   //  HELPERS DE BLOQUEO
@@ -182,11 +220,18 @@ class _UsersGridState extends State<UsersGrid> {
     }
 
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.only(bottom: 100),
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
-      itemCount: _processedUsers.length,
+      itemCount: _processedUsers.length + (_loadingMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= _processedUsers.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
         final userData = _processedUsers[index];
         final uid = userData['uid']?.toString();
         final plans = (uid != null) ? _plansData[uid] ?? [] : <PlanModel>[];
