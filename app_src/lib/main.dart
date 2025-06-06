@@ -62,6 +62,7 @@ Future<void> main() async {
   final (provider, _, __) = await LocalRegistrationService.getPending();
   if (provider != null) {
     await LocalRegistrationService.clear();
+    await signOutAndRemoveToken();
   }
 
   // 5 ▸ Mostrar notificaciones en foreground
