@@ -552,6 +552,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                                         context,
                                         me.uid,
                                         widget.userId,
+                                        oldValue,
                                       );
                                     } catch (e) {
                                       setState(() {

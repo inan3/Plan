@@ -512,6 +512,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         context,
                                         me.uid,
                                         widget.chatPartnerId,
+                                        oldValue,
                                       );
                                     } catch (e) {
                                       // Si hay error, revertimos
