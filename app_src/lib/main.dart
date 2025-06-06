@@ -58,11 +58,10 @@ Future<void> main() async {
   await NotificationService.instance.init(enabled: enabled);
   await LanguageService.loadLocale();
 
-  // 4 ▸ Cancelar registro pendiente y cerrar sesión
+  // 4 ▸ Limpiar registro pendiente (sin cerrar sesión)
   final (provider, _, __) = await LocalRegistrationService.getPending();
   if (provider != null) {
     await LocalRegistrationService.clear();
-    await signOutAndRemoveToken();
   }
 
   // 5 ▸ Mostrar notificaciones en foreground
