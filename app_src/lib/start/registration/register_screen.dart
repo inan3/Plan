@@ -7,6 +7,8 @@ import 'verification_provider.dart';
 import 'email_verification_screen.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import '../welcome_screen.dart';
 
@@ -21,6 +23,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
+
+  Future<bool> _userDocExists(String uid) async {
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (!doc.exists) return false;
+    final name = (doc.data()?['name'] ?? '').toString();
+    return name.isNotEmpty;
+  }
 
   Future<void> _register() async {
     setState(() => isLoading = true);
@@ -49,6 +59,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        try {
+          final cred = await AuthService.signInWithEmail(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
+          final user = cred.user;
+          if (user != null && !await _userDocExists(user.uid)) {
+            await user.sendEmailVerification();
+            await LocalRegistrationService.saveEmailPassword(
+              email: emailController.text.trim(),
+              password: passwordController.text.trim(),
+            );
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EmailVerificationScreen(
+                  email: emailController.text.trim(),
+                  password: passwordController.text.trim(),
+                  provider: VerificationProvider.password,
+                ),
+              ),
+            );
+            return;
+          }
+          await FirebaseAuth.instance.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Este correo ya está registrado. Inicia sesión para continuar.'),
+            ),
+          );
+        } on FirebaseAuthException {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Contraseña incorrecta.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al iniciar registro: ${e.message}')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al iniciar registro: $e')),
