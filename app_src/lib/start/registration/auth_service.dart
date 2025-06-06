@@ -24,6 +24,17 @@ class AuthService {
     return cred;
   }
 
+  /// Inicia sesión con email y password
+  static Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    return _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password.trim(),
+    );
+  }
+
   /// Realiza sign in con Google
   static Future<UserCredential> signInWithGoogle() async {
     try {
