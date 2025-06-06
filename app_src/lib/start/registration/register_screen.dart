@@ -77,10 +77,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final color = ok ? AppColors.lightTurquoise : Colors.white;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.greyBorder),
       ),
       child: Row(
@@ -351,18 +351,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildRequirement(
-                          ok: _hasUppercase,
-                          text: 'Mayúscula',
-                        ),
-                        const SizedBox(width: 8),
-                        _buildRequirement(
-                          ok: _hasNumber,
-                          text: 'Número',
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Row(
+                        children: [
+                          _buildRequirement(
+                            ok: _hasUppercase,
+                            text: 'Mayúscula',
+                          ),
+                          const SizedBox(width: 8),
+                          _buildRequirement(
+                            ok: _hasNumber,
+                            text: 'Número',
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
 
