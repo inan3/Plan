@@ -76,11 +76,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildRequirement({required bool ok, required String text}) {
     final color = ok ? AppColors.lightTurquoise : Colors.white;
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.greyBorder),
       ),
       child: Row(
@@ -92,6 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Text(
               text,
               style: GoogleFonts.roboto(
+                fontSize: 14,
                 color: ok ? AppColors.planColor : Colors.black,
               ),
             ),
@@ -301,8 +302,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: Colors.grey,
                           ),
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 20),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -332,8 +335,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: Colors.grey,
                           ),
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 20),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _showPassword
@@ -347,13 +352,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildRequirement(
-                      ok: _hasUppercase,
-                      text: 'Mayúscula',
-                    ),
-                    _buildRequirement(
-                      ok: _hasNumber,
-                      text: 'Número',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildRequirement(
+                            ok: _hasUppercase,
+                            text: 'Mayúscula',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildRequirement(
+                            ok: _hasNumber,
+                            text: 'Número',
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
@@ -381,8 +395,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: Colors.grey,
                           ),
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 20),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _showConfirm
