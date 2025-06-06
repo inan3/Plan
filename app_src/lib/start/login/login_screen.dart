@@ -15,6 +15,7 @@ import '../../main/colors.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 import 'recover_password.dart';
 import '../registration/register_screen.dart';
+import '../welcome_screen.dart';
 
 const Color backgroundColor = AppColors.background;
 
@@ -253,7 +254,18 @@ class _LoginScreenState extends State<LoginScreen> {
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.blue,
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const WelcomeScreen(),
+                      ),
+                    );
+                  }
+                },
               ),
             ),
           ],
