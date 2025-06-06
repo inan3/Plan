@@ -240,10 +240,12 @@ class ReportAndBlockUser {
                                 InkWell(
                                   onTap: () async {
                                     Navigator.pop(ctx);
+                                    final previousBlocked = isBlocked;
                                     await toggleBlockUser(
                                       context,
                                       currentUserId,
                                       chatPartnerId,
+                                      previousBlocked,
                                     );
                                   },
                                   child: Row(
@@ -305,8 +307,9 @@ class ReportAndBlockUser {
     BuildContext context,
     String currentUserId,
     String chatPartnerId,
+    bool isCurrentlyBlocked,
   ) async {
-    if (isBlocked) {
+    if (isCurrentlyBlocked) {
       // => Desbloquear
       await _unblockUser(currentUserId, chatPartnerId);
     } else {
@@ -315,7 +318,7 @@ class ReportAndBlockUser {
     }
 
     // Actualizamos el estado local
-    isBlocked = !isBlocked;
+    isBlocked = !isCurrentlyBlocked;
 
     // Mostramos popup confirmando acción
     showDialog(
