@@ -7,6 +7,8 @@ import 'verification_provider.dart';
 import 'email_verification_screen.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
+import '../login/login_screen.dart';
+import '../welcome_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -234,7 +236,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     GestureDetector(
                       onTap: () {
-                        Navigator.pop(context);
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                          );
+                        }
                       },
                       child: const Text(
                         '¿Ya tienes una cuenta? Inicia sesión',
@@ -257,7 +268,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.blue,
                 onPressed: () {
-                  Navigator.pop(context);
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const WelcomeScreen(),
+                      ),
+                    );
+                  }
                 },
               ),
             ),
