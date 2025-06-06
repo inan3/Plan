@@ -25,6 +25,7 @@ import 'terms_modal.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
 import '../../services/fcm_token_service.dart';
+import 'register_screen.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
@@ -702,6 +703,20 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       child: SafeArea(
         child: Stack(
           children: [
+            Positioned(
+              top: 40,
+              left: 10,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                color: MyColors.AppColors.planColor,
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  );
+                },
+              ),
+            ),
             SingleChildScrollView(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
