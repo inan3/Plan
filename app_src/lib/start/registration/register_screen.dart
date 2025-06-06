@@ -22,7 +22,84 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
+
+  bool _showPassword = false;
+  bool _showConfirm = false;
+
+  bool get _hasUppercase => passwordController.text.contains(RegExp(r'[A-Z]'));
+  bool get _hasNumber => passwordController.text.contains(RegExp(r'[0-9]'));
+  bool get _match => passwordController.text == confirmController.text;
+
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    passwordController.addListener(() => setState(() {}));
+    confirmController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    confirmController.dispose();
+    super.dispose();
+  }
+
+  void _showPopup(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(
+          'Atención',
+          style: TextStyle(color: AppColors.blue),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.blue),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: AppColors.blue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirement({required bool ok, required String text}) {
+    final color = ok ? AppColors.lightTurquoise : Colors.white;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.greyBorder),
+      ),
+      child: Row(
+        children: [
+          Icon(ok ? Icons.check : Icons.close,
+              color: ok ? AppColors.planColor : Colors.black),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.roboto(
+                color: ok ? AppColors.planColor : Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<bool> _userDocExists(String uid) async {
     final doc =
@@ -247,7 +324,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       child: TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: !_showPassword,
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
                           hintStyle: GoogleFonts.roboto(
@@ -257,6 +334,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           border: InputBorder.none,
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _showPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () =>
+                                setState(() => _showPassword = !_showPassword),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildRequirement(
+                      ok: _hasUppercase,
+                      text: 'Mayúscula',
+                    ),
+                    _buildRequirement(
+                      ok: _hasNumber,
+                      text: 'Número',
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Repetir contraseña
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: confirmController,
+                        obscureText: !_showConfirm,
+                        decoration: InputDecoration(
+                          hintText: 'Repetir contraseña',
+                          hintStyle: GoogleFonts.roboto(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _showConfirm
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () =>
+                                setState(() => _showConfirm = !_showConfirm),
+                          ),
                         ),
                       ),
                     ),
@@ -266,7 +401,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     SizedBox(
                       width: 200,
                       child: ElevatedButton(
-                        onPressed: isLoading ? null : _register,
+                        onPressed: isLoading
+                            ? null
+                            : () {
+                                if (!_match) {
+                                  _showPopup('Las contraseñas no coinciden');
+                                } else {
+                                  _register();
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor:
