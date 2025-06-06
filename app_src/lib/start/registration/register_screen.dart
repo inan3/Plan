@@ -236,16 +236,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     GestureDetector(
                       onTap: () {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        } else {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
-                            ),
-                          );
-                        }
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                        );
                       },
                       child: const Text(
                         '¿Ya tienes una cuenta? Inicia sesión',
@@ -268,16 +264,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.blue,
                 onPressed: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const WelcomeScreen(),
-                      ),
-                    );
-                  }
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WelcomeScreen(),
+                    ),
+                  );
                 },
               ),
             ),

@@ -255,16 +255,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.blue,
                 onPressed: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const WelcomeScreen(),
-                      ),
-                    );
-                  }
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WelcomeScreen(),
+                    ),
+                  );
                 },
               ),
             ),
