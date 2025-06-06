@@ -84,17 +84,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         border: Border.all(color: AppColors.greyBorder),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(ok ? Icons.check : Icons.close,
               color: ok ? AppColors.planColor : Colors.black),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.roboto(
-                fontSize: 14,
-                color: ok ? AppColors.planColor : Colors.black,
-              ),
+          Text(
+            text,
+            style: GoogleFonts.roboto(
+              fontSize: 14,
+              color: ok ? AppColors.planColor : Colors.black,
             ),
           ),
         ],
@@ -354,18 +353,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(
-                          child: _buildRequirement(
-                            ok: _hasUppercase,
-                            text: 'Mayúscula',
-                          ),
+                        _buildRequirement(
+                          ok: _hasUppercase,
+                          text: 'Mayúscula',
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildRequirement(
-                            ok: _hasNumber,
-                            text: 'Número',
-                          ),
+                        _buildRequirement(
+                          ok: _hasNumber,
+                          text: 'Número',
                         ),
                       ],
                     ),
