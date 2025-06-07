@@ -639,7 +639,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         Text(
           "Tu foto de perfil",
           style: TextStyle(
-            color: MyColors.AppColors.blue,
+            color: MyColors.AppColors.black,
             fontSize: 16,
             decoration: TextDecoration.none,
           ),
@@ -803,7 +803,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                 const TextStyle(color: Colors.grey),
                           ),
                           Icon(Icons.calendar_today,
-                              color: MyColors.AppColors.black),
+                              color: MyColors.AppColors.greyBorder),
                         ],
                       ),
                     ),
@@ -903,24 +903,24 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                           ),
                           Icon(
                             Icons.near_me,
-                            color: MyColors.AppColors.black,
+                            color: MyColors.AppColors.blue,
                           ),
                         ],
                       ),
                   ),
                 ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
 
                   // Checkbox de aceptación de términos
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Checkbox(
                         value: _termsAccepted,
                         onChanged: (v) => setState(() => _termsAccepted = v ?? false),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         side: BorderSide(color: MyColors.AppColors.planColor),
                         checkColor: Colors.white,
@@ -941,7 +941,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                 style: const TextStyle(color: Colors.blue),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () => launchUrl(
-                                        Uri.parse('https://plansocial.app/legal/condiciones'),
+                                        Uri.parse('https://plansocialapp.es/terms_and_conditions.html'),
                                         mode: LaunchMode.externalApplication,
                                       ),
                               ),
@@ -951,7 +951,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                 style: const TextStyle(color: Colors.blue),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () => launchUrl(
-                                        Uri.parse('https://plansocial.app/legal/privacidad'),
+                                        Uri.parse('https://plansocialapp.es/privacy_policy.html'),
                                         mode: LaunchMode.externalApplication,
                                       ),
                               ),
@@ -961,7 +961,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                 style: const TextStyle(color: Colors.blue),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () => launchUrl(
-                                        Uri.parse('https://plansocial.app/legal/cookies'),
+                                        Uri.parse('https://plansocialapp.es/cookies.html'),
                                         mode: LaunchMode.externalApplication,
                                       ),
                               ),
@@ -973,7 +973,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 16),
 
                   // Botón "Completar registro"
                   SizedBox(
