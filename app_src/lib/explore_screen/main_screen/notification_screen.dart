@@ -536,8 +536,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 24,
-                                  height: 24,
+                                  width: 30,
+                                  height: 30,
                                   decoration: BoxDecoration(
                                     color: bgColor,
                                     borderRadius: BorderRadius.circular(8),
@@ -545,7 +545,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    iconSize: 16,
+                                    iconSize: 20,
                                     icon: const Icon(
                                       Icons.check,
                                       color: Colors.green,
@@ -555,8 +555,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Container(
-                                  width: 24,
-                                  height: 24,
+                                  width: 30,
+                                  height: 30,
                                   decoration: BoxDecoration(
                                     color: bgColor,
                                     borderRadius: BorderRadius.circular(8),
@@ -564,7 +564,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    iconSize: 16,
+                                    iconSize: 20,
                                     icon: const Icon(
                                       Icons.close,
                                       color: Colors.red,
