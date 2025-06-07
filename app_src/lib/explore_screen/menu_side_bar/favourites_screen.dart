@@ -60,110 +60,145 @@ class FavouritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    Widget content;
     if (user == null) {
-      return const Center(
+      content = const Center(
         child: Text(
           'Usuario no autenticado',
           style: TextStyle(color: Colors.white),
         ),
       );
+    } else {
+      content = StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(
+              child: Text(
+                'No tienes planes favoritos aún.',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final favouritePlanIds = List<String>.from(data['favourites'] ?? []);
+          if (favouritePlanIds.isEmpty) {
+            return const Center(
+              child: Text(
+                'No tienes planes favoritos aún.',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          return FutureBuilder<List<PlanModel>>(
+            future: _fetchPlansFromIds(favouritePlanIds),
+            builder: (context, planSnapshot) {
+              if (planSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No tienes planes favoritos aún.',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
+              }
+
+              final plans = planSnapshot.data!;
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: plans.length,
+                itemBuilder: (context, index) {
+                  final plan = plans[index];
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(plan.createdBy)
+                        .get(),
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox(
+                          height: 330,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      if (userSnapshot.hasError ||
+                          !userSnapshot.hasData ||
+                          !userSnapshot.data!.exists) {
+                        return const SizedBox(
+                          height: 330,
+                          child: Center(
+                            child: Text(
+                              'Error al cargar creador del plan',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final creatorData =
+                          userSnapshot.data!.data() as Map<String, dynamic>;
+                      final userData = {
+                        'name': creatorData['name'] ?? 'Usuario',
+                        'handle': creatorData['handle'] ?? '@usuario',
+                        'photoUrl': creatorData['photoUrl'] ?? '',
+                      };
+
+                      return PlanCard(
+                        plan: plan,
+                        userData: userData,
+                        fetchParticipants: _fetchAllPlanParticipants,
+                        hideJoinButton: false,
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
     }
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(
-            child: Text(
-              'No tienes planes favoritos aún.',
-              style: TextStyle(color: Colors.white),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Planes favoritos',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
             ),
-          );
-        }
-
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final favouritePlanIds = List<String>.from(data['favourites'] ?? []);
-        if (favouritePlanIds.isEmpty) {
-          return const Center(
-            child: Text(
-              'No tienes planes favoritos aún.',
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        }
-
-        return FutureBuilder<List<PlanModel>>(
-          future: _fetchPlansFromIds(favouritePlanIds),
-          builder: (context, planSnapshot) {
-            if (planSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No tienes planes favoritos aún.',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-
-            final plans = planSnapshot.data!;
-            // Para uso en un Dialog, se recomienda shrinkWrap
-            return ListView.builder(
-              shrinkWrap: true,
-              itemCount: plans.length,
-              itemBuilder: (context, index) {
-                final plan = plans[index];
-                return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(plan.createdBy)
-                      .get(),
-                  builder: (context, userSnapshot) {
-                    if (userSnapshot.connectionState == ConnectionState.waiting) {
-                      return const SizedBox(
-                        height: 330,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    if (userSnapshot.hasError ||
-                        !userSnapshot.hasData ||
-                        !userSnapshot.data!.exists) {
-                      return const SizedBox(
-                        height: 330,
-                        child: Center(
-                          child: Text(
-                            'Error al cargar creador del plan',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      );
-                    }
-
-                    final creatorData =
-                        userSnapshot.data!.data() as Map<String, dynamic>;
-                    final userData = {
-                      'name': creatorData['name'] ?? 'Usuario',
-                      'handle': creatorData['handle'] ?? '@usuario',
-                      'photoUrl': creatorData['photoUrl'] ?? '',
-                    };
-
-                    return PlanCard(
-                      plan: plan,
-                      userData: userData,
-                      fetchParticipants: _fetchAllPlanParticipants,
-                      hideJoinButton: false,
-                    );
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
+            Expanded(child: content),
+          ],
+        ),
+      ),
     );
   }
 }
