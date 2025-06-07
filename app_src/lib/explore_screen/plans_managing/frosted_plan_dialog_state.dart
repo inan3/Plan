@@ -571,11 +571,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildLikeButton(),
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
         _buildMessageButton(plan),
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
         _buildShareButton(plan),
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
         _buildViewButton(plan),
       ],
     );
@@ -1327,14 +1327,17 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         mediaContent,
         pageIndicator,
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: _buildActionButtonsRow(plan),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _buildActionButtonsRow(plan),
+                ),
               ),
+              const SizedBox(width: 8),
               _buildParticipantsCorner(participants),
             ],
           ),
