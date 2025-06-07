@@ -11,7 +11,7 @@ import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../plans_managing/plan_card.dart';
-import 'menu_side_bar_screen.dart';
+import '../main_screen/explore_screen.dart';
 
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId;
@@ -377,7 +377,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => MainSideBarScreen(initiallyOpen: true),
+                          builder: (_) => const ExploreScreen(initiallyOpenMenu: true),
                         ),
                       );
                     },

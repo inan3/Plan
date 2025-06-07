@@ -19,7 +19,9 @@ import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'searcher.dart';
 
 class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({Key? key}) : super(key: key);
+  final bool initiallyOpenMenu;
+
+  const ExploreScreen({Key? key, this.initiallyOpenMenu = false}) : super(key: key);
 
   @override
   ExploreScreenState createState() => ExploreScreenState();
@@ -33,7 +35,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   final GlobalKey<MainSideBarScreenState> _menuKey =
       GlobalKey<MainSideBarScreenState>();
 
-  bool isMenuOpen = false;
+  late bool isMenuOpen;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
 
@@ -50,6 +52,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
+    isMenuOpen = widget.initiallyOpenMenu;
     _setStatusBarDark();
     _otherPages = [
       const MapScreen(),
@@ -493,6 +496,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 key: _menuKey,
                 onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
                 onPageChange: changePage,
+                initiallyOpen: widget.initiallyOpenMenu,
               ),
             ],
           ),
