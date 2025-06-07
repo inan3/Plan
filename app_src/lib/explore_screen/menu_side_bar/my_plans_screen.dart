@@ -12,6 +12,7 @@ import '../../utils/plans_list.dart' as plansData;
 import '../../plan_creation/new_plan_creation_screen.dart';
 import '../plans_managing/plan_card.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
+import '../main_screen/explore_screen.dart';
 
 class MyPlansScreen extends StatelessWidget {
   const MyPlansScreen({Key? key}) : super(key: key);
@@ -115,7 +116,14 @@ class MyPlansScreen extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ExploreScreen(initiallyOpenSidebar: true),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

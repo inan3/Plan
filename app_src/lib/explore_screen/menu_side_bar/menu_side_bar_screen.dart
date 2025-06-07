@@ -17,10 +17,14 @@ class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
   final Function(int)? onPageChange;
 
+  /// Determina si el menú debe mostrarse abierto al iniciar.
+  final bool initiallyOpenSidebar;
+
   const MainSideBarScreen({
     super.key,
     this.onMenuToggled,
     this.onPageChange,
+    this.initiallyOpenSidebar = false,
   });
 
   @override
@@ -28,9 +32,15 @@ class MainSideBarScreen extends StatefulWidget {
 }
 
 class MainSideBarScreenState extends State<MainSideBarScreen> {
-  bool isOpen = false;
+  late bool isOpen;
   final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
   int _pressedIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    isOpen = widget.initiallyOpenSidebar;
+  }
 
   void toggleMenu() {
     setState(() {

@@ -11,6 +11,7 @@ import '../../main/colors.dart';
 import '../../utils/plans_list.dart' as plansData;
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../plans_managing/plan_card.dart';
+import '../main_screen/explore_screen.dart';
 
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId;
@@ -372,7 +373,14 @@ class SubscribedPlansScreen extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ExploreScreen(initiallyOpenSidebar: true),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
