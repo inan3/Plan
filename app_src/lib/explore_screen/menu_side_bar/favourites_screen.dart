@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
+import 'menu_side_bar_screen.dart';
 
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({Key? key}) : super(key: key);
@@ -190,7 +191,14 @@ class FavouritesScreen extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MainSideBarScreen(initiallyOpen: true),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
