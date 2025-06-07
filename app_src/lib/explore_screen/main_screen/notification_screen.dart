@@ -608,6 +608,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
+                                isThreeLine: true,
                                 trailing: acceptRejectButtons(
                                   onAccept: () =>
                                       _handleAcceptJoinRequest(doc),
@@ -653,6 +654,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
+                                isThreeLine: true,
                                 trailing: acceptRejectButtons(
                                   onAccept: () =>
                                       _handleAcceptInvitation(doc),
@@ -677,6 +679,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                     ),
                                   );
                                 },
+                                isThreeLine: true,
                                 trailing: acceptRejectButtons(
                                   onAccept: () =>
                                       _handleAcceptFollowRequest(doc),
