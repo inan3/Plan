@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
-import 'menu_side_bar_screen.dart';
+import '../main_screen/explore_screen.dart';
 
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({Key? key}) : super(key: key);
@@ -195,7 +195,7 @@ class FavouritesScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => MainSideBarScreen(initiallyOpen: true),
+                          builder: (_) => const ExploreScreen(initiallyOpenSidebar: true),
                         ),
                       );
                     },

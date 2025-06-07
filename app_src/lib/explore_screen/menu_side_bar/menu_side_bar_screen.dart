@@ -18,13 +18,15 @@ class MainSideBarScreen extends StatefulWidget {
   final Function(int)? onPageChange;
 
   /// Determina si el menú debe mostrarse abierto al iniciar.
-  final bool initiallyOpen;
+  final bool initiallyOpenSidebar;
 
   const MainSideBarScreen({
     super.key,
     this.onMenuToggled,
     this.onPageChange,
-    this.initiallyOpen = false,
+
+    this.initiallyOpenSidebar = false,
+
   });
 
   @override
@@ -39,7 +41,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   @override
   void initState() {
     super.initState();
-    isOpen = widget.initiallyOpen;
+
+    isOpen = widget.initiallyOpenSidebar;
+
   }
 
   void toggleMenu() {
