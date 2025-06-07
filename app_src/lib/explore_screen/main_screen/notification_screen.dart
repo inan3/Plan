@@ -1,4 +1,3 @@
-//notification_screen.dart
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,8 +9,8 @@ import '../../main/colors.dart';
 
 // Importaciones necesarias:
 import '../users_managing/user_info_check.dart';
-import '../plans_managing/plan_card.dart';             // <--- Asegúrate de importar tu PlanCard
-import '../plans_managing/firebase_services.dart';    // <--- Para fetchPlanParticipants, si lo tienes
+import '../plans_managing/plan_card.dart'; // <--- Asegúrate de importar tu PlanCard
+import '../plans_managing/firebase_services.dart'; // <--- Para fetchPlanParticipants, si lo tienes
 import '../plans_managing/frosted_plan_dialog_state.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -32,18 +31,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
         .collection('notifications')
         .where('receiverId', isEqualTo: widget.currentUserId)
         .where('type', whereIn: [
-          // Tipos de notificación que nos interesan
-          'join_request',
-          'invitation',
-          'join_accepted',
-          'join_rejected',
-          'follow_request',
-          'follow_accepted',
-          'follow_rejected',
-          'new_plan_published', // <--- Agregamos este nuevo tipo
-          'plan_chat_message',
-        ])
-        .snapshots();
+      // Tipos de notificación que nos interesan
+      'join_request',
+      'invitation',
+      'join_accepted',
+      'join_rejected',
+      'follow_request',
+      'follow_accepted',
+      'follow_rejected',
+      'new_plan_published', // <--- Agregamos este nuevo tipo
+      'plan_chat_message',
+    ]).snapshots();
   }
 
   String _formatTimestamp(dynamic timestamp) {
@@ -85,12 +83,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final acceptorDoc =
           await _firestore.collection('users').doc(widget.currentUserId).get();
 
-      final acceptorPhoto = acceptorDoc.exists
-          ? (acceptorDoc.data()!['photoUrl'] ?? '')
-          : '';
-      final acceptorName = acceptorDoc.exists
-          ? (acceptorDoc.data()!['name'] ?? '')
-          : '';
+      final acceptorPhoto =
+          acceptorDoc.exists ? (acceptorDoc.data()!['photoUrl'] ?? '') : '';
+      final acceptorName =
+          acceptorDoc.exists ? (acceptorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
         'type': 'join_accepted',
@@ -99,7 +95,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'planId': planId,
         'planName': planType,
         'senderProfilePic': acceptorPhoto,
-        'senderName': acceptorName, // <--- Importante para que se muestre el nombre
+        'senderName':
+            acceptorName, // <--- Importante para que se muestre el nombre
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
@@ -126,12 +123,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Notifica al que pidió unirse
       final rejectorDoc =
           await _firestore.collection('users').doc(widget.currentUserId).get();
-      final rejectorPhoto = rejectorDoc.exists
-          ? (rejectorDoc.data()!['photoUrl'] ?? '')
-          : '';
-      final rejectorName = rejectorDoc.exists
-          ? (rejectorDoc.data()!['name'] ?? '')
-          : '';
+      final rejectorPhoto =
+          rejectorDoc.exists ? (rejectorDoc.data()!['photoUrl'] ?? '') : '';
+      final rejectorName =
+          rejectorDoc.exists ? (rejectorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
         'type': 'join_rejected',
@@ -182,16 +177,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
 
       // Notifica al creador
-      final acceptorDoc = await _firestore.collection('users')
-          .doc(currentUserId)
-          .get();
+      final acceptorDoc =
+          await _firestore.collection('users').doc(currentUserId).get();
 
-      final acceptorPhoto = acceptorDoc.exists
-          ? (acceptorDoc.data()!['photoUrl'] ?? '')
-          : '';
-      final acceptorName = acceptorDoc.exists
-          ? (acceptorDoc.data()!['name'] ?? '')
-          : '';
+      final acceptorPhoto =
+          acceptorDoc.exists ? (acceptorDoc.data()!['photoUrl'] ?? '') : '';
+      final acceptorName =
+          acceptorDoc.exists ? (acceptorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
         'type': 'join_accepted',
@@ -227,12 +219,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Notifica al creador
       final rejectorDoc =
           await _firestore.collection('users').doc(widget.currentUserId).get();
-      final rejectorPhoto = rejectorDoc.exists
-          ? (rejectorDoc.data()!['photoUrl'] ?? '')
-          : '';
-      final rejectorName = rejectorDoc.exists
-          ? (rejectorDoc.data()!['name'] ?? '')
-          : '';
+      final rejectorPhoto =
+          rejectorDoc.exists ? (rejectorDoc.data()!['photoUrl'] ?? '') : '';
+      final rejectorName =
+          rejectorDoc.exists ? (rejectorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
         'type': 'join_rejected',
@@ -286,12 +276,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Notifica al sender que ha sido aceptado
       final acceptorDoc =
           await _firestore.collection('users').doc(receiverId).get();
-      final acceptorPhoto = acceptorDoc.exists
-          ? (acceptorDoc.data()!['photoUrl'] ?? '')
-          : '';
-      final acceptorName = acceptorDoc.exists
-          ? (acceptorDoc.data()!['name'] ?? '')
-          : '';
+      final acceptorPhoto =
+          acceptorDoc.exists ? (acceptorDoc.data()!['photoUrl'] ?? '') : '';
+      final acceptorName =
+          acceptorDoc.exists ? (acceptorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
         'type': 'follow_accepted',
@@ -324,12 +312,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Notifica al que pidió follow que fue rechazado
       final rejectorDoc =
           await _firestore.collection('users').doc(receiverId).get();
-      final rejectorPhoto = rejectorDoc.exists
-          ? (rejectorDoc.data()!['photoUrl'] ?? '')
-          : '';
-      final rejectorName = rejectorDoc.exists
-          ? (rejectorDoc.data()!['name'] ?? '')
-          : '';
+      final rejectorPhoto =
+          rejectorDoc.exists ? (rejectorDoc.data()!['photoUrl'] ?? '') : '';
+      final rejectorName =
+          rejectorDoc.exists ? (rejectorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
         'type': 'follow_rejected',
@@ -364,9 +350,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
     // Obtenemos el "userData" del creador, para pasárselo a PlanCard
     final creatorDoc =
         await _firestore.collection('users').doc(plan.createdBy).get();
-    final Map<String, dynamic> creatorData = creatorDoc.exists
-        ? creatorDoc.data() as Map<String, dynamic>
-        : {};
+    final Map<String, dynamic> creatorData =
+        creatorDoc.exists ? creatorDoc.data() as Map<String, dynamic> : {};
 
     // Navegar a una pantalla con PlanCard
     Navigator.push(
@@ -511,8 +496,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               children: [
                                 Text(
                                   primaryText,
-                                  style:
-                                      const TextStyle(color: AppColors.blue),
+                                  style: const TextStyle(color: AppColors.blue),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -532,31 +516,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             required VoidCallback onReject,
                           }) {
                             const bgColor = Color(0xFFF5F5F5);
-                            return Column(
+                            return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    color: bgColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    iconSize: 20,
-                                    icon: const Icon(
-                                      Icons.check,
-                                      color: Colors.green,
-                                    ),
-                                    onPressed: onAccept,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  width: 30,
-                                  height: 30,
+                                  width: 34,
+                                  height: 34,
                                   decoration: BoxDecoration(
                                     color: bgColor,
                                     borderRadius: BorderRadius.circular(8),
@@ -570,6 +535,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       color: Colors.red,
                                     ),
                                     onPressed: onReject,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    iconSize: 20,
+                                    icon: const Icon(
+                                      Icons.check,
+                                      color: Colors.green,
+                                    ),
+                                    onPressed: onAccept,
                                   ),
                                 ),
                               ],
@@ -610,10 +594,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 onTap: () => _showPlanDetails(context, planId),
                                 isThreeLine: true,
                                 trailing: acceptRejectButtons(
-                                  onAccept: () =>
-                                      _handleAcceptJoinRequest(doc),
-                                  onReject: () =>
-                                      _handleRejectJoinRequest(doc),
+                                  onAccept: () => _handleAcceptJoinRequest(doc),
+                                  onReject: () => _handleRejectJoinRequest(doc),
                                 ),
                               );
                             case 'join_accepted':
@@ -623,6 +605,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   "¡$senderName ha aceptado que te unas a su plan!",
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true, // ← Corregido
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete,
@@ -638,6 +621,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   "¡$senderName ha rechazado tu solicitud para unirte!",
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true, // ← Corregido
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete,
@@ -656,10 +640,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 onTap: () => _showPlanDetails(context, planId),
                                 isThreeLine: true,
                                 trailing: acceptRejectButtons(
-                                  onAccept: () =>
-                                      _handleAcceptInvitation(doc),
-                                  onReject: () =>
-                                      _handleRejectInvitation(doc),
+                                  onAccept: () => _handleAcceptInvitation(doc),
+                                  onReject: () => _handleRejectInvitation(doc),
                                 ),
                               );
                             case 'follow_request':
@@ -693,8 +675,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 title: Text(
                                   "¡$senderName ha aceptado tu solicitud de seguimiento!",
                                 ),
-                                subtitle: buildSubtitle(
-                                    "Ahora puedes ver su perfil"),
+                                subtitle:
+                                    buildSubtitle("Ahora puedes ver su perfil"),
+                                isThreeLine: true, // ← Corregido
                                 onTap: () {
                                   // Ir al perfil de quien te aceptó
                                   Navigator.push(
@@ -718,8 +701,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 title: Text(
                                   "¡$senderName ha rechazado tu solicitud de seguimiento!",
                                 ),
-                                subtitle:
-                                    buildSubtitle("Perfil privado"),
+                                subtitle: buildSubtitle("Perfil privado"),
+                                isThreeLine: true, // ← Corregido
                                 onTap: () {
                                   // Ir al perfil de quien te rechazó
                                   Navigator.push(
@@ -744,6 +727,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   "¡$senderName acaba de publicar un plan. Échale un vistazo!",
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true, // ← Corregido
                                 onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete,
@@ -760,13 +744,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                                 subtitle: Text(
                                   timeString,
-                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                                onTap: () =>
-                                    _openPlanChatFromNotification(context, planId),
+                                onTap: () => _openPlanChatFromNotification(
+                                    context, planId),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _handleDeleteNotification(doc),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
                                 ),
                               );
                             default:
