@@ -531,18 +531,32 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             required VoidCallback onAccept,
                             required VoidCallback onReject,
                           }) {
-                            return Row(
+                            const bgColor = Color(0xFFF5F5F5);
+                            return Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.close,
-                                      color: Colors.red),
-                                  onPressed: onReject,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.check,
+                                        color: Colors.green),
+                                    onPressed: onAccept,
+                                  ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.check,
-                                      color: Colors.green),
-                                  onPressed: onAccept,
+                                const SizedBox(height: 4),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.red),
+                                    onPressed: onReject,
+                                  ),
                                 ),
                               ],
                             );
@@ -577,8 +591,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName se quiere unir a un plan tuyo!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
@@ -594,8 +606,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName ha aceptado que te unas a su plan!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
@@ -611,8 +621,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName ha rechazado tu solicitud para unirte!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
@@ -628,8 +636,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "$senderName te ha invitado a un plan especial de $planType",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
@@ -645,8 +651,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName quiere seguirte!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Solicitud de Follow"),
                                 onTap: () {
@@ -671,8 +675,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName ha aceptado tu solicitud de seguimiento!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle(
                                     "Ahora puedes ver su perfil"),
@@ -698,8 +700,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName ha rechazado tu solicitud de seguimiento!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle:
                                     buildSubtitle("Perfil privado"),
@@ -725,8 +725,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "¡$senderName acaba de publicar un plan. Échale un vistazo!",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
@@ -742,8 +740,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "$senderName ha hecho un comentario sobre el plan $planType",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: Text(
                                   timeString,
