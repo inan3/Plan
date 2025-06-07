@@ -24,7 +24,9 @@ class MainSideBarScreen extends StatefulWidget {
     super.key,
     this.onMenuToggled,
     this.onPageChange,
+
     this.initiallyOpenSidebar = false,
+
   });
 
   @override
@@ -39,7 +41,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   @override
   void initState() {
     super.initState();
+
     isOpen = widget.initiallyOpenSidebar;
+
   }
 
   void toggleMenu() {
