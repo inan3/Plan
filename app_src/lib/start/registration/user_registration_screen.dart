@@ -21,7 +21,8 @@ import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
 
 // Enum de proveedor (google/password)
 import 'verification_provider.dart';
-import 'terms_modal.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/gestures.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
 import '../../services/fcm_token_service.dart';
@@ -75,6 +76,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   /// Indicador de guardando
   bool _isSaving = false;
+
+  /// Checkbox de aceptación de términos
+  bool _termsAccepted = false;
 
   int _calculateAge(DateTime date) {
     final now = DateTime.now();
@@ -168,12 +172,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   }
 
 
-  /// Botón "Completar registro"
+  /// Botón "Completar registro" sin modal de términos
   Future<void> _onAcceptTermsAndRegister() async {
-    final accepted = await showTermsModal(context);
-    if (accepted == true) {
-      await _onCompleteRegistration();
-    }
+    await _onCompleteRegistration();
   }
 
   Future<void> _onCompleteRegistration() async {
@@ -342,16 +343,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    "¿Qué deseas subir?",
-                    style: TextStyle(
-                      color: MyColors.AppColors.blue,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -362,13 +353,14 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       );
                     },
                     child: Text(
-                      "Imagen (galería)",
+                      "Seleccionar de la galeria",
                       style: TextStyle(
                         color: MyColors.AppColors.blue,
                         decoration: TextDecoration.none,
                       ),
                     ),
                   ),
+                  const SizedBox(height: 10),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -379,7 +371,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       );
                     },
                     child: Text(
-                      "Imagen (cámara)",
+                      "Tomar una foto",
                       style: TextStyle(
                         color: MyColors.AppColors.blue,
                         decoration: TextDecoration.none,
@@ -915,7 +907,70 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                           ),
                         ],
                       ),
-                    ),
+                  ),
+                ),
+
+                  const SizedBox(height: 10),
+
+                  // Checkbox de aceptación de términos
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Checkbox(
+                        value: _termsAccepted,
+                        onChanged: (v) => setState(() => _termsAccepted = v ?? false),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        side: BorderSide(color: MyColors.AppColors.planColor),
+                        checkColor: Colors.white,
+                        activeColor: MyColors.AppColors.planColor,
+                      ),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 14,
+                              decoration: TextDecoration.none,
+                            ),
+                            children: [
+                              const TextSpan(text: 'He leído y acepto los '),
+                              TextSpan(
+                                text: 'Términos y Condiciones',
+                                style: const TextStyle(color: Colors.blue),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => launchUrl(
+                                        Uri.parse('https://plansocial.app/legal/condiciones'),
+                                        mode: LaunchMode.externalApplication,
+                                      ),
+                              ),
+                              const TextSpan(text: ', la '),
+                              TextSpan(
+                                text: 'Política de Privacidad',
+                                style: const TextStyle(color: Colors.blue),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => launchUrl(
+                                        Uri.parse('https://plansocial.app/legal/privacidad'),
+                                        mode: LaunchMode.externalApplication,
+                                      ),
+                              ),
+                              const TextSpan(text: ' y de '),
+                              TextSpan(
+                                text: 'Cookies',
+                                style: const TextStyle(color: Colors.blue),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => launchUrl(
+                                        Uri.parse('https://plansocial.app/legal/cookies'),
+                                        mode: LaunchMode.externalApplication,
+                                      ),
+                              ),
+                              const TextSpan(text: '.'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 30),
@@ -924,13 +979,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed:
-                          _isSaving || !_isFormValid ? null : _onAcceptTermsAndRegister,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyColors.AppColors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                      onPressed: _isSaving || !_isFormValid || !_termsAccepted
+                          ? null
+                          : _onAcceptTermsAndRegister,
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.resolveWith(
+                          (states) => states.contains(MaterialState.disabled)
+                              ? Colors.grey
+                              : MyColors.AppColors.blue,
+                        ),
+                        padding: MaterialStateProperty.all(
+                          const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        shape: MaterialStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
                         ),
                       ),
                       child: const Text(
