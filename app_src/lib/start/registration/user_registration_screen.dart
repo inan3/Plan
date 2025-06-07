@@ -326,7 +326,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: MyColors.AppColors.blue.withOpacity(0.5),
+      barrierColor: Colors.transparent,
       barrierLabel: "Seleccionar imagen",
       pageBuilder: (context, _, __) {
         return Center(
@@ -334,8 +334,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
             width: MediaQuery.of(context).size.width * 0.8,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: MyColors.AppColors.blue, width: 1),
+              color: MyColors.AppColors.lightLilac,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Material(
@@ -468,7 +467,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       // Borde fino, interior blanco
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: MyColors.AppColors.blue, width: 1),
+        border: Border.all(color: MyColors.AppColors.greyBorder, width: 1),
         borderRadius: BorderRadius.circular(30),
       ),
       child: SizedBox(
@@ -602,7 +601,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: MyColors.AppColors.blue,
+                    color: MyColors.AppColors.greyBorder,
                     width: 2,
                   ),
                   image: _profileImage != null
@@ -616,7 +615,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                 child: _profileImage == null
                     ? Icon(
                         Icons.person,
-                        color: MyColors.AppColors.blue,
+                        color: MyColors.AppColors.black,
                         size: 60,
                       )
                     : null,
@@ -733,7 +732,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         "Nombre de usuario",
                         style: TextStyle(
                           fontSize: 16,
-                          color: MyColors.AppColors.blue,
+                          color: MyColors.AppColors.black,
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -750,7 +749,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(
-                        color: MyColors.AppColors.blue,
+                        color: MyColors.AppColors.greyBorder,
                         width: 1,
                       ),
                       borderRadius: BorderRadius.circular(30),
@@ -758,11 +757,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: _nameController,
-                      style: TextStyle(color: MyColors.AppColors.blue),
+                      style: const TextStyle(color: Colors.grey),
                       decoration: InputDecoration(
                         hintText: "Introduzca su nombre...",
                         hintStyle: TextStyle(
-                          color: MyColors.AppColors.blue.withOpacity(0.5),
+                          color: Colors.grey,
                         ),
                         border: InputBorder.none,
                       ),
@@ -778,7 +777,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         "Fecha de nacimiento",
                         style: TextStyle(
                           fontSize: 16,
-                          color: MyColors.AppColors.blue,
+                          color: MyColors.AppColors.black,
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -792,7 +791,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(
-                          color: MyColors.AppColors.blue,
+                          color: MyColors.AppColors.greyBorder,
                           width: 1,
                         ),
                         borderRadius: BorderRadius.circular(30),
@@ -809,10 +808,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                 ? DateFormat('dd/MM/yyyy').format(_birthDate!)
                                 : 'Seleccione su fecha...',
                             style:
-                                TextStyle(color: MyColors.AppColors.blue),
+                                const TextStyle(color: Colors.grey),
                           ),
                           Icon(Icons.calendar_today,
-                              color: MyColors.AppColors.blue),
+                              color: MyColors.AppColors.black),
                         ],
                       ),
                     ),
@@ -836,7 +835,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: MyColors.AppColors.blue,
+                      color: MyColors.AppColors.black,
                       decoration: TextDecoration.none,
                     ),
                   ),
@@ -853,7 +852,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     textAlign: TextAlign.left,
                     style: TextStyle(
                       fontSize: 16,
-                      color: MyColors.AppColors.blue,
+                      color: MyColors.AppColors.black,
                       decoration: TextDecoration.none,
                     ),
                   ),
@@ -864,7 +863,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(
-                        color: MyColors.AppColors.blue,
+                        color: MyColors.AppColors.greyBorder,
                         width: 1,
                       ),
                       borderRadius: BorderRadius.circular(30),
@@ -872,11 +871,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: _cityController,
-                      style: TextStyle(color: MyColors.AppColors.blue),
+                      style: const TextStyle(color: Colors.grey),
                       decoration: InputDecoration(
                         hintText: "Introduce tu ciudad o municipio...",
                         hintStyle: TextStyle(
-                          color: MyColors.AppColors.blue.withOpacity(0.5),
+                          color: Colors.grey,
                         ),
                         border: InputBorder.none,
                       ),
@@ -890,7 +889,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(
-                          color: MyColors.AppColors.blue,
+                          color: MyColors.AppColors.greyBorder,
                           width: 1,
                         ),
                         borderRadius: BorderRadius.circular(30),
@@ -904,15 +903,15 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         children: [
                           Text(
                             _locationLabel,
-                            style: TextStyle(
-                              color: MyColors.AppColors.blue,
+                            style: const TextStyle(
+                              color: Colors.grey,
                               fontSize: 16,
                               decoration: TextDecoration.none,
                             ),
                           ),
                           Icon(
                             Icons.near_me,
-                            color: MyColors.AppColors.blue,
+                            color: MyColors.AppColors.black,
                           ),
                         ],
                       ),
