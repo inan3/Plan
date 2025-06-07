@@ -270,89 +270,116 @@ class SubscribedPlansScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Igualmente hacemos un ListView con shrinkWrap en caso de uso en Dialog:
-    return Container(
-      color: Colors.transparent,
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('subscriptions')
-            .where('userId', isEqualTo: userId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text(
-                'No tienes planes suscritos aún.',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          }
-          final planIds = snapshot.data!.docs
-              .map((doc) => (doc.data() as Map<String, dynamic>)['id'] as String?)
-              .where((id) => id != null && id.isNotEmpty)
-              .cast<String>()
-              .toList();
-
-          return FutureBuilder<List<PlanModel>>(
-            future: _fetchPlansFromIds(planIds),
-            builder: (context, planSnapshot) {
-              if (!planSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final plans = planSnapshot.data!;
-              if (plans.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'No tienes planes suscritos aún.',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: plans.length,
-                itemBuilder: (context, index) {
-                  final plan = plans[index];
-                  return FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(plan.createdBy)
-                        .get(),
-                    builder: (context, userSnapshot) {
-                      if (userSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const SizedBox(
-                          height: 330,
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      if (userSnapshot.hasError ||
-                          !userSnapshot.hasData ||
-                          !userSnapshot.data!.exists) {
-                        return const SizedBox(
-                          height: 330,
-                          child: Center(
-                            child: Text(
-                              'Error al cargar creador del plan',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        );
-                      }
-                      final userData =
-                          userSnapshot.data!.data() as Map<String, dynamic>;
-                      return _buildPlanTile(context, userData, plan);
-                    },
-                  );
-                },
-              );
-            },
+    Widget content = StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('subscriptions')
+          .where('userId', isEqualTo: userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              'No tienes planes suscritos aún.',
+              style: TextStyle(color: Colors.white),
+            ),
           );
-        },
+        }
+        final planIds = snapshot.data!.docs
+            .map((doc) => (doc.data() as Map<String, dynamic>)['id'] as String?)
+            .where((id) => id != null && id.isNotEmpty)
+            .cast<String>()
+            .toList();
+
+        return FutureBuilder<List<PlanModel>>(
+          future: _fetchPlansFromIds(planIds),
+          builder: (context, planSnapshot) {
+            if (!planSnapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final plans = planSnapshot.data!;
+            if (plans.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No tienes planes suscritos aún.',
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              shrinkWrap: true,
+              itemCount: plans.length,
+              itemBuilder: (context, index) {
+                final plan = plans[index];
+                return FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(plan.createdBy)
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    if (userSnapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        height: 330,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (userSnapshot.hasError ||
+                        !userSnapshot.hasData ||
+                        !userSnapshot.data!.exists) {
+                      return const SizedBox(
+                        height: 330,
+                        child: Center(
+                          child: Text(
+                            'Error al cargar creador del plan',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      );
+                    }
+                    final userData =
+                        userSnapshot.data!.data() as Map<String, dynamic>;
+                    return _buildPlanTile(context, userData, plan);
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Planes suscritos',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: content),
+          ],
+        ),
       ),
     );
   }

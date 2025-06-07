@@ -48,19 +48,17 @@ class MyPlansScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
+
+    Widget content;
     if (currentUser == null) {
-      return const Center(
+      content = const Center(
         child: Text(
           'Debes iniciar sesión para ver tus planes.',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       );
-    }
-
-    // ListView con shrinkWrap para que se ajuste al espacio del Dialog
-    return Container(
-      color: Colors.transparent,
-      child: StreamBuilder<QuerySnapshot>(
+    } else {
+      content = StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('plans')
             .where('createdBy', isEqualTo: currentUser.uid)
@@ -93,6 +91,38 @@ class MyPlansScreen extends StatelessWidget {
             },
           );
         },
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Mis planes',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: content),
+          ],
+        ),
       ),
     );
   }
