@@ -40,6 +40,9 @@ class ExploreScreenState extends State<ExploreScreen> {
   final GlobalKey _mapButtonKey = GlobalKey();
   final GlobalKey _chatButtonKey = GlobalKey();
   final GlobalKey _profileButtonKey = GlobalKey();
+  final GlobalKey _menuIconKey = GlobalKey();
+  final GlobalKey _notificationIconKey = GlobalKey();
+  final GlobalKey _searchBarKey = GlobalKey();
 
   late bool isMenuOpen;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
@@ -75,6 +78,9 @@ class ExploreScreenState extends State<ExploreScreen> {
         mapButtonKey: _mapButtonKey,
         chatButtonKey: _chatButtonKey,
         profileButtonKey: _profileButtonKey,
+        menuButtonKey: _menuIconKey,
+        notificationButtonKey: _notificationIconKey,
+        searchBarKey: _searchBarKey,
       ).show();
     });
   }
@@ -137,6 +143,7 @@ class ExploreScreenState extends State<ExploreScreen> {
         children: [
           ExploreAppBar(
             onMenuPressed: () => _menuKey.currentState?.toggleMenu(),
+            menuButtonKey: _menuIconKey,
             onNotificationPressed: () {
               Navigator.push(
                 context,
@@ -147,6 +154,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 ),
               );
             },
+            notificationButtonKey: _notificationIconKey,
             onSearchChanged: _onSearchChanged,
             notificationCountStream: _notificationCountStream(),
           ),
@@ -169,6 +177,7 @@ class ExploreScreenState extends State<ExploreScreen> {
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15, top: 0, bottom: 10),
       child: Container(
+        key: _searchBarKey,
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 213, 212, 212),
           borderRadius: BorderRadius.circular(30),

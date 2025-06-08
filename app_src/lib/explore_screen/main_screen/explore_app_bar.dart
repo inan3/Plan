@@ -6,6 +6,8 @@ import 'notification_screen.dart';
 class ExploreAppBar extends StatelessWidget {
   final VoidCallback onMenuPressed;
   final VoidCallback onNotificationPressed;
+  final GlobalKey menuButtonKey;
+  final GlobalKey notificationButtonKey;
   final ValueChanged<String> onSearchChanged;
   final Stream<int>? notificationCountStream;
 
@@ -13,6 +15,8 @@ class ExploreAppBar extends StatelessWidget {
     super.key,
     required this.onMenuPressed,
     required this.onNotificationPressed,
+    required this.menuButtonKey,
+    required this.notificationButtonKey,
     required this.onSearchChanged,
     this.notificationCountStream,
   });
@@ -48,6 +52,7 @@ class ExploreAppBar extends StatelessWidget {
                     border: Border.all(color: Colors.white.withOpacity(0.3)),
                   ),
                   child: IconButton(
+                    key: menuButtonKey,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     icon: ShaderMask(
@@ -114,6 +119,7 @@ class ExploreAppBar extends StatelessWidget {
                         clipBehavior: Clip.none,
                         children: [
                           IconButton(
+                            key: notificationButtonKey,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             icon: ShaderMask(

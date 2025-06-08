@@ -10,6 +10,9 @@ class QuickStartGuide {
     required this.mapButtonKey,
     required this.chatButtonKey,
     required this.profileButtonKey,
+    required this.menuButtonKey,
+    required this.notificationButtonKey,
+    required this.searchBarKey,
   });
 
   final BuildContext context;
@@ -18,6 +21,9 @@ class QuickStartGuide {
   final GlobalKey mapButtonKey;
   final GlobalKey chatButtonKey;
   final GlobalKey profileButtonKey;
+  final GlobalKey menuButtonKey;
+  final GlobalKey notificationButtonKey;
+  final GlobalKey searchBarKey;
   TutorialCoachMark? _tutorial;
 
   Future<void> show() async {
@@ -104,8 +110,52 @@ class QuickStartGuide {
           TargetContent(
             align: ContentAlign.top,
             builder: (context, controller) => _buildContent(
-                'En el perfil puedes ver y editar tu información.', controller,
-                isLast: true),
+              'En el perfil puedes ver y editar tu información.',
+              controller,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'menu_button',
+        keyTarget: menuButtonKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildContent(
+              'En este men\u00FA encontrar\u00E1s planes que has creado o a los que te has suscrito, adem\u00E1s del control sobre tu perfil',
+              controller,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'notification_button',
+        keyTarget: notificationButtonKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildContent(
+              'Aqu\u00ED recibir\u00E1s todas tus notificaciones.',
+              controller,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'search_bar',
+        keyTarget: searchBarKey,
+        shape: ShapeLightFocus.RRect,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildContent(
+              'Aqu\u00ED podr\u00E1s buscar o filtrar planes y usuarios',
+              controller,
+              isLast: true,
+            ),
           ),
         ],
       ),
@@ -128,7 +178,7 @@ class QuickStartGuide {
             child: TextButton(
               onPressed: isLast ? controller.finish : controller.next,
               child: Text(
-                isLast ? 'Entendido' : 'Siguiente',
+                isLast ? 'Finalizar' : 'Siguiente',
                 style: const TextStyle(color: Colors.white),
               ),
             ),
