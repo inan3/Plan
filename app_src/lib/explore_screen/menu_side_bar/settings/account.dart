@@ -117,24 +117,6 @@ Future<void> _deleteAccount(BuildContext context) async {
     final doc = await docRef.get();
     final data = doc.data();
 
-    // Primero intentamos borrar al usuario para garantizar la reautenticación
-    try {
-      await user.delete();
-    } on FirebaseAuthException catch (e) {
-      Navigator.of(context).pop();
-      if (e.code == 'requires-recent-login') {
-        final success = await _showReauthDialog(context);
-        if (success) {
-          // Intentar de nuevo tras reautenticación
-          await _deleteAccount(context);
-        }
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
-      }
-      return;
-    }
-
     if (data != null) {
       final urls = <String>[];
       void addUrl(dynamic u) {
@@ -156,6 +138,24 @@ Future<void> _deleteAccount(BuildContext context) async {
     }
 
     await docRef.delete();
+
+    // Tras borrar los datos en Firestore eliminamos la cuenta de autenticación
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      Navigator.of(context).pop();
+      if (e.code == 'requires-recent-login') {
+        final success = await _showReauthDialog(context);
+        if (success) {
+          // Intentar de nuevo tras reautenticación
+          await _deleteAccount(context);
+        }
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+      }
+      return;
+    }
 
     if (context.mounted) {
       Navigator.of(context).pop(); // Cerrar el indicador de carga

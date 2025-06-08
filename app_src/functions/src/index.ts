@@ -2,6 +2,7 @@ import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onUserDeleted} from "firebase-functions/v2/identity";
 
 initializeApp();
 
@@ -74,6 +75,19 @@ export const sendPushOnNotification = onDocumentCreated(
       await receiverRef.update({
         tokens: FieldValue.arrayRemove(...invalid),
       });
+    }
+  }
+);
+
+export const cleanupUserData = onUserDeleted(
+  {region: "europe-west1"},
+  async (event) => {
+    const uid = event.data.uid;
+    const db = getFirestore();
+    try {
+      await db.doc(`users/${uid}`).delete();
+    } catch (e) {
+      console.error("Failed to clean user data", e);
     }
   }
 );
