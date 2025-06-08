@@ -41,6 +41,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       'follow_rejected',
       'new_plan_published', // <--- Agregamos este nuevo tipo
       'plan_chat_message',
+      'welcome',
     ]).snapshots();
   }
 
@@ -756,6 +757,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       color: Colors.red),
                                   onPressed: () =>
                                       _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'welcome':
+                              final String message = data['message'] ??
+                                  '¡Bienvenido a Plan!';
+                              return ListTile(
+                                leading: const CircleAvatar(
+                                  radius: 25,
+                                  backgroundImage:
+                                      AssetImage('assets/plan-sin-fondo.png'),
+                                ),
+                                title: Text(message),
+                                subtitle: Text(
+                                  timeString,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _handleDeleteNotification(doc),
                                 ),
                               );
                             default:

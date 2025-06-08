@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuickStartGuide {
   QuickStartGuide({
@@ -44,6 +45,17 @@ class QuickStartGuide {
       opacityShadow: 0.8,
       onFinish: () async {
         await prefs.setBool(key, true);
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'welcome',
+          'receiverId': userId,
+          'senderId': 'system',
+          'senderName': 'Plan',
+          'senderProfilePic': '',
+          'message':
+              '¡Bienvenido a Plan! Esperamos que disfrutes organizando y descubriendo planes.',
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
       },
       onSkip: () {
         prefs.setBool(key, true);
