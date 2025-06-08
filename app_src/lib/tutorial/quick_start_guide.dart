@@ -172,7 +172,7 @@ Widget _buildContent(String text, dynamic controller) {
           child: TextButton(
             onPressed: () => _tutorial?.skip(),
             child: const Text(
-              'Omitir',
+              'Omitir Tutorial',
               style: TextStyle(color: Colors.white),
             ),
           ),
