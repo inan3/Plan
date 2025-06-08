@@ -26,8 +26,9 @@ class QuickStartGuide {
       onFinish: () async {
         await prefs.setBool('quickStartShown', true);
       },
-      onSkip: () async {
-        await prefs.setBool('quickStartShown', true);
+      onSkip: () {
+        prefs.setBool('quickStartShown', true);
+        return true;
       },
     );
 
@@ -39,7 +40,7 @@ class QuickStartGuide {
       TargetFocus(
         identify: 'add_button',
         keyTarget: addButtonKey,
-        shape: ShapeLightFocus.circle,
+        shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -50,7 +51,7 @@ class QuickStartGuide {
     ];
   }
 
-  Widget _buildContent(TargetContentController controller) {
+  Widget _buildContent(dynamic controller) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
