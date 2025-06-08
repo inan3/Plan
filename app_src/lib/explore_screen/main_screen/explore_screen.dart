@@ -73,7 +73,9 @@ class ExploreScreenState extends State<ExploreScreen> {
     _selectedIconIndex = 0;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final prefs = await SharedPreferences.getInstance();
-      final alreadyShown = prefs.getBool('quickStartShown') ?? false;
+      final userId = currentUser?.uid ?? '';
+      final key = 'quickStartShown_\$userId';
+      final alreadyShown = prefs.getBool(key) ?? false;
       if (!alreadyShown) {
         QuickStartGuide(
           context: context,
@@ -85,6 +87,7 @@ class ExploreScreenState extends State<ExploreScreen> {
           menuButtonKey: _menuIconKey,
           notificationButtonKey: _notificationIconKey,
           searchBarKey: _searchBarKey,
+          userId: userId,
         ).show();
       }
     });
