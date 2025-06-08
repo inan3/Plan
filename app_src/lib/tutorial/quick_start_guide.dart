@@ -140,7 +140,7 @@ class QuickStartGuide {
           TargetContent(
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildContent(
-              'Aqu\u00ED ver\u00E1s todas las notificaciones que recibas',
+              'Aqu\u00ED ver\u00E1s todas las notificaciones que recibas.',
               controller,
             ),
           ),
