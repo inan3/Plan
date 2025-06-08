@@ -3,10 +3,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class QuickStartGuide {
-  QuickStartGuide({required this.context, required this.addButtonKey});
+  QuickStartGuide({
+    required this.context,
+    required this.addButtonKey,
+    required this.homeButtonKey,
+    required this.mapButtonKey,
+    required this.chatButtonKey,
+    required this.profileButtonKey,
+  });
 
   final BuildContext context;
   final GlobalKey addButtonKey;
+  final GlobalKey homeButtonKey;
+  final GlobalKey mapButtonKey;
+  final GlobalKey chatButtonKey;
+  final GlobalKey profileButtonKey;
   TutorialCoachMark? _tutorial;
 
   Future<void> show() async {
@@ -44,31 +55,81 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) => _buildContent(controller),
+            builder: (context, controller) =>
+                _buildContent('Pinchando en el icono de + podrás crear un plan o evento.', controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'home_button',
+        keyTarget: homeButtonKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) =>
+                _buildContent('En el icono de inicio verás los planes cercanos.', controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'map_button',
+        keyTarget: mapButtonKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) =>
+                _buildContent('Con el mapa podrás localizar planes visualmente.', controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'chat_button',
+        keyTarget: chatButtonKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) =>
+                _buildContent('Desde aquí accedes a tus conversaciones.', controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'profile_button',
+        keyTarget: profileButtonKey,
+        shape: ShapeLightFocus.Circle,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildContent(
+                'En el perfil puedes ver y editar tu información.', controller,
+                isLast: true),
           ),
         ],
       ),
     ];
   }
 
-  Widget _buildContent(dynamic controller) {
+  Widget _buildContent(String text, dynamic controller, {bool isLast = false}) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Pinchando en el icono de + podrás crear un plan o evento.',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+          Text(
+            text,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
           ),
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.topRight,
             child: TextButton(
-              onPressed: controller.next,
-              child: const Text(
-                'Siguiente',
-                style: TextStyle(color: Colors.white),
+              onPressed: isLast ? controller.finish : controller.next,
+              child: Text(
+                isLast ? 'Entendido' : 'Siguiente',
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ),
