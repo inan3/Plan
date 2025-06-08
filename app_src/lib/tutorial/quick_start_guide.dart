@@ -30,9 +30,8 @@ class QuickStartGuide {
     final prefs = await SharedPreferences.getInstance();
     final alreadyShown = prefs.getBool('quickStartShown') ?? false;
 
-    // Siempre mostramos la guía para pruebas. Para la versión final
-    // se debería comprobar `alreadyShown` antes de mostrarla.
-    if (alreadyShown && false) return;
+    // Solo mostramos la guía si aún no se ha visto
+    if (alreadyShown) return;
 
     _tutorial = TutorialCoachMark(
       targets: _createTargets(),
