@@ -37,8 +37,8 @@ class QuickStartGuide {
     _tutorial = TutorialCoachMark(
       targets: _createTargets(),
       colorShadow: Colors.black,
-      textSkip: 'Omitir',
-      alignSkip: Alignment.topLeft,
+      textSkip: '',
+      alignSkip: Alignment.topRight,
       opacityShadow: 0.8,
       onFinish: () async {
         await prefs.setBool('quickStartShown', true);
@@ -123,13 +123,13 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) => _buildContent(
-              'En este men\u00FA encontrar\u00E1s planes que has creado o a los que te has suscrito, adem\u00E1s del control sobre tu perfil',
-              controller,
+              builder: (context, controller) => _buildContent(
+                'En este men\u00FA encontrar\u00E1s los planes que has creado o a los que te has suscrito, adem\u00E1s de los ajustes de tu cuenta.',
+                controller,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       TargetFocus(
         identify: 'notification_button',
         keyTarget: notificationButtonKey,
@@ -137,13 +137,13 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) => _buildContent(
-              'Aqu\u00ED recibir\u00E1s todas tus notificaciones.',
-              controller,
+              builder: (context, controller) => _buildContent(
+                'Aqu\u00ED ver\u00E1s todas las notificaciones que recibas',
+                controller,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       TargetFocus(
         identify: 'search_bar',
         keyTarget: searchBarKey,
@@ -151,28 +151,40 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildContent(
-              'Aqu\u00ED podr\u00E1s buscar o filtrar planes y usuarios',
-              controller,
-              isLast: true,
+              builder: (context, controller) => _buildContent(
+                'Desde aqu\u00ED podr\u00E1s buscar o filtrar planes o usuarios.',
+                controller,
+                isLast: true,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     ];
   }
 
-  Widget _buildContent(String text, dynamic controller, {bool isLast = false}) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            text,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-          ),
-          const SizedBox(height: 10),
+Widget _buildContent(String text, dynamic controller, {bool isLast = false}) {
+  return Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.topRight,
+          child: isLast
+              ? const SizedBox.shrink()
+              : TextButton(
+                  onPressed: () => _tutorial?.skip(),
+                  child: const Text(
+                    'Omitir',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+        ),
+        Text(
+          text,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+        ),
+        const SizedBox(height: 10),
           Align(
             alignment: Alignment.topRight,
             child: TextButton(
