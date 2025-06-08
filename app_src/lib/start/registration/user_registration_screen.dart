@@ -309,7 +309,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const ExploreScreen()),
+        MaterialPageRoute(
+          builder: (_) => const ExploreScreen(showQuickStart: true),
+        ),
         (_) => false,
       );
     } catch (e) {

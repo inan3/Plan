@@ -22,8 +22,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ExploreScreen extends StatefulWidget {
   final bool initiallyOpenSidebar;
+  final bool showQuickStart;
 
-  const ExploreScreen({Key? key, this.initiallyOpenSidebar = false}) : super(key: key);
+  const ExploreScreen({
+    Key? key,
+    this.initiallyOpenSidebar = false,
+    this.showQuickStart = false,
+  }) : super(key: key);
 
   @override
   ExploreScreenState createState() => ExploreScreenState();
@@ -83,7 +88,7 @@ class ExploreScreenState extends State<ExploreScreen> {
       final userId = _currentUser!.uid;
       final key = 'quickStartShown_\$userId';
       final alreadyShown = prefs.getBool(key) ?? false;
-      if (!alreadyShown) {
+      if (widget.showQuickStart || !alreadyShown) {
         Future.delayed(const Duration(milliseconds: 500), () {
           QuickStartGuide(
             context: context,
