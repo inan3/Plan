@@ -17,7 +17,9 @@ service cloud.firestore {
     }
 
     match /notifications/{id} {
-      allow create: if request.auth.uid == request.resource.data.senderId;
+      allow create: if request.auth.uid == request.resource.data.senderId
+        || (request.resource.data.senderId == 'system'
+            && request.auth.uid == request.resource.data.receiverId);
       allow read, delete: if request.auth.uid == resource.data.receiverId
         || request.auth.uid == resource.data.senderId;
     }
