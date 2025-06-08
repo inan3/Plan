@@ -63,7 +63,7 @@ class QuickStartGuide {
       },
     );
 
-    await _tutorial!.show(context: context);
+    _tutorial!.show(context: context);
   }
 
   List<TargetFocus> _createTargets() {
