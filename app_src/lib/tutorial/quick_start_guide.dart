@@ -38,7 +38,8 @@ class QuickStartGuide {
       targets: _createTargets(),
       colorShadow: Colors.black,
       textSkip: 'Omitir',
-      alignSkip: Alignment.topLeft,
+      alignSkip: Alignment.topRight,
+      hideSkip: true,
       opacityShadow: 0.8,
       onFinish: () async {
         await prefs.setBool('quickStartShown', true);
@@ -122,7 +123,7 @@ class QuickStartGuide {
         shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.bottom,
             builder: (context, controller) => _buildContent(
               'En este men\u00FA encontrar\u00E1s planes que has creado o a los que te has suscrito, adem\u00E1s del control sobre tu perfil',
               controller,
@@ -155,6 +156,7 @@ class QuickStartGuide {
               'Aqu\u00ED podr\u00E1s buscar o filtrar planes y usuarios',
               controller,
               isLast: true,
+              showSkip: false,
             ),
           ),
         ],
@@ -162,12 +164,22 @@ class QuickStartGuide {
     ];
   }
 
-  Widget _buildContent(String text, dynamic controller, {bool isLast = false}) {
+  Widget _buildContent(String text, dynamic controller,
+      {bool isLast = false, bool showSkip = true}) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (showSkip)
+            Align(
+              alignment: Alignment.topRight,
+              child: TextButton(
+                onPressed: controller.skip,
+                child: const Text('Omitir',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ),
           Text(
             text,
             style: const TextStyle(color: Colors.white, fontSize: 18),
