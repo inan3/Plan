@@ -194,3 +194,25 @@ export const sendPushOnPlanChat = onDocumentCreated(
     }
   }
 );
+
+export const createWelcomeNotification = onDocumentCreated(
+  {region: "europe-west1", document: "/users/{userId}"},
+  async (event) => {
+    const userId = event.params.userId;
+    const data = event.data?.data();
+    if (!data) return;
+
+    const db = getFirestore();
+    await db.collection("notifications").add({
+      type: "welcome",
+      receiverId: userId,
+      senderId: "system",
+      senderName: "Plan",
+      senderProfilePic: "",
+      message:
+        "El equipo de Plan te da la bienvenida a la app que te conecta con nuevas experiencias y personas. ¡Comienza a explorar y a crear momentos inolvidables!",
+      timestamp: FieldValue.serverTimestamp(),
+      read: false,
+    });
+  }
+);
