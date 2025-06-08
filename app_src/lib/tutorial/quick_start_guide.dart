@@ -13,6 +13,7 @@ class QuickStartGuide {
     required this.menuButtonKey,
     required this.notificationButtonKey,
     required this.searchBarKey,
+    required this.userId,
   });
 
   final BuildContext context;
@@ -24,11 +25,13 @@ class QuickStartGuide {
   final GlobalKey menuButtonKey;
   final GlobalKey notificationButtonKey;
   final GlobalKey searchBarKey;
+  final String userId;
   TutorialCoachMark? _tutorial;
 
   Future<void> show() async {
     final prefs = await SharedPreferences.getInstance();
-    final alreadyShown = prefs.getBool('quickStartShown') ?? false;
+    final key = 'quickStartShown_\$userId';
+    final alreadyShown = prefs.getBool(key) ?? false;
 
     // Solo mostramos la guía si aún no se ha visto
     if (alreadyShown) return;
@@ -40,10 +43,10 @@ class QuickStartGuide {
       alignSkip: Alignment.topRight,
       opacityShadow: 0.8,
       onFinish: () async {
-        await prefs.setBool('quickStartShown', true);
+        await prefs.setBool(key, true);
       },
       onSkip: () {
-        prefs.setBool('quickStartShown', true);
+        prefs.setBool(key, true);
         return true;
       },
     );
