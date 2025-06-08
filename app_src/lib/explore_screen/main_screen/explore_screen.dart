@@ -77,18 +77,20 @@ class ExploreScreenState extends State<ExploreScreen> {
       final key = 'quickStartShown_\$userId';
       final alreadyShown = prefs.getBool(key) ?? false;
       if (!alreadyShown) {
-        QuickStartGuide(
-          context: context,
-          addButtonKey: _addButtonKey,
-          homeButtonKey: _homeButtonKey,
-          mapButtonKey: _mapButtonKey,
-          chatButtonKey: _chatButtonKey,
-          profileButtonKey: _profileButtonKey,
-          menuButtonKey: _menuIconKey,
-          notificationButtonKey: _notificationIconKey,
-          searchBarKey: _searchBarKey,
-          userId: userId,
-        ).show();
+        Future.delayed(const Duration(milliseconds: 500), () {
+          QuickStartGuide(
+            context: context,
+            addButtonKey: _addButtonKey,
+            homeButtonKey: _homeButtonKey,
+            mapButtonKey: _mapButtonKey,
+            chatButtonKey: _chatButtonKey,
+            profileButtonKey: _profileButtonKey,
+            menuButtonKey: _menuIconKey,
+            notificationButtonKey: _notificationIconKey,
+            searchBarKey: _searchBarKey,
+            userId: userId,
+          ).show();
+        });
       }
     });
   }
