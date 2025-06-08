@@ -122,28 +122,28 @@ class QuickStartGuide {
         shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
-              builder: (context, controller) => _buildContent(
-                'En este men\u00FA encontrar\u00E1s los planes que has creado o a los que te has suscrito, adem\u00E1s de los ajustes de tu cuenta.',
-                controller,
-              ),
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildContent(
+              'En este men\u00FA encontrar\u00E1s los planes que has creado o a los que te has suscrito, adem\u00E1s de los ajustes de tu cuenta.',
+              controller,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
       TargetFocus(
         identify: 'notification_button',
         keyTarget: notificationButtonKey,
         shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
-              builder: (context, controller) => _buildContent(
-                'Aqu\u00ED ver\u00E1s todas las notificaciones que recibas',
-                controller,
-              ),
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildContent(
+              'Aqu\u00ED ver\u00E1s todas las notificaciones que recibas',
+              controller,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
       TargetFocus(
         identify: 'search_bar',
         keyTarget: searchBarKey,
