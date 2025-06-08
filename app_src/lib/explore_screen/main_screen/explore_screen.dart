@@ -17,6 +17,7 @@ import '../profile/profile_screen.dart';
 import 'notification_screen.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'searcher.dart';
+import '../../tutorial/quick_start_guide.dart';
 
 class ExploreScreen extends StatefulWidget {
   final bool initiallyOpenSidebar;
@@ -34,6 +35,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final GlobalKey<MainSideBarScreenState> _menuKey =
       GlobalKey<MainSideBarScreenState>();
+  final GlobalKey _addButtonKey = GlobalKey();
 
   late bool isMenuOpen;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
@@ -61,6 +63,9 @@ class ExploreScreenState extends State<ExploreScreen> {
     ];
     _currentIndex = 0;
     _selectedIconIndex = 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      QuickStartGuide(context: context, addButtonKey: _addButtonKey).show();
+    });
   }
 
   @override
@@ -484,6 +489,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                     currentIndex: _currentIndex,
                     selectedIconIndex: _selectedIconIndex,
                     onTapIcon: _onDockIconTap,
+                    addButtonKey: _addButtonKey,
                     notificationCountStream: null,
                     unreadMessagesCountStream: _unreadMessagesCountStream(),
                     badgeSize: 10,
@@ -510,6 +516,7 @@ class DockSection extends StatelessWidget {
   final int currentIndex;
   final int selectedIconIndex;
   final Function(int) onTapIcon;
+  final GlobalKey addButtonKey;
   final double iconSize;
   final double selectedBackgroundSize;
   final double iconSpacing;
@@ -530,6 +537,7 @@ class DockSection extends StatelessWidget {
     required this.currentIndex,
     required this.selectedIconIndex,
     required this.onTapIcon,
+    required this.addButtonKey,
     this.iconSize = 23.0,
     this.selectedBackgroundSize = 60.0,
     // Ajustamos iconSpacing para acercar los iconos.
@@ -581,6 +589,7 @@ class DockSection extends StatelessWidget {
                 asset: 'assets/anadir.svg',
                 notificationCountStream: notificationCountStream,
                 overrideIconSize: 70.0,
+                targetKey: addButtonKey,
               ),
               SizedBox(width: iconSpacing),
               _buildIconButton(
@@ -605,6 +614,7 @@ class DockSection extends StatelessWidget {
     Stream<int>? notificationCountStream,
     Stream<int>? unreadMessagesCountStream,
     double? overrideIconSize,
+    Key? targetKey,
   }) {
     final double effectiveIconSize = overrideIconSize ?? iconSize;
     final bool isSelected = selectedIconIndex == index;
@@ -616,6 +626,7 @@ class DockSection extends StatelessWidget {
           onTap: () => onTapIcon(index),
           borderRadius: BorderRadius.circular(selectedBackgroundSize / 2),
           child: Container(
+            key: targetKey,
             width: selectedBackgroundSize,
             height: selectedBackgroundSize,
             alignment: Alignment.center,
