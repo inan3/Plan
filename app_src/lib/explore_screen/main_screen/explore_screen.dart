@@ -33,7 +33,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   int _selectedIconIndex = 0;
 
-  final User? currentUser = FirebaseAuth.instance.currentUser;
+  User? _currentUser;
   final GlobalKey<MainSideBarScreenState> _menuKey =
       GlobalKey<MainSideBarScreenState>();
   final GlobalKey _addButtonKey = GlobalKey();
@@ -72,8 +72,15 @@ class ExploreScreenState extends State<ExploreScreen> {
     _currentIndex = 0;
     _selectedIconIndex = 0;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _currentUser = FirebaseAuth.instance.currentUser;
+      if (_currentUser == null) {
+        final user = await FirebaseAuth.instance.authStateChanges().first;
+        _currentUser = user;
+      }
+      if (_currentUser == null) return;
+
       final prefs = await SharedPreferences.getInstance();
-      final userId = currentUser?.uid ?? '';
+      final userId = _currentUser!.uid;
       final key = 'quickStartShown_\$userId';
       final alreadyShown = prefs.getBool(key) ?? false;
       if (!alreadyShown) {
@@ -159,7 +166,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => NotificationScreen(
-                    currentUserId: currentUser?.uid ?? '',
+                    currentUserId: _currentUser?.uid ?? '',
                   ),
                 ),
               );
@@ -322,20 +329,20 @@ class ExploreScreenState extends State<ExploreScreen> {
 
     List<QueryDocumentSnapshot> validUsers = snapshot.docs;
 
-    if (currentUser != null) {
+    if (_currentUser != null) {
       validUsers = validUsers.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return data['uid']?.toString() != currentUser!.uid;
+        return data['uid']?.toString() != _currentUser!.uid;
       }).toList();
     }
 
     // Filtrar solo usuarios seguidos si la opción está activada
     final bool onlyFollowed = appliedFilters['onlyFollowed'] == true;
     Set<String> followedIds = {};
-    if (onlyFollowed && currentUser != null) {
+    if (onlyFollowed && _currentUser != null) {
       final snap = await FirebaseFirestore.instance
           .collection('followed')
-          .where('userId', isEqualTo: currentUser!.uid)
+          .where('userId', isEqualTo: _currentUser!.uid)
           .get();
       for (final doc in snap.docs) {
         final fid = doc.data()['followedId'] as String?;
@@ -426,7 +433,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   Stream<int> _notificationCountStream() {
     return FirebaseFirestore.instance
         .collection('notifications')
-        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('receiverId', isEqualTo: _currentUser?.uid)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
@@ -434,8 +441,8 @@ class ExploreScreenState extends State<ExploreScreen> {
   Stream<int> _unreadMessagesCountStream() {
     return FirebaseFirestore.instance
         .collection('messages')
-        .where('participants', arrayContains: currentUser?.uid)
-        .where('receiverId', isEqualTo: currentUser?.uid)
+        .where('participants', arrayContains: _currentUser?.uid)
+        .where('receiverId', isEqualTo: _currentUser?.uid)
         .where('isRead', isEqualTo: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
