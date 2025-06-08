@@ -36,6 +36,10 @@ class ExploreScreenState extends State<ExploreScreen> {
   final GlobalKey<MainSideBarScreenState> _menuKey =
       GlobalKey<MainSideBarScreenState>();
   final GlobalKey _addButtonKey = GlobalKey();
+  final GlobalKey _homeButtonKey = GlobalKey();
+  final GlobalKey _mapButtonKey = GlobalKey();
+  final GlobalKey _chatButtonKey = GlobalKey();
+  final GlobalKey _profileButtonKey = GlobalKey();
 
   late bool isMenuOpen;
   RangeValues selectedAgeRange = const RangeValues(18, 40);
@@ -64,7 +68,14 @@ class ExploreScreenState extends State<ExploreScreen> {
     _currentIndex = 0;
     _selectedIconIndex = 0;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      QuickStartGuide(context: context, addButtonKey: _addButtonKey).show();
+      QuickStartGuide(
+        context: context,
+        addButtonKey: _addButtonKey,
+        homeButtonKey: _homeButtonKey,
+        mapButtonKey: _mapButtonKey,
+        chatButtonKey: _chatButtonKey,
+        profileButtonKey: _profileButtonKey,
+      ).show();
     });
   }
 
@@ -490,6 +501,10 @@ class ExploreScreenState extends State<ExploreScreen> {
                     selectedIconIndex: _selectedIconIndex,
                     onTapIcon: _onDockIconTap,
                     addButtonKey: _addButtonKey,
+                    homeButtonKey: _homeButtonKey,
+                    mapButtonKey: _mapButtonKey,
+                    chatButtonKey: _chatButtonKey,
+                    profileButtonKey: _profileButtonKey,
                     notificationCountStream: null,
                     unreadMessagesCountStream: _unreadMessagesCountStream(),
                     badgeSize: 10,
@@ -517,6 +532,10 @@ class DockSection extends StatelessWidget {
   final int selectedIconIndex;
   final Function(int) onTapIcon;
   final GlobalKey addButtonKey;
+  final GlobalKey homeButtonKey;
+  final GlobalKey mapButtonKey;
+  final GlobalKey chatButtonKey;
+  final GlobalKey profileButtonKey;
   final double iconSize;
   final double selectedBackgroundSize;
   final double iconSpacing;
@@ -538,6 +557,10 @@ class DockSection extends StatelessWidget {
     required this.selectedIconIndex,
     required this.onTapIcon,
     required this.addButtonKey,
+    required this.homeButtonKey,
+    required this.mapButtonKey,
+    required this.chatButtonKey,
+    required this.profileButtonKey,
     this.iconSize = 23.0,
     this.selectedBackgroundSize = 60.0,
     // Ajustamos iconSpacing para acercar los iconos.
@@ -579,10 +602,18 @@ class DockSection extends StatelessWidget {
               // margen interior izquierdo
               Padding(
                 padding: const EdgeInsets.only(left: 6.0),
-                child: _buildIconButton(index: 0, asset: 'assets/casa.svg'),
+                child: _buildIconButton(
+                  index: 0,
+                  asset: 'assets/casa.svg',
+                  targetKey: homeButtonKey,
+                ),
               ),
               SizedBox(width: iconSpacing),
-              _buildIconButton(index: 1, asset: 'assets/icono-mapa.svg'),
+              _buildIconButton(
+                index: 1,
+                asset: 'assets/icono-mapa.svg',
+                targetKey: mapButtonKey,
+              ),
               SizedBox(width: iconSpacing),
               _buildIconButton(
                 index: 2,
@@ -596,9 +627,14 @@ class DockSection extends StatelessWidget {
                 index: 3,
                 asset: 'assets/mensaje.svg',
                 unreadMessagesCountStream: unreadMessagesCountStream,
+                targetKey: chatButtonKey,
               ),
               SizedBox(width: iconSpacing),
-              _buildIconButton(index: 4, asset: 'assets/usuario.svg'),
+              _buildIconButton(
+                index: 4,
+                asset: 'assets/usuario.svg',
+                targetKey: profileButtonKey,
+              ),
               // margen interior derecho NUEVO
               const SizedBox(width: 6),
             ],
