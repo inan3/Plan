@@ -84,6 +84,8 @@ class ExploreScreenState extends State<ExploreScreen> {
       }
       if (_currentUser == null) return;
 
+      setState(() {});
+
       final prefs = await SharedPreferences.getInstance();
       final userId = _currentUser!.uid;
       final key = 'quickStartShown_$userId';
