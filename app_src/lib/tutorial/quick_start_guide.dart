@@ -1,3 +1,4 @@
+//quick_start_guide.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -31,7 +32,7 @@ class QuickStartGuide {
 
   Future<void> show() async {
     final prefs = await SharedPreferences.getInstance();
-    final key = 'quickStartShown_\$userId';
+    final key = 'quickStartShown_$userId';
     final alreadyShown = prefs.getBool(key) ?? false;
 
     // Solo mostramos la guía si aún no se ha visto

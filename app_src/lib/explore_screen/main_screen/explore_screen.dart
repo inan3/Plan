@@ -86,7 +86,7 @@ class ExploreScreenState extends State<ExploreScreen> {
 
       final prefs = await SharedPreferences.getInstance();
       final userId = _currentUser!.uid;
-      final key = 'quickStartShown_\$userId';
+      final key = 'quickStartShown_$userId';
       final alreadyShown = prefs.getBool(key) ?? false;
       if (widget.showQuickStart || !alreadyShown) {
         Future.delayed(const Duration(milliseconds: 500), () {
