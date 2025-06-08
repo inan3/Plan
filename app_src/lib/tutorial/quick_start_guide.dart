@@ -154,7 +154,6 @@ class QuickStartGuide {
               builder: (context, controller) => _buildContent(
                 'Desde aqu\u00ED podr\u00E1s buscar o filtrar planes o usuarios.',
                 controller,
-                isLast: true,
               ),
             ),
           ],
@@ -162,7 +161,7 @@ class QuickStartGuide {
     ];
   }
 
-Widget _buildContent(String text, dynamic controller, {bool isLast = false}) {
+Widget _buildContent(String text, dynamic controller) {
   return Padding(
     padding: const EdgeInsets.all(16),
     child: Column(
@@ -170,33 +169,31 @@ Widget _buildContent(String text, dynamic controller, {bool isLast = false}) {
       children: [
         Align(
           alignment: Alignment.topRight,
-          child: isLast
-              ? const SizedBox.shrink()
-              : TextButton(
-                  onPressed: () => _tutorial?.skip(),
-                  child: const Text(
-                    'Omitir',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+          child: TextButton(
+            onPressed: () => _tutorial?.skip(),
+            child: const Text(
+              'Omitir',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         ),
         Text(
           text,
           style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
         const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.topRight,
-            child: TextButton(
-              onPressed: isLast ? controller.finish : controller.next,
-              child: Text(
-                isLast ? 'Finalizar' : 'Siguiente',
-                style: const TextStyle(color: Colors.white),
-              ),
+        Align(
+          alignment: Alignment.topRight,
+          child: TextButton(
+            onPressed: controller.next,
+            child: const Text(
+              'Siguiente',
+              style: TextStyle(color: Colors.white),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }
