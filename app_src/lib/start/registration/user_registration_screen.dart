@@ -304,6 +304,19 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       // Guardamos token de notificaciones
       await FcmTokenService.register(user);
 
+      // Notificación de bienvenida
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'type': 'welcome',
+        'receiverId': user.uid,
+        'senderId': 'system',
+        'senderName': 'Plan',
+        'senderProfilePic': '',
+        'message':
+            'El equipo de Plan te da la bienvenida a la app que te conecta con nuevas experiencias y personas. ¡Comienza a explorar y a crear momentos inolvidables!',
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+      });
+
       await LocalRegistrationService.clear();
 
       if (!mounted) return;
