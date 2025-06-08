@@ -126,7 +126,7 @@ class QuickStartGuide {
           Align(
             alignment: Alignment.topRight,
             child: TextButton(
-              onPressed: isLast ? controller.finish : controller.next,
+              onPressed: isLast ? controller.skip : controller.next,
               child: Text(
                 isLast ? 'Entendido' : 'Siguiente',
                 style: const TextStyle(color: Colors.white),
