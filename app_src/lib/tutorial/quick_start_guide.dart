@@ -53,7 +53,7 @@ class QuickStartGuide {
           'senderName': 'Plan',
           'senderProfilePic': '',
           'message':
-              '¡Bienvenido a Plan! Esperamos que disfrutes organizando y descubriendo planes.',
+              'El equipo de Plan te da la bienvenida a la app que te conecta con nuevas experiencias y personas. ¡Comienza a explorar y a crear momentos inolvidables!',
           'timestamp': FieldValue.serverTimestamp(),
           'read': false,
         });
