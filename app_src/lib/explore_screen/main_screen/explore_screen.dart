@@ -18,6 +18,7 @@ import 'notification_screen.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'searcher.dart';
 import '../../tutorial/quick_start_guide.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ExploreScreen extends StatefulWidget {
   final bool initiallyOpenSidebar;
@@ -70,18 +71,22 @@ class ExploreScreenState extends State<ExploreScreen> {
     ];
     _currentIndex = 0;
     _selectedIconIndex = 0;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      QuickStartGuide(
-        context: context,
-        addButtonKey: _addButtonKey,
-        homeButtonKey: _homeButtonKey,
-        mapButtonKey: _mapButtonKey,
-        chatButtonKey: _chatButtonKey,
-        profileButtonKey: _profileButtonKey,
-        menuButtonKey: _menuIconKey,
-        notificationButtonKey: _notificationIconKey,
-        searchBarKey: _searchBarKey,
-      ).show();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final alreadyShown = prefs.getBool('quickStartShown') ?? false;
+      if (!alreadyShown) {
+        QuickStartGuide(
+          context: context,
+          addButtonKey: _addButtonKey,
+          homeButtonKey: _homeButtonKey,
+          mapButtonKey: _mapButtonKey,
+          chatButtonKey: _chatButtonKey,
+          profileButtonKey: _profileButtonKey,
+          menuButtonKey: _menuIconKey,
+          notificationButtonKey: _notificationIconKey,
+          searchBarKey: _searchBarKey,
+        ).show();
+      }
     });
   }
 
