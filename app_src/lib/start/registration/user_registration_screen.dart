@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -53,6 +54,11 @@ class UserRegistrationScreen extends StatefulWidget {
 
 class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  Timer? _usernameDebounce;
+  bool? _isUsernameAvailable;
+  bool _isCheckingUsername = false;
+  List<String> _usernameSuggestions = [];
 
   /// Para escribir manualmente la ciudad/municipio
   final TextEditingController _cityController = TextEditingController();
@@ -92,20 +98,68 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   bool get _isFormValid {
     final name = _nameController.text.trim();
-    if (name.isEmpty || _birthDate == null) return false;
+    final username = _usernameController.text.trim();
+    if (name.isEmpty || username.isEmpty || _birthDate == null) return false;
+    if (_isCheckingUsername || _isUsernameAvailable != true) return false;
     return _calculateAge(_birthDate!) >= 18;
+  }
+
+  void _onUsernameChanged() {
+    final text = _usernameController.text.trim();
+    _usernameDebounce?.cancel();
+    _usernameDebounce = Timer(const Duration(milliseconds: 500), () {
+      _checkUsernameAvailability(text);
+    });
+  }
+
+  Future<void> _checkUsernameAvailability(String username) async {
+    if (username.isEmpty) {
+      setState(() {
+        _isUsernameAvailable = null;
+        _usernameSuggestions = [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isCheckingUsername = true;
+    });
+
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('user_name', isEqualTo: username)
+        .get();
+
+    final available = snap.docs.isEmpty;
+    List<String> suggestions = [];
+    if (!available) {
+      for (int i = 0; i < 3; i++) {
+        suggestions.add('$username${Random().nextInt(1000)}');
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isUsernameAvailable = available;
+        _usernameSuggestions = suggestions;
+        _isCheckingUsername = false;
+      });
+    }
   }
 
   @override
   void initState() {
     super.initState();
     _coverPageController = PageController();
+    _usernameController.addListener(_onUsernameChanged);
   }
 
   @override
   void dispose() {
     _coverPageController.dispose();
     _nameController.dispose();
+    _usernameDebounce?.cancel();
+    _usernameController.dispose();
     _cityController.dispose();
     super.dispose();
   }
@@ -219,9 +273,15 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
     // Revisar campos obligatorios
     final name = _nameController.text.trim();
+    final username = _usernameController.text.trim();
     if (name.isEmpty) {
       setState(() => _isSaving = false);
       _showErrorPopup('Por favor, ingresa un nombre.');
+      return;
+    }
+    if (username.isEmpty || _isUsernameAvailable != true) {
+      setState(() => _isSaving = false);
+      _showErrorPopup('Por favor, ingresa un nombre de usuario válido.');
       return;
     }
     if (_birthDate == null) {
@@ -276,6 +336,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         'uid': user.uid,
         'name': name,
         'nameLowercase': name.toLowerCase(),
+        'user_name': username,
+        'user_name_lowercase': username.toLowerCase(),
         'age': age,
         'photoUrl': profilePhotoUrl ?? '',
         'coverPhotoUrl': coverPhotoUrls.isNotEmpty ? coverPhotoUrls.first : '',
@@ -706,6 +768,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
+
                   Center(
                     child: Image.asset(
                       'assets/plan-sin-fondo.png',
@@ -762,6 +825,101 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Nombre de usuario",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: MyColors.AppColors.black,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const Text('*', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: MyColors.AppColors.greyBorder,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _usernameController,
+                      style: const TextStyle(color: Colors.grey),
+                      decoration: InputDecoration(
+                        hintText: "Introduzca su id...",
+                        hintStyle: TextStyle(
+                          color: Colors.grey,
+                        ),
+                        border: InputBorder.none,
+                        suffixIcon: _isCheckingUsername
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : _isUsernameAvailable == null
+                                ? null
+                                : Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: _isUsernameAvailable!
+                                          ? Colors.green
+                                          : Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _isUsernameAvailable!
+                                          ? Icons.check
+                                          : Icons.close,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                      ),
+                    ),
+                  ),
+                  if (_usernameSuggestions.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        children: _usernameSuggestions.map((s) {
+                          return InkWell(
+                            onTap: () {
+                              _usernameController.text = s;
+                              _usernameController.selection = TextSelection.collapsed(offset: s.length);
+                              _checkUsernameAvailability(s);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: MyColors.AppColors.lightLilac,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: MyColors.AppColors.greyBorder),
+                              ),
+                              child: Text(
+                                s,
+                                style: const TextStyle(color: Colors.black),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   const SizedBox(height: 20),
 
                   Row(
