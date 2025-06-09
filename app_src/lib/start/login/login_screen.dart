@@ -34,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool isLoading = false;
   bool _rememberLogin = false;
+  bool _showPassword = false;
 
   static const _rememberKey = 'rememberLogin';
   static const _emailKey = 'rememberEmail';
@@ -364,13 +365,24 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: TextField(
         controller: controller,
-        obscureText: obscure,
+        obscureText: obscure ? !_showPassword : false,
         keyboardType: keyboardType,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          suffixIcon: obscure
+              ? IconButton(
+                  icon: Icon(
+                    _showPassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () =>
+                      setState(() => _showPassword = !_showPassword),
+                )
+              : null,
         ),
       ),
     );
