@@ -724,7 +724,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Nombre de usuario",
+                        "Nombre real",
                         style: TextStyle(
                           fontSize: 16,
                           color: MyColors.AppColors.black,

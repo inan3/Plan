@@ -58,9 +58,11 @@ class QuickStartGuide {
           'read': false,
         });
       },
-      onSkip: () async {
-        await prefs.setBool(key, true);
-        await FirebaseFirestore.instance.collection('notifications').add({
+      onSkip: () {
+        // Lanzar tareas asíncronas sin await
+        SharedPreferences.getInstance()
+            .then((prefs) => prefs.setBool(key, true));
+        FirebaseFirestore.instance.collection('notifications').add({
           'type': 'welcome',
           'receiverId': userId,
           'senderId': 'system',
@@ -87,8 +89,9 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) =>
-                _buildContent('Pinchando en el icono de + podrás crear un plan o evento.', controller),
+            builder: (context, controller) => _buildContent(
+                'Pinchando en el icono de + podrás crear un plan o evento.',
+                controller),
           ),
         ],
       ),
@@ -99,8 +102,8 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) =>
-                _buildContent('En el icono de inicio verás los planes cercanos.', controller),
+            builder: (context, controller) => _buildContent(
+                'En el icono de inicio verás los planes cercanos.', controller),
           ),
         ],
       ),
@@ -111,8 +114,8 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) =>
-                _buildContent('Con el mapa podrás localizar planes visualmente.', controller),
+            builder: (context, controller) => _buildContent(
+                'Con el mapa podrás localizar planes visualmente.', controller),
           ),
         ],
       ),
@@ -123,8 +126,8 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.top,
-            builder: (context, controller) =>
-                _buildContent('Desde aquí accedes a tus conversaciones.', controller),
+            builder: (context, controller) => _buildContent(
+                'Desde aquí accedes a tus conversaciones.', controller),
           ),
         ],
       ),
@@ -177,49 +180,49 @@ class QuickStartGuide {
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-              builder: (context, controller) => _buildContent(
-                'Desde aqu\u00ED podr\u00E1s buscar o filtrar planes o usuarios.',
-                controller,
-              ),
+            builder: (context, controller) => _buildContent(
+              'Desde aqu\u00ED podr\u00E1s buscar o filtrar planes o usuarios.',
+              controller,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     ];
   }
 
-Widget _buildContent(String text, dynamic controller) {
-  return Padding(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: Alignment.topRight,
-          child: TextButton(
-            onPressed: () => _tutorial?.skip(),
-            child: const Text(
-              'Omitir Tutorial',
-              style: TextStyle(color: Colors.white),
+  Widget _buildContent(String text, dynamic controller) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: TextButton(
+              onPressed: () => _tutorial?.skip(),
+              child: const Text(
+                'Omitir Tutorial',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
-        ),
-        Text(
-          text,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.topRight,
-          child: TextButton(
-            onPressed: controller.next,
-            child: const Text(
-              'Siguiente',
-              style: TextStyle(color: Colors.white),
+          Text(
+            text,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.topRight,
+            child: TextButton(
+              onPressed: controller.next,
+              child: const Text(
+                'Siguiente',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }
