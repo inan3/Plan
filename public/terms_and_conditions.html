@@ -231,11 +231,13 @@
   })();
   </script>
   <script>
-    const navToggle=document.querySelector('.nav-toggle');
-    const navClose=document.querySelector('nav ul .nav-close');
-    const navList=document.querySelector('nav ul');
-    navToggle.addEventListener('click',()=>{navList.classList.toggle('open');});
-    navClose.addEventListener('click',()=>{navList.classList.remove('open');});
+    document.querySelectorAll('.nav-container').forEach(nav=>{
+      const toggle=nav.querySelector('.nav-toggle');
+      const close=nav.querySelector('.nav-close');
+      const list=nav.querySelector('nav ul');
+      toggle.addEventListener('click',()=>list.classList.toggle('open'));
+      close.addEventListener('click',()=>list.classList.remove('open'));
+    });
   </script>
 </body>
 
