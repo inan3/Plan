@@ -6,7 +6,8 @@
     <meta name='viewport' content='width=device-width'>
     <title>Privacy Policy</title>
     <style>
-        body {font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding-top:72px;}
+        body {font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:72px 1em 0;}
+        body a{text-decoration:none;color:inherit;}
         header{position:fixed;top:0;width:100%;height:72px;background:#fff;border-bottom:1px solid #eee;z-index:100;}
         .nav-container{max-width:1200px;margin:auto;height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 1rem;position:relative;}
         .nav-logo{margin:0;position:static;justify-self:center;}
@@ -57,7 +58,8 @@
         <a href="index.html#downloadSection" class="btn-download">Download</a>
       </div>
     </header>
-    <h1 style="padding:1em;">Privacy Policy</h1>
+    <main style="padding:1em;">
+    <h1>Privacy Policy</h1>
     <p>This privacy policy applies to the Plan app (hereby referred to as "Application") for mobile devices that was
         created by Inan Ilik Ilik (hereby referred to as "Service Provider") as a Freemium service. This service is
         intended for use "AS IS".</p><br><strong>Information Collection and Use</strong>
@@ -174,6 +176,7 @@
             <p>© 2025 Plan</p>
         </div>
     </footer>
+    </main>
   </div>
   <div data-lang="es">
     <header>
@@ -194,7 +197,8 @@
         <a href="index.html#downloadSection" class="btn-download">Descargar</a>
       </div>
     </header>
-    <h1 style="padding:1em;">Política de Privacidad</h1>
+    <main style="padding:1em;">
+    <h1>Política de Privacidad</h1>
     <p>Esta política de privacidad se aplica a la app Plan (en adelante, "Aplicación") para dispositivos móviles creada por Inan Ilik Ilik (en adelante, "Proveedor del Servicio") como servicio Freemium. Este servicio se ofrece "TAL CUAL".</p><br><strong>Recopilación y Uso de Información</strong>
     <p>La Aplicación recopila información cuando la descargas y la utilizas. Esta información puede incluir datos como </p>
     <ul>
@@ -268,6 +272,7 @@
             <p>© 2025 Plan</p>
         </div>
     </footer>
+    </main>
   </div>
   <script>
   (function(){
@@ -285,11 +290,13 @@
   })();
   </script>
   <script>
-    const navToggle=document.querySelector('.nav-toggle');
-    const navClose=document.querySelector('nav ul .nav-close');
-    const navList=document.querySelector('nav ul');
-    navToggle.addEventListener('click',()=>{navList.classList.toggle('open');});
-    navClose.addEventListener('click',()=>{navList.classList.remove('open');});
+    document.querySelectorAll('.nav-container').forEach(nav=>{
+      const toggle=nav.querySelector('.nav-toggle');
+      const close=nav.querySelector('.nav-close');
+      const list=nav.querySelector('nav ul');
+      toggle.addEventListener('click',()=>list.classList.toggle('open'));
+      close.addEventListener('click',()=>list.classList.remove('open'));
+    });
   </script>
 </body>
 
