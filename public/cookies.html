@@ -5,7 +5,8 @@
     <meta name='viewport' content='width=device-width'>
     <title>Política de cookies</title>
     <style>
-        body {font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding-top:72px;}
+        body {font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:72px 1em 0;}
+        body a{text-decoration:none;color:inherit;}
         header{position:fixed;top:0;width:100%;height:72px;background:#fff;border-bottom:1px solid #eee;z-index:100;}
         .nav-container{max-width:1200px;margin:auto;height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 1rem;position:relative;}
         .nav-logo{margin:0;position:static;justify-self:center;}
@@ -55,7 +56,8 @@
         <a href="index.html#downloadSection" class="btn-download">Download</a>
       </div>
     </header>
-    <h1 style="padding:1em;">Cookies Policy</h1>
+    <main style="padding:1em;">
+    <h1>Cookies Policy</h1>
     <p>As described in our Privacy Policy, both our service providers and we use cookies and similar technologies to provide the Plan Platform and enhance your experience. This Cookies Policy explains how and why we use these technologies on our websites, apps and other services (the “Platform”). The terms “Plan,” “we,” “us,” or “our” refer to Inan Ilik Ilik and affiliates. By using the Platform, you agree to our storing and accessing cookies and related technologies on your device as set forth in this Policy.</p>
     <h2>What are cookies?</h2>
     <p>Cookies are small data files downloaded to your device when you visit a website. On subsequent visits they are sent back to the site that created them or another site that recognizes them. Cookies allow us to identify your device.</p>
@@ -110,6 +112,7 @@
             <p>© 2025 Plan</p>
         </div>
     </footer>
+    </main>
   </div>
 
   <div data-lang='es'>
@@ -131,7 +134,8 @@
         <a href='index.html#downloadSection' class='btn-download'>Descargar</a>
       </div>
     </header>
-    <h1 style='padding:1em;'>Política de cookies</h1>
+    <main style='padding:1em;'>
+    <h1>Política de cookies</h1>
     <p>Conforme se describe en nuestra Política de Privacidad, tanto nuestros proveedores de servicios como nosotros utilizamos cookies y tecnologías similares para ofrecer la Plataforma de Plan y mejorar tu experiencia. Esta Política de cookies detalla cómo y por qué empleamos dichas tecnologías en nuestros sitios web, aplicaciones y otros servicios (en conjunto, la “Plataforma”). Los términos “Plan”, “nosotros”, “nos” o “nuestro” se refieren a Inan Ilik Ilik y sus filiales. Al usar la Plataforma, aceptas que almacenemos cookies y tecnologías afines en tu dispositivo y que tengamos acceso a ellas, según lo establece esta Política.</p>
     <h2>¿Qué son las cookies?</h2>
     <p>Las cookies son pequeños archivos de datos que se descargan a tu dispositivo cuando visitas un sitio web. En cada visita posterior se envían de vuelta al sitio que las creó o a otro que las reconozca. Las cookies nos permiten identificar tu dispositivo.</p>
@@ -186,6 +190,7 @@
             <p>© 2025 Plan</p>
         </div>
     </footer>
+    </main>
   </div>
   <script>
   (function(){
@@ -203,11 +208,13 @@
   })();
   </script>
   <script>
-    const navToggle=document.querySelector('.nav-toggle');
-    const navClose=document.querySelector('nav ul .nav-close');
-    const navList=document.querySelector('nav ul');
-    navToggle.addEventListener('click',()=>{navList.classList.toggle('open');});
-    navClose.addEventListener('click',()=>{navList.classList.remove('open');});
+    document.querySelectorAll('.nav-container').forEach(nav=>{
+      const toggle=nav.querySelector('.nav-toggle');
+      const close=nav.querySelector('.nav-close');
+      const list=nav.querySelector('nav ul');
+      toggle.addEventListener('click',()=>list.classList.toggle('open'));
+      close.addEventListener('click',()=>list.classList.remove('open'));
+    });
   </script>
 </body>
 </html>
