@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dating_app/main/colors.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'register_with_google.dart';
 import 'verification_provider.dart';
 import 'email_verification_screen.dart';
@@ -21,11 +22,14 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
+  final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmController = TextEditingController();
+  String? _phoneNumber;
 
   bool _showPassword = false;
   bool _showConfirm = false;
+  bool _isEmail = true;
 
   bool get _hasUppercase => passwordController.text.contains(RegExp(r'[A-Z]'));
   bool get _hasNumber => passwordController.text.contains(RegExp(r'[0-9]'));
@@ -43,6 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     emailController.dispose();
+    phoneController.dispose();
     passwordController.dispose();
     confirmController.dispose();
     super.dispose();
@@ -277,37 +282,132 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Campo correo
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 30),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          hintText: 'Correo electrónico',
-                          hintStyle: GoogleFonts.roboto(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                    // Selector Correo/Teléfono
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _isEmail = true),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: _isEmail
+                                    ? AppColors.planColor
+                                    : AppColors.lightLilac,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.greyBorder),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Correo electrónico',
+                                style: TextStyle(
+                                  color:
+                                      _isEmail ? Colors.white : Colors.black,
+                                  fontFamily: 'Inter-Regular',
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _isEmail = false),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: !_isEmail
+                                    ? AppColors.planColor
+                                    : AppColors.lightLilac,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.greyBorder),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Número de teléfono',
+                                style: TextStyle(
+                                  color:
+                                      !_isEmail ? Colors.white : Colors.black,
+                                  fontFamily: 'Inter-Regular',
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 10),
+
+                    // Campo correo o teléfono
+                    if (_isEmail)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 30),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            hintText: 'Correo electrónico',
+                            hintStyle: GoogleFonts.roboto(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 30),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: IntlPhoneField(
+                          controller: phoneController,
+                          initialCountryCode: 'ES',
+                          decoration: InputDecoration(
+                            hintText: 'Número de teléfono',
+                            hintStyle: GoogleFonts.roboto(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          onChanged: (phone) => _phoneNumber = phone.completeNumber,
+                        ),
+                      ),
                     const SizedBox(height: 20),
 
                     // Campo contraseña
