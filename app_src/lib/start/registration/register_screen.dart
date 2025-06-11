@@ -8,6 +8,7 @@ import 'verification_provider.dart';
 import 'email_verification_screen.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
+import 'user_registration_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
@@ -192,6 +193,93 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } finally {
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _registerWithPhone() async {
+    final phone = _phoneNumber ?? phoneController.text.trim();
+    if (phone.isEmpty) {
+      _showPopup('Introduce tu n\u00famero de tel\u00e9fono');
+      return;
+    }
+
+    setState(() => isLoading = true);
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: phone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (cred) async {
+        try {
+          final userCred =
+              await FirebaseAuth.instance.signInWithCredential(cred);
+          _onPhoneUserCreated(userCred);
+        } catch (e) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Error: $e')));
+          setState(() => isLoading = false);
+        }
+      },
+      verificationFailed: (e) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+        setState(() => isLoading = false);
+      },
+      codeSent: (verId, _) {
+        setState(() => isLoading = false);
+        _showSMSDialog(verId);
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
+  }
+
+  void _showSMSDialog(String verId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('C\u00f3digo SMS'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'C\u00f3digo'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final code = controller.text.trim();
+              if (code.isEmpty) return;
+              final cred = PhoneAuthProvider.credential(
+                  verificationId: verId, smsCode: code);
+              try {
+                final userCred = await FirebaseAuth.instance
+                    .signInWithCredential(cred);
+                Navigator.of(context).pop();
+                _onPhoneUserCreated(userCred);
+              } on FirebaseAuthException catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.message}')));
+              }
+            },
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onPhoneUserCreated(UserCredential cred) {
+    final user = cred.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('No se pudo crear usuario')));
+      return;
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserRegistrationScreen(
+          provider: VerificationProvider.phone,
+          firebaseUser: user,
+        ),
+      ),
+    );
   }
 
   @override
@@ -518,8 +606,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : () {
                                 if (!_match) {
                                   _showPopup('Las contraseñas no coinciden');
-                                } else {
+                                } else if (_isEmail) {
                                   _register();
+                                } else {
+                                  _registerWithPhone();
                                 }
                               },
                         style: ElevatedButton.styleFrom(

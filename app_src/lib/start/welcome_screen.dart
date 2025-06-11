@@ -80,11 +80,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
         final providers = user.providerData.map((p) => p.providerId).toList();
         final isGoogle = providers.contains('google.com');
-        final provider =
-            isGoogle ? VerificationProvider.google : VerificationProvider.password;
+        final isPhone = providers.contains('phone');
+        final provider = isGoogle
+            ? VerificationProvider.google
+            : (isPhone
+                ? VerificationProvider.phone
+                : VerificationProvider.password);
 
         // Si el correo NO está verificado y no es usuario de Google, pedimos verificación
-        if (!user.emailVerified && !isGoogle) {
+        if (!user.emailVerified && !isGoogle && !isPhone) {
           if (mounted) {
             Navigator.pushReplacement(
               context,

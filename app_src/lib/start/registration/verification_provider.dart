@@ -4,4 +4,5 @@
 enum VerificationProvider {
   password,
   google,
+  phone,
 }
