@@ -10,10 +10,6 @@
       {
         "source": "/plan/**",
         "destination": "/index.html"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
       }
     ]
   }
