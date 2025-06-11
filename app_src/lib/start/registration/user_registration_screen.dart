@@ -866,26 +866,25 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : _isUsernameAvailable == null
                                 ? null
                                 : Container(
-                                    padding: const EdgeInsets.all(6),
+                                    width: 20,
+                                    height: 20,
                                     decoration: BoxDecoration(
                                       color: _isUsernameAvailable!
                                           ? Colors.green
                                           : Colors.red,
                                       shape: BoxShape.circle,
                                     ),
+                                    alignment: Alignment.center,
                                     child: Icon(
                                       _isUsernameAvailable!
                                           ? Icons.check
                                           : Icons.close,
-                                      size: 16,
+                                      size: 12,
                                       color: Colors.white,
                                     ),
                                   ),
