@@ -862,30 +862,31 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                           color: Colors.grey,
                         ),
                         border: InputBorder.none,
+                        suffixIconConstraints:
+                            const BoxConstraints.tightFor(width: 24, height: 24),
                         suffixIcon: _isCheckingUsername
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : _isUsernameAvailable == null
                                 ? null
                                 : Container(
-                                    padding: const EdgeInsets.all(6),
+                                    width: 16,
+                                    height: 16,
                                     decoration: BoxDecoration(
                                       color: _isUsernameAvailable!
                                           ? Colors.green
                                           : Colors.red,
                                       shape: BoxShape.circle,
                                     ),
+                                    alignment: Alignment.center,
                                     child: Icon(
                                       _isUsernameAvailable!
                                           ? Icons.check
                                           : Icons.close,
-                                      size: 16,
+                                      size: 10,
                                       color: Colors.white,
                                     ),
                                   ),
