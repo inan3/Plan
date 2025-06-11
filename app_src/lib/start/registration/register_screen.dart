@@ -287,11 +287,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 30),
                       width: double.infinity,
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           InkWell(
                             onTap: () => setState(() => _isEmail = true),
-                            child: Container(
+                          child: Container(
                               padding: const EdgeInsets.symmetric(
                                   vertical: 12, horizontal: 12),
                               decoration: BoxDecoration(
@@ -312,6 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 16),
                           InkWell(
                             onTap: () => setState(() => _isEmail = false),
                             child: Container(
