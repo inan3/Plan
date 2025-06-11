@@ -862,17 +862,19 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                           color: Colors.grey,
                         ),
                         border: InputBorder.none,
+                        suffixIconConstraints:
+                            const BoxConstraints.tightFor(width: 24, height: 24),
                         suffixIcon: _isCheckingUsername
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 16,
+                                height: 16,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : _isUsernameAvailable == null
                                 ? null
                                 : Container(
-                                    width: 20,
-                                    height: 20,
+                                    width: 16,
+                                    height: 16,
                                     decoration: BoxDecoration(
                                       color: _isUsernameAvailable!
                                           ? Colors.green
@@ -884,7 +886,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                       _isUsernameAvailable!
                                           ? Icons.check
                                           : Icons.close,
-                                      size: 12,
+                                      size: 10,
                                       color: Colors.white,
                                     ),
                                   ),
