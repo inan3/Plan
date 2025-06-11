@@ -283,14 +283,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 10),
 
                     // Selector Correo/Teléfono
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: InkWell(
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 30),
+                      width: double.infinity,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          InkWell(
                             onTap: () => setState(() => _isEmail = true),
                             child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
                               padding: const EdgeInsets.symmetric(
                                   vertical: 12, horizontal: 12),
                               decoration: BoxDecoration(
@@ -300,7 +301,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: AppColors.greyBorder),
                               ),
-                              alignment: Alignment.center,
                               child: Text(
                                 'Correo electrónico',
                                 style: TextStyle(
@@ -312,12 +312,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: InkWell(
+                          InkWell(
                             onTap: () => setState(() => _isEmail = false),
                             child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
                               padding: const EdgeInsets.symmetric(
                                   vertical: 12, horizontal: 12),
                               decoration: BoxDecoration(
@@ -327,7 +324,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: AppColors.greyBorder),
                               ),
-                              alignment: Alignment.center,
                               child: Text(
                                 'Número de teléfono',
                                 style: TextStyle(
@@ -339,8 +335,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 10),
 
