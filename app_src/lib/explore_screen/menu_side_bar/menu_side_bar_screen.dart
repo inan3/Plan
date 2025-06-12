@@ -179,31 +179,20 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          IconButton(
-                            icon: Image.asset('assets/instagram.png', width: 32, height: 32),
-                            onPressed: () async {
-                              final uri = Uri.parse('https://www.instagram.com/plansocialappspain/');
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              }
-                            },
+                          _socialButton(
+                            assetPath: 'assets/instagram.png',
+                            url: 'https://www.instagram.com/plansocialappspain/',
+                            tooltip: 'Instagram',
                           ),
-                          IconButton(
-                            icon: Image.asset('assets/tiktok.png', width: 32, height: 32),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('En construcción...')),
-                              );
-                            },
+                          _socialButton(
+                            assetPath: 'assets/tiktok.png',
+                            url: 'https://www.tiktok.com/@plan0525',
+                            tooltip: 'TikTok',
                           ),
-                          IconButton(
-                            icon: Image.asset('assets/linkedin.png', width: 32, height: 32),
-                            onPressed: () async {
-                              final uri = Uri.parse('https://www.linkedin.com/in/plan-social-app-54165536a');
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                              }
-                            },
+                          _socialButton(
+                            assetPath: 'assets/linkedin.png',
+                            url: 'https://www.linkedin.com/in/plan-social-app-54165536a',
+                            tooltip: 'LinkedIn',
                           ),
                         ],
                       ),
@@ -461,6 +450,26 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                 );
               },
             ));
+      },
+    );
+  }
+
+  Widget _socialButton({
+    required String assetPath,
+    required String url,
+    String? tooltip,
+  }) {
+    return IconButton(
+      icon: Image.asset(assetPath, width: 32, height: 32),
+      tooltip: tooltip,
+      onPressed: () async {
+        final uri = Uri.parse(url);
+        // Intenta abrir primero con una aplicación externa (por ejemplo,
+        // la app oficial de la red social). Si no hay ninguna instalada,
+        // se abre en un navegador dentro de la app.
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          await launchUrl(uri, mode: LaunchMode.inAppBrowser);
+        }
       },
     );
   }
