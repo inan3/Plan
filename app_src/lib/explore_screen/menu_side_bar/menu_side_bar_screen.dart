@@ -182,7 +182,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                           IconButton(
                             icon: Image.asset('assets/instagram.png', width: 32, height: 32),
                             onPressed: () async {
-                              final uri = Uri.parse('https://www.instagram.com/plan0525/');
+                              final uri = Uri.parse('https://www.instagram.com/plansocialappspain/');
                               if (await canLaunchUrl(uri)) {
                                 await launchUrl(uri, mode: LaunchMode.externalApplication);
                               }
