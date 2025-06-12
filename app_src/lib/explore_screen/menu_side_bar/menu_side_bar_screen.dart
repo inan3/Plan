@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:dating_app/main/colors.dart';
 import 'my_plans_screen.dart';
@@ -105,8 +106,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                           children: [
                             Image.asset(
                               'assets/plan-sin-fondo.png',
-                              height: 60,
-                              width: 60,
+                              height: 80,
+                              width: 80,
                               fit: BoxFit.contain,
                             ),
                           ],
@@ -167,6 +168,45 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         textColor: Colors.red,
                         index: 4,
                       ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: Text(
+                          'Síguenos también en:',
+                          style: GoogleFonts.roboto(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: Image.asset('assets/instagram.png', width: 32, height: 32),
+                            onPressed: () async {
+                              final uri = Uri.parse('https://www.instagram.com/plan0525/');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: Image.asset('assets/tiktok.png', width: 32, height: 32),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('En construcción...')),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: Image.asset('assets/linkedin.png', width: 32, height: 32),
+                            onPressed: () async {
+                              final uri = Uri.parse('https://www.linkedin.com/in/plan-social-app-54165536a');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -211,7 +251,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
         widget.onPageChange?.call(3);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        padding: const EdgeInsets.only(top: 24.0, bottom: 24.0),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -229,7 +269,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     return Column(
                       children: [
                         const CircleAvatar(
-                          radius: 40,
+                          radius: 50,
                           backgroundColor: Colors.grey,
                           child: CircularProgressIndicator(),
                         ),
@@ -253,7 +293,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     return Column(
                       children: [
                         CircleAvatar(
-                          radius: 40,
+                          radius: 50,
                           backgroundImage: NetworkImage(profileImageUrl),
                         ),
                         const SizedBox(height: 8),
@@ -277,12 +317,12 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                   return Column(
                     children: [
                       CircleAvatar(
-                        radius: 40,
+                        radius: 50,
                         backgroundImage: NetworkImage(profileImageUrl),
                         backgroundColor: Colors.grey.shade200,
                         onBackgroundImageError: (_, __) => const Icon(
                           Icons.person,
-                          size: 40,
+                          size: 50,
                           color: Colors.white,
                         ),
                       ),
@@ -400,7 +440,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                   ? Container(
                       padding: const EdgeInsets.all(6),
                       decoration: const BoxDecoration(
-                        color: AppColors.blue,
+                        color: AppColors.planColor,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
