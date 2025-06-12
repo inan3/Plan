@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import '../welcome_screen.dart';
+import '../utils/auth_error_utils.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -212,14 +213,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               await FirebaseAuth.instance.signInWithCredential(cred);
           _onPhoneUserCreated(userCred);
         } catch (e) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Error: $e')));
+          if (e is FirebaseAuthException) {
+            AuthErrorUtils.showError(context, e);
+          } else {
+            _showPopup('Error: $e');
+          }
           setState(() => isLoading = false);
         }
       },
       verificationFailed: (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
+        AuthErrorUtils.showError(context, e);
         setState(() => isLoading = false);
       },
       codeSent: (verId, _) {
@@ -263,8 +266,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Navigator.of(context).pop();
                 _onPhoneUserCreated(userCred);
               } on FirebaseAuthException catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.message}')));
+                AuthErrorUtils.showError(context, e);
               }
             },
             child: const Text('Continuar'),
