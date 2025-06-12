@@ -464,8 +464,11 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
       tooltip: tooltip,
       onPressed: () async {
         final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        // Intenta abrir primero con una aplicación externa (por ejemplo,
+        // la app oficial de la red social). Si no hay ninguna instalada,
+        // se abre en un navegador dentro de la app.
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          await launchUrl(uri, mode: LaunchMode.inAppBrowser);
         }
       },
     );
