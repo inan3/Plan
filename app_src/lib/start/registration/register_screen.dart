@@ -387,7 +387,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 color: _isEmail
                                     ? AppColors.planColor
                                     : AppColors.lightLilac,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(30),
                                 border: Border.all(color: AppColors.greyBorder),
                               ),
                               child: Text(
@@ -411,7 +411,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 color: !_isEmail
                                     ? AppColors.planColor
                                     : AppColors.lightLilac,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(30),
                                 border: Border.all(color: AppColors.greyBorder),
                               ),
                               child: Text(

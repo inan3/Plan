@@ -45,7 +45,7 @@ class DefaultFirebaseOptions {
     appId: '1:861608593316:web:fa8964d140025bb0e96331',
     messagingSenderId: '861608593316',
     projectId: 'plan-social-app',
-    authDomain: 'plan-social-app.firebaseapp.com',
+    authDomain: 'plansocialapp.es',
     storageBucket: 'plan-social-app.firebasestorage.app',
     measurementId: 'G-Y9Q5WB4REW',
   );
@@ -86,8 +86,8 @@ class DefaultFirebaseOptions {
     appId: '1:861608593316:web:ff8785aeede3f428e96331',
     messagingSenderId: '861608593316',
     projectId: 'plan-social-app',
-    authDomain: 'plan-social-app.firebaseapp.com',
-    storageBucket: 'plan-social-app.firebasestorage.app',
+    authDomain: 'plansocialapp.es',
+    storageBucket: 'plansocialapp.es',
     measurementId: 'G-6HSG2CHZ79',
   );
 
