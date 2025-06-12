@@ -80,13 +80,23 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Código + nueva contraseña'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Introduce el código recibido por SMS',
+          textAlign: TextAlign.center,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _codeController,
-              decoration: const InputDecoration(labelText: 'Código SMS'),
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Código SMS',
+                border: OutlineInputBorder(),
+              ),
             ),
             TextField(
               controller: _pwdController,
