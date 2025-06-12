@@ -168,34 +168,6 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         textColor: Colors.red,
                         index: 4,
                       ),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: Text(
-                          'Síguenos también en:',
-                          style: GoogleFonts.roboto(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _socialButton(
-                            assetPath: 'assets/instagram.png',
-                            url: 'https://www.instagram.com/plansocialappspain/',
-                            tooltip: 'Instagram',
-                          ),
-                          _socialButton(
-                            assetPath: 'assets/tiktok.png',
-                            url: 'https://www.tiktok.com/@plan0525',
-                            tooltip: 'TikTok',
-                          ),
-                          _socialButton(
-                            assetPath: 'assets/linkedin.png',
-                            url: 'https://www.linkedin.com/in/plan-social-app-54165536a',
-                            tooltip: 'LinkedIn',
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -223,6 +195,42 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         size: 24,
                       ),
                     ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 24,
+                  left: 0,
+                  right: 0,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Síguenos también en:',
+                        style: GoogleFonts.roboto(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _socialButton(
+                            assetPath: 'assets/instagram.png',
+                            url: 'https://www.instagram.com/plansocialappspain/',
+                            tooltip: 'Instagram',
+                          ),
+                          _socialButton(
+                            assetPath: 'assets/tiktok.png',
+                            url: 'https://www.tiktok.com/@plan0525',
+                            tooltip: 'TikTok',
+                          ),
+                          _socialButton(
+                            assetPath: 'assets/linkedin.png',
+                            url: 'https://www.linkedin.com/in/plan-social-app-54165536a',
+                            tooltip: 'LinkedIn',
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
