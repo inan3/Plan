@@ -3,6 +3,7 @@ import 'dart:convert';                           //  ⬅️  NUEVO
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import '../utils/auth_error_utils.dart';
 
 class RecoverPasswordScreen extends StatefulWidget {
   const RecoverPasswordScreen({Key? key}) : super(key: key);
@@ -63,7 +64,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
       timeout: const Duration(seconds: 60),
       verificationCompleted: (_) {},
       verificationFailed: (e) {
-        _showSnack('Error: ${e.message}');
+        AuthErrorUtils.showError(context, e);
         setState(() => _isLoading = false);
       },
       codeSent: (verId, _) {
@@ -133,7 +134,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
                 _showSnack('Contraseña actualizada');
                 Navigator.of(context).pop();
               } on FirebaseAuthException catch (e) {
-                _showSnack('Error: ${e.message}');
+                AuthErrorUtils.showError(context, e);
               }
             },
           ),
