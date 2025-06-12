@@ -235,10 +235,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('C\u00f3digo SMS'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Introduce el código recibido por SMS',
+          textAlign: TextAlign.center,
+        ),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(labelText: 'C\u00f3digo'),
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Código',
+            border: OutlineInputBorder(),
+          ),
         ),
         actions: [
           TextButton(
