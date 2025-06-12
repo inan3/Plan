@@ -309,6 +309,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _ageController = TextEditingController();
   bool _loading = true;
   bool _saving = false;
@@ -329,6 +330,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final data = doc.data();
       if (data != null) {
         _nameController.text = data['name'] ?? '';
+        _usernameController.text = data['user_name'] ?? '';
         _ageController.text = (data['age'] ?? '').toString();
       }
     }
@@ -337,8 +339,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
+    final username = _usernameController.text.trim();
     final age = int.tryParse(_ageController.text.trim());
-    if (name.isEmpty || age == null) {
+    if (name.isEmpty || username.isEmpty || age == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Campos inválidos')));
       return;
@@ -351,6 +354,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'name': name,
         'nameLowercase': name.toLowerCase(),
+        'user_name': username,
+        'user_name_lowercase': username.toLowerCase(),
         'age': age,
       });
       if (mounted) {
@@ -387,6 +392,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               decoration: const InputDecoration(labelText: 'Nombre'),
             ),
             TextField(
+              controller: _usernameController,
+              decoration: const InputDecoration(labelText: 'Nombre de usuario'),
+            ),
+            TextField(
               controller: _ageController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Edad'),
@@ -408,6 +417,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _ageController.dispose();
     super.dispose();
   }
