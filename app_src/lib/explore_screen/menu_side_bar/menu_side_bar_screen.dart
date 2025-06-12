@@ -99,7 +99,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       Padding(
                         padding: const EdgeInsets.only(
                           left: 16.0,
-                          top: 40.0,
+                          top: 20.0,
                           bottom: 16.0,
                         ),
                         child: Row(
