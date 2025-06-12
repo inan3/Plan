@@ -157,6 +157,10 @@ flutter:
     - assets/image-pool-party.png
 
     - assets/google_logo.png
+
+    - assets/linkedin.png
+    - assets/instagram.png
+    - assets/tiktok.png
     
 
   fonts:
