@@ -3,7 +3,7 @@ import 'dart:convert';                           //  ⬅️  NUEVO
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import '../utils/auth_error_utils.dart';
+import '../../utils/auth_error_utils.dart';
 
 class RecoverPasswordScreen extends StatefulWidget {
   const RecoverPasswordScreen({Key? key}) : super(key: key);

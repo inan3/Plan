@@ -13,7 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import '../welcome_screen.dart';
-import '../utils/auth_error_utils.dart';
+import '../../utils/auth_error_utils.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
