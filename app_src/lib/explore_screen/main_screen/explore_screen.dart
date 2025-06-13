@@ -391,6 +391,8 @@ class ExploreScreenState extends State<ExploreScreen> {
       return distanceA.compareTo(distanceB);
     });
 
+    final bool onlyPlans = appliedFilters['onlyPlans'] == true;
+
     List<String> planFilters = [];
     if (appliedFilters['selectedPlans'] != null) {
       planFilters.addAll(List<String>.from(appliedFilters['selectedPlans']));
@@ -401,14 +403,12 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
     final DateTime? dateFilter = appliedFilters['planDate'];
 
-    if (planFilters.isNotEmpty || dateFilter != null) {
+    if (planFilters.isNotEmpty || dateFilter != null || onlyPlans) {
       final allowedUids = await _fetchUserIdsWithPlans(planFilters, dateFilter);
       validUsers = validUsers.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
         final uid = data['uid'].toString();
-        final matchesPlan = allowedUids.contains(uid);
-        final matchesFollow = !onlyFollowed || followedIds.contains(uid);
-        return matchesPlan && matchesFollow;
+        return allowedUids.contains(uid);
       }).toList();
     }
 
