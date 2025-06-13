@@ -301,20 +301,24 @@ class ExploreScreenState extends State<ExploreScreen> {
       List<String> planFilters, DateTime? dateFilter) async {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('plans').get();
+    final now = DateTime.now();
     Set<String> uids = {};
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
       final Timestamp? ts = data['start_timestamp'];
-      if (dateFilter != null && ts != null) {
-        final d = ts.toDate();
-        if (d.year != dateFilter.year ||
-            d.month != dateFilter.month ||
-            d.day != dateFilter.day) {
+      if (ts == null) continue;
+      final startDate = ts.toDate();
+
+      if (dateFilter != null) {
+        if (startDate.year != dateFilter.year ||
+            startDate.month != dateFilter.month ||
+            startDate.day != dateFilter.day) {
           continue;
         }
-      } else if (dateFilter != null && ts == null) {
-        continue;
+      } else {
+        if (!startDate.isAfter(now)) continue;
       }
+
       if (planFilters.isEmpty) {
         uids.add(data['createdBy'].toString());
       } else {
