@@ -158,6 +158,7 @@ class PlansInMapScreen {
       }
     }
     final Set<Marker> result = {};
+    final now = DateTime.now();
     _planMarkerCache.forEach((id, marker) {
       final data = _planDataCache[id];
       if (data == null) return;
@@ -169,6 +170,10 @@ class PlansInMapScreen {
             startDate.year != filterDate.year ||
             startDate.month != filterDate.month ||
             startDate.day != filterDate.day) {
+          return;
+        }
+      } else {
+        if (startDate == null || !startDate.isAfter(now)) {
           return;
         }
       }
