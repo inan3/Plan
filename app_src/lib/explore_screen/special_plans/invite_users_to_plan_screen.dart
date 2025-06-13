@@ -366,7 +366,6 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
       specialPlan: plan.special_plan,
     );
 
-    Navigator.pop(ctx);
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(content: Text("Has invitado a tu plan: ${plan.type}")),
     );
