@@ -11,6 +11,7 @@ import '../../../models/plan_model.dart';
 import '../../plan_creation/meeting_location_screen.dart';
 import '../../plan_creation/new_plan_creation_screen.dart';
 import '../../../main/colors.dart';
+import 'invite_existing_plan_screen.dart';
 
 /// ***************************************************************************
 /// CONSTANTES DE ANCHOS Y ALTOS FIJOS (SIN MEDIAQUERY)
@@ -161,7 +162,19 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     if (activePlans.isEmpty) {
       _showNoPlansPopup();
     } else {
-      _showExistingPlansPopup(activePlans);
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InviteExistingPlanScreen(
+            plans: activePlans,
+            onPlanSelected: (plan) {
+              Navigator.pop(context);
+              _inviteUserToExistingPlan(plan);
+            },
+          ),
+        ),
+      );
     }
   }
 
@@ -1273,12 +1286,20 @@ Future<List<PlanModel>> _fetchActivePlans(String userId) async {
       .get();
   for (var doc in createdSnap.docs) {
     final data = doc.data();
+    data['id'] = doc.id;
     final plan = PlanModel.fromMap(data);
-    activePlans.add(plan);
+    final now = DateTime.now();
+    final start = plan.startTimestamp;
+    final finish = plan.finishTimestamp;
+    final bool notExpired = (start == null || start.isAfter(now)) ||
+        (finish != null && finish.isAfter(now));
+    if (notExpired) {
+      activePlans.add(plan);
+    }
   }
   activePlans.sort(
-    (a, b) => (a.createdAt ?? DateTime.now())
-        .compareTo(b.createdAt ?? DateTime.now()),
+    (a, b) => (a.startTimestamp ?? DateTime.now())
+        .compareTo(b.startTimestamp ?? DateTime.now()),
   );
   return activePlans;
 }
