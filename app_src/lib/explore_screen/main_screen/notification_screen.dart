@@ -635,7 +635,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               final int specialPlan = data['specialPlan'] ?? 0;
                               final String message = specialPlan == 1
                                   ? "$senderName te ha invitado a un plan especial de $planType"
-                                  : "¡$senderName te está invitando a un plan! ¿Aceptas?";
+                                  : "¡$senderName te ha invitado a unirte a este plan!";
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(message),

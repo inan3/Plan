@@ -92,7 +92,7 @@ class _InviteExistingPlanScreenState extends State<InviteExistingPlanScreen> {
                       hideJoinButton: true,
                     ),
                     Positioned(
-                      top: 22,
+                      top: 8,
                       right: 8,
                       child: Switch(
                         value: isSelected,
@@ -102,24 +102,26 @@ class _InviteExistingPlanScreenState extends State<InviteExistingPlanScreen> {
                         inactiveThumbColor: Colors.white,
                         onChanged: (value) async {
                           if (value) {
+                            setState(() => _selectedId = plan.id);
+                            await Future.delayed(const Duration(milliseconds: 500));
                             final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                        title: const Text('Invitar a un plan'),
-                                        content: const Text('¿Estás seguro de que quieres invitarle a un plan?'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, false),
-                                            child: const Text('Cancelar'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () => Navigator.pop(context, true),
-                                            child: const Text('Aceptar'),
-                                          ),
-                                        ],
-                                      ));
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text('Invitar a un plan'),
+                                content: const Text('¿Deseas compartirle este plan?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Aceptar'),
+                                  ),
+                                ],
+                              ),
+                            );
                             if (confirm == true) {
-                              setState(() => _selectedId = plan.id);
                               widget.onPlanSelected(plan);
                             } else {
                               setState(() => _selectedId = null);
