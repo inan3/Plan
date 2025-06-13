@@ -302,8 +302,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Wrap(
-                    alignment: WrapAlignment.center,
-                    runAlignment: WrapAlignment.center,
+                    alignment: WrapAlignment.start,
+                    runAlignment: WrapAlignment.start,
                     spacing: 6,
                     runSpacing: 6,
                     children: plans.map((plan) {
