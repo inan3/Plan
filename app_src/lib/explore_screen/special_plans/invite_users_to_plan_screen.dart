@@ -452,14 +452,15 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Image.asset('assets/plan-sin-fondo.png', height: 70),
-            ),
-            const SizedBox(height: 20),
-            const Center(
+        SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Image.asset('assets/plan-sin-fondo.png', height: 70),
+              ),
+              const SizedBox(height: 20),
+              const Center(
               child: Text(
                 "¡Crea tu Plan Privado e Invita!",
                 style: TextStyle(
@@ -508,6 +509,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               ),
             ),
           ],
+          ),
         ),
 
         // Botón de cerrar
