@@ -272,7 +272,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            offset: const Offset(0, 44),
+            offset: const Offset(-20, 44),
             child: _buildDropdownMenu(),
           ),
         ],
@@ -291,7 +291,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           borderRadius: BorderRadius.circular(12),
           color: Colors.white.withOpacity(0.1),
           child: Container(
-            width: 265,
+            width: 300,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
@@ -302,6 +302,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Wrap(
+                    alignment: WrapAlignment.center,
+                    runAlignment: WrapAlignment.center,
                     spacing: 6,
                     runSpacing: 6,
                     children: plans.map((plan) {
@@ -316,6 +318,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           _closeDropdown();
                         },
                         child: Container(
+                          constraints: const BoxConstraints(minWidth: 0),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
