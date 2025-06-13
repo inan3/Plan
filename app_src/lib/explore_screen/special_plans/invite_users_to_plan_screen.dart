@@ -428,7 +428,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   static const double _planButtonWidth = 260.0;
   static const double _dropdownWidth = 320.0;
   static const double _dropdownOffsetY = 44.0;
-  static const double _dropdownOffsetX = -18;
+  static const double _dropdownOffsetX = 12;
 
   // ========= Fecha/hora =========
   bool _allDay = false;
@@ -793,7 +793,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                   ),
                 ),
               ),
-            ),
             ),
           ),
         ],
