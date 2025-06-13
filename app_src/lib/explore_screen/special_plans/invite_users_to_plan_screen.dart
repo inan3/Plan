@@ -234,7 +234,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                             filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                             child: Container(
                               color: Colors.white.withOpacity(0.15),
-                              child: ListTile(
+                              child: Material(color: Colors.transparent, child: ListTile(
                                 title: Text(
                                   plan.type,
                                   style: const TextStyle(color: Colors.white),
@@ -285,7 +285,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                                     },
                                   );
                                 },
-                              ),
+                              )),
                             ),
                           ),
                         ),
