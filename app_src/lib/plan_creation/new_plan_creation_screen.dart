@@ -1840,7 +1840,15 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 13, 32, 53),
+                  Color.fromARGB(255, 72, 38, 38),
+                  Color(0xFF12232E),
+                ],
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: SingleChildScrollView(
@@ -1970,6 +1978,14 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, null),
+                        child: const Text(
+                          "Cancelar",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context, {
@@ -1987,14 +2003,6 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                         child: const Text(
                           "Aceptar",
                           style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, null),
-                        child: const Text(
-                          "Cancelar",
-                          style: TextStyle(color: Colors.white70),
                         ),
                       ),
                     ],
