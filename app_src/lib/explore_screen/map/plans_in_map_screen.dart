@@ -158,7 +158,6 @@ class PlansInMapScreen {
       }
     }
     final Set<Marker> result = {};
-    final now = DateTime.now();
     _planMarkerCache.forEach((id, marker) {
       final data = _planDataCache[id];
       if (data == null) return;

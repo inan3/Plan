@@ -15,18 +15,18 @@ import '../../../main/colors.dart';
 /// ***************************************************************************
 /// CONSTANTES DE ANCHOS Y ALTOS FIJOS (SIN MEDIAQUERY)
 /// ***************************************************************************
-const double kMainPopupWidth = 500; 
+const double kMainPopupWidth = 500;
 const double kMainPopupPadding = 20;
 
-const double kNewPlanPopupWidth = 380; 
-const double kNewPlanPopupHeight = 750; 
+const double kNewPlanPopupWidth = 380;
+const double kNewPlanPopupHeight = 750;
 const double kNewPlanPadding = 20;
 
-const double kPlanTypeSectionWidth   = 320;
-const double kPlanTypeDropdownWidth  = 310; // unused
+const double kPlanTypeSectionWidth = 320;
+const double kPlanTypeDropdownWidth = 310; // unused
 const double kPlanTypeDropdownHeight = 365; // unused
 
-const double kDateTimeSectionWidth   = 300; // unused
+const double kDateTimeSectionWidth = 300; // unused
 const double kLocationContainerHeight = 240;
 
 /// ***************************************************************************
@@ -253,10 +253,12 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                                     barrierColor: Colors.black54,
                                     transitionDuration:
                                         const Duration(milliseconds: 300),
-                                    pageBuilder: (context, animation, secondaryAnimation) {
+                                    pageBuilder: (context, animation,
+                                        secondaryAnimation) {
                                       return const SizedBox();
                                     },
-                                    transitionBuilder: (context, anim1, anim2, child) {
+                                    transitionBuilder:
+                                        (context, anim1, anim2, child) {
                                       return FadeTransition(
                                         opacity: CurvedAnimation(
                                           parent: anim1,
@@ -355,7 +357,8 @@ void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
               // Este padding se ajusta cuando aparece el teclado
-              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              padding:
+                  EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
               child: SingleChildScrollView(
                 child: Container(
                   // OJO: Quitamos el alto fijo
@@ -547,7 +550,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               width: _planButtonWidth,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                color:
+                    const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                 border: Border.all(
                   color: const Color.fromARGB(255, 151, 121, 215),
                 ),
@@ -661,13 +665,15 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                         },
                         child: Container(
                           constraints: const BoxConstraints(minWidth: 0),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: selected
                                 ? AppColors.planColor
                                 : Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.3)),
                           ),
                           child: Text(
                             name,
@@ -714,18 +720,21 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                         fontFamily: 'Inter-Regular',
                       ),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
+                        borderSide:
+                            BorderSide(color: Colors.white.withOpacity(0.8)),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
+                        borderSide:
+                            BorderSide(color: Colors.white.withOpacity(0.8)),
                         borderRadius: BorderRadius.circular(30),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: const BorderSide(color: Colors.white),
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                     ),
                   ),
                 ],
@@ -766,7 +775,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
+                  color:
+                      const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Padding(
@@ -803,10 +813,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
 
   Widget _buildSelectedDatesPreview() {
     if (_startDate == null) {
-      return const Text(
-        "Haz clic para seleccionar fecha/hora",
-        style: TextStyle(color: Colors.white70),
-      );
+      return const SizedBox.shrink(); // oculta el placeholder
     }
     final startDateText = _formatHumanReadableDateOnly(_startDate!);
     final startTimeText = (_allDay || _startTime == null)
@@ -1000,16 +1007,16 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
             ),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                _location!,
-                style: const TextStyle(color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  _location!,
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ),
@@ -1089,7 +1096,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     double height = 48,
   }) async {
     // Carga el SVG como String
-    final svgString = await DefaultAssetBundle.of(context).loadString(assetPath);
+    final svgString =
+        await DefaultAssetBundle.of(context).loadString(assetPath);
     // Reemplazamos fill por el color deseado
     final coloredSvgString = svgString.replaceAll(
       RegExp(r'fill="[^"]*"'),
@@ -1153,7 +1161,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   // -------------------------- AL CREAR EL PLAN ("Finish") ---------------------------
   // ----------------------------------------------------------------------------------
   Future<void> _onFinishPlan() async {
-    if (_selectedPlan == null && (_customPlan == null || _customPlan!.isEmpty)) {
+    if (_selectedPlan == null &&
+        (_customPlan == null || _customPlan!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Falta elegir tipo de plan.")),
       );
@@ -1185,7 +1194,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       // Armamos la fecha/hora con lo seleccionado
       DateTime dateTime;
       if (_allDay) {
-        dateTime = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        dateTime =
+            DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
       } else {
         dateTime = DateTime(
           _startDate!.year,
@@ -1237,6 +1247,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     }
   }
 }
+
 // MÉTODOS AUXILIARES GLOBALES (idénticos al original)
 // ***************************************************************************
 Future<List<PlanModel>> _fetchActivePlans(String userId) async {
@@ -1251,7 +1262,8 @@ Future<List<PlanModel>> _fetchActivePlans(String userId) async {
     activePlans.add(plan);
   }
   activePlans.sort(
-    (a, b) => (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()),
+    (a, b) => (a.createdAt ?? DateTime.now())
+        .compareTo(b.createdAt ?? DateTime.now()),
   );
   return activePlans;
 }
@@ -1328,7 +1340,8 @@ class _FrostedConfirmDialog extends StatelessWidget {
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: const ui.Color.fromARGB(255, 222, 219, 219)
                             .withOpacity(0.2),
