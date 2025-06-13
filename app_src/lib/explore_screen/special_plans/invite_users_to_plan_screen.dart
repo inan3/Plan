@@ -18,8 +18,6 @@ import '../../../main/colors.dart';
 const double kMainPopupWidth = 500;
 const double kMainPopupPadding = 20;
 
-const double kNewPlanPopupWidth = 380;
-const double kNewPlanPopupHeight = 750;
 const double kNewPlanPadding = 20;
 
 const double kPlanTypeSectionWidth = 320;
@@ -361,9 +359,8 @@ void _showNewPlanForInvitation(BuildContext context, String invitedUserId) {
                   EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
               child: SingleChildScrollView(
                 child: Container(
-                  // OJO: Quitamos el alto fijo
-                  width: kNewPlanPopupWidth,
-                  // height: kNewPlanPopupHeight, // <-- Eliminado
+                  width: MediaQuery.of(ctx).size.width * 0.9,
+                  height: MediaQuery.of(ctx).size.height * 0.9,
                   padding: const EdgeInsets.all(kNewPlanPadding),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
