@@ -338,25 +338,40 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           '¿Qué deseas ver?',
                           style: TextStyle(fontSize: 16, color: Colors.black),
                         ),
-                        Row(
-                          children: [
-                            Switch(
-                              value: !_onlyPlans,
-                              activeColor: AppColors.planColor,
-                              inactiveThumbColor: Colors.grey,
-                              onChanged: (v) {
-                                setState(() {
-                                  _onlyPlans = !v;
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _onlyPlans ? 'Solo planes' : 'Todo',
-                              style:
-                                  const TextStyle(fontSize: 14, color: Colors.black),
-                            ),
-                          ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                _onlyPlans ? 'Solo planes' : 'Todo',
+                                style: const TextStyle(
+                                    fontSize: 14, color: Colors.black),
+                              ),
+                              const SizedBox(width: 8),
+                              Switch(
+                                value: !_onlyPlans,
+                                activeColor: AppColors.planColor,
+                                inactiveThumbColor: Colors.grey,
+                                onChanged: (v) {
+                                  setState(() {
+                                    _onlyPlans = !v;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
