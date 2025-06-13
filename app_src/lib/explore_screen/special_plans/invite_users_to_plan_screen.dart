@@ -1313,17 +1313,29 @@ Future<void> _sendInvitationNotification({
   required String planType,
   required int specialPlan,
 }) async {
+  final senderSnap =
+      await FirebaseFirestore.instance.collection('users').doc(senderUid).get();
+  String senderName = 'Usuario';
+  String senderPhoto = '';
+  if (senderSnap.exists && senderSnap.data() != null) {
+    final data = senderSnap.data()!;
+    senderName = data['name'] ?? senderName;
+    senderPhoto = data['photoUrl'] ?? senderPhoto;
+  }
+
   final notiDoc = FirebaseFirestore.instance.collection('notifications').doc();
   await notiDoc.set({
-    "id": notiDoc.id,
-    "type": "invitation",
-    "senderId": senderUid,
-    "receiverId": receiverUid,
-    "planId": planId,
-    "planName": planType,
-    "specialPlan": specialPlan,
-    "timestamp": FieldValue.serverTimestamp(),
-    "read": false,
+    'id': notiDoc.id,
+    'type': 'invitation',
+    'senderId': senderUid,
+    'senderName': senderName,
+    'senderProfilePic': senderPhoto,
+    'receiverId': receiverUid,
+    'planId': planId,
+    'planType': planType,
+    'specialPlan': specialPlan,
+    'timestamp': FieldValue.serverTimestamp(),
+    'read': false,
   });
 }
 
