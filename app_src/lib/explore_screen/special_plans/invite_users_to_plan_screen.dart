@@ -22,11 +22,11 @@ const double kNewPlanPopupHeight = 750;
 const double kNewPlanPadding = 20;
 
 const double kPlanTypeSectionWidth   = 320;
-const double kPlanTypeDropdownWidth  = 310;
-const double kPlanTypeDropdownHeight = 365;
+const double kPlanTypeDropdownWidth  = 310; // unused
+const double kPlanTypeDropdownHeight = 365; // unused
 
-const double kDateTimeSectionWidth   = 300;
-const double kLocationContainerHeight = 160;
+const double kDateTimeSectionWidth   = 300; // unused
+const double kLocationContainerHeight = 240;
 
 /// ***************************************************************************
 /// CLASE PRINCIPAL InviteUsersToPlanScreen
@@ -425,6 +425,11 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
 
+  static const double _planButtonWidth = 260.0;
+  static const double _dropdownWidth = 320.0;
+  static const double _dropdownOffsetY = 44.0;
+  static const double _dropdownOffsetX = -18;
+
   // ========= Fecha/hora =========
   bool _allDay = false;
   bool _includeEndDate = false;
@@ -538,6 +543,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
+              width: _planButtonWidth,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
@@ -547,25 +553,24 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_selectedIconAsset != null)
-                    SvgPicture.asset(
-                      _selectedIconAsset!,
-                      width: 28,
-                      height: 28,
-                      color: Colors.white,
-                    ),
-                  if (_selectedIconData != null)
-                    Icon(_selectedIconData, color: Colors.white),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _customPlan ?? _selectedPlan ?? "Elige un plan",
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Inter-Regular',
+                        fontSize: 14,
+                        decoration: TextDecoration.none,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.white),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    color: Color.fromARGB(255, 227, 225, 231),
+                  ),
                 ],
               ),
             ),
@@ -605,122 +610,128 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               onTap: _closeDropdown,
             ),
           ),
-          Positioned(
-            child: CompositedTransformFollower(
-              link: _layerLink,
-              showWhenUnlinked: false,
-              offset: const Offset(0, 44),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.white.withOpacity(0.1),
-                    child: Container(
-                      width: kPlanTypeDropdownWidth,
-                      height: kPlanTypeDropdownHeight,
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 165, 159, 159)
-                            .withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          // Campo de texto para plan personalizado
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: TextField(
-                              onChanged: (value) {
-                                _customPlan = value;
-                                if (value.isNotEmpty) {
-                                  _selectedIconData = Icons.lightbulb;
-                                  _selectedIconAsset = null;
-                                }
-                              },
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                hintText: "Escribe tu plan...",
-                                hintStyle: const TextStyle(
-                                  color: Colors.white70,
-                                  decoration: TextDecoration.none,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderSide: BorderSide(
-                                      color: Colors.white.withOpacity(0.8)),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(
-                                      color: Colors.white.withOpacity(0.8)),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(
-                                      color: Colors.white, width: 1.5),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
-                              ),
+          CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            offset: const Offset(_dropdownOffsetX, _dropdownOffsetY),
+            child: _buildDropdownMenu(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownMenu() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(0.1),
+          child: Container(
+            width: _dropdownWidth,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    alignment: WrapAlignment.start,
+                    runAlignment: WrapAlignment.start,
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: plans.map((plan) {
+                      final String name = plan['name'];
+                      final bool selected = _selectedPlan == name;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedPlan = name;
+                            _selectedIconAsset = plan['icon'];
+                            _customPlan = null;
+                          });
+                          _closeDropdown();
+                        },
+                        child: Container(
+                          constraints: const BoxConstraints(minWidth: 0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.planColor
+                                : Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Inter-Regular',
+                              fontSize: 14,
+                              decoration: TextDecoration.none,
                             ),
                           ),
-                          const Divider(
-                            color: Colors.white30,
-                            thickness: 0.3,
-                            height: 0,
-                          ),
-                          // Listado de planes predefinidos
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: plans.length,
-                              itemBuilder: (context, index) {
-                                final item = plans[index];
-                                return Container(
-                                  decoration: const BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: Colors.white,
-                                        width: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                  child: ListTile(
-                                    dense: true,
-                                    leading: SvgPicture.asset(
-                                      item['icon'],
-                                      width: 28,
-                                      height: 28,
-                                      color: const Color.fromARGB(235, 229, 229, 252),
-                                    ),
-                                    title: Text(
-                                      item['name'],
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedPlan = item['name'];
-                                        _selectedIconAsset = item['icon'];
-                                        _selectedIconData = null;
-                                        _customPlan = null;
-                                      });
-                                      _closeDropdown();
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '- o -',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.none,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _customPlan = value;
+                        if (value.isNotEmpty) {
+                          _selectedPlan = null;
+                        }
+                      });
+                    },
+                    style: const TextStyle(
+                      color: Colors.white,
+                      decoration: TextDecoration.none,
+                      fontFamily: 'Inter-Regular',
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Escribe tu plan...',
+                      hintStyle: const TextStyle(
+                        color: Colors.white70,
+                        decoration: TextDecoration.none,
+                        fontFamily: 'Inter-Regular',
+                      ),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.white),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -736,10 +747,12 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         children: [
           const Center(
             child: Text(
-              "Fecha y hora del Plan",
+              "Fecha y hora del plan",
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
+                fontFamily: 'Inter-Regular',
                 decoration: TextDecoration.none,
               ),
             ),
@@ -755,20 +768,32 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                   color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icono-calendario.svg',
-                      width: 30,
-                      height: 30,
-                      color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: _includeEndDate ? 140 : 100,
                     ),
-                    const SizedBox(height: 8),
-                    _buildSelectedDatesPreview(),
-                  ],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icono-calendario.svg',
+                          width: 30,
+                          height: 30,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSelectedDatesPreview(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+            ),
             ),
           ),
         ],
@@ -884,20 +909,23 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 5),
         const Center(
           child: Text(
-            "Punto de encuentro del Plan",
+            "Punto de encuentro para el Plan",
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
               decoration: TextDecoration.none,
+              fontFamily: 'Inter-Regular',
             ),
           ),
         ),
         const SizedBox(height: 10),
         GestureDetector(
           onTap: _navigateToMeetingLocation,
-          child: (_location != null && _location!.isNotEmpty)
+          child: (_latitude != null && _longitude != null)
               ? _buildLocationPreview()
               : ClipRRect(
                   borderRadius: BorderRadius.circular(30),
@@ -905,14 +933,19 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                     filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                     child: Container(
                       height: kLocationContainerHeight,
-                      alignment: Alignment.center,
+                      width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: const Color.fromARGB(255, 124, 120, 120)
+                            .withOpacity(0.2),
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      child: const Text(
-                        "Toca aquí para eleccionar ubicación",
-                        style: TextStyle(color: Colors.white70),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icono-ubicacion.svg',
+                          width: 30,
+                          height: 30,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -967,16 +1000,16 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
             ),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Container(
-                color: Colors.black.withOpacity(0.3),
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  _location!,
-                  style: const TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                _location!,
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
               ),
             ),
           ),
@@ -1089,7 +1122,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         ),
         const SizedBox(height: 10),
         Container(
-          width: 400,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 124, 120, 120).withOpacity(0.2),
@@ -1100,10 +1132,17 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
             onChanged: (value) => _planDescription = value,
             decoration: const InputDecoration(
               hintText: "Describe brevemente tu plan...",
-              hintStyle: TextStyle(color: Colors.white70),
+              hintStyle: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Inter-Regular',
+                decoration: TextDecoration.none,
+              ),
               border: InputBorder.none,
             ),
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Inter-Regular',
+            ),
           ),
         ),
       ],
