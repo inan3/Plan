@@ -1855,25 +1855,20 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                         "Todo el día",
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
-                      GestureDetector(
-                        onTap: () {
+                      Switch(
+                        value: allDay,
+                        activeTrackColor: AppColors.planColor,
+                        activeColor: Colors.white,
+                        inactiveTrackColor: Colors.grey,
+                        inactiveThumbColor: Colors.white,
+                        onChanged: (value) {
                           setState(() {
-                            allDay = !allDay;
+                            allDay = value;
                             if (allDay) {
                               startTime = null;
                             }
                           });
                         },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: allDay
-                                ? AppColors.blue
-                                : Colors.grey.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -1886,26 +1881,21 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                         "Incluir fecha final",
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
-                      GestureDetector(
-                        onTap: () {
+                      Switch(
+                        value: includeEndDate,
+                        activeTrackColor: AppColors.planColor,
+                        activeColor: Colors.white,
+                        inactiveTrackColor: Colors.grey,
+                        inactiveThumbColor: Colors.white,
+                        onChanged: (value) {
                           setState(() {
-                            includeEndDate = !includeEndDate;
+                            includeEndDate = value;
                             if (!includeEndDate) {
                               endDate = null;
                               endTime = null;
                             }
                           });
                         },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: includeEndDate
-                                ? AppColors.blue
-                                : Colors.grey.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -1977,32 +1967,37 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context, {
-                        'allDay': allDay,
-                        'includeEndDate': includeEndDate,
-                        'startDate': startDate,
-                        'startTime': startTime,
-                        'endDate': endDate,
-                        'endTime': endTime,
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue,
-                    ),
-                    child: const Text(
-                      "Aceptar",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, null),
-                    child: const Text(
-                      "Cancelar",
-                      style: TextStyle(color: Colors.white70),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context, {
+                            'allDay': allDay,
+                            'includeEndDate': includeEndDate,
+                            'startDate': startDate,
+                            'startTime': startTime,
+                            'endDate': endDate,
+                            'endTime': endTime,
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blue,
+                        ),
+                        child: const Text(
+                          "Aceptar",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, null),
+                        child: const Text(
+                          "Cancelar",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
