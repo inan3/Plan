@@ -360,6 +360,21 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         ),
                       ],
                     ),
+                    const Divider(
+                      color: Colors.black,
+                      thickness: 0.2,
+                      height: 20,
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Planes',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 6,
