@@ -40,7 +40,10 @@ class InviteUsersToPlanScreen {
       barrierColor: Colors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (_, __, ___) {
-        return _InvitePlanPopup(invitedUserId: invitedUserId);
+        return _InvitePlanPopup(
+          invitedUserId: invitedUserId,
+          parentContext: context,
+        );
       },
       transitionBuilder: (context, anim1, anim2, child) {
         return FadeTransition(
@@ -63,8 +66,13 @@ class InviteUsersToPlanScreen {
 /// ***************************************************************************
 class _InvitePlanPopup extends StatefulWidget {
   final String invitedUserId;
-  const _InvitePlanPopup({Key? key, required this.invitedUserId})
-      : super(key: key);
+  final BuildContext parentContext;
+
+  const _InvitePlanPopup({
+    Key? key,
+    required this.invitedUserId,
+    required this.parentContext,
+  }) : super(key: key);
 
   @override
   State<_InvitePlanPopup> createState() => _InvitePlanPopupState();
@@ -164,13 +172,13 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     } else {
       Navigator.pop(context);
       Navigator.push(
-        context,
+        widget.parentContext,
         MaterialPageRoute(
           builder: (_) => InviteExistingPlanScreen(
             plans: activePlans,
             onPlanSelected: (plan) {
-              Navigator.pop(context);
-              _inviteUserToExistingPlan(plan);
+              Navigator.pop(widget.parentContext);
+              _inviteUserToExistingPlan(widget.parentContext, plan);
             },
           ),
         ),
@@ -302,7 +310,10 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                                               onConfirm: () {
                                                 Navigator.pop(context);
                                                 Navigator.pop(context);
-                                                _inviteUserToExistingPlan(plan);
+                                                _inviteUserToExistingPlan(
+                                                  widget.parentContext,
+                                                  plan,
+                                                );
                                               },
                                               onCancel: () {
                                                 Navigator.pop(context);
@@ -339,7 +350,10 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     );
   }
 
-  Future<void> _inviteUserToExistingPlan(PlanModel plan) async {
+  Future<void> _inviteUserToExistingPlan(
+    BuildContext ctx,
+    PlanModel plan,
+  ) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
     final invitedUid = widget.invitedUserId;
@@ -352,15 +366,15 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
       specialPlan: plan.special_plan,
     );
 
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    Navigator.pop(ctx);
+    ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(content: Text("Has invitado a tu plan: ${plan.type}")),
     );
   }
 
   void _onInviteNewPlan() {
     Navigator.pop(context);
-    _showNewPlanForInvitation(context, widget.invitedUserId);
+    _showNewPlanForInvitation(widget.parentContext, widget.invitedUserId);
   }
 }
 
