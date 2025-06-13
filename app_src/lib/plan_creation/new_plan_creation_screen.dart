@@ -291,10 +291,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           borderRadius: BorderRadius.circular(12),
           color: Colors.white.withOpacity(0.1),
           child: Container(
-            width: 265,
+            width: 320,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
+              color: AppColors.lightLilac,
               borderRadius: BorderRadius.circular(12),
             ),
             child: SingleChildScrollView(
@@ -1164,14 +1164,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             child: BackdropFilter(
                               filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                               child: Container(
-                                width: 260,
+                                width: 320,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 124, 120, 120)
-                                      .withOpacity(0.2),
+                                  color: AppColors.lightLilac,
                                   border: Border.all(
                                     color: const Color.fromARGB(255, 151, 121, 215),
                                   ),
