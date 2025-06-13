@@ -95,9 +95,14 @@ class MapScreenState extends State<MapScreen> {
     final plansLoader = PlansInMapScreen();
     final planMarkers =
         await plansLoader.loadPlansMarkers(context, filters: filters);
-    // Only display markers for users that have upcoming plans. Users without
-    // future plans should not appear on the map.
-    _allMarkers = [...planMarkers];
+    Set<Marker> markers = {...planMarkers};
+    final bool onlyPlans = filters?['onlyPlans'] == true;
+    if (!onlyPlans) {
+      final userMarkers =
+          await plansLoader.loadUsersWithoutPlansMarkers(context, filters: filters);
+      markers.addAll(userMarkers);
+    }
+    _allMarkers = markers.toList();
     _updateVisibleMarkers(_currentZoom);
   }
 
