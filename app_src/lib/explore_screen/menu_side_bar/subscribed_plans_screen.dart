@@ -79,8 +79,20 @@ class SubscribedPlansScreen extends StatelessWidget {
           .get();
       if (planDoc.exists) {
         final planData = planDoc.data() as Map<String, dynamic>;
-        planData['id'] = planDoc.id;
-        plans.add(PlanModel.fromMap(planData));
+        final List<dynamic> participants = planData['participants'] ?? [];
+        if (participants.contains(userId)) {
+          planData['id'] = planDoc.id;
+          plans.add(PlanModel.fromMap(planData));
+        } else {
+          final subs = await FirebaseFirestore.instance
+              .collection('subscriptions')
+              .where('userId', isEqualTo: userId)
+              .where('id', isEqualTo: planId)
+              .get();
+          for (var doc in subs.docs) {
+            await doc.reference.delete();
+          }
+        }
       }
     }
     return plans;
