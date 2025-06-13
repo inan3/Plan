@@ -340,6 +340,12 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         ),
                         Row(
                           children: [
+                            Text(
+                              _onlyPlans ? 'Solo planes' : 'Todo',
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black),
+                            ),
+                            const SizedBox(width: 8),
                             Switch(
                               value: !_onlyPlans,
                               activeColor: AppColors.planColor,
@@ -349,12 +355,6 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                                   _onlyPlans = !v;
                                 });
                               },
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _onlyPlans ? 'Solo planes' : 'Todo',
-                              style:
-                                  const TextStyle(fontSize: 14, color: Colors.black),
                             ),
                           ],
                         ),
