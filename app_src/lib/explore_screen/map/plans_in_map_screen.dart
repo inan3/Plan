@@ -208,12 +208,26 @@ class PlansInMapScreen {
   }) async {
     final qs = await FirebaseFirestore.instance.collection('users').get();
     final Set<Marker> markers = {};
+    final bool onlyFollowed = filters?['onlyFollowed'] == true;
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    final Set<String> followedUids = {};
+    if (onlyFollowed && currentUser != null) {
+      final snap = await FirebaseFirestore.instance
+          .collection('followed')
+          .where('userId', isEqualTo: currentUser.uid)
+          .get();
+      for (final doc in snap.docs) {
+        final fid = doc.data()['followedId'] as String?;
+        if (fid != null) followedUids.add(fid);
+      }
+    }
     for (var doc in qs.docs) {
       final data = doc.data() as Map<String, dynamic>?;
       if (data == null) continue;
       final uid = data['uid'] ?? '';
       if (uid.isEmpty) continue;
       if (_userIdsWithActivePlan.contains(uid)) continue;
+      if (onlyFollowed && !followedUids.contains(uid)) continue;
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
       if (lat == null || lng == null) continue;

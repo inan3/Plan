@@ -33,6 +33,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   String? _customPlan;
 
   bool _onlyFollowed = false;
+  bool _onlyPlans = false;
 
   String regionBusqueda = '';
   final TextEditingController _regionController = TextEditingController();
@@ -62,6 +63,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
         _selectedPlans = List<String>.from(init['selectedPlans']);
       }
       _onlyFollowed = init['onlyFollowed'] ?? false;
+      _onlyPlans = init['onlyPlans'] ?? false;
       regionBusqueda = init['regionBusqueda'] ?? '';
       edadRange = RangeValues(
         (init['edadMin'] ?? 18).toDouble(),
@@ -252,6 +254,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       'edadMax': edadRange.end,
       'genero': generoSeleccionado,
       'onlyFollowed': _onlyFollowed,
+      'onlyPlans': _onlyPlans,
       'userCoordinates': _userPosition != null
           ? {
               'lat': _userPosition!.latitude,
@@ -272,6 +275,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       edadRange = const RangeValues(18, 60);
       _selectedDate = null;
       _onlyFollowed = false;
+      _onlyPlans = false;
     });
   }
 
@@ -327,6 +331,36 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       thickness: 0.2,
                       height: 20,
                     ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '¿Qué deseas ver?',
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                        Row(
+                          children: [
+                            Switch(
+                              value: !_onlyPlans,
+                              activeColor: AppColors.planColor,
+                              inactiveThumbColor: Colors.grey,
+                              onChanged: (v) {
+                                setState(() {
+                                  _onlyPlans = !v;
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _onlyPlans ? 'Solo planes' : 'Todo',
+                              style:
+                                  const TextStyle(fontSize: 14, color: Colors.black),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
