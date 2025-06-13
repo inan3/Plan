@@ -292,23 +292,71 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           color: Colors.white.withOpacity(0.1),
           child: Container(
             width: 265,
-            height: 320,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 165, 159, 159).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              children: [
-                // TextField para escribir un plan personalizado
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: plans.map((plan) {
+                      final String name = plan['name'];
+                      final bool selected = _selectedPlan == name;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedPlan = name;
+                            _customPlan = null;
+                          });
+                          _closeDropdown();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.planColor
+                                : Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border:
+                                Border.all(color: Colors.white.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              color: selected ? Colors.white : Colors.white,
+                              fontFamily: 'Inter-Regular',
+                              fontSize: 14,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '- o -',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
                     onChanged: (value) {
-                      _customPlan = value;
-                      if (value.isNotEmpty) {
-                        _selectedIconData = Icons.lightbulb;
-                        _selectedIconAsset = null;
-                      }
+                      setState(() {
+                        _customPlan = value;
+                        if (value.isNotEmpty) {
+                          _selectedPlan = null;
+                        }
+                      });
                     },
                     style: const TextStyle(
                       color: Colors.white,
@@ -316,7 +364,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       fontFamily: 'Inter-Regular',
                     ),
                     decoration: InputDecoration(
-                      hintText: "Escribe tu plan...",
+                      hintText: 'Escribe tu plan...',
                       hintStyle: const TextStyle(
                         color: Colors.white70,
                         decoration: TextDecoration.none,
@@ -336,80 +384,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         borderSide: const BorderSide(color: Colors.white),
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                     ),
                   ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                  child: Center(
-                    child: Text(
-                      "Si no se te ocurre nada, echa un vistazo a los siguientes:",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.none,
-                        fontFamily: 'Inter-Regular',
-                      ),
-                    ),
-                  ),
-                ),
-                const Divider(
-                  color: Colors.white30,
-                  thickness: 0.3,
-                  height: 0,
-                ),
-                // Lista de planes sugeridos (plans en ../utils/plans_list.dart)
-                Expanded(
-                  child: ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: plans.length,
-                    itemBuilder: (context, index) => Container(
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Colors.white,
-                            width: 0.3,
-                          ),
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 4.0,
-                        ),
-                        dense: true,
-                        leading: SvgPicture.asset(
-                          plans[index]['icon'],
-                          width: 28,
-                          height: 28,
-                          color: const Color.fromARGB(235, 229, 229, 252),
-                        ),
-                        title: Text(
-                          plans[index]['name'],
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 218, 207, 207),
-                            decoration: TextDecoration.none,
-                            fontFamily: 'Inter-Regular',
-                          ),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedPlan = plans[index]['name'];
-                            _selectedIconAsset = plans[index]['icon'];
-                            _selectedIconData = null;
-                            _customPlan = null;
-                          });
-                          _closeDropdown();
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1201,36 +1181,17 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Row(
-                                        children: [
-                                          if (_selectedIconAsset != null)
-                                            SvgPicture.asset(
-                                              _selectedIconAsset!,
-                                              width: 28,
-                                              height: 28,
-                                              color: Colors.white,
-                                            ),
-                                          if (_selectedIconData != null)
-                                            Icon(_selectedIconData,
-                                                color: Colors.white),
-                                          if (_selectedIconAsset != null ||
-                                              _selectedIconData != null)
-                                            const SizedBox(width: 10),
-                                          Flexible(
-                                            child: Text(
-                                              _customPlan ??
-                                                  _selectedPlan ??
-                                                  "Elige un plan",
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontFamily: 'Inter-Regular',
-                                                fontSize: 14,
-                                                decoration: TextDecoration.none,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
+                                      child: Text(
+                                        _customPlan ??
+                                            _selectedPlan ??
+                                            "Elige un plan",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Inter-Regular',
+                                          fontSize: 14,
+                                          decoration: TextDecoration.none,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     const Icon(
@@ -1281,13 +1242,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           children: [
                             SliderTheme(
                               data: SliderTheme.of(context).copyWith(
-                                activeTrackColor: AppColors.blue,
+                                activeTrackColor: AppColors.planColor,
                                 inactiveTrackColor:
                                     const Color.fromARGB(235, 225, 225, 234)
                                         .withOpacity(0.3),
                                 trackHeight: 1,
-                                thumbColor: AppColors.blue,
-                                overlayColor: AppColors.blue.withOpacity(0.2),
+                                thumbColor: AppColors.planColor,
+                                overlayColor: AppColors.planColor.withOpacity(0.2),
                                 thumbShape:
                                     const RoundSliderThumbShape(enabledThumbRadius: 8),
                                 overlayShape:
@@ -1295,7 +1256,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               ),
                               child: RangeSlider(
                                 values: _ageRange,
-                                min: 0,
+                                min: 18,
                                 max: 100,
                                 divisions: 100,
                                 labels: RangeLabels(
@@ -1586,14 +1547,14 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ElevatedButton(
                         onPressed: _onCreateOrUpdatePlanPressed,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(235, 17, 19, 135),
+                          backgroundColor: AppColors.planColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: Text(
-                          widget.isEditMode ? "Actualizar Plan" : "Finalizar Plan",
+                          widget.isEditMode ? "Actualizar Plan" : "Crear Plan",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
