@@ -201,23 +201,39 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
       pageBuilder: (_, __, ___) {
         return Center(
           child: Container(
-            width: 600,
+            width: MediaQuery.of(context).size.width * 0.9,
             height: 400,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: Colors.white.withOpacity(0.3),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 13, 32, 53),
+                  Color.fromARGB(255, 72, 38, 38),
+                  Color(0xFF12232E),
+                ],
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black54,
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 12),
                 const Text(
-                  "Selecciona uno de tus planes",
+                  "Selecciona un plan",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    fontFamily: 'Inter-Regular',
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 const Divider(color: Colors.white54),
