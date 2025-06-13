@@ -150,7 +150,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   static const double _planButtonWidth = 260.0;
   static const double _dropdownWidth = 320.0;
   static const double _dropdownOffsetY = 44.0;
-  static const double _dropdownOffsetX = -((_dropdownWidth - _planButtonWidth) / 2);
+  static const double _dropdownOffsetX = -18;
 
   // Fecha y hora
   bool _allDay = false;

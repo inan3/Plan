@@ -31,7 +31,7 @@ class AppColors {
   static const Color joinPlanButton = Color.fromARGB(255, 38, 61, 236);
 
   // Nuevos colores para filtros
-  static const Color lightLilac = Color(0xFFF2E6FF);
+  static const Color lightLilac = Color.fromARGB(255, 247, 241, 254);
   static const Color searchLilac = Color(0xFFE6D3FF);
   static const Color lightTurquoise = Color(0xFFCCF1F0);
   static const Color greyBorder = Color(0xFFCCCCCC);
