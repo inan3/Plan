@@ -632,11 +632,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                               );
                             case 'invitation':
+                              final int specialPlan = data['specialPlan'] ?? 0;
+                              final String message = specialPlan == 1
+                                  ? "$senderName te ha invitado a un plan especial de $planType"
+                                  : "¡$senderName te está invitando a un plan! ¿Aceptas?";
                               return ListTile(
                                 leading: leadingAvatar,
-                                title: Text(
-                                  "$senderName te ha invitado a un plan especial de $planType",
-                                ),
+                                title: Text(message),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
                                 isThreeLine: true,

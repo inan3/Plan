@@ -100,12 +100,32 @@ class _InviteExistingPlanScreenState extends State<InviteExistingPlanScreen> {
                         activeColor: Colors.white,
                         inactiveTrackColor: Colors.grey,
                         inactiveThumbColor: Colors.white,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedId = value ? plan.id : null;
-                          });
+                        onChanged: (value) async {
                           if (value) {
-                            widget.onPlanSelected(plan);
+                            final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                        title: const Text('Invitar a un plan'),
+                                        content: const Text('¿Estás seguro de que quieres invitarle a un plan?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Cancelar'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: const Text('Aceptar'),
+                                          ),
+                                        ],
+                                      ));
+                            if (confirm == true) {
+                              setState(() => _selectedId = plan.id);
+                              widget.onPlanSelected(plan);
+                            } else {
+                              setState(() => _selectedId = null);
+                            }
+                          } else {
+                            setState(() => _selectedId = null);
                           }
                         },
                       ),

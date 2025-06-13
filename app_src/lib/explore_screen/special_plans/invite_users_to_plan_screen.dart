@@ -349,6 +349,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
       receiverUid: invitedUid,
       planId: plan.id,
       planType: plan.type,
+      specialPlan: plan.special_plan,
     );
 
     Navigator.pop(context);
@@ -1262,6 +1263,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         receiverUid: widget.invitedUserId,
         planId: planId,
         planType: (dataToSave["type"] ?? "Plan").toString(),
+        specialPlan: 1,
       );
 
       Navigator.pop(context);
@@ -1309,6 +1311,7 @@ Future<void> _sendInvitationNotification({
   required String receiverUid,
   required String planId,
   required String planType,
+  required int specialPlan,
 }) async {
   final notiDoc = FirebaseFirestore.instance.collection('notifications').doc();
   await notiDoc.set({
@@ -1318,6 +1321,7 @@ Future<void> _sendInvitationNotification({
     "receiverId": receiverUid,
     "planId": planId,
     "planName": planType,
+    "specialPlan": specialPlan,
     "timestamp": FieldValue.serverTimestamp(),
     "read": false,
   });
