@@ -92,25 +92,22 @@ class _InviteExistingPlanScreenState extends State<InviteExistingPlanScreen> {
                       hideJoinButton: true,
                     ),
                     Positioned(
-                      top: 8,
+                      top: 22,
                       right: 8,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedId = plan.id);
-                          widget.onPlanSelected(plan);
+                      child: Switch(
+                        value: isSelected,
+                        activeTrackColor: AppColors.planColor,
+                        activeColor: Colors.white,
+                        inactiveTrackColor: Colors.grey,
+                        inactiveThumbColor: Colors.white,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedId = value ? plan.id : null;
+                          });
+                          if (value) {
+                            widget.onPlanSelected(plan);
+                          }
                         },
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected ? AppColors.planColor : Colors.grey[300],
-                            border: Border.all(
-                              color: isSelected ? AppColors.planColor : Colors.grey,
-                              width: 2,
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                   ],
