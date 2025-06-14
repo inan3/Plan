@@ -1254,7 +1254,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         "location": _location ?? '',
         "latitude": _latitude ?? 0.0,
         "longitude": _longitude ?? 0.0,
-        "date": dateTime.toIso8601String(),
+        "start_timestamp": Timestamp.fromDate(dateTime),
         "createdAt": DateTime.now().toIso8601String(),
         "privateInvite": true,
         "invitedUsers": [widget.invitedUserId],

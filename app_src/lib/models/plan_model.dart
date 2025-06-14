@@ -175,10 +175,10 @@ class PlanModel {
       longitude: _parseDouble(map['longitude']),
       startTimestamp: map['start_timestamp'] != null
           ? (map['start_timestamp'] as Timestamp).toDate()
-          : null,
+          : _parseDate(map['date']),
       finishTimestamp: map['finish_timestamp'] != null
           ? (map['finish_timestamp'] as Timestamp).toDate()
-          : null,
+          : _parseDate(map['finish_date']),
       createdBy: map['createdBy'] ?? '',
       creatorName: map['creatorName'],
       creatorProfilePic: map['creatorProfilePic'],
