@@ -32,6 +32,7 @@ class PlanModel {
   String? visibility;
   String? iconAsset;
   List<String>? participants;
+  List<String>? removedParticipants;
   List<String>? invitedUsers;
   int likes;
   int special_plan;
@@ -78,6 +79,7 @@ class PlanModel {
     this.visibility,
     this.iconAsset,
     this.participants,
+    this.removedParticipants,
     this.likes = 0,
     this.special_plan = 0,
     this.views = 0,
@@ -138,6 +140,7 @@ class PlanModel {
       'visibility': visibility,
       'iconAsset': iconAsset,
       'participants': participants ?? [],
+      'removedParticipants': removedParticipants ?? [],
       'invitedUsers': invitedUsers ?? [],
       'likes': likes,
       'special_plan': special_plan,
@@ -185,6 +188,9 @@ class PlanModel {
       iconAsset: map['iconAsset'],
       participants: map['participants'] != null
           ? List<String>.from(map['participants'] as List)
+          : <String>[],
+      removedParticipants: map['removedParticipants'] != null
+          ? List<String>.from(map['removedParticipants'] as List)
           : <String>[],
       invitedUsers: map['invitedUsers'] != null
           ? List<String>.from(map['invitedUsers'] as List)
@@ -312,6 +318,7 @@ class PlanModel {
       visibility: visibility,
       iconAsset: iconAsset,
       participants: [],
+      removedParticipants: [],
       invitedUsers: [],
       likes: 0,
       special_plan: special_plan,

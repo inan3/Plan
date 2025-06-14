@@ -261,9 +261,12 @@ class PlanCardState extends State<PlanCard> {
   Future<void> _removeParticipant(String uid) async {
     try {
       await FirebaseFirestore.instance.collection('plans').doc(widget.plan.id).update({
-        'participants': FieldValue.arrayRemove([uid])
+        'participants': FieldValue.arrayRemove([uid]),
+        'removedParticipants': FieldValue.arrayUnion([uid])
       });
+    } catch (e) {}
 
+    try {
       final q = await FirebaseFirestore.instance
           .collection('subscriptions')
           .where('id', isEqualTo: widget.plan.id)
@@ -272,7 +275,9 @@ class PlanCardState extends State<PlanCard> {
       for (final d in q.docs) {
         await d.reference.delete();
       }
+    } catch (e) {}
 
+    try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
         final creatorDoc = await FirebaseFirestore.instance
@@ -296,8 +301,7 @@ class PlanCardState extends State<PlanCard> {
           'read': false,
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   // ─────────────────────────────────────────────────────────────
