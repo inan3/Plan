@@ -1,7 +1,7 @@
 import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
 import {onUserDeleted} from "firebase-functions/v2/identity";
 
 initializeApp();
@@ -210,6 +210,71 @@ export const sendPushOnPlanChat = onDocumentCreated(
         });
       }
     }
+  }
+);
+
+export const notifyRemovedParticipants = onDocumentWritten(
+  {region: "europe-west1", document: "/plans/{planId}"},
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const beforeList: string[] = before.participants ?? [];
+    const afterList: string[] = after.participants ?? [];
+    const removed = beforeList.filter((p) => !afterList.includes(p));
+    if (removed.length === 0) return;
+
+    const db = getFirestore();
+    const planId = event.params.planId;
+    const creatorId: string = after.createdBy;
+    const creatorSnap = await db.doc(`users/${creatorId}`).get();
+    const senderName: string = creatorSnap.get("name") ?? "";
+    const senderPhoto: string = creatorSnap.get("photoUrl") ?? "";
+    const planType: string = after.type || "Plan";
+
+    await Promise.all(
+      removed.map(async (uid) => {
+        await db.collection("notifications").add({
+          type: "removed_from_plan",
+          receiverId: uid,
+          senderId: creatorId,
+          planId,
+          planType,
+          senderProfilePic: senderPhoto,
+          senderName,
+          timestamp: FieldValue.serverTimestamp(),
+          read: false,
+        });
+
+        const userSnap = await db.doc(`users/${uid}`).get();
+        const tokens: string[] = userSnap.get("tokens") ?? [];
+        if (tokens.length === 0) return;
+        const resp = await getMessaging().sendEachForMulticast({
+          tokens,
+          notification: {
+            title: titles.removed_from_plan,
+            body: `${senderName} • ${planType}`,
+          },
+          android: {notification: {channelId: "plan_high"}},
+          data: {type: "removed_from_plan", planId, senderId: creatorId},
+        });
+        const invalid: string[] = [];
+        resp.responses.forEach((r, i) => {
+          if (
+            !r.success &&
+            r.error?.code === "messaging/registration-token-not-registered"
+          ) {
+            invalid.push(tokens[i]);
+          }
+        });
+        if (invalid.length) {
+          await userSnap.ref.update({
+            tokens: FieldValue.arrayRemove(...invalid),
+          });
+        }
+      })
+    );
   }
 );
 

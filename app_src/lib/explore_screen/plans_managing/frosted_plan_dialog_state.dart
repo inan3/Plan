@@ -938,7 +938,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             .get();
         final senderName = creatorDoc.data()?['name'] ?? '';
         final senderPhoto = creatorDoc.data()?['photoUrl'] ?? '';
-        final planType = widget.plan.type.isNotEmpty ? widget.plan.type : 'Plan';
+        final planType =
+            widget.plan.type.isNotEmpty ? widget.plan.type : 'Plan';
 
         await FirebaseFirestore.instance.collection('notifications').add({
           'type': 'removed_from_plan',
