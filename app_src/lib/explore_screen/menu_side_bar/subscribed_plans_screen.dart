@@ -226,6 +226,9 @@ class SubscribedPlansScreen extends StatelessWidget {
             }
           }
 
+          final String dateText =
+              plan.formattedDate(plan.startTimestamp);
+
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => _showFrostedPlanDialog(context, plan),
@@ -236,9 +239,16 @@ class SubscribedPlansScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 15),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.fromARGB(255, 13, 32, 53),
+                      Color.fromARGB(255, 72, 38, 38),
+                      Color(0xFF12232E),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(60),
-                  border: Border.all(color: Colors.blueAccent, width: 2),
                 ),
                 child: Row(
                   children: [
@@ -252,12 +262,23 @@ class SubscribedPlansScreen extends StatelessWidget {
                             color: Colors.amber,
                           ),
                         const SizedBox(width: 8),
-                        Text(
-                          plan.type,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              plan.type,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                color: Colors.amber,
+                              ),
+                            ),
+                            Text(
+                              dateText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
