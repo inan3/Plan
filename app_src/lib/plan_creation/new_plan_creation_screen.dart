@@ -153,7 +153,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   static const double _dropdownOffsetX = -18;
 
   // Fecha y hora
-  bool _allDay = false;
   bool _includeEndDate = false;
   DateTime? _startDate;
   TimeOfDay? _startTime;
@@ -534,7 +533,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       context: context,
       barrierDismissible: false,
       builder: (_) => DateSelectionDialog(
-        initialAllDay: _allDay,
         initialIncludeEndDate: _includeEndDate,
         initialStartDate: _startDate,
         initialStartTime: _startTime,
@@ -544,7 +542,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
     );
     if (result != null) {
       setState(() {
-        _allDay = result['allDay'] as bool;
         _includeEndDate = result['includeEndDate'] as bool;
         _startDate = result['startDate'] as DateTime?;
         _startTime = result['startTime'] as TimeOfDay?;
@@ -776,14 +773,14 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   Widget _buildSelectedDatesPreview() {
     if (_startDate == null) return const SizedBox.shrink();
     final startDateText = _formatHumanReadableDateOnly(_startDate!);
-    final startTimeText = (_allDay || _startTime == null)
-        ? "todo el día"
+    final startTimeText = _startTime == null
+        ? ''
         : "a las ${_formatHumanReadableTime(_startTime!)}";
 
     Widget? endDateWidget;
     if (_includeEndDate && _endDate != null) {
       final endDateText = _formatHumanReadableDateOnly(_endDate!);
-      final endTimeText = (_allDay || _endTime == null)
+      final endTimeText = _endTime == null
           ? ""
           : " a las ${_formatHumanReadableTime(_endTime!)}";
 
@@ -829,21 +826,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   color: Color.fromARGB(235, 155, 157, 251),
                 ),
               ),
-              if (!_allDay && _startTime != null) ...[
+              if (_startTime != null) ...[
                 const TextSpan(text: " "),
                 TextSpan(
                   text: startTimeText,
                   style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-              if (_allDay) ...[
-                const TextSpan(text: " "),
-                const TextSpan(
-                  text: "(todo el día)",
-                  style: TextStyle(
                     fontSize: 14,
                     color: Colors.white,
                   ),
@@ -1684,13 +1671,13 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
       // Fecha/hora de inicio
       DateTime finalStartDateTime;
-      if (_startDate != null) {
+      if (_startDate != null && _startTime != null) {
         finalStartDateTime = DateTime(
           _startDate!.year,
           _startDate!.month,
           _startDate!.day,
-          _allDay ? 0 : (_startTime?.hour ?? 0),
-          _allDay ? 0 : (_startTime?.minute ?? 0),
+          _startTime!.hour,
+          _startTime!.minute,
         );
       } else {
         final now = DateTime.now();
@@ -1704,8 +1691,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           _endDate!.year,
           _endDate!.month,
           _endDate!.day,
-          _allDay ? 0 : (_endTime?.hour ?? 0),
-          _allDay ? 0 : (_endTime?.minute ?? 0),
+          _endTime?.hour ?? 0,
+          _endTime?.minute ?? 0,
         );
       } else {
         finalFinishDateTime = DateTime(
@@ -1788,7 +1775,6 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
 /// Popup de selección de fecha/hora (no cambia en modo edición)
 class DateSelectionDialog extends StatefulWidget {
-  final bool initialAllDay;
   final bool initialIncludeEndDate;
   final DateTime? initialStartDate;
   final TimeOfDay? initialStartTime;
@@ -1797,7 +1783,6 @@ class DateSelectionDialog extends StatefulWidget {
 
   const DateSelectionDialog({
     Key? key,
-    required this.initialAllDay,
     required this.initialIncludeEndDate,
     required this.initialStartDate,
     required this.initialStartTime,
@@ -1810,7 +1795,6 @@ class DateSelectionDialog extends StatefulWidget {
 }
 
 class _DateSelectionDialogState extends State<DateSelectionDialog> {
-  late bool allDay;
   late bool includeEndDate;
   DateTime? startDate;
   TimeOfDay? startTime;
@@ -1820,7 +1804,6 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
   @override
   void initState() {
     super.initState();
-    allDay = widget.initialAllDay;
     includeEndDate = widget.initialIncludeEndDate;
     startDate = widget.initialStartDate;
     startTime = widget.initialStartTime;
@@ -1855,32 +1838,6 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Todo el día
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Todo el día",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                      Switch(
-                        value: allDay,
-                        activeTrackColor: AppColors.planColor,
-                        activeColor: Colors.white,
-                        inactiveTrackColor: Colors.grey,
-                        inactiveThumbColor: Colors.white,
-                        onChanged: (value) {
-                          setState(() {
-                            allDay = value;
-                            if (allDay) {
-                              startTime = null;
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
                   // Incluir fecha final
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1927,15 +1884,14 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          if (!allDay)
-                            GestureDetector(
-                              onTap: _pickStartTime,
-                              child: _buildFrostedGlassContainer(
-                                startTime == null
-                                    ? "Elige Hora"
-                                    : _formatNumericTime(startTime!),
-                              ),
+                          GestureDetector(
+                            onTap: _pickStartTime,
+                            child: _buildFrostedGlassContainer(
+                              startTime == null
+                                  ? "Elige Hora"
+                                  : _formatNumericTime(startTime!),
                             ),
+                          ),
                         ],
                       ),
                     ],
@@ -1988,8 +1944,24 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                       const SizedBox(width: 10),
                       ElevatedButton(
                         onPressed: () {
+                          if (startDate == null || startTime == null) {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text('Error'),
+                                content: const Text(
+                                    'Debes elegir la fecha y hora de inicio.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Aceptar'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            return;
+                          }
                           Navigator.pop(context, {
-                            'allDay': allDay,
                             'includeEndDate': includeEndDate,
                             'startDate': startDate,
                             'startTime': startTime,
@@ -2099,16 +2071,14 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
     );
     if (pickedTime != null) {
       // Asegurarnos de que la fecha final sea posterior a la inicial
-      if (startDate != null && endDate != null) {
-        final startDateTime = (allDay || startTime == null)
-            ? DateTime(startDate!.year, startDate!.month, startDate!.day)
-            : DateTime(
-                startDate!.year,
-                startDate!.month,
-                startDate!.day,
-                startTime!.hour,
-                startTime!.minute,
-              );
+      if (startDate != null && startTime != null && endDate != null) {
+        final startDateTime = DateTime(
+          startDate!.year,
+          startDate!.month,
+          startDate!.day,
+          startTime!.hour,
+          startTime!.minute,
+        );
         final endDateTime = DateTime(
           endDate!.year,
           endDate!.month,
