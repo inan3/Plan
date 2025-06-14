@@ -34,6 +34,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Tipos de notificación que nos interesan
       'join_request',
       'invitation',
+      'invitation_accepted',
+      'invitation_rejected',
       'join_accepted',
       'join_rejected',
       'follow_request',
@@ -199,7 +201,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           acceptorDoc.exists ? (acceptorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
-        'type': 'join_accepted',
+        'type': 'invitation_accepted',
         'receiverId': creatorId,
         'senderId': currentUserId,
         'planId': planId,
@@ -244,7 +246,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           rejectorDoc.exists ? (rejectorDoc.data()!['name'] ?? '') : '';
 
       await _firestore.collection('notifications').add({
-        'type': 'join_rejected',
+        'type': 'invitation_rejected',
         'receiverId': creatorId,
         'senderId': widget.currentUserId,
         'planId': planId,
@@ -663,6 +665,38 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 trailing: acceptRejectButtons(
                                   onAccept: () => _handleAcceptInvitation(doc),
                                   onReject: () => _handleRejectInvitation(doc),
+                                ),
+                              );
+                            case 'invitation_accepted':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "¡$senderName ha aceptado tu invitación!",
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'invitation_rejected':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "¡$senderName ha rechazado tu invitación!",
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
                                 ),
                               );
                             case 'follow_request':

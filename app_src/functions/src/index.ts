@@ -9,6 +9,8 @@ initializeApp();
 const titles: Record<string, string> = {
   join_request: "Solicitud de unión",
   invitation: "Invitación a un plan",
+  invitation_accepted: "Invitación aceptada",
+  invitation_rejected: "Invitación rechazada",
   join_accepted: "Solicitud aceptada",
   join_rejected: "Solicitud rechazada",
   follow_request: "Solicitud de follow",
