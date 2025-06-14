@@ -131,6 +131,31 @@ class SubscribedPlansScreen extends StatelessWidget {
                     'invitedUsers': FieldValue.arrayRemove([userId])
                   });
 
+                  try {
+                    final userDoc = await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(userId)
+                        .get();
+                    final String leaverName =
+                        userDoc.data()?['name'] ?? 'Usuario';
+                    final String leaverPhoto =
+                        userDoc.data()?['photoUrl'] ?? '';
+
+                    await FirebaseFirestore.instance
+                        .collection('notifications')
+                        .add({
+                      'type': 'plan_left',
+                      'receiverId': plan.createdBy,
+                      'senderId': userId,
+                      'senderName': leaverName,
+                      'senderProfilePic': leaverPhoto,
+                      'planId': plan.id,
+                      'planType': plan.type,
+                      'timestamp': FieldValue.serverTimestamp(),
+                      'read': false,
+                    });
+                  } catch (_) {}
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Has abandonado el plan ${plan.type}.'),

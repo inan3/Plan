@@ -17,6 +17,7 @@ const titles: Record<string, string> = {
   new_plan_published: "Nuevo plan publicado",
   plan_chat_message: "Nuevo comentario",
   welcome: "Bienvenido a Plan",
+  plan_left: "Participante ha abandonado",
 };
 
 export const sendPushOnNotification = onDocumentCreated(
