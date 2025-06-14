@@ -1,7 +1,7 @@
 import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onUserDeleted} from "firebase-functions/v2/identity";
 
 initializeApp();
@@ -210,6 +210,44 @@ export const sendPushOnPlanChat = onDocumentCreated(
         });
       }
     }
+  }
+);
+
+export const notifyRemovedParticipants = onDocumentUpdated(
+  {region: "europe-west1", document: "/plans/{planId}"},
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const beforeList: string[] = before.participants ?? [];
+    const afterList: string[] = after.participants ?? [];
+    const removed = beforeList.filter((p) => !afterList.includes(p));
+    if (removed.length === 0) return;
+
+    const db = getFirestore();
+    const planId = event.params.planId;
+    const creatorId: string = after.createdBy;
+    const creatorSnap = await db.doc(`users/${creatorId}`).get();
+    const senderName: string = creatorSnap.get("name") ?? "";
+    const senderPhoto: string = creatorSnap.get("photoUrl") ?? "";
+    const planType: string = after.type || "Plan";
+
+    await Promise.all(
+      removed.map((uid) =>
+        db.collection("notifications").add({
+          type: "removed_from_plan",
+          receiverId: uid,
+          senderId: creatorId,
+          planId,
+          planType,
+          senderProfilePic: senderPhoto,
+          senderName,
+          timestamp: FieldValue.serverTimestamp(),
+          read: false,
+        })
+      )
+    );
   }
 );
 
