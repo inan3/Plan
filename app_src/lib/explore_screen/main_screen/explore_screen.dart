@@ -503,6 +503,27 @@ class ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
+  Future<bool> _handleBackPress() async {
+    if (Navigator.of(context).canPop()) {
+      return true;
+    }
+
+    if (isMenuOpen) {
+      _menuKey.currentState?.toggleMenu();
+      return false;
+    }
+
+    if (_currentIndex != 0) {
+      setState(() {
+        _currentIndex = 0;
+        _selectedIconIndex = 0;
+      });
+      return false;
+    }
+
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -510,12 +531,14 @@ class ExploreScreenState extends State<ExploreScreen> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
       ),
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
+      child: WillPopScope(
+        onWillPop: _handleBackPress,
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
                 Color.fromARGB(255, 245, 239, 240),
                 Color.fromARGB(255, 250, 249, 251),
               ],
