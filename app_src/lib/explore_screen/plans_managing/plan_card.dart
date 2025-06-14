@@ -277,31 +277,7 @@ class PlanCardState extends State<PlanCard> {
       }
     } catch (e) {}
 
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser != null) {
-        final creatorDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-        final senderName = creatorDoc.data()?['name'] ?? '';
-        final senderPhoto = creatorDoc.data()?['photoUrl'] ?? '';
-        final planType =
-            widget.plan.type.isNotEmpty ? widget.plan.type : 'Plan';
-
-        await FirebaseFirestore.instance.collection('notifications').add({
-          'type': 'removed_from_plan',
-          'receiverId': uid,
-          'senderId': currentUser.uid,
-          'planId': widget.plan.id,
-          'planType': planType,
-          'senderProfilePic': senderPhoto,
-          'senderName': senderName,
-          'timestamp': FieldValue.serverTimestamp(),
-          'read': false,
-        });
-      }
-    } catch (e) {}
+    // La notificación y el push serán generados por Cloud Functions
   }
 
   // ─────────────────────────────────────────────────────────────

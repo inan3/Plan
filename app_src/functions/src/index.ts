@@ -40,7 +40,7 @@ const titles: Record<string, string> = {
   plan_chat_message: "Nuevo comentario",
   welcome: "Bienvenido a Plan",
   plan_left: "Participante ha abandonado",
-  removed_from_plan: "Eliminado del plan",
+  removed_from_plan: "Has sido eliminado de un plan",
 };
 
 export const sendPushOnNotification = onDocumentCreated(
@@ -257,36 +257,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
           read: false,
         });
 
-        const userSnap = await db.doc(`users/${uid}`).get();
-        const tokens: string[] = userSnap.get("tokens") ?? [];
-        if (tokens.length === 0) return;
-
-        const resp = await getMessaging().sendEachForMulticast({
-          tokens,
-          notification: {
-            title: titles.removed_from_plan,
-            body: `${senderName} te ha eliminado de su plan.`,
-          },
-          android: {notification: {channelId: "plan_high"}},
-          data: {type: "removed_from_plan", planId, senderId: creatorId},
-        });
-
-        const invalid: string[] = [];
-        resp.responses.forEach((r, i) => {
-          if (
-            !r.success &&
-            r.error?.code ===
-              "messaging/registration-token-not-registered"
-          ) {
-            invalid.push(tokens[i]);
-          }
-        });
-
-        if (invalid.length) {
-          await userSnap.ref.update({
-            tokens: FieldValue.arrayRemove(...invalid),
-          });
-        }
+        // El push se enviará mediante sendPushOnNotification
       })
     );
   }
