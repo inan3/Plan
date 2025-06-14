@@ -65,13 +65,21 @@ service cloud.firestore {
         && request.auth.uid == resource.data.blockerId;
     }
 
+    function isPlanCreator(planId) {
+      return request.auth != null
+        && get(/databases/$(database)/documents/plans/$(planId)).data.createdBy ==
+          request.auth.uid;
+    }
+
     match /subscriptions/{docId} {
       allow create: if request.auth != null
         && (request.auth.uid == request.resource.data.userId
-            || request.auth.uid == request.resource.data.createdBy);
+            || request.auth.uid == request.resource.data.createdBy
+            || isPlanCreator(request.resource.data.id));
       allow read, update, delete: if request.auth != null
         && (request.auth.uid == resource.data.userId
-            || request.auth.uid == resource.data.createdBy);
+            || request.auth.uid == resource.data.createdBy
+            || isPlanCreator(resource.data.id));
     }
 
     match /reports/{docId} {
