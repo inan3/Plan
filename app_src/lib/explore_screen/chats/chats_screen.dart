@@ -417,6 +417,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true, // para ocupar 90% de altura
+      isDismissible: true, // cerrar al tocar fuera
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return DraggableScrollableSheet(
