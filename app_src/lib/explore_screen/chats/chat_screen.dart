@@ -61,7 +61,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   bool _localeInitialized = false;
 
   // Para notificaciones en este chat (manejo local, sin persistir)
-  bool _notificationsEnabled = false;
+  // Por defecto se encuentran habilitadas hasta que el usuario decida lo contrario
+  bool _notificationsEnabled = true;
 
   // Para saber si yo tengo bloqueado a mi chatPartner
   bool _isPartnerBlocked = false;
