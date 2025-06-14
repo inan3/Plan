@@ -144,7 +144,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                     await FirebaseFirestore.instance
                         .collection('notifications')
                         .add({
-                      'type': 'plan_left',
+                      'type': 'special_plan_left',
                       'receiverId': plan.createdBy,
                       'senderId': userId,
                       'senderName': leaverName,
@@ -263,6 +263,7 @@ class SubscribedPlansScreen extends StatelessWidget {
                           ),
                         const SizedBox(width: 8),
                         Column(
+                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -289,6 +290,27 @@ class SubscribedPlansScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         participantAvatar,
                       ],
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => _confirmDeletePlan(context, plan),
+                      child: ClipOval(
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.exit_to_app,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

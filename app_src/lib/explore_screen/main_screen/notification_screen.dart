@@ -814,6 +814,38 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       _handleDeleteNotification(doc),
                                 ),
                               );
+                            case 'special_plan_left':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "$senderName ha decidido abandonar el plan especial.",
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'special_plan_deleted':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "$senderName ha eliminado el plan especial.",
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
                             case 'removed_from_plan':
                               return ListTile(
                                 leading: leadingAvatar,
