@@ -69,7 +69,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
   // Otras banderas
   bool isFollowing = false;
-  bool _notificationsEnabled = false;
+  // Por defecto las notificaciones individuales están activadas
+  bool _notificationsEnabled = true;
   bool _isRequestPending = false;
 
   // Future para cargar todo
