@@ -351,11 +351,12 @@ class _UsersGridState extends State<UsersGrid> {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  SvgPicture.asset(
-                                    'assets/verificado.svg',
+                                  Image.asset(
+                                    _getPrivilegeIcon(
+                                        userData['privilegeLevel']?.toString() ??
+                                            'Básico'),
                                     width: 14,
                                     height: 14,
-                                    color: Colors.blueAccent,
                                   ),
                                 ],
                               ),
@@ -485,5 +486,19 @@ class _UsersGridState extends State<UsersGrid> {
         ),
       ),
     );
+  }
+
+  String _getPrivilegeIcon(String level) {
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
+        return 'assets/icono-usuario-premium.png';
+      case 'golden':
+        return 'assets/icono-usuario-golden.png';
+      case 'vip':
+        return 'assets/icono-usuario-vip.png';
+      default:
+        return 'assets/icono-usuario-basico.png';
+    }
   }
 }
