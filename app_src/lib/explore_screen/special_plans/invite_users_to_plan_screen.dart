@@ -480,7 +480,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   static const double _dropdownOffsetX = 12;
 
   // ========= Fecha/hora =========
-  bool _allDay = false;
   bool _includeEndDate = false;
   DateTime? _startDate;
   TimeOfDay? _startTime;
@@ -863,14 +862,14 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       return const SizedBox.shrink(); // oculta el placeholder
     }
     final startDateText = _formatHumanReadableDateOnly(_startDate!);
-    final startTimeText = (_allDay || _startTime == null)
-        ? "todo el día"
+    final startTimeText = _startTime == null
+        ? ''
         : "a las ${_formatHumanReadableTime(_startTime!)}";
 
     Widget? endDateWidget;
     if (_includeEndDate && _endDate != null) {
       final endDateText = _formatHumanReadableDateOnly(_endDate!);
-      final endTimeText = (_allDay || _endTime == null)
+      final endTimeText = _endTime == null
           ? ""
           : " a las ${_formatHumanReadableTime(_endTime!)}";
       endDateWidget = Text(
@@ -883,8 +882,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     return Column(
       children: [
         Text(
-          "$startDateText${_allDay ? ' (todo el día)' : ''}"
-          "${(!_allDay && _startTime != null) ? ' $startTimeText' : ''}",
+          "$startDateText${_startTime != null ? ' $startTimeText' : ''}",
           style: const TextStyle(color: Colors.white),
           textAlign: TextAlign.center,
         ),
@@ -935,7 +933,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => DateSelectionDialog(
-        initialAllDay: _allDay,
         initialIncludeEndDate: _includeEndDate,
         initialStartDate: _startDate,
         initialStartTime: _startTime,
@@ -945,7 +942,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
     ).then((result) {
       if (result != null) {
         setState(() {
-          _allDay = result['allDay'] as bool;
           _includeEndDate = result['includeEndDate'] as bool;
           _startDate = result['startDate'] as DateTime?;
           _startTime = result['startTime'] as TimeOfDay?;
@@ -1215,7 +1211,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       );
       return;
     }
-    if (_startDate == null) {
+    if (_startDate == null || _startTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Falta elegir la fecha/hora del plan.")),
       );
@@ -1239,19 +1235,13 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
 
     try {
       // Armamos la fecha/hora con lo seleccionado
-      DateTime dateTime;
-      if (_allDay) {
-        dateTime =
-            DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
-      } else {
-        dateTime = DateTime(
-          _startDate!.year,
-          _startDate!.month,
-          _startDate!.day,
-          _startTime?.hour ?? 0,
-          _startTime?.minute ?? 0,
-        );
-      }
+      DateTime dateTime = DateTime(
+        _startDate!.year,
+        _startDate!.month,
+        _startDate!.day,
+        _startTime!.hour,
+        _startTime!.minute,
+      );
 
       final planDoc = FirebaseFirestore.instance.collection('plans').doc();
       final planId = planDoc.id;
