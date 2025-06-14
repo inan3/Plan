@@ -2,9 +2,27 @@ import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 
-import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
+import {
+  onDocumentCreated,
+  onDocumentWritten,
+} from "firebase-functions/v2/firestore";
 
 import * as functions from "firebase-functions/v1";
+
+import type {DocumentSnapshot} from "firebase-admin/firestore";
+
+interface CreatedEvent<T = DocumentSnapshot> {
+  data?: T;
+  params: Record<string, string>;
+}
+
+interface WrittenEvent<T = DocumentSnapshot> {
+  data?: {
+    before?: T;
+    after?: T;
+  };
+  params: Record<string, string>;
+}
 
 initializeApp();
 
@@ -27,7 +45,7 @@ const titles: Record<string, string> = {
 
 export const sendPushOnNotification = onDocumentCreated(
   {region: "europe-west1", document: "/notifications/{id}"},
-  async (event: any) => {
+  async (event: CreatedEvent) => {
     const n = event.data?.data();
     if (!n || n.senderId === n.receiverId) return;
 
@@ -87,14 +105,14 @@ export const cleanupUserData = functions
     const db = getFirestore();
     try {
       await db.doc(`users/${uid}`).delete();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Failed to clean user data", e);
     }
   });
 
 export const sendPushOnMessage = onDocumentCreated(
   {region: "europe-west1", document: "/messages/{id}"},
-  async (event: any) => {
+  async (event: CreatedEvent) => {
     const m = event.data?.data();
     if (!m || m.senderId === m.receiverId) return;
 
@@ -145,7 +163,7 @@ export const sendPushOnMessage = onDocumentCreated(
 
 export const sendPushOnPlanChat = onDocumentCreated(
   {region: "europe-west1", document: "/plan_chat/{id}"},
-  async (event: any) => {
+  async (event: CreatedEvent) => {
     const m = event.data?.data();
     if (!m) return;
 
@@ -205,7 +223,7 @@ export const sendPushOnPlanChat = onDocumentCreated(
 
 export const notifyRemovedParticipants = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
-  async (event: any) => {
+  async (event: WrittenEvent) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     if (!before || !after) return;
@@ -276,7 +294,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
 
 export const createWelcomeNotification = onDocumentCreated(
   {region: "europe-west1", document: "/users/{userId}"},
-  async (event: any) => {
+  async (event: CreatedEvent) => {
     const userId = event.params.userId;
     const data = event.data?.data();
     if (!data) return;
