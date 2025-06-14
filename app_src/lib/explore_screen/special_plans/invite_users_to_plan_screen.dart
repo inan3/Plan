@@ -358,6 +358,11 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
     if (currentUser == null) return;
     final invitedUid = widget.invitedUserId;
 
+    // Añade el UID invitado al array 'invitedUsers' del plan
+    await FirebaseFirestore.instance.collection('plans').doc(plan.id).update({
+      'invitedUsers': FieldValue.arrayUnion([invitedUid]),
+    });
+
     await _sendInvitationNotification(
       senderUid: currentUser.uid,
       receiverUid: invitedUid,
@@ -1262,6 +1267,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         "date": dateTime.toIso8601String(),
         "createdAt": DateTime.now().toIso8601String(),
         "privateInvite": true,
+        "invitedUsers": [widget.invitedUserId],
         "likes": 0,
         "views": 0,
         "viewedBy": [],

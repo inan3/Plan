@@ -162,13 +162,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
       // Elimina la notificación
       await doc.reference.delete();
 
-      // Agrega al usuario actual al plan
+      // Agrega al usuario actual al plan solo si estaba invitado
       final planRef = _firestore.collection('plans').doc(planId);
       final planDoc = await planRef.get();
       if (!planDoc.exists) return;
 
+      final List<dynamic> invited = planDoc.data()?["invitedUsers"] ?? [];
+      if (!invited.contains(currentUserId)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No estás invitado a este plan.')),
+        );
+        return;
+      }
+
       await planRef.update({
         'participants': FieldValue.arrayUnion([currentUserId]),
+        'invitedUsers': FieldValue.arrayRemove([currentUserId]),
       });
 
       // Crea la suscripción (guardamos también el id del plan)
@@ -215,9 +224,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final planId = data['planId'] as String;
       final creatorId = data['senderId'] as String;
       final planType = data['planType'] ?? data['planName'] ?? 'Plan';
+      final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
       // Elimina la notificación
       await doc.reference.delete();
+
+      // Elimina al usuario de la lista de invitados
+      await _firestore.collection('plans').doc(planId).update({
+        'invitedUsers': FieldValue.arrayRemove([currentUserId]),
+      });
 
       // Notifica al creador
       final rejectorDoc =

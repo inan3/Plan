@@ -32,6 +32,7 @@ class PlanModel {
   String? visibility;
   String? iconAsset;
   List<String>? participants;
+  List<String>? invitedUsers;
   int likes;
   int special_plan;
   int views;
@@ -86,6 +87,7 @@ class PlanModel {
     this.originalImages,
     this.videoUrl,
     this.creatorProfilePrivacy,
+    this.invitedUsers,
 
     // Campo nuevo
     this.typeLowercase,
@@ -136,6 +138,7 @@ class PlanModel {
       'visibility': visibility,
       'iconAsset': iconAsset,
       'participants': participants ?? [],
+      'invitedUsers': invitedUsers ?? [],
       'likes': likes,
       'special_plan': special_plan,
       'views': views,
@@ -182,6 +185,9 @@ class PlanModel {
       iconAsset: map['iconAsset'],
       participants: map['participants'] != null
           ? List<String>.from(map['participants'] as List)
+          : <String>[],
+      invitedUsers: map['invitedUsers'] != null
+          ? List<String>.from(map['invitedUsers'] as List)
           : <String>[],
       likes: map['likes'] ?? 0,
       special_plan: map['special_plan'] ?? 0,
@@ -306,6 +312,7 @@ class PlanModel {
       visibility: visibility,
       iconAsset: iconAsset,
       participants: [],
+      invitedUsers: [],
       likes: 0,
       special_plan: special_plan,
       views: 0,
