@@ -391,55 +391,65 @@ class MyPlansScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
-                final currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser == null) return;
+                try {
+                  final currentUser = FirebaseAuth.instance.currentUser;
+                  if (currentUser == null) return;
 
-                final planDoc = await FirebaseFirestore.instance
-                    .collection('plans')
-                    .doc(plan.id)
-                    .get();
-                final participantUids = List<String>.from(
-                    planDoc.data()?['participants'] ?? []);
-                participantUids.remove(currentUser.uid);
+                  final planDoc = await FirebaseFirestore.instance
+                      .collection('plans')
+                      .doc(plan.id)
+                      .get();
+                  final participantUids = List<String>.from(
+                      planDoc.data()?['participants'] ?? []);
+                  participantUids.remove(currentUser.uid);
 
-                final userSnap = await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(currentUser.uid)
-                    .get();
-                final senderName = userSnap.data()?['name'] ?? 'Usuario';
-                final senderPhoto = userSnap.data()?['photoUrl'] ?? '';
+                  final userSnap = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUser.uid)
+                      .get();
+                  final senderName = userSnap.data()?['name'] ?? 'Usuario';
+                  final senderPhoto = userSnap.data()?['photoUrl'] ?? '';
 
-                for (final uid in participantUids) {
+                  for (final uid in participantUids) {
+                    await FirebaseFirestore.instance
+                        .collection('notifications')
+                        .add({
+                      'type': 'special_plan_deleted',
+                      'receiverId': uid,
+                      'senderId': currentUser.uid,
+                      'senderName': senderName,
+                      'senderProfilePic': senderPhoto,
+                      'planId': plan.id,
+                      'planType': plan.type,
+                      'timestamp': FieldValue.serverTimestamp(),
+                      'read': false,
+                    });
+                  }
+
+                  final subs = await FirebaseFirestore.instance
+                      .collection('subscriptions')
+                      .where('id', isEqualTo: plan.id)
+                      .get();
+                  for (var doc in subs.docs) {
+                    await doc.reference.delete();
+                  }
+
                   await FirebaseFirestore.instance
-                      .collection('notifications')
-                      .add({
-                    'type': 'special_plan_deleted',
-                    'receiverId': uid,
-                    'senderId': currentUser.uid,
-                    'senderName': senderName,
-                    'senderProfilePic': senderPhoto,
-                    'planId': plan.id,
-                    'planType': plan.type,
-                    'timestamp': FieldValue.serverTimestamp(),
-                    'read': false,
-                  });
-                }
+                      .collection('plans')
+                      .doc(plan.id)
+                      .delete();
 
-                await FirebaseFirestore.instance
-                    .collection('plans')
-                    .doc(plan.id)
-                    .delete();
-                final subs = await FirebaseFirestore.instance
-                    .collection('subscriptions')
-                    .where('id', isEqualTo: plan.id)
-                    .get();
-                for (var doc in subs.docs) {
-                  await doc.reference.delete();
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Plan ${plan.type} eliminado.')),
+                  );
+                } catch (e) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Error al eliminar el plan.')),
+                  );
                 }
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Plan ${plan.type} eliminado.')),
-                );
               },
               child: const Text("Eliminar"),
             ),
