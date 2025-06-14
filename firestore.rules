@@ -15,7 +15,7 @@ service cloud.firestore {
       allow read, create: if request.auth != null;
       allow update, delete: if request.auth.uid == resource.data.createdBy
         || (request.auth.uid in resource.data.invitedUsers
-            && request.resource.data.keys().hasOnly(['participants', 'invitedUsers']));
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'invitedUsers']));
     }
 
     match /notifications/{id} {
