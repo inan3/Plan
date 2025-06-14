@@ -632,11 +632,12 @@ class PlanCardState extends State<PlanCard> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      SvgPicture.asset(
-                        'assets/verificado.svg',
+                      Image.asset(
+                        _getPrivilegeIcon(
+                            widget.userData['privilegeLevel']?.toString() ??
+                                'Básico'),
                         width: 14,
                         height: 14,
-                        color: Colors.blueAccent,
                       ),
                     ],
                   ),
@@ -659,6 +660,20 @@ class PlanCardState extends State<PlanCard> {
   String _truncate(String text, int maxChars) {
     if (text.length <= maxChars) return text;
     return text.substring(0, math.min(maxChars, text.length)) + '…';
+  }
+
+  String _getPrivilegeIcon(String level) {
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
+        return 'assets/icono-usuario-premium.png';
+      case 'golden':
+        return 'assets/icono-usuario-golden.png';
+      case 'vip':
+        return 'assets/icono-usuario-vip.png';
+      default:
+        return 'assets/icono-usuario-basico.png';
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
