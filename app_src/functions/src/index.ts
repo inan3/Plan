@@ -1,7 +1,9 @@
 import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
+
 import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
+
 import {onUserDeleted} from "firebase-functions/v2/identity";
 
 initializeApp();
