@@ -31,6 +31,8 @@ class MyPlansScreen extends StatelessWidget {
 
     final data = doc.data()!;
     final participantUids = List<String>.from(data['participants'] ?? []);
+    final Set<String> processed = {};
+
     for (String uid in participantUids) {
       final userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
@@ -43,8 +45,27 @@ class MyPlansScreen extends StatelessWidget {
           'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
           'isCreator': (plan.createdBy == uid),
         });
+        processed.add(uid);
       }
     }
+
+    if (!processed.contains(plan.createdBy)) {
+      final creatorDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(plan.createdBy)
+          .get();
+      if (creatorDoc.exists && creatorDoc.data() != null) {
+        final cData = creatorDoc.data()!;
+        participants.add({
+          'uid': plan.createdBy,
+          'name': cData['name'] ?? 'Sin nombre',
+          'age': cData['age']?.toString() ?? '',
+          'photoUrl': cData['photoUrl'] ?? cData['profilePic'] ?? '',
+          'isCreator': true,
+        });
+      }
+    }
+
     return participants;
   }
 
