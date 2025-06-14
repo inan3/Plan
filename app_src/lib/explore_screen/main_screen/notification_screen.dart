@@ -73,9 +73,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'participants': FieldValue.arrayUnion([senderId]),
       });
 
-      // Crea la suscripción
+      // Crea la suscripción (guardamos también el id del plan)
       await _firestore.collection('subscriptions').add({
         ...planDoc.data()!,
+        'id': planId,
         'userId': senderId,
         'subscriptionDate': FieldValue.serverTimestamp(),
       });
@@ -170,9 +171,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'participants': FieldValue.arrayUnion([currentUserId]),
       });
 
-      // Crea suscripción
+      // Crea la suscripción (guardamos también el id del plan)
       await _firestore.collection('subscriptions').add({
         ...planDoc.data()!,
+        'id': planId,
         'userId': currentUserId,
         'subscriptionDate': FieldValue.serverTimestamp(),
       });
