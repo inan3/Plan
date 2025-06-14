@@ -4,7 +4,7 @@ import {getFirestore, FieldValue} from "firebase-admin/firestore";
 
 import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
 
-import {onUserDeleted} from "firebase-functions/v2/identity";
+import * as functions from "firebase-functions/v1";
 
 initializeApp();
 
@@ -85,18 +85,18 @@ export const sendPushOnNotification = onDocumentCreated(
   }
 );
 
-export const cleanupUserData = onUserDeleted(
-  {region: "europe-west1"},
-  async (event) => {
-    const uid = event.data.uid;
+export const cleanupUserData = functions
+  .region("europe-west1")
+  .auth.user()
+  .onDelete(async (user) => {
+    const uid = user.uid;
     const db = getFirestore();
     try {
       await db.doc(`users/${uid}`).delete();
     } catch (e) {
       console.error("Failed to clean user data", e);
     }
-  }
-);
+  });
 
 export const sendPushOnMessage = onDocumentCreated(
   {region: "europe-west1", document: "/messages/{id}"},
