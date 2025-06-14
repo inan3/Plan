@@ -114,27 +114,35 @@ class SubscribedPlansScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
-                final subs = await FirebaseFirestore.instance
-                    .collection('subscriptions')
-                    .where('userId', isEqualTo: userId)
-                    .where('id', isEqualTo: plan.id)
-                    .get();
-                for (var doc in subs.docs) {
-                  await doc.reference.delete();
-                }
-                await FirebaseFirestore.instance
-                    .collection('plans')
-                    .doc(plan.id)
-                    .update({
-                  'participants': FieldValue.arrayRemove([userId])
-                });
+                try {
+                  final subs = await FirebaseFirestore.instance
+                      .collection('subscriptions')
+                      .where('userId', isEqualTo: userId)
+                      .where('id', isEqualTo: plan.id)
+                      .get();
+                  for (var doc in subs.docs) {
+                    await doc.reference.delete();
+                  }
+                  await FirebaseFirestore.instance
+                      .collection('plans')
+                      .doc(plan.id)
+                      .update({
+                    'participants': FieldValue.arrayRemove([userId]),
+                    'invitedUsers': FieldValue.arrayRemove([userId])
+                  });
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Has abandonado el plan ${plan.type}.'),
-                  ),
-                );
-                Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Has abandonado el plan ${plan.type}.'),
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error al abandonar el plan.')),
+                  );
+                } finally {
+                  Navigator.pop(context);
+                }
               },
               child: const Text("Sí"),
             ),

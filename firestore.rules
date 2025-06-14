@@ -14,7 +14,8 @@ service cloud.firestore {
     match /plans/{planId} {
       allow read, create: if request.auth != null;
       allow update, delete: if request.auth.uid == resource.data.createdBy
-        || (request.auth.uid in resource.data.invitedUsers
+        || ((request.auth.uid in resource.data.invitedUsers
+            || request.auth.uid in resource.data.participants)
             && request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'invitedUsers']));
     }
 
