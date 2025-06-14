@@ -256,7 +256,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
           tokens,
           notification: {
             title: titles.removed_from_plan,
-            body: `${senderName} • ${planType}`,
+            body: `${senderName} te ha eliminado de su plan.`,
           },
           android: {notification: {channelId: "plan_high"}},
           data: {type: "removed_from_plan", planId, senderId: creatorId},
