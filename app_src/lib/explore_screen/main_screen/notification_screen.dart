@@ -45,6 +45,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       'plan_chat_message',
       'welcome',
       'plan_left',
+      'removed_from_plan',
     ]).snapshots();
   }
 
@@ -818,6 +819,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 leading: leadingAvatar,
                                 title: Text(
                                   "$senderName ha decidido abandonar tu plan.",
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'removed_from_plan':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "$senderName te ha eliminado de su plan.",
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
