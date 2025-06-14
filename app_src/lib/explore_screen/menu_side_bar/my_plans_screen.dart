@@ -219,6 +219,7 @@ class MyPlansScreen extends StatelessWidget {
                           ),
                         const SizedBox(width: 8),
                         Column(
+                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -245,6 +246,25 @@ class MyPlansScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         participantAvatar,
                       ],
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => _confirmDeletePlan(context, plan),
+                      child: ClipOval(
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child:
+                                const Icon(Icons.delete, color: Colors.white),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -367,6 +387,40 @@ class MyPlansScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser == null) return;
+
+                final planDoc = await FirebaseFirestore.instance
+                    .collection('plans')
+                    .doc(plan.id)
+                    .get();
+                final participantUids = List<String>.from(
+                    planDoc.data()?['participants'] ?? []);
+                participantUids.remove(currentUser.uid);
+
+                final userSnap = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUser.uid)
+                    .get();
+                final senderName = userSnap.data()?['name'] ?? 'Usuario';
+                final senderPhoto = userSnap.data()?['photoUrl'] ?? '';
+
+                for (final uid in participantUids) {
+                  await FirebaseFirestore.instance
+                      .collection('notifications')
+                      .add({
+                    'type': 'special_plan_deleted',
+                    'receiverId': uid,
+                    'senderId': currentUser.uid,
+                    'senderName': senderName,
+                    'senderProfilePic': senderPhoto,
+                    'planId': plan.id,
+                    'planType': plan.type,
+                    'timestamp': FieldValue.serverTimestamp(),
+                    'read': false,
+                  });
+                }
+
                 await FirebaseFirestore.instance
                     .collection('plans')
                     .doc(plan.id)

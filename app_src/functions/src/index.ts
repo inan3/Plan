@@ -41,6 +41,8 @@ const titles: Record<string, string> = {
   welcome: "Bienvenido a Plan",
   plan_left: "Participante ha abandonado",
   removed_from_plan: "Has sido eliminado de un plan",
+  special_plan_deleted: "Plan especial eliminado",
+  special_plan_left: "Salida de plan especial",
 };
 
 export const sendPushOnNotification = onDocumentCreated(
@@ -63,9 +65,14 @@ export const sendPushOnNotification = onDocumentCreated(
 
     const notif = {
       title: titles[n.type] ?? "Notificación",
-      body: n.senderName ?
-        `${n.senderName} • ${n.planType ?? ""}` :
-        "Abre la app para más detalles",
+      body:
+        n.type === "special_plan_deleted"
+          ? `${n.senderName} ha eliminado el plan especial`
+          : n.type === "special_plan_left"
+              ? `${n.senderName} ha decidido abandonar el plan especial`
+              : n.senderName
+                  ? `${n.senderName} • ${n.planType ?? ""}`
+                  : "Abre la app para más detalles",
     };
 
     const resp = await getMessaging().sendEachForMulticast({
