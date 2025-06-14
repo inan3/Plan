@@ -1,9 +1,10 @@
 import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
-
-import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
-
+import {
+  onDocumentCreated,
+  onDocumentWritten,
+} from "firebase-functions/v2/firestore";
 import {onUserDeleted} from "firebase-functions/v2/identity";
 
 initializeApp();
@@ -27,37 +28,32 @@ const titles: Record<string, string> = {
 
 export const sendPushOnNotification = onDocumentCreated(
   {region: "europe-west1", document: "/notifications/{id}"},
-  async (event) => {
+  async (event: any) => {
     const n = event.data?.data();
-    if (!n) return;
-    if (n.senderId === n.receiverId) return;
+    if (!n || n.senderId === n.receiverId) return;
 
     const db = getFirestore();
-
-    // --- tokens del receptor ---
     const receiverRef = db.doc(`users/${n.receiverId}`);
-    const receiverSnap = await receiverRef.get();
-    const receiverTokens: string[] = receiverSnap.get("tokens") ?? [];
-    if (receiverTokens.length === 0) return;
+    const recvSnap = await receiverRef.get();
+    const recvTokens: string[] = recvSnap.get("tokens") ?? [];
+    if (recvTokens.length === 0) return;
 
-    // --- tokens del emisor (para no duplicar) ---
-    const senderSnap = await db.doc(`users/${n.senderId}`).get();
-    const senderTokens: string[] = senderSnap.get("tokens") ?? [];
+    const sendSnap = await db.doc(`users/${n.senderId}`).get();
+    const sendTokens: string[] = sendSnap.get("tokens") ?? [];
 
-    // 1) quita duplicados
-    let tokens = receiverTokens.filter((t) => !senderTokens.includes(t));
+    let tokens = recvTokens.filter((t) => !sendTokens.includes(t));
+    if (tokens.length === 0) tokens = recvTokens;
 
-    // 2) si quedaron 0, usa los originales
-    if (tokens.length === 0) tokens = receiverTokens;
+    const notif = {
+      title: titles[n.type] ?? "Notificación",
+      body: n.senderName ?
+        `${n.senderName} • ${n.planType ?? ""}` :
+        "Abre la app para más detalles",
+    };
 
     const resp = await getMessaging().sendEachForMulticast({
       tokens,
-      notification: {
-        title: titles[n.type] ?? "Notificación",
-        body: n.senderName ?
-          `${n.senderName} • ${n.planType ?? ""}` :
-          "Abre la app para más detalles",
-      },
+      notification: notif,
       android: {notification: {channelId: "plan_high"}},
       data: {
         type: n.type,
@@ -66,7 +62,6 @@ export const sendPushOnNotification = onDocumentCreated(
       },
     });
 
-    // limpia tokens inválidos
     const invalid: string[] = [];
     resp.responses.forEach((r, i) => {
       if (
@@ -87,7 +82,7 @@ export const sendPushOnNotification = onDocumentCreated(
 
 export const cleanupUserData = onUserDeleted(
   {region: "europe-west1"},
-  async (event) => {
+  async (event: any) => {
     const uid = event.data.uid;
     const db = getFirestore();
     try {
@@ -100,30 +95,22 @@ export const cleanupUserData = onUserDeleted(
 
 export const sendPushOnMessage = onDocumentCreated(
   {region: "europe-west1", document: "/messages/{id}"},
-  async (event) => {
+  async (event: any) => {
     const m = event.data?.data();
-    if (!m) return;
-    if (m.senderId === m.receiverId) return;
+    if (!m || m.senderId === m.receiverId) return;
 
     const db = getFirestore();
-
-    // --- tokens del receptor ---
     const receiverRef = db.doc(`users/${m.receiverId}`);
-    const receiverSnap = await receiverRef.get();
-    const receiverTokens: string[] = receiverSnap.get("tokens") ?? [];
-    if (receiverTokens.length === 0) return;
+    const recvSnap = await receiverRef.get();
+    const recvTokens: string[] = recvSnap.get("tokens") ?? [];
+    if (recvTokens.length === 0) return;
 
-    // --- tokens del emisor (para no duplicar) ---
-    const senderRef = db.doc(`users/${m.senderId}`);
-    const senderSnap = await senderRef.get();
+    const senderSnap = await db.doc(`users/${m.senderId}`).get();
     const senderTokens: string[] = senderSnap.get("tokens") ?? [];
     const senderName: string = senderSnap.get("name") ?? "";
 
-    // 1) quita duplicados
-    let tokens = receiverTokens.filter((t) => !senderTokens.includes(t));
-
-    // 2) si quedaron 0, usa los originales
-    if (tokens.length === 0) tokens = receiverTokens;
+    let tokens = recvTokens.filter((t) => !senderTokens.includes(t));
+    if (tokens.length === 0) tokens = recvTokens;
 
     const resp = await getMessaging().sendEachForMulticast({
       tokens,
@@ -159,17 +146,18 @@ export const sendPushOnMessage = onDocumentCreated(
 
 export const sendPushOnPlanChat = onDocumentCreated(
   {region: "europe-west1", document: "/plan_chat/{id}"},
-  async (event) => {
+  async (event: any) => {
     const m = event.data?.data();
     if (!m) return;
 
     const db = getFirestore();
     const planSnap = await db.doc(`plans/${m.planId}`).get();
     if (!planSnap.exists) return;
-    const planData = planSnap.data()!;
+    const planData = planSnap.data();
+    if (!planData) return;
+
     const participants: string[] = planData.participants ?? [];
     const creatorId: string = planData.createdBy;
-
     const senderSnap = await db.doc(`users/${m.senderId}`).get();
     const senderName: string = senderSnap.get("name") ?? "";
 
@@ -200,7 +188,8 @@ export const sendPushOnPlanChat = onDocumentCreated(
       resp.responses.forEach((r, i) => {
         if (
           !r.success &&
-          r.error?.code === "messaging/registration-token-not-registered"
+          r.error?.code ===
+            "messaging/registration-token-not-registered"
         ) {
           invalid.push(tokens[i]);
         }
@@ -217,14 +206,16 @@ export const sendPushOnPlanChat = onDocumentCreated(
 
 export const notifyRemovedParticipants = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
-  async (event) => {
+  async (event: any) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     if (!before || !after) return;
 
-    const beforeList: string[] = before.participants ?? [];
-    const afterList: string[] = after.participants ?? [];
-    const removed = beforeList.filter((p) => !afterList.includes(p));
+    const removed: string[] =
+      before.participants
+        ?.filter((p: string) =>
+          !(after.participants ?? []).includes(p)
+        ) ?? [];
     if (removed.length === 0) return;
 
     const db = getFirestore();
@@ -233,10 +224,10 @@ export const notifyRemovedParticipants = onDocumentWritten(
     const creatorSnap = await db.doc(`users/${creatorId}`).get();
     const senderName: string = creatorSnap.get("name") ?? "";
     const senderPhoto: string = creatorSnap.get("photoUrl") ?? "";
-    const planType: string = after.type || "Plan";
+    const planType: string = after.type ?? "Plan";
 
     await Promise.all(
-      removed.map(async (uid) => {
+      removed.map(async (uid: string) => {
         await db.collection("notifications").add({
           type: "removed_from_plan",
           receiverId: uid,
@@ -252,6 +243,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
         const userSnap = await db.doc(`users/${uid}`).get();
         const tokens: string[] = userSnap.get("tokens") ?? [];
         if (tokens.length === 0) return;
+
         const resp = await getMessaging().sendEachForMulticast({
           tokens,
           notification: {
@@ -261,15 +253,18 @@ export const notifyRemovedParticipants = onDocumentWritten(
           android: {notification: {channelId: "plan_high"}},
           data: {type: "removed_from_plan", planId, senderId: creatorId},
         });
+
         const invalid: string[] = [];
         resp.responses.forEach((r, i) => {
           if (
             !r.success &&
-            r.error?.code === "messaging/registration-token-not-registered"
+            r.error?.code ===
+              "messaging/registration-token-not-registered"
           ) {
             invalid.push(tokens[i]);
           }
         });
+
         if (invalid.length) {
           await userSnap.ref.update({
             tokens: FieldValue.arrayRemove(...invalid),
@@ -282,7 +277,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
 
 export const createWelcomeNotification = onDocumentCreated(
   {region: "europe-west1", document: "/users/{userId}"},
-  async (event) => {
+  async (event: any) => {
     const userId = event.params.userId;
     const data = event.data?.data();
     if (!data) return;
@@ -295,7 +290,9 @@ export const createWelcomeNotification = onDocumentCreated(
       senderName: "Plan",
       senderProfilePic: "",
       message:
-        "El equipo de Plan te da la bienvenida a la app que te conecta con nuevas experiencias y personas. ¡Comienza a explorar y a crear momentos inolvidables!",
+        "El equipo de Plan te da la bienvenida a la app que te conecta con " +
+        "nuevas experiencias y personas. ¡Comienza a explorar y a crear " +
+        "momentos inolvidables!",
       timestamp: FieldValue.serverTimestamp(),
       read: false,
     });

@@ -256,7 +256,8 @@ class ExploreScreenState extends State<ExploreScreen> {
                     ),
                     if (_searchController.text.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.close, size: 20, color: Colors.black54),
+                        icon: const Icon(Icons.close,
+                            size: 20, color: Colors.black54),
                         onPressed: () {
                           setState(() {
                             _searchController.clear();
@@ -420,7 +421,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildNearbySection() {
-    return FutureBuilder<List<QueryDocumentSnapshot>>( 
+    return FutureBuilder<List<QueryDocumentSnapshot>>(
       future: _fetchNearbyUsers(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -539,47 +540,49 @@ class ExploreScreenState extends State<ExploreScreen> {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                Color.fromARGB(255, 245, 239, 240),
-                Color.fromARGB(255, 250, 249, 251),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+                  Color.fromARGB(255, 245, 239, 240),
+                  Color.fromARGB(255, 250, 249, 251),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
-          ),
-          child: Stack(
-            children: [
-              _currentIndex == 0
-                  ? _buildExplorePage()
-                  : _otherPages[_currentIndex - 1],
-              Positioned(
-                bottom: 20,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: DockSection(
-                    currentIndex: _currentIndex,
-                    selectedIconIndex: _selectedIconIndex,
-                    onTapIcon: _onDockIconTap,
-                    addButtonKey: _addButtonKey,
-                    homeButtonKey: _homeButtonKey,
-                    mapButtonKey: _mapButtonKey,
-                    chatButtonKey: _chatButtonKey,
-                    profileButtonKey: _profileButtonKey,
-                    notificationCountStream: null,
-                    unreadMessagesCountStream: _unreadMessagesCountStream(),
-                    badgeSize: 10,
-                    badgeOffsetX: 15,
-                    badgeOffsetY: 15,
+            child: Stack(
+              children: [
+                _currentIndex == 0
+                    ? _buildExplorePage()
+                    : _otherPages[_currentIndex - 1],
+                Positioned(
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: DockSection(
+                      currentIndex: _currentIndex,
+                      selectedIconIndex: _selectedIconIndex,
+                      onTapIcon: _onDockIconTap,
+                      addButtonKey: _addButtonKey,
+                      homeButtonKey: _homeButtonKey,
+                      mapButtonKey: _mapButtonKey,
+                      chatButtonKey: _chatButtonKey,
+                      profileButtonKey: _profileButtonKey,
+                      notificationCountStream: null,
+                      unreadMessagesCountStream: _unreadMessagesCountStream(),
+                      badgeSize: 10,
+                      badgeOffsetX: 15,
+                      badgeOffsetY: 15,
+                    ),
                   ),
                 ),
-              ),
-              MainSideBarScreen(
-                key: _menuKey,
-                onMenuToggled: (bool open) => setState(() => isMenuOpen = open),
-                onPageChange: changePage,
-                initiallyOpenSidebar: widget.initiallyOpenSidebar,
-              ),
-            ],
+                MainSideBarScreen(
+                  key: _menuKey,
+                  onMenuToggled: (bool open) =>
+                      setState(() => isMenuOpen = open),
+                  onPageChange: changePage,
+                  initiallyOpenSidebar: widget.initiallyOpenSidebar,
+                ),
+              ],
+            ),
           ),
         ),
       ),
