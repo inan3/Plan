@@ -25,28 +25,12 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Trae todas las notificaciones de interés, + "new_plan_published"
+  /// Trae todas las notificaciones del usuario actual
   Stream<QuerySnapshot> _getAllNotifications() {
     return _firestore
         .collection('notifications')
         .where('receiverId', isEqualTo: widget.currentUserId)
-        .where('type', whereIn: [
-      // Tipos de notificación que nos interesan
-      'join_request',
-      'invitation',
-      'invitation_accepted',
-      'invitation_rejected',
-      'join_accepted',
-      'join_rejected',
-      'follow_request',
-      'follow_accepted',
-      'follow_rejected',
-      'new_plan_published', // <--- Agregamos este nuevo tipo
-      'plan_chat_message',
-      'welcome',
-      'plan_left',
-      'removed_from_plan',
-    ]).snapshots();
+        .snapshots();
   }
 
   String _formatTimestamp(dynamic timestamp) {
