@@ -42,6 +42,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       'new_plan_published', // <--- Agregamos este nuevo tipo
       'plan_chat_message',
       'welcome',
+      'plan_left',
     ]).snapshots();
   }
 
@@ -771,6 +772,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                                 onTap: () => _openPlanChatFromNotification(
                                     context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _handleDeleteNotification(doc),
+                                ),
+                              );
+                            case 'plan_left':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  "$senderName ha decidido abandonar tu plan.",
+                                ),
+                                subtitle: buildSubtitle("Plan: $planType"),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete,
                                       color: Colors.red),
