@@ -163,21 +163,6 @@ class MyPlansScreen extends StatelessWidget {
             }
           }
 
-          final creatorAvatar = participants.isNotEmpty &&
-                  (participants[0]['photoUrl'] ?? '').isNotEmpty
-              ? CircleAvatar(
-                  backgroundImage: NetworkImage(participants[0]['photoUrl']),
-                  radius: 20,
-                )
-              : const CircleAvatar(radius: 20);
-
-          final participantAvatar = (participants.length > 1 &&
-                  (participants[1]['photoUrl'] ?? '').isNotEmpty)
-              ? CircleAvatar(
-                  backgroundImage: NetworkImage(participants[1]['photoUrl']),
-                  radius: 20,
-                )
-              : const SizedBox();
 
           final String dateText =
               plan.formattedDate(plan.startTimestamp);
@@ -187,7 +172,7 @@ class MyPlansScreen extends StatelessWidget {
             child: Center(
               child: Container(
                 width: double.infinity,
-                height: 80,
+                constraints: const BoxConstraints(minHeight: 80),
                 margin: const EdgeInsets.only(
                   bottom: 15,
                   left: 8,
@@ -207,8 +192,10 @@ class MyPlansScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(60),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (iconPath.isNotEmpty)
                           SvgPicture.asset(
@@ -219,7 +206,6 @@ class MyPlansScreen extends StatelessWidget {
                           ),
                         const SizedBox(width: 8),
                         Column(
-                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -240,12 +226,9 @@ class MyPlansScreen extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    Row(
-                      children: [
-                        creatorAvatar,
-                        const SizedBox(width: 8),
-                        participantAvatar,
-                      ],
+                    _buildOverlappingAvatars(
+                      participants,
+                      FirebaseAuth.instance.currentUser?.uid ?? '',
                     ),
                     const SizedBox(width: 12),
                     GestureDetector(
@@ -442,6 +425,53 @@ class MyPlansScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildOverlappingAvatars(
+    List<Map<String, dynamic>> participants,
+    String currentUid,
+  ) {
+    if (participants.isEmpty) return const SizedBox.shrink();
+
+    Widget buildAvatar(Map<String, dynamic> data) {
+      final url = data['photoUrl'] ?? '';
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+      );
+    }
+
+    if (participants.length == 1) {
+      return buildAvatar(participants.first);
+    }
+
+    Map<String, dynamic>? me;
+    Map<String, dynamic>? other;
+    for (var p in participants) {
+      if (p['uid'] == currentUid && me == null) {
+        me = p;
+      } else if (other == null && p['uid'] != currentUid) {
+        other = p;
+      }
+    }
+
+    if (me == null || other == null) {
+      return Row(
+        children: participants.take(2).map(buildAvatar).toList(),
+      );
+    }
+
+    return SizedBox(
+      width: 64,
+      height: 40,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(left: 0, child: buildAvatar(me)),
+          Positioned(left: 24, child: buildAvatar(other)),
+        ],
+      ),
     );
   }
 

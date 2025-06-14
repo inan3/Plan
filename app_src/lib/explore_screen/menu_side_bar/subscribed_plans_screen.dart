@@ -177,6 +177,53 @@ class SubscribedPlansScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildOverlappingAvatars(
+    List<Map<String, dynamic>> participants,
+    String currentUid,
+  ) {
+    if (participants.isEmpty) return const SizedBox.shrink();
+
+    Widget buildAvatar(Map<String, dynamic> data) {
+      final url = data['photoUrl'] ?? '';
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+      );
+    }
+
+    if (participants.length == 1) {
+      return buildAvatar(participants.first);
+    }
+
+    Map<String, dynamic>? me;
+    Map<String, dynamic>? other;
+    for (var p in participants) {
+      if (p['uid'] == currentUid && me == null) {
+        me = p;
+      } else if (other == null && p['uid'] != currentUid) {
+        other = p;
+      }
+    }
+
+    if (me == null || other == null) {
+      return Row(
+        children: participants.take(2).map(buildAvatar).toList(),
+      );
+    }
+
+    return SizedBox(
+      width: 64,
+      height: 40,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(left: 0, child: buildAvatar(me)),
+          Positioned(left: 24, child: buildAvatar(other)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlanTile(
     BuildContext context,
     Map<String, dynamic> userData,
@@ -203,20 +250,6 @@ class SubscribedPlansScreen extends StatelessWidget {
             );
           }
           final participants = snapshot.data!;
-          final Widget creatorAvatar = participants.isNotEmpty &&
-                  (participants[0]['photoUrl'] ?? '').isNotEmpty
-              ? CircleAvatar(
-                  backgroundImage: NetworkImage(participants[0]['photoUrl']),
-                  radius: 20,
-                )
-              : const CircleAvatar(radius: 20);
-          final Widget participantAvatar = (participants.length > 1 &&
-                  (participants[1]['photoUrl'] ?? '').isNotEmpty)
-              ? CircleAvatar(
-                  backgroundImage: NetworkImage(participants[1]['photoUrl']),
-                  radius: 20,
-                )
-              : const SizedBox();
 
           String iconPath = plan.iconAsset ?? '';
           for (var item in plansData.plans) {
@@ -232,10 +265,10 @@ class SubscribedPlansScreen extends StatelessWidget {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => _showFrostedPlanDialog(context, plan),
-            child: Center(
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.95,
-                height: 80,
+                child: Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.95,
+                    constraints: const BoxConstraints(minHeight: 80),
                 margin: const EdgeInsets.only(bottom: 15),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -251,8 +284,10 @@ class SubscribedPlansScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(60),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (iconPath.isNotEmpty)
                           SvgPicture.asset(
@@ -263,7 +298,6 @@ class SubscribedPlansScreen extends StatelessWidget {
                           ),
                         const SizedBox(width: 8),
                         Column(
-                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -284,12 +318,9 @@ class SubscribedPlansScreen extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    Row(
-                      children: [
-                        creatorAvatar,
-                        const SizedBox(width: 8),
-                        participantAvatar,
-                      ],
+                    _buildOverlappingAvatars(
+                      participants,
+                      userId,
                     ),
                     const SizedBox(width: 12),
                     GestureDetector(
