@@ -355,32 +355,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final planData = planDoc.data() as Map<String, dynamic>;
     final plan = PlanModel.fromMap(planData);
 
-    if (plan.special_plan == 1) {
-      final participants = await _fetchAllPlanParticipants(plan);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => Scaffold(
-            backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
-            appBar: AppBar(
-              title: const Text("Detalle del Plan"),
-              backgroundColor: const ui.Color.fromARGB(221, 255, 255, 255),
-            ),
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: () => _openFrostedPlanDialog(context, plan),
-                    child: _buildSpecialPlanContainer(plan, participants),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
+    {
       // Obtenemos el "userData" del creador, para pasárselo a PlanCard
       final creatorDoc =
           await _firestore.collection('users').doc(plan.createdBy).get();
@@ -402,7 +377,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   PlanCard(
                     plan: plan,
                     userData: creatorData,
-                    fetchParticipants: fetchPlanParticipants,
+                    fetchParticipants: _fetchAllPlanParticipants,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -990,73 +965,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     return participants;
   }
-  Widget _buildSpecialPlanContainer(
-    PlanModel plan,
-    List<Map<String, dynamic>> participants,
-  ) {
-    String iconPath = plan.iconAsset ?? '';
-    for (var item in plansData.plans) {
-      if (plan.iconAsset == item['icon']) {
-        iconPath = item['icon'];
-        break;
-      }
-    }
-
-    final String dateText = plan.formattedDate(plan.startTimestamp);
-
-    return Center(
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 80),
-        margin: const EdgeInsets.only(bottom: 15, left: 8, right: 8),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 13, 32, 53),
-              Color.fromARGB(255, 72, 38, 38),
-              Color(0xFF12232E),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(60),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (iconPath.isNotEmpty)
-                  SvgPicture.asset(
-                    iconPath,
-                    width: 40,
-                    height: 40,
-                    color: Colors.amber,
-                  ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      plan.type,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        color: Colors.amber,
-                      ),
-                    ),
-                    Text(
-                      dateText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Spacer(),
             _buildOverlappingAvatars(
               participants,
               FirebaseAuth.instance.currentUser?.uid ?? '',

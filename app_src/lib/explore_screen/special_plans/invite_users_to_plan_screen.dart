@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import "package:image_picker/image_picker.dart";
+import "../../plan_creation/image_cropper_screen.dart";
 import '../../../utils/plans_list.dart';
 import '../../../models/plan_model.dart';
 import '../../plan_creation/meeting_location_screen.dart';
@@ -492,6 +494,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   double? _longitude;
   Future<BitmapDescriptor>? _markerIconFuture;
 
+  Uint8List? _selectedCroppedImage;
+  Uint8List? _selectedOriginalImage;
   // ========= Descripción =========
   String? _planDescription;
 
@@ -538,6 +542,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
             // ===== DESCRIPCIÓN =====
             _buildDescriptionSection(),
 
+            _buildBackgroundImageSection(),
             const SizedBox(height: 20),
 
             // ===== BOTÓN FINALIZAR =====
@@ -1201,6 +1206,211 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
   }
 
   // ----------------------------------------------------------------------------------
+
+  Widget _buildBackgroundImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Center(
+          child: Text(
+            "Imagen de fondo",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 240,
+          child: (_selectedCroppedImage == null)
+              ? Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: _showImageSelectionPopup,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 124, 120, 120)
+                                .withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/anadir-imagen.svg',
+                              width: 30,
+                              height: 30,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: _buildAddImageButton(),
+                    ),
+                  ],
+                )
+              : Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Image.memory(
+                        _selectedCroppedImage!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 240,
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: _buildDeleteImageButton(),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddImageButton() {
+    if (_selectedCroppedImage != null) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: _showImageSelectionPopup,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 40,
+            height: 40,
+            color: const ui.Color.fromARGB(255, 96, 94, 94).withOpacity(0.2),
+            child: const Icon(Icons.add, color: Colors.white, size: 24),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeleteImageButton() {
+    if (_selectedCroppedImage == null) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: _deleteSelectedImage,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 40,
+            height: 40,
+            color: const ui.Color.fromARGB(255, 96, 94, 94).withOpacity(0.2),
+            child: const Icon(Icons.delete, color: Colors.white, size: 24),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _deleteSelectedImage() {
+    setState(() {
+      _selectedCroppedImage = null;
+      _selectedOriginalImage = null;
+    });
+  }
+
+  void _showImageSelectionPopup() {
+    showGeneralDialog(
+      context: context,
+      barrierLabel: "Selecciona medio",
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      pageBuilder: (context, anim1, anim2) => Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 13, 32, 53),
+                Color.fromARGB(255, 72, 38, 38),
+                Color(0xFF12232E),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "¿Qué deseas subir?",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+                child: const Text(
+                  "Imagen (galería)",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+                child: const Text(
+                  "Imagen (cámara)",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      final originalData = await pickedFile.readAsBytes();
+      final croppedData = await Navigator.push<Uint8List>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropperScreen(imageData: originalData),
+        ),
+      );
+      if (croppedData != null) {
+        setState(() {
+          _selectedCroppedImage = croppedData;
+          _selectedOriginalImage = originalData;
+        });
+      }
+    }
+  }
   // -------------------------- AL CREAR EL PLAN ("Finish") ---------------------------
   // ----------------------------------------------------------------------------------
   Future<void> _onFinishPlan() async {
@@ -1246,6 +1456,19 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       final planDoc = FirebaseFirestore.instance.collection('plans').doc();
       final planId = planDoc.id;
 
+      String? uploadedCropped;
+      String? uploadedOriginal;
+      if (_selectedCroppedImage != null) {
+        uploadedCropped = await uploadImageToFirebase(
+          _selectedCroppedImage!,
+          'plan_backgrounds/${planId}_cropped.png',
+        );
+        uploadedOriginal = await uploadImageToFirebase(
+          _selectedOriginalImage!,
+          'plan_backgrounds/${planId}_original.png',
+        );
+      }
+
       final dataToSave = {
         "id": planId,
         "createdBy": currentUser.uid,
@@ -1262,6 +1485,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
         "views": 0,
         "viewedBy": [],
         "special_plan": 1,
+        "backgroundImage": uploadedCropped ?? '',
+        "images": uploadedCropped != null ? [uploadedCropped] : [],
+        "originalImages": uploadedOriginal != null ? [uploadedOriginal] : [],
       };
 
       await planDoc.set(dataToSave);
