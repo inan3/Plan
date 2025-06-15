@@ -839,18 +839,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   _buildProfilePhotoPicker(),
                   const SizedBox(height: 20),
 
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Elige 3 planes afines a tus intereses",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: MyColors.AppColors.black,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
+                  // Lista de intereses disponibles
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
@@ -859,35 +848,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         _buildInterestChip(_customInterest!, true),
                       ...plans.map((p) => _buildInterestChip(p['name'], false)).toList(),
                     ],
-                  ),
-                  const SizedBox(height: 10),
-                  const Center(child: Text('- o -')),
-                  const SizedBox(height: 10),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(
-                        color: MyColors.AppColors.greyBorder,
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      controller: _interestController,
-                      style: const TextStyle(color: Colors.grey),
-                      decoration: InputDecoration(
-                        hintText: 'Añádelos tú...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey,
-                        ),
-                        border: InputBorder.none,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: _addCustomInterest,
-                        ),
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 20),
 

@@ -482,54 +482,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     return counter;
   }
 
-  Widget _buildInterestsSection() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const SizedBox.shrink();
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
-      builder: (ctx, snap) {
-        if (!snap.hasData) return const SizedBox.shrink();
-        final data = snap.data!.data() as Map<String, dynamic>?;
-        final interestsRaw = data?['interests'] as List<dynamic>?;
-        if (interestsRaw == null || interestsRaw.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        final interests = interestsRaw.cast<String>();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Intereses',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: interests
-                    .map((e) => Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppColors.planColor,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(e, style: const TextStyle(color: Colors.white)),
-                        ))
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        );
-      },
-    );
-  }
 
   Widget _buildBioAndStats() {
     final user = FirebaseAuth.instance.currentUser;
@@ -672,8 +624,6 @@ class ProfileScreenState extends State<ProfileScreen> {
               offset: const Offset(0, 20),
               child: _buildPrivilegeButton(context),
             ),
-            const SizedBox(height: 16),
-            _buildInterestsSection(),
             const SizedBox(height: 16),
             _buildBioAndStats(),
             const SizedBox(height: 20),
