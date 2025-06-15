@@ -862,6 +862,31 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
+                  const Center(child: Text('- o -')),
+                  const SizedBox(height: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: MyColors.AppColors.greyBorder,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _interestController,
+                      style: const TextStyle(color: Colors.grey),
+                      decoration: InputDecoration(
+                        hintText: 'Añádelos tú...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
