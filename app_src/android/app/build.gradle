@@ -19,12 +19,12 @@ android {
 
     compileOptions {
         // Usa al menos Java 17 (estable para Android Gradle 8.x)
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
         coreLibraryDesugaringEnabled true        // ← ya estaba OK
     }
 
-    kotlinOptions { jvmTarget = "17" }           // mismo nivel que compileOptions
+    kotlinOptions { jvmTarget = "21" }           // mismo nivel que compileOptions
 
     buildTypes {
         release { signingConfig = signingConfigs.debug }
