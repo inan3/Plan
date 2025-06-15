@@ -965,15 +965,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     return participants;
   }
-            _buildOverlappingAvatars(
-              participants,
-              FirebaseAuth.instance.currentUser?.uid ?? '',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildOverlappingAvatars(
     List<Map<String, dynamic>> participants,
