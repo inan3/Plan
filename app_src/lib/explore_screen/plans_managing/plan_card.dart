@@ -715,7 +715,15 @@ class PlanCardState extends State<PlanCard> {
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
-              Text(displayText, style: const TextStyle(color: Colors.white)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  displayText,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),
