@@ -1054,14 +1054,16 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   Future<void> _showParticipantsModal(
       List<Map<String, dynamic>> participants) async {
     List checkedInUsers = [];
-    try {
-      final planSnap = await FirebaseFirestore.instance
-          .collection('plans')
-          .doc(widget.plan.id)
-          .get();
-      final planData = planSnap.data();
-      checkedInUsers = planData?['checkedInUsers'] ?? [];
-    } catch (e) {
+    if (widget.plan.special_plan != 1) {
+      try {
+        final planSnap = await FirebaseFirestore.instance
+            .collection('plans')
+            .doc(widget.plan.id)
+            .get();
+        final planData = planSnap.data();
+        checkedInUsers = planData?['checkedInUsers'] ?? [];
+      } catch (e) {
+      }
     }
 
     showDialog(
@@ -1144,7 +1146,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        trailing: isCheckedIn
+                        trailing: (widget.plan.special_plan != 1 && isCheckedIn)
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
@@ -1483,6 +1485,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     List<Map<String, dynamic>> participants,
     bool isCreator,
   ) {
+    if (plan.special_plan == 1) {
+      return const SizedBox.shrink();
+    }
     final bool isParticipant =
         participants.any((p) => p['uid'] == _currentUser?.uid);
 
