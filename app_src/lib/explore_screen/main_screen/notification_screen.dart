@@ -990,7 +990,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     return participants;
   }
-
   Widget _buildSpecialPlanContainer(
     PlanModel plan,
     List<Map<String, dynamic>> participants,
