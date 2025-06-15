@@ -245,6 +245,7 @@ class SubscribedPlansScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildPlanTile(
     BuildContext context,
     Map<String, dynamic> userData,
     PlanModel plan,
