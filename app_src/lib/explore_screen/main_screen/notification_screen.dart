@@ -4,8 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../models/plan_model.dart';
 import '../../main/colors.dart';
+import '../../utils/plans_list.dart' as plansData;
 
 // Importaciones necesarias:
 import '../users_managing/user_info_check.dart';
@@ -353,37 +355,63 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final planData = planDoc.data() as Map<String, dynamic>;
     final plan = PlanModel.fromMap(planData);
 
-    // Obtenemos el "userData" del creador, para pasárselo a PlanCard
-    final creatorDoc =
-        await _firestore.collection('users').doc(plan.createdBy).get();
-    final Map<String, dynamic> creatorData =
-        creatorDoc.exists ? creatorDoc.data() as Map<String, dynamic> : {};
-
-    // Navegar a una pantalla con PlanCard
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
-          appBar: AppBar(
-            title: const Text("Detalle del Plan"),
-            backgroundColor: const ui.Color.fromARGB(221, 255, 255, 255),
-          ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                PlanCard(
-                  plan: plan,
-                  userData: creatorData,
-                  fetchParticipants: fetchPlanParticipants,
-                ),
-                const SizedBox(height: 24),
-              ],
+    if (plan.special_plan == 1) {
+      final participants = await _fetchAllPlanParticipants(plan);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
+            appBar: AppBar(
+              title: const Text("Detalle del Plan"),
+              backgroundColor: const ui.Color.fromARGB(221, 255, 255, 255),
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () => _openFrostedPlanDialog(context, plan),
+                    child: _buildSpecialPlanContainer(plan, participants),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } else {
+      // Obtenemos el "userData" del creador, para pasárselo a PlanCard
+      final creatorDoc =
+          await _firestore.collection('users').doc(plan.createdBy).get();
+      final Map<String, dynamic> creatorData =
+          creatorDoc.exists ? creatorDoc.data() as Map<String, dynamic> : {};
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
+            appBar: AppBar(
+              title: const Text("Detalle del Plan"),
+              backgroundColor: const ui.Color.fromARGB(221, 255, 255, 255),
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  PlanCard(
+                    plan: plan,
+                    userData: creatorData,
+                    fetchParticipants: fetchPlanParticipants,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _openPlanChatFromNotification(
@@ -402,7 +430,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       MaterialPageRoute(
         builder: (_) => FrostedPlanDialog(
           plan: plan,
-          fetchParticipants: fetchPlanParticipants,
+          fetchParticipants: _fetchAllPlanParticipants,
           openChat: true,
         ),
       ),
@@ -896,6 +924,193 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openFrostedPlanDialog(BuildContext context, PlanModel plan) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.transparent,
+          body: FrostedPlanDialog(
+            plan: plan,
+            fetchParticipants: _fetchAllPlanParticipants,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+    PlanModel plan,
+  ) async {
+    final List<Map<String, dynamic>> participants = [];
+    final planDoc =
+        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
+    if (!planDoc.exists) return participants;
+
+    final planData = planDoc.data()!;
+    final participantUids = List<String>.from(planData['participants'] ?? []);
+    final Set<String> processed = {};
+
+    for (String uid in participantUids) {
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data() != null) {
+        final uData = userDoc.data()!;
+        participants.add({
+          'uid': uid,
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'isCreator': (plan.createdBy == uid),
+        });
+        processed.add(uid);
+      }
+    }
+
+    if (!processed.contains(plan.createdBy)) {
+      final creatorDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(plan.createdBy)
+          .get();
+      if (creatorDoc.exists && creatorDoc.data() != null) {
+        final cData = creatorDoc.data()!;
+        participants.add({
+          'uid': plan.createdBy,
+          'name': cData['name'] ?? 'Sin nombre',
+          'age': cData['age']?.toString() ?? '',
+          'photoUrl': cData['photoUrl'] ?? cData['profilePic'] ?? '',
+          'isCreator': true,
+        });
+      }
+    }
+
+    return participants;
+  }
+
+  Widget _buildSpecialPlanContainer(
+    PlanModel plan,
+    List<Map<String, dynamic>> participants,
+  ) {
+    String iconPath = plan.iconAsset ?? '';
+    for (var item in plansData.plans) {
+      if (plan.iconAsset == item['icon']) {
+        iconPath = item['icon'];
+        break;
+      }
+    }
+
+    final String dateText = plan.formattedDate(plan.startTimestamp);
+
+    return Center(
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 80),
+        margin: const EdgeInsets.only(bottom: 15, left: 8, right: 8),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.fromARGB(255, 13, 32, 53),
+              Color.fromARGB(255, 72, 38, 38),
+              Color(0xFF12232E),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(60),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (iconPath.isNotEmpty)
+                  SvgPicture.asset(
+                    iconPath,
+                    width: 40,
+                    height: 40,
+                    color: Colors.amber,
+                  ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plan.type,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.amber,
+                      ),
+                    ),
+                    Text(
+                      dateText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Spacer(),
+            _buildOverlappingAvatars(
+              participants,
+              FirebaseAuth.instance.currentUser?.uid ?? '',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlappingAvatars(
+    List<Map<String, dynamic>> participants,
+    String currentUid,
+  ) {
+    if (participants.isEmpty) return const SizedBox.shrink();
+
+    Widget buildAvatar(Map<String, dynamic> data) {
+      final url = data['photoUrl'] ?? '';
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+      );
+    }
+
+    if (participants.length == 1) {
+      return buildAvatar(participants.first);
+    }
+
+    Map<String, dynamic>? me;
+    Map<String, dynamic>? other;
+    for (var p in participants) {
+      if (p['uid'] == currentUid && me == null) {
+        me = p;
+      } else if (other == null && p['uid'] != currentUid) {
+        other = p;
+      }
+    }
+
+    if (me == null || other == null) {
+      return Row(
+        children: participants.take(2).map(buildAvatar).toList(),
+      );
+    }
+
+    return SizedBox(
+      width: 64,
+      height: 40,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(left: 0, child: buildAvatar(me)),
+          Positioned(left: 24, child: buildAvatar(other)),
+        ],
       ),
     );
   }
