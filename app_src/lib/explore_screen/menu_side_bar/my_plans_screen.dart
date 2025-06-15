@@ -160,157 +160,40 @@ class MyPlansScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPlanTile(BuildContext context, PlanModel plan) {
-    if (plan.special_plan == 1) {
-      // Plan especial
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchAllPlanParticipants(plan),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildSpecialPlanLoading();
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error al cargar participantes: ${snapshot.error}'),
-            );
-          }
-          final participants = snapshot.data ?? [];
-
-          String iconPath = plan.iconAsset ?? '';
-          for (var item in plansData.plans) {
-            if (plan.iconAsset == item['icon']) {
-              iconPath = item['icon'];
-              break;
-            }
-          }
 
 
-          final String dateText =
-              plan.formattedDate(plan.startTimestamp);
+Widget _buildPlanTile(BuildContext context, PlanModel plan) {
+  return FutureBuilder<DocumentSnapshot>(
+    future: FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get(),
+    builder: (ctx, snap) {
+      if (snap.connectionState == ConnectionState.waiting) {
+        return const SizedBox(
+          height: 330,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (!snap.hasData || !snap.data!.exists) {
+        final fallbackData = {
+          'name': 'Tú',
+          'handle': '@creador',
+          'photoUrl': '',
+        };
+        return _buildMyPlanCard(context, plan, fallbackData);
+      }
+      final data = snap.data!.data() as Map<String, dynamic>;
+      final userData = {
+        'name': data['name'] ?? 'Tú',
+        'handle': data['handle'] ?? '@creador',
 
-          return GestureDetector(
-            onTap: () => _openFrostedPlanDialog(context, plan),
-            child: Center(
-              child: Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(minHeight: 80),
-                margin: const EdgeInsets.only(
-                  bottom: 15,
-                  left: 8,
-                  right: 8,
-                ),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.fromARGB(255, 13, 32, 53),
-                      Color.fromARGB(255, 72, 38, 38),
-                      Color(0xFF12232E),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(60),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (iconPath.isNotEmpty)
-                          SvgPicture.asset(
-                            iconPath,
-                            width: 40,
-                            height: 40,
-                            color: Colors.amber,
-                          ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              plan.type,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                color: Colors.amber,
-                              ),
-                            ),
-                            Text(
-                              dateText,
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    _buildOverlappingAvatars(
-                      participants,
-                      FirebaseAuth.instance.currentUser?.uid ?? '',
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => _confirmDeletePlan(context, plan),
-                      child: ClipOval(
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.3),
-                              shape: BoxShape.circle,
-                            ),
-                            child:
-                                const Icon(Icons.delete, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      // Plan normal
-      return FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .get(),
-        builder: (ctx, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const SizedBox(
-              height: 330,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (!snap.hasData || !snap.data!.exists) {
-            final fallbackData = {
-              'name': 'Tú',
-              'handle': '@creador',
-              'photoUrl': '',
-            };
-            return _buildMyPlanCard(context, plan, fallbackData);
-          }
-          final data = snap.data!.data() as Map<String, dynamic>;
-          final userData = {
-            'name': data['name'] ?? 'Tú',
-            'handle': data['handle'] ?? '@creador',
-            'photoUrl': data['photoUrl'] ?? '',
-          };
-          return _buildMyPlanCard(context, plan, userData);
-        },
-      );
-    }
-  }
-
+        'photoUrl': data['photoUrl'] ?? '',
+      };
+      return _buildMyPlanCard(context, plan, userData);
+    },
+  );
+}
   Widget _buildMyPlanCard(
     BuildContext context,
     PlanModel plan,
@@ -525,23 +408,6 @@ class MyPlansScreen extends StatelessWidget {
             fetchParticipants: _fetchAllPlanParticipants,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSpecialPlanLoading() {
-    return Center(
-      child: Container(
-        width: 300,
-        height: 100,
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.blueAccent, width: 2),
-        ),
-        child: const Center(child: CircularProgressIndicator()),
       ),
     );
   }
