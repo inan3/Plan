@@ -356,7 +356,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final plan = PlanModel.fromMap(planData);
 
     if (plan.special_plan == 1) {
-      final participants = await fetchPlanParticipants(plan);
+      final participants = await _fetchAllPlanParticipants(plan);
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -430,7 +430,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       MaterialPageRoute(
         builder: (_) => FrostedPlanDialog(
           plan: plan,
-          fetchParticipants: fetchPlanParticipants,
+          fetchParticipants: _fetchAllPlanParticipants,
           openChat: true,
         ),
       ),
@@ -936,13 +936,60 @@ class _NotificationScreenState extends State<NotificationScreen> {
           backgroundColor: Colors.transparent,
           body: FrostedPlanDialog(
             plan: plan,
-            fetchParticipants: fetchPlanParticipants,
+            fetchParticipants: _fetchAllPlanParticipants,
           ),
         ),
       ),
     );
   }
 
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+    PlanModel plan,
+  ) async {
+    final List<Map<String, dynamic>> participants = [];
+    final planDoc =
+        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
+    if (!planDoc.exists) return participants;
+
+    final planData = planDoc.data()!;
+    final participantUids = List<String>.from(planData['participants'] ?? []);
+    final Set<String> processed = {};
+
+    for (String uid in participantUids) {
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data() != null) {
+        final uData = userDoc.data()!;
+        participants.add({
+          'uid': uid,
+          'name': uData['name'] ?? 'Sin nombre',
+          'age': uData['age']?.toString() ?? '',
+          'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'isCreator': (plan.createdBy == uid),
+        });
+        processed.add(uid);
+      }
+    }
+
+    if (!processed.contains(plan.createdBy)) {
+      final creatorDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(plan.createdBy)
+          .get();
+      if (creatorDoc.exists && creatorDoc.data() != null) {
+        final cData = creatorDoc.data()!;
+        participants.add({
+          'uid': plan.createdBy,
+          'name': cData['name'] ?? 'Sin nombre',
+          'age': cData['age']?.toString() ?? '',
+          'photoUrl': cData['photoUrl'] ?? cData['profilePic'] ?? '',
+          'isCreator': true,
+        });
+      }
+    }
+
+    return participants;
+  }
   Widget _buildSpecialPlanContainer(
     PlanModel plan,
     List<Map<String, dynamic>> participants,
