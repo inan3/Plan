@@ -28,6 +28,7 @@ import 'auth_service.dart';
 import 'local_registration_service.dart';
 import '../../services/fcm_token_service.dart';
 import 'register_screen.dart';
+import '../../utils/plans_list.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
@@ -85,6 +86,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   /// Checkbox de aceptación de términos
   bool _termsAccepted = false;
+
+  List<String> _selectedInterests = [];
+  String? _customInterest;
+  final TextEditingController _interestController = TextEditingController();
 
   int _calculateAge(DateTime date) {
     final now = DateTime.now();
@@ -147,6 +152,56 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     }
   }
 
+  void _toggleInterest(String name, {bool isCustom = false}) {
+    setState(() {
+      if (_selectedInterests.contains(name)) {
+        _selectedInterests.remove(name);
+        if (isCustom) _customInterest = null;
+      } else {
+        if (_selectedInterests.length >= 3) return;
+        _selectedInterests.add(name);
+        if (isCustom) _customInterest = name;
+      }
+    });
+  }
+
+  void _addCustomInterest() {
+    final text = _interestController.text.trim();
+    if (text.isEmpty) return;
+    if (_selectedInterests.length >= 3 && _customInterest == null) return;
+    setState(() {
+      if (_customInterest != null) {
+        _selectedInterests.remove(_customInterest);
+      }
+      _customInterest = text;
+      if (!_selectedInterests.contains(text)) {
+        _selectedInterests.add(text);
+      }
+      _interestController.clear();
+    });
+  }
+
+  Widget _buildInterestChip(String name, bool isCustom) {
+    final selected = _selectedInterests.contains(name);
+    return InkWell(
+      onTap: () => _toggleInterest(name, isCustom: isCustom),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? MyColors.AppColors.planColor : MyColors.AppColors.lightLilac,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MyColors.AppColors.greyBorder),
+        ),
+        child: Text(
+          name,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -161,6 +216,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     _usernameDebounce?.cancel();
     _usernameController.dispose();
     _cityController.dispose();
+    _interestController.dispose();
     super.dispose();
   }
 
@@ -352,6 +408,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         'favourites': [],
         'deletedChats': [],
         'dateCreatedData': FieldValue.serverTimestamp(),
+
+        'interests': _selectedInterests,
 
         // NUEVOS CAMPOS DE PRESENCIA:
         'online': true,
@@ -780,6 +838,47 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
                   // Foto de perfil
                   _buildProfilePhotoPicker(),
+                  const SizedBox(height: 20),
+
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Elige planes afines a tus intereses",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: MyColors.AppColors.black,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      if (_customInterest != null)
+                        _buildInterestChip(_customInterest!, true),
+                      ...plans.map((p) => _buildInterestChip(p['name'], false)).toList(),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _interestController,
+                          decoration: const InputDecoration(
+                            hintText: 'Escribe tu plan...',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: _addCustomInterest,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
 
                   Row(
