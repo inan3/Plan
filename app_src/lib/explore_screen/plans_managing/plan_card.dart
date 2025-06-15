@@ -715,7 +715,13 @@ class PlanCardState extends State<PlanCard> {
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
-              Text(displayText, style: const TextStyle(color: Colors.white)),
+              Flexible(
+                child: Text(
+                  displayText,
+                  style: const TextStyle(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),
@@ -1223,10 +1229,10 @@ class PlanCardState extends State<PlanCard> {
                       top: 8,
                       bottom: 8,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SingleChildScrollView(
+                    child: Builder(
+                      builder: (context) {
+                        final textScale = MediaQuery.of(context).textScaleFactor;
+                        final actions = SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
@@ -1302,9 +1308,26 @@ class PlanCardState extends State<PlanCard> {
                               ),
                             ],
                           ),
-                        ),
-                        _buildParticipantsCorner(),
-                      ],
+                        );
+
+                        final corner = _buildParticipantsCorner();
+
+                        if (textScale <= 1.2) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [actions, corner],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            actions,
+                            const SizedBox(height: 8),
+                            Align(alignment: Alignment.centerRight, child: corner),
+                          ],
+                        );
+                      },
                     ),
                   ),
 

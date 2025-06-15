@@ -975,7 +975,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
-              Text(displayText, style: const TextStyle(color: Colors.white)),
+              Flexible(
+                child: Text(
+                  displayText,
+                  style: const TextStyle(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),
@@ -1334,18 +1340,36 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         pageIndicator,
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
+          child: Builder(
+            builder: (context) {
+              final textScale = MediaQuery.of(context).textScaleFactor;
+
+              final actions = Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: _buildActionButtonsRow(plan),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _buildParticipantsCorner(participants),
-            ],
+              );
+              final corner = _buildParticipantsCorner(participants);
+
+              if (textScale <= 1.2) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [actions, const SizedBox(width: 8), corner],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [actions],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: corner),
+                ],
+              );
+            },
           ),
         ),
         if (!isUserCreator)

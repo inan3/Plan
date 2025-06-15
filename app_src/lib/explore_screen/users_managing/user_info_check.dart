@@ -825,8 +825,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   // Botones principales: Invitar, Mensaje, Seguir
   //----------------------------------------------------------------------------
   Widget _buildActionButtons(String otherUserId) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 12,
       children: [
         _buildActionButton(
           iconPath: 'assets/union.svg',
@@ -835,7 +837,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               ? _showPrivateToast
               : () => InviteUsersToPlanScreen.showPopup(context, otherUserId),
         ),
-        const SizedBox(width: 12),
         _buildActionButton(
           iconPath: 'assets/mensaje.svg',
           label: 'Enviar Mensaje',
@@ -858,7 +859,6 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             }
           },
         ),
-        const SizedBox(width: 12),
         _buildActionButton(
           iconPath: _getFollowIcon(),
           label: _getFollowLabel(),
