@@ -37,7 +37,10 @@ class _RegisterWithGoogleState extends State<RegisterWithGoogle> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => PasswordSelectionScreen(firebaseUser: user),
+          builder: (_) => UserRegistrationScreen(
+            provider: VerificationProvider.google,
+            firebaseUser: user,
+          ),
         ),
       );
     } catch (e) {
