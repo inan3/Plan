@@ -843,10 +843,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Elige planes afines a tus intereses",
+                      "Elige 3 planes afines a tus intereses",
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
                         color: MyColors.AppColors.black,
                         decoration: TextDecoration.none,
                       ),
