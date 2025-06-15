@@ -797,16 +797,18 @@ class PlanCardState extends State<PlanCard> {
   Future<void> _showParticipantsModal(
     List<Map<String, dynamic>> participants,
   ) async {
-    // Revisamos quién ha hecho check-in
+    // Revisamos quién ha hecho check-in (solo planes generales)
     List checkedInUsers = [];
-    try {
-      final planSnap = await FirebaseFirestore.instance
-          .collection('plans')
-          .doc(widget.plan.id)
-          .get();
-      final planData = planSnap.data();
-      checkedInUsers = planData?['checkedInUsers'] ?? [];
-    } catch (e) {
+    if (widget.plan.special_plan != 1) {
+      try {
+        final planSnap = await FirebaseFirestore.instance
+            .collection('plans')
+            .doc(widget.plan.id)
+            .get();
+        final planData = planSnap.data();
+        checkedInUsers = planData?['checkedInUsers'] ?? [];
+      } catch (e) {
+      }
     }
 
     showDialog(
@@ -894,7 +896,7 @@ class PlanCardState extends State<PlanCard> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        trailing: isCheckedIn
+                        trailing: (widget.plan.special_plan != 1 && isCheckedIn)
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),

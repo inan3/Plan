@@ -22,6 +22,9 @@ class AttendanceManaging {
     final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
     final randomCode = _generateRandomCode(6);
 
+    final planDoc = await planRef.get();
+    if (planDoc.data()?['special_plan'] == 1) return;
+
     await planRef.set({
       'checkInActive': true,
       'checkInCode': randomCode,
@@ -32,6 +35,8 @@ class AttendanceManaging {
   /// Finaliza el check-in de un plan (desactiva la bandera en Firestore).
   static Future<void> finalizeCheckIn(String planId) async {
     final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
+    final planDoc = await planRef.get();
+    if (planDoc.data()?['special_plan'] == 1) return;
     await planRef.set({
       'checkInActive': false,
     }, SetOptions(merge: true));
@@ -43,6 +48,8 @@ class AttendanceManaging {
   static Future<void> rotateCheckInCode(String planId) async {
     final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
     final randomCode = _generateRandomCode(6);
+    final planDoc = await planRef.get();
+    if (planDoc.data()?['special_plan'] == 1) return;
     await planRef.set({
       'checkInCode': randomCode,
       'checkInCodeTimestamp': FieldValue.serverTimestamp(),
@@ -53,6 +60,8 @@ class AttendanceManaging {
   /// - Se añade su uid a "checkedInUsers" en el documento del plan.
   static Future<void> confirmAttendance(String planId, String uid) async {
     final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
+    final planDoc = await planRef.get();
+    if (planDoc.data()?['special_plan'] == 1) return;
     await planRef.update({
       'checkedInUsers': FieldValue.arrayUnion([uid]),
     });
@@ -65,6 +74,8 @@ class AttendanceManaging {
     final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
     final doc = await planRef.get();
     if (!doc.exists) return false;
+
+    if (doc.data()?['special_plan'] == 1) return false;
 
     final data = doc.data()!;
     final currentCode = data['checkInCode'] ?? '';
