@@ -174,9 +174,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         _selectedInterests.remove(_customInterest);
       }
       _customInterest = text;
-      if (!_selectedInterests.contains(text)) {
-        _selectedInterests.add(text);
-      }
+      _selectedInterests.remove(text);
+      _selectedInterests.insert(0, text);
       _interestController.clear();
     });
   }
@@ -883,25 +882,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                           color: Colors.grey,
                         ),
                         border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _interestController,
-                          decoration: const InputDecoration(
-                            hintText: 'Escribe tu plan...',
-                          ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: _addCustomInterest,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: _addCustomInterest,
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 20),
 
