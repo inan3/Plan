@@ -17,14 +17,13 @@ android {
         versionName = flutter.versionName
     }
 
-    compileOptions {
-        // Usa al menos Java 17 (estable para Android Gradle 8.x)
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-        coreLibraryDesugaringEnabled true        // ← ya estaba OK
-    }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+    coreLibraryDesugaringEnabled true
+  }
 
-    kotlinOptions { jvmTarget = "21" }           // mismo nivel que compileOptions
+  kotlinOptions { jvmTarget = "17" }
 
     buildTypes {
         release { signingConfig = signingConfigs.debug }

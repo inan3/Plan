@@ -123,7 +123,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.blue,
+                  backgroundColor: AppColors.planColor,
                   minimumSize: const Size(100, 40),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
@@ -142,7 +142,7 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.blue,
+                  backgroundColor: AppColors.planColor,
                   minimumSize: const Size(120, 40),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
@@ -274,61 +274,65 @@ class _InvitePlanPopupState extends State<_InvitePlanPopup> {
                             filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                             child: Container(
                               color: Colors.white.withOpacity(0.15),
-                              child: Material(color: Colors.transparent, child: ListTile(
-                                title: Text(
-                                  plan.type,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                subtitle: Text(
-                                  "Creado el: ${plan.formattedDate(plan.createdAt)}",
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                onTap: () {
-                                  showGeneralDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    barrierLabel: "Confirmar invitación",
-                                    barrierColor: Colors.black54,
-                                    transitionDuration:
-                                        const Duration(milliseconds: 300),
-                                    pageBuilder: (context, animation,
-                                        secondaryAnimation) {
-                                      return const SizedBox();
-                                    },
-                                    transitionBuilder:
-                                        (context, anim1, anim2, child) {
-                                      return FadeTransition(
-                                        opacity: CurvedAnimation(
-                                          parent: anim1,
-                                          curve: Curves.easeOut,
-                                        ),
-                                        child: ScaleTransition(
-                                          scale: CurvedAnimation(
-                                            parent: anim1,
-                                            curve: Curves.easeOutBack,
-                                          ),
-                                          child: Center(
-                                            child: _FrostedConfirmDialog(
-                                              plan: plan,
-                                              onConfirm: () {
-                                                Navigator.pop(context);
-                                                Navigator.pop(context);
-                                                _inviteUserToExistingPlan(
-                                                  widget.parentContext,
-                                                  plan,
-                                                );
-                                              },
-                                              onCancel: () {
-                                                Navigator.pop(context);
-                                              },
+                              child: Material(
+                                  color: Colors.transparent,
+                                  child: ListTile(
+                                    title: Text(
+                                      plan.type,
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
+                                    subtitle: Text(
+                                      "Creado el: ${plan.formattedDate(plan.createdAt)}",
+                                      style: const TextStyle(
+                                          color: Colors.white70),
+                                    ),
+                                    onTap: () {
+                                      showGeneralDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        barrierLabel: "Confirmar invitación",
+                                        barrierColor: Colors.black54,
+                                        transitionDuration:
+                                            const Duration(milliseconds: 300),
+                                        pageBuilder: (context, animation,
+                                            secondaryAnimation) {
+                                          return const SizedBox();
+                                        },
+                                        transitionBuilder:
+                                            (context, anim1, anim2, child) {
+                                          return FadeTransition(
+                                            opacity: CurvedAnimation(
+                                              parent: anim1,
+                                              curve: Curves.easeOut,
                                             ),
-                                          ),
-                                        ),
+                                            child: ScaleTransition(
+                                              scale: CurvedAnimation(
+                                                parent: anim1,
+                                                curve: Curves.easeOutBack,
+                                              ),
+                                              child: Center(
+                                                child: _FrostedConfirmDialog(
+                                                  plan: plan,
+                                                  onConfirm: () {
+                                                    Navigator.pop(context);
+                                                    Navigator.pop(context);
+                                                    _inviteUserToExistingPlan(
+                                                      widget.parentContext,
+                                                      plan,
+                                                    );
+                                                  },
+                                                  onCancel: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       );
                                     },
-                                  );
-                                },
-                              )),
+                                  )),
                             ),
                           ),
                         ),
@@ -513,55 +517,55 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               ),
               const SizedBox(height: 20),
               const Center(
-              child: Text(
-                "¡Crea tu Plan Privado e Invita!",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.none,
+                child: Text(
+                  "¡Crea tu Plan Privado e Invita!",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.none,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ===== TIPO DE PLAN =====
-            _buildTypeOfPlan(),
+              // ===== TIPO DE PLAN =====
+              _buildTypeOfPlan(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ===== FECHA Y HORA =====
-            _buildDateTimeSection(),
+              // ===== FECHA Y HORA =====
+              _buildDateTimeSection(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ===== UBICACIÓN =====
-            _buildLocationSelectionArea(),
+              // ===== UBICACIÓN =====
+              _buildLocationSelectionArea(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ===== DESCRIPCIÓN =====
-            _buildDescriptionSection(),
+              // ===== DESCRIPCIÓN =====
+              _buildDescriptionSection(),
 
-            _buildBackgroundImageSection(),
-            const SizedBox(height: 20),
+              _buildBackgroundImageSection(),
+              const SizedBox(height: 20),
 
-            // ===== BOTÓN FINALIZAR =====
-            ElevatedButton(
-              onPressed: _onFinishPlan,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.planColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+              // ===== BOTÓN FINALIZAR =====
+              ElevatedButton(
+                onPressed: _onFinishPlan,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.planColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: const Text(
+                  "Crear Plan",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
-              child: const Text(
-                "Crear Plan",
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
-          ],
+            ],
           ),
         ),
 
@@ -1412,6 +1416,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       }
     }
   }
+
   // -------------------------- AL CREAR EL PLAN ("Finish") ---------------------------
   // ----------------------------------------------------------------------------------
   Future<void> _onFinishPlan() async {

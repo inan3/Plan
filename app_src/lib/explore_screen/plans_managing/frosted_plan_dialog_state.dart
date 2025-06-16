@@ -115,8 +115,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           _creatorAge = ageCreador;
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _checkIfLiked() async {
@@ -418,7 +417,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
   Widget _buildMessageButton(PlanModel plan) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(plan.id)
+          .snapshots(),
       builder: (context, snapshot) {
         String countText = '0';
         if (snapshot.hasData && snapshot.data!.exists) {
@@ -638,7 +640,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Tu solicitud de unión se ha enviado!')),
+          const SnackBar(
+              content: Text('¡Tu solicitud de unión se ha enviado!')),
         );
       },
       child: ClipRRect(
@@ -852,7 +855,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final isParticipant = plan.participants?.contains(uid) ?? false;
     if (!isCreator && !isParticipant) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes participar en el plan para comentar.')),
+        const SnackBar(
+            content: Text('Debes participar en el plan para comentar.')),
       );
       return;
     }
@@ -880,10 +884,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     });
 
     // Notificaciones para participantes y creador
-    final planDoc = await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(plan.id)
-        .get();
+    final planDoc =
+        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
     if (planDoc.exists && planDoc.data() != null) {
       final pdata = planDoc.data()!;
       final List<String> uids = List<String>.from(pdata['participants'] ?? []);
@@ -917,7 +919,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
   Future<void> _removeParticipant(String uid) async {
     try {
-      await FirebaseFirestore.instance.collection('plans').doc(widget.plan.id).update({
+      await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(widget.plan.id)
+          .update({
         'participants': FieldValue.arrayRemove([uid]),
         'removedParticipants': FieldValue.arrayUnion([uid])
       });
@@ -1068,8 +1073,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             .get();
         final planData = planSnap.data();
         checkedInUsers = planData?['checkedInUsers'] ?? [];
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     showDialog(
@@ -1171,7 +1175,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                             : null,
                       );
 
-                      final isCreator = widget.plan.createdBy == _currentUser?.uid;
+                      final isCreator =
+                          widget.plan.createdBy == _currentUser?.uid;
                       if (isCreator && uid != widget.plan.createdBy) {
                         return Dismissible(
                           key: Key(uid),
@@ -1180,17 +1185,20 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                             color: Colors.red,
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: const Icon(Icons.delete, color: Colors.white),
+                            child:
+                                const Icon(Icons.delete, color: Colors.white),
                           ),
                           confirmDismiss: (_) async {
                             return await showDialog<bool>(
                                   context: context,
                                   builder: (c) => AlertDialog(
                                     title: const Text('Eliminar participante'),
-                                    content: Text('¿Eliminar a $name del plan?'),
+                                    content:
+                                        Text('¿Eliminar a $name del plan?'),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.pop(c, false),
+                                        onPressed: () =>
+                                            Navigator.pop(c, false),
                                         child: const Text('No'),
                                       ),
                                       TextButton(
@@ -1199,7 +1207,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                       ),
                                     ],
                                   ),
-                                ) ?? false;
+                                ) ??
+                                false;
                           },
                           onDismissed: (_) => _removeParticipant(uid),
                           child: tile,
@@ -1353,7 +1362,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 _buildParticipantsCorner(participants),
               ],
             ),
-          ),
+          ), // <- cierra FittedBox
         ),
         if (!isUserCreator)
           Padding(
@@ -1385,26 +1394,25 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           child: Row(
             children: [
               CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.blueGrey[400],
-              child: ClipOval(
-                child: (_creatorPhotoUrl?.isNotEmpty ?? false)
-                    ? CachedNetworkImage(
-                        imageUrl: _creatorPhotoUrl!,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2)),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.person, color: Colors.white),
-                      )
-                    : const Icon(Icons.person, color: Colors.white),
+                radius: 20,
+                backgroundColor: Colors.blueGrey[400],
+                child: ClipOval(
+                  child: (_creatorPhotoUrl?.isNotEmpty ?? false)
+                      ? CachedNetworkImage(
+                          imageUrl: _creatorPhotoUrl!,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2)),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.person, color: Colors.white),
+                        )
+                      : const Icon(Icons.person, color: Colors.white),
+                ),
               ),
-              ),
-            ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1503,7 +1511,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         participants.any((p) => p['uid'] == _currentUser?.uid);
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('plans').doc(plan.id).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('plans')
+          .doc(plan.id)
+          .snapshots(),
       builder: (context, snap) {
         if (!snap.hasData || !snap.data!.exists) {
           return const SizedBox.shrink();
@@ -1617,8 +1628,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          CheckInParticipantScreen(planId: plan.id),
+                      builder: (_) => CheckInParticipantScreen(planId: plan.id),
                     ),
                   );
                 },
@@ -1730,8 +1740,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
       _followers = await _fetchUsersData(followerUids);
       _following = await _fetchUsersData(followedUids);
       setState(() {});
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<List<Map<String, dynamic>>> _fetchUsersData(List<String> uids) async {
@@ -1777,16 +1786,16 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
         'planDescription': planDesc,
         'planImage': planImage ?? '',
         'planLink': shareUrl,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-    });
-  }
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+    }
     await FirebaseFirestore.instance
         .collection('plans')
         .doc(widget.plan.id)
         .update({'share_count': FieldValue.increment(1)});
-  Navigator.pop(context);
-}
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
