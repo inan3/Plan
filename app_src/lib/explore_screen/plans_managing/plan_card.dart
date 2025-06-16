@@ -1175,15 +1175,13 @@ class PlanCardState extends State<PlanCard> {
                   // Fila superior (creador + botón unirse)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () async {
-                              final creatorUid = plan.createdBy;
-                              final currentUid =
-                                  FirebaseAuth.instance.currentUser?.uid;
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            final creatorUid = plan.createdBy;
+                            final currentUid =
+                                FirebaseAuth.instance.currentUser?.uid;
                               if (creatorUid.isNotEmpty &&
                                   creatorUid != currentUid) {
                                 await UserInfoCheck.open(context, creatorUid);
@@ -1233,15 +1231,14 @@ class PlanCardState extends State<PlanCard> {
                       top: 8,
                       bottom: 8,
                     ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
+                    child: Builder(
+                      builder: (context) {
+                        final textScale = MediaQuery.of(context).textScaleFactor;
+                        final actions = FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
                                 _buildFrostedAction(
                                   iconPath: 'assets/corazon.svg',
                                   countText: '$_likeCount',
@@ -1315,10 +1312,25 @@ class PlanCardState extends State<PlanCard> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          _buildParticipantsCorner(),
-                        ],
-                      ),
+                        );
+                        final corner = _buildParticipantsCorner();
+
+                        if (textScale <= 1.2) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [actions, corner],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            actions,
+                            const SizedBox(height: 8),
+                            Align(alignment: Alignment.centerRight, child: corner),
+                          ],
+                        );
+                      },
                     ),
                   ),
 
