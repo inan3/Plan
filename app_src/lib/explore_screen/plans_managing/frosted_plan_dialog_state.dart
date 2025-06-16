@@ -1396,9 +1396,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            children: [
+              CircleAvatar(
               radius: 20,
               backgroundColor: Colors.blueGrey[400],
               child: ClipOval(
@@ -1417,24 +1419,26 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       )
                     : const Icon(Icons.person, color: Colors.white),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                age.isNotEmpty ? '$name, $age' : name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  age.isNotEmpty ? '$name, $age' : name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1309,7 +1309,8 @@ class PlanCardState extends State<PlanCard> {
                                   );
                                 },
                               ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                         final corner = _buildParticipantsCorner();
