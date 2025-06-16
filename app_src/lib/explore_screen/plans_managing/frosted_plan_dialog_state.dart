@@ -1397,9 +1397,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
+        child: Builder(
+          builder: (context) {
+            final textScale = MediaQuery.of(context).textScaleFactor;
+
+            final avatar = CircleAvatar(
               radius: 20,
               backgroundColor: Colors.blueGrey[400],
               child: ClipOval(
@@ -1418,9 +1420,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       )
                     : const Icon(Icons.person, color: Colors.white),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
+            );
+
+            final nameWidget = Expanded(
               child: Text(
                 age.isNotEmpty ? '$name, $age' : name,
                 style: const TextStyle(
@@ -1430,12 +1432,28 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
-            ),
-            IconButton(
+            );
+
+            final backBtn = IconButton(
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
-            ),
-          ],
+            );
+
+            if (textScale <= 1.2) {
+              return Row(
+                children: [avatar, const SizedBox(width: 8), nameWidget, backBtn],
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(children: [avatar, const SizedBox(width: 8), nameWidget]),
+                const SizedBox(height: 8),
+                Align(alignment: Alignment.centerRight, child: backBtn),
+              ],
+            );
+          },
         ),
       ),
     );
