@@ -1344,11 +1344,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             builder: (context) {
               final textScale = MediaQuery.of(context).textScaleFactor;
 
-              final actions = Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: _buildActionButtonsRow(plan),
-                ),
+              final actions = FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: _buildActionButtonsRow(plan),
               );
               final corner = _buildParticipantsCorner(participants);
 
