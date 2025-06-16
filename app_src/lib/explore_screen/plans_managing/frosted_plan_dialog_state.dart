@@ -1349,20 +1349,36 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         pageIndicator,
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: _buildActionButtonsRow(plan),
-                ),
-                const SizedBox(width: 8),
-                _buildParticipantsCorner(participants),
-              ],
-            ),
-          ), // <- cierra FittedBox
+          child: Builder(
+            builder: (context) {
+              final textScale = MediaQuery.of(context).textScaleFactor;
+
+              final actions = FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: _buildActionButtonsRow(plan),
+              );
+              final corner = _buildParticipantsCorner(participants);
+
+              if (textScale <= 1.2) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [actions, const SizedBox(width: 8), corner],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [actions],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: corner),
+                ],
+              );
+            },
+          ),
         ),
         if (!isUserCreator)
           Padding(
