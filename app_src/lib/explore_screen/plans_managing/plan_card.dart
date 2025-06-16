@@ -1236,6 +1236,7 @@ class PlanCardState extends State<PlanCard> {
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                     child: Builder(
                       builder: (context) {
+<<<<<<< HEAD
                         final textScale =
                             MediaQuery.of(context).textScaleFactor;
 
@@ -1243,6 +1244,11 @@ class PlanCardState extends State<PlanCard> {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Row(
+=======
+                        final textScale = MediaQuery.of(context).textScaleFactor;
+                        final actionsRow = Row(
+                            mainAxisSize: MainAxisSize.min,
+>>>>>>> 2a4e406d57ab4ff1b140c5d514965e270c111429
                             children: [
                               _buildFrostedAction(
                                 iconPath: 'assets/corazon.svg',
