@@ -1354,7 +1354,7 @@ class PlanCardState extends State<PlanCard> {
                   ),
 
                   // plan.type y fecha/hora
-                  if (dateText.isNotEmpty)
+                  if (dateText.isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
                       child: Row(
@@ -1379,6 +1379,7 @@ class PlanCardState extends State<PlanCard> {
                         ],
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
