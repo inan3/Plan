@@ -260,7 +260,10 @@ class PlanCardState extends State<PlanCard> {
 
   Future<void> _removeParticipant(String uid) async {
     try {
-      await FirebaseFirestore.instance.collection('plans').doc(widget.plan.id).update({
+      await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(widget.plan.id)
+          .update({
         'participants': FieldValue.arrayRemove([uid]),
         'removedParticipants': FieldValue.arrayUnion([uid])
       });
@@ -283,7 +286,8 @@ class PlanCardState extends State<PlanCard> {
   // ─────────────────────────────────────────────────────────────
   // (5) Abrir detalles del plan
   // ─────────────────────────────────────────────────────────────
-  void _openPlanDetails(BuildContext context, PlanModel plan, {bool openChat = false}) {
+  void _openPlanDetails(BuildContext context, PlanModel plan,
+      {bool openChat = false}) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -394,7 +398,8 @@ class PlanCardState extends State<PlanCard> {
                   decoration: InputDecoration(
                     hintText: "Escribe un mensaje...",
                     filled: true,
-                    fillColor: const ui.Color.fromARGB(255, 177, 177, 177), // dark gray background
+                    fillColor: const ui.Color.fromARGB(
+                        255, 177, 177, 177), // dark gray background
                     hintStyle: const TextStyle(color: Colors.black54),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -504,7 +509,8 @@ class PlanCardState extends State<PlanCard> {
     final isParticipant = plan.participants?.contains(uid) ?? false;
     if (!isCreator && !isParticipant) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes participar en el plan para comentar.')),
+        const SnackBar(
+            content: Text('Debes participar en el plan para comentar.')),
       );
       return;
     }
@@ -532,10 +538,8 @@ class PlanCardState extends State<PlanCard> {
     });
 
     // Crear notificación para cada participante y creador (excepto el emisor)
-    final planDoc = await FirebaseFirestore.instance
-        .collection('plans')
-        .doc(plan.id)
-        .get();
+    final planDoc =
+        await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
     if (planDoc.exists && planDoc.data() != null) {
       final pdata = planDoc.data()!;
       final List<String> uids = List<String>.from(pdata['participants'] ?? []);
@@ -814,8 +818,7 @@ class PlanCardState extends State<PlanCard> {
             .get();
         final planData = planSnap.data();
         checkedInUsers = planData?['checkedInUsers'] ?? [];
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     showDialog(
@@ -864,7 +867,8 @@ class PlanCardState extends State<PlanCard> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: AppColors.planColor),
+                        icon:
+                            const Icon(Icons.close, color: AppColors.planColor),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -922,7 +926,8 @@ class PlanCardState extends State<PlanCard> {
                             : null,
                       );
 
-                      final isCreator = widget.plan.createdBy == _currentUser?.uid;
+                      final isCreator =
+                          widget.plan.createdBy == _currentUser?.uid;
                       if (isCreator && uid != widget.plan.createdBy) {
                         return Dismissible(
                           key: Key(uid),
@@ -931,17 +936,20 @@ class PlanCardState extends State<PlanCard> {
                             color: Colors.red,
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: const Icon(Icons.delete, color: Colors.white),
+                            child:
+                                const Icon(Icons.delete, color: Colors.white),
                           ),
                           confirmDismiss: (_) async {
                             return await showDialog<bool>(
                                   context: context,
                                   builder: (c) => AlertDialog(
                                     title: const Text('Eliminar participante'),
-                                    content: Text('¿Eliminar a $name del plan?'),
+                                    content:
+                                        Text('¿Eliminar a $name del plan?'),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.pop(c, false),
+                                        onPressed: () =>
+                                            Navigator.pop(c, false),
                                         child: const Text('No'),
                                       ),
                                       TextButton(
@@ -950,7 +958,8 @@ class PlanCardState extends State<PlanCard> {
                                       ),
                                     ],
                                   ),
-                                ) ?? false;
+                                ) ??
+                                false;
                           },
                           onDismissed: (_) => _removeParticipant(uid),
                           child: tile,
@@ -1182,18 +1191,17 @@ class PlanCardState extends State<PlanCard> {
                             final creatorUid = plan.createdBy;
                             final currentUid =
                                 FirebaseAuth.instance.currentUser?.uid;
-                              if (creatorUid.isNotEmpty &&
-                                  creatorUid != currentUid) {
-                                await UserInfoCheck.open(context, creatorUid);
-                                if (mounted) setState(() {});
-                              }
-                            },
-                            child: _buildCreatorFrosted(name, fallbackPhotoUrl),
-                          ),
-                          const Spacer(),
-                          _buildJoinFrosted(),
-                        ],
-                      ),
+                            if (creatorUid.isNotEmpty &&
+                                creatorUid != currentUid) {
+                              await UserInfoCheck.open(context, creatorUid);
+                              if (mounted) setState(() {});
+                            }
+                          },
+                          child: _buildCreatorFrosted(name, fallbackPhotoUrl),
+                        ),
+                        const Spacer(),
+                        _buildJoinFrosted(),
+                      ],
                     ),
                   ),
 
@@ -1225,25 +1233,22 @@ class PlanCardState extends State<PlanCard> {
 
                   // Botones de acción (like, chat, share) → Se añade SingleChildScrollView para evitar overflow
                   Padding(
-                    padding: const EdgeInsets.only(
-                      left: 12,
-                      right: 12,
-                      top: 8,
-                      bottom: 8,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                     child: Builder(
                       builder: (context) {
-                        final textScale = MediaQuery.of(context).textScaleFactor;
+                        final textScale =
+                            MediaQuery.of(context).textScaleFactor;
+
                         final actions = FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Row(
                             children: [
-                                _buildFrostedAction(
-                                  iconPath: 'assets/corazon.svg',
-                                  countText: '$_likeCount',
-                                  onTap: _toggleLike,
-                                  iconColor: _liked ? Colors.red : Colors.white,
+                              _buildFrostedAction(
+                                iconPath: 'assets/corazon.svg',
+                                countText: '$_likeCount',
+                                onTap: _toggleLike,
+                                iconColor: _liked ? Colors.red : Colors.white,
                               ),
                               const SizedBox(width: 8),
                               StreamBuilder<DocumentSnapshot>(
@@ -1251,17 +1256,13 @@ class PlanCardState extends State<PlanCard> {
                                     .collection('plans')
                                     .doc(plan.id)
                                     .snapshots(),
-                                builder: (ctx, snapMsg) {
-                                  String countText = '0';
-                                  if (snapMsg.hasData && snapMsg.data!.exists) {
-                                    final d = snapMsg.data!.data()
-                                        as Map<String, dynamic>;
-                                    final c = d['commentsCount'] ?? 0;
-                                    countText = c.toString();
-                                  }
+                                builder: (ctx, snap) {
+                                  final data = snap.data?.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/mensaje.svg',
-                                    countText: countText,
+                                    countText: '${data['commentsCount'] ?? 0}',
                                     onTap: _onMessageButtonTap,
                                   );
                                 },
@@ -1272,18 +1273,13 @@ class PlanCardState extends State<PlanCard> {
                                     .collection('plans')
                                     .doc(plan.id)
                                     .snapshots(),
-                                builder: (ctx, snapShare) {
-                                  String countText = '0';
-                                  if (snapShare.hasData &&
-                                      snapShare.data!.exists) {
-                                    final d = snapShare.data!.data()
-                                        as Map<String, dynamic>;
-                                    final c = d['share_count'] ?? 0;
-                                    countText = c.toString();
-                                  }
+                                builder: (ctx, snap) {
+                                  final data = snap.data?.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/icono-compartir.svg',
-                                    countText: countText,
+                                    countText: '${data['share_count'] ?? 0}',
                                     onTap: _onShareButtonTap,
                                   );
                                 },
@@ -1294,42 +1290,39 @@ class PlanCardState extends State<PlanCard> {
                                     .collection('plans')
                                     .doc(plan.id)
                                     .snapshots(),
-                                builder: (ctx, snapView) {
-                                  String countText = '0';
-                                  if (snapView.hasData && snapView.data!.exists) {
-                                    final d = snapView.data!.data()
-                                        as Map<String, dynamic>;
-                                    final c = d['views'] ?? 0;
-                                    countText = c.toString();
-                                  }
+                                builder: (ctx, snap) {
+                                  final data = snap.data?.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/icono-ojo.svg',
-                                    countText: countText,
+                                    countText: '${data['views'] ?? 0}',
                                     onTap: () {},
                                   );
                                 },
                               ),
-                              ],
-                            ),
+                            ],
                           ),
                         );
+
                         final corner = _buildParticipantsCorner();
 
-                        if (textScale <= 1.2) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [actions, corner],
-                          );
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            actions,
-                            const SizedBox(height: 8),
-                            Align(alignment: Alignment.centerRight, child: corner),
-                          ],
-                        );
+                        return textScale <= 1.2
+                            ? Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [actions, corner],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  actions,
+                                  const SizedBox(height: 8),
+                                  Align(
+                                      alignment: Alignment.centerRight,
+                                      child: corner),
+                                ],
+                              );
                       },
                     ),
                   ),
