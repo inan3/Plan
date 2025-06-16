@@ -1234,10 +1234,8 @@ class PlanCardState extends State<PlanCard> {
                     child: Builder(
                       builder: (context) {
                         final textScale = MediaQuery.of(context).textScaleFactor;
-                        final actions = FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Row(
+                        final actionsRow = Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                                 _buildFrostedAction(
                                   iconPath: 'assets/corazon.svg',
@@ -1311,21 +1309,23 @@ class PlanCardState extends State<PlanCard> {
                               ),
                               ],
                             ),
-                          ),
-                        );
+                          );
                         final corner = _buildParticipantsCorner();
 
                         if (textScale <= 1.2) {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [actions, corner],
+                            children: [actionsRow, corner],
                           );
                         }
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            actions,
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: actionsRow,
+                            ),
                             const SizedBox(height: 8),
                             Align(alignment: Alignment.centerRight, child: corner),
                           ],

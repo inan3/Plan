@@ -1353,25 +1353,22 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             builder: (context) {
               final textScale = MediaQuery.of(context).textScaleFactor;
 
-              final actions = FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: _buildActionButtonsRow(plan),
-              );
+              final actionsRow = _buildActionButtonsRow(plan);
               final corner = _buildParticipantsCorner(participants);
 
               if (textScale <= 1.2) {
                 return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [actions, const SizedBox(width: 8), corner],
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [actionsRow, corner],
                 );
               }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [actions],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: actionsRow,
                   ),
                   const SizedBox(height: 8),
                   Align(alignment: Alignment.centerRight, child: corner),
@@ -1394,60 +1391,63 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   Widget _buildHeaderRow() {
     final String name = widget.plan.creatorName ?? 'Creador';
     final String age = _creatorAge ?? '';
-    return GestureDetector(
-      onTap: () async {
-        final creatorUid = widget.plan.createdBy;
-        final currentUid = FirebaseAuth.instance.currentUser?.uid;
-        if (creatorUid.isNotEmpty && creatorUid != currentUid) {
-          await UserInfoCheck.open(context, creatorUid);
-          if (mounted) await _fetchCreatorInfo();
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.blueGrey[400],
-                child: ClipOval(
-                  child: (_creatorPhotoUrl?.isNotEmpty ?? false)
-                      ? CachedNetworkImage(
-                          imageUrl: _creatorPhotoUrl!,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2)),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.person, color: Colors.white),
-                        )
-                      : const Icon(Icons.person, color: Colors.white),
-                ),
+
+    Future<void> _openCreator() async {
+      final creatorUid = widget.plan.createdBy;
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      if (creatorUid.isNotEmpty && creatorUid != currentUid) {
+        await UserInfoCheck.open(context, creatorUid);
+        if (mounted) await _fetchCreatorInfo();
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _openCreator,
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.blueGrey[400],
+              child: ClipOval(
+                child: (_creatorPhotoUrl?.isNotEmpty ?? false)
+                    ? CachedNetworkImage(
+                        imageUrl: _creatorPhotoUrl!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2)),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.person, color: Colors.white),
+                      )
+                    : const Icon(Icons.person, color: Colors.white),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  age.isNotEmpty ? '$name, $age' : name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: GestureDetector(
+              onTap: _openCreator,
+              child: Text(
+                age.isNotEmpty ? '$name, $age' : name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       ),
     );
   }
