@@ -1340,36 +1340,19 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         pageIndicator,
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Builder(
-            builder: (context) {
-              final textScale = MediaQuery.of(context).textScaleFactor;
-
-              final actions = Expanded(
-                child: SingleChildScrollView(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: _buildActionButtonsRow(plan),
                 ),
-              );
-              final corner = _buildParticipantsCorner(participants);
-
-              if (textScale <= 1.2) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [actions, const SizedBox(width: 8), corner],
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [actions],
-                  ),
-                  const SizedBox(height: 8),
-                  Align(alignment: Alignment.centerRight, child: corner),
-                ],
-              );
-            },
+                const SizedBox(width: 8),
+                _buildParticipantsCorner(participants),
+              ],
+            ),
           ),
         ),
         if (!isUserCreator)
@@ -1397,9 +1380,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            children: [
+              CircleAvatar(
               radius: 20,
               backgroundColor: Colors.blueGrey[400],
               child: ClipOval(
@@ -1418,24 +1403,26 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       )
                     : const Icon(Icons.person, color: Colors.white),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                age.isNotEmpty ? '$name, $age' : name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  age.isNotEmpty ? '$name, $age' : name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -324,11 +324,12 @@ class PlanCardState extends State<PlanCard> {
         // Header
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              const SizedBox(width: 48),
-              const Expanded(
-                child: Text(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              children: [
+                const SizedBox(width: 48),
+                const Text(
                   "Chat del Plan",
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -337,12 +338,12 @@ class PlanCardState extends State<PlanCard> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: AppColors.planColor),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.planColor),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
         ),
         const Divider(color: AppColors.planColor),
@@ -1174,24 +1175,27 @@ class PlanCardState extends State<PlanCard> {
                   // Fila superior (creador + botón unirse)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () async {
-                            final creatorUid = plan.createdBy;
-                            final currentUid =
-                                FirebaseAuth.instance.currentUser?.uid;
-                            if (creatorUid.isNotEmpty &&
-                                creatorUid != currentUid) {
-                              await UserInfoCheck.open(context, creatorUid);
-                              if (mounted) setState(() {});
-                            }
-                          },
-                          child: _buildCreatorFrosted(name, fallbackPhotoUrl),
-                        ),
-                        const Spacer(),
-                        _buildJoinFrosted(),
-                      ],
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              final creatorUid = plan.createdBy;
+                              final currentUid =
+                                  FirebaseAuth.instance.currentUser?.uid;
+                              if (creatorUid.isNotEmpty &&
+                                  creatorUid != currentUid) {
+                                await UserInfoCheck.open(context, creatorUid);
+                                if (mounted) setState(() {});
+                              }
+                            },
+                            child: _buildCreatorFrosted(name, fallbackPhotoUrl),
+                          ),
+                          const Spacer(),
+                          _buildJoinFrosted(),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -1229,18 +1233,20 @@ class PlanCardState extends State<PlanCard> {
                       top: 8,
                       bottom: 8,
                     ),
-                    child: Builder(
-                      builder: (context) {
-                        final textScale = MediaQuery.of(context).textScaleFactor;
-                        final actions = SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _buildFrostedAction(
-                                iconPath: 'assets/corazon.svg',
-                                countText: '$_likeCount',
-                                onTap: _toggleLike,
-                                iconColor: _liked ? Colors.red : Colors.white,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildFrostedAction(
+                                  iconPath: 'assets/corazon.svg',
+                                  countText: '$_likeCount',
+                                  onTap: _toggleLike,
+                                  iconColor: _liked ? Colors.red : Colors.white,
                               ),
                               const SizedBox(width: 8),
                               StreamBuilder<DocumentSnapshot>(
@@ -1306,28 +1312,13 @@ class PlanCardState extends State<PlanCard> {
                                   );
                                 },
                               ),
-                            ],
+                              ],
+                            ),
                           ),
-                        );
-
-                        final corner = _buildParticipantsCorner();
-
-                        if (textScale <= 1.2) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [actions, corner],
-                          );
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            actions,
-                            const SizedBox(height: 8),
-                            Align(alignment: Alignment.centerRight, child: corner),
-                          ],
-                        );
-                      },
+                          const SizedBox(width: 8),
+                          _buildParticipantsCorner(),
+                        ],
+                      ),
                     ),
                   ),
 
