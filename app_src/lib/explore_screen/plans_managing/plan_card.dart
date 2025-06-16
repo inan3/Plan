@@ -324,25 +324,42 @@ class PlanCardState extends State<PlanCard> {
         // Header
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              const SizedBox(width: 48),
-              const Expanded(
-                child: Text(
-                  "Chat del Plan",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.planColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+          child: Builder(
+            builder: (context) {
+              final textScale = MediaQuery.of(context).textScaleFactor;
+
+              final title = const Text(
+                "Chat del Plan",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.planColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-              ),
-              IconButton(
+              );
+              final closeBtn = IconButton(
                 icon: const Icon(Icons.close, color: AppColors.planColor),
                 onPressed: () => Navigator.pop(context),
-              ),
-            ],
+              );
+
+              if (textScale <= 1.2) {
+                return Row(
+                  children: [
+                    const SizedBox(width: 48),
+                    const Expanded(child: title),
+                    closeBtn,
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [const SizedBox(width: 48), Expanded(child: title)]),
+                  Align(alignment: Alignment.centerRight, child: closeBtn),
+                ],
+              );
+            },
           ),
         ),
         const Divider(color: AppColors.planColor),
@@ -1174,9 +1191,12 @@ class PlanCardState extends State<PlanCard> {
                   // Fila superior (creador + botón unirse)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                    child: Row(
-                      children: [
-                        GestureDetector(
+                    child: Builder(
+                      builder: (context) {
+                        final textScale =
+                            MediaQuery.of(context).textScaleFactor;
+
+                        final creator = GestureDetector(
                           onTap: () async {
                             final creatorUid = plan.createdBy;
                             final currentUid =
@@ -1188,10 +1208,27 @@ class PlanCardState extends State<PlanCard> {
                             }
                           },
                           child: _buildCreatorFrosted(name, fallbackPhotoUrl),
-                        ),
-                        const Spacer(),
-                        _buildJoinFrosted(),
-                      ],
+                        );
+                        final joinButton = _buildJoinFrosted();
+
+                        if (textScale <= 1.2) {
+                          return Row(
+                            children: [creator, const Spacer(), joinButton],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(children: [creator]),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: joinButton,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
 
