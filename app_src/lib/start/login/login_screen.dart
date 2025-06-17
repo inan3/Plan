@@ -156,34 +156,96 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => isLoading = true);
 
-    try {
-      final email = phone.replaceAll('+', '') + '@phoneuser.local';
-      final cred = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (cred) async {
+        try {
+          final userCred = await _auth.signInWithCredential(cred);
+          await _onPhoneLogin(userCred);
+        } catch (e) {
+          if (e is FirebaseAuthException) {
+            AuthErrorUtils.showError(context, e);
+          }
+          if (mounted) setState(() => isLoading = false);
+        }
+      },
+      verificationFailed: (e) {
+        AuthErrorUtils.showError(context, e);
+        if (mounted) setState(() => isLoading = false);
+      },
+      codeSent: (verId, _) {
+        if (mounted) setState(() => isLoading = false);
+        _showSMSDialog(verId);
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
+  }
 
-      final user = cred.user;
-      if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
-
-      if (!await _userDocExists(user.uid)) {
-        await _auth.signOut();
-        if (mounted) _showNoProfileDialog();
-        return;
-      }
-
-      await PresenceService.init(user);
-
-      final prefs = await SharedPreferences.getInstance();
-      final enabled = prefs.getBool('notificationsEnabled') ?? true;
-      await NotificationService.instance.init(enabled: enabled);
-
-      await _goToExplore();
-    } on FirebaseAuthException {
-      if (mounted) _showErrorDialog('Teléfono o contraseña incorrectos.');
-    } finally {
-      if (mounted) setState(() => isLoading = false);
+  Future<void> _onPhoneLogin(UserCredential cred) async {
+    final user = cred.user;
+    if (user == null) {
+      _showErrorDialog('Error de inicio de sesión.');
+      return;
     }
+
+    if (!await _userDocExists(user.uid)) {
+      await _auth.signOut();
+      if (mounted) _showNoProfileDialog();
+      return;
+    }
+
+    await PresenceService.init(user);
+
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('notificationsEnabled') ?? true;
+    await NotificationService.instance.init(enabled: enabled);
+
+    await _goToExplore();
+  }
+
+  void _showSMSDialog(String verId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Introduce el código recibido por SMS',
+          textAlign: TextAlign.center,
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Código',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final code = controller.text.trim();
+              if (code.isEmpty) return;
+              final cred = PhoneAuthProvider.credential(
+                verificationId: verId,
+                smsCode: code,
+              );
+              try {
+                final userCred = await _auth.signInWithCredential(cred);
+                Navigator.of(context).pop();
+                await _onPhoneLogin(userCred);
+              } on FirebaseAuthException catch (e) {
+                AuthErrorUtils.showError(context, e);
+              }
+            },
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
   }
 
 
