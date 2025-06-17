@@ -26,7 +26,6 @@ import 'explore_screen/users_managing/presence_service.dart';
 import 'explore_screen/chats/chats_screen.dart';
 import 'explore_screen/main_screen/explore_screen.dart';
 import 'start/welcome_screen.dart';
-import 'start/registration/terms_modal.dart';
 import 'start/registration/user_registration_screen.dart';
 import 'start/registration/verification_provider.dart';
 import 'start/registration/local_registration_service.dart';
@@ -121,7 +120,6 @@ class _MyAppState extends State<MyApp> {
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
   String? _lastUid; // detecta cambio de usuario
-  bool _termsChecked = false;
 
   @override
   void initState() {
@@ -138,7 +136,6 @@ class _MyAppState extends State<MyApp> {
       });
     }
 
-    _checkTerms();
   }
 
   void _onMedia(List<SharedMediaFile> files) {
@@ -150,21 +147,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _checkTerms() async {
-    if (_termsChecked) return;
-    _termsChecked = true;
-    final prefs = await SharedPreferences.getInstance();
-    final accepted = prefs.getBool('termsAccepted') ?? false;
-    final version = prefs.getString('termsVersion');
-    if (!(accepted && version == '2024-05')) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final ctx = _navigatorKey.currentContext;
-        if (ctx != null) {
-          showTermsModal(ctx);
-        }
-      });
-    }
-  }
 
 
   @override

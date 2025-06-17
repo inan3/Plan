@@ -22,8 +22,6 @@ import 'package:dating_app/explore_screen/main_screen/explore_screen.dart';
 
 // Enum de proveedor (google/password)
 import 'verification_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/gestures.dart';
 import 'auth_service.dart';
 import 'local_registration_service.dart';
 import '../../services/fcm_token_service.dart';
@@ -84,8 +82,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   /// Indicador de guardando
   bool _isSaving = false;
 
-  /// Checkbox de aceptación de términos
-  bool _termsAccepted = false;
 
   List<String> _selectedInterests = [];
   String? _customInterest;
@@ -1143,76 +1139,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Checkbox de aceptación de términos
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Checkbox(
-                        value: _termsAccepted,
-                        onChanged: (v) => setState(() => _termsAccepted = v ?? false),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        side: BorderSide(color: MyColors.AppColors.planColor),
-                        checkColor: Colors.white,
-                        activeColor: MyColors.AppColors.planColor,
-                      ),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 14,
-                              decoration: TextDecoration.none,
-                            ),
-                            children: [
-                              const TextSpan(text: 'He leído y acepto los '),
-                              TextSpan(
-                                text: 'Términos y Condiciones',
-                                style: const TextStyle(color: Colors.blue),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () => launchUrl(
-                                        Uri.parse('https://plansocialapp.es/terms_and_conditions.html'),
-                                        mode: LaunchMode.externalApplication,
-                                      ),
-                              ),
-                              const TextSpan(text: ', la '),
-                              TextSpan(
-                                text: 'Política de Privacidad',
-                                style: const TextStyle(color: Colors.blue),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () => launchUrl(
-                                        Uri.parse('https://plansocialapp.es/privacy_policy.html'),
-                                        mode: LaunchMode.externalApplication,
-                                      ),
-                              ),
-                              const TextSpan(text: ' y de '),
-                              TextSpan(
-                                text: 'Cookies',
-                                style: const TextStyle(color: Colors.blue),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () => launchUrl(
-                                        Uri.parse('https://plansocialapp.es/cookies.html'),
-                                        mode: LaunchMode.externalApplication,
-                                      ),
-                              ),
-                              const TextSpan(text: '.'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
                   // Botón "Completar registro"
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isSaving || !_isFormValid || !_termsAccepted
-                          ? null
-                          : _onAcceptTermsAndRegister,
+                      onPressed:
+                          _isSaving || !_isFormValid ? null : _onAcceptTermsAndRegister,
                       style: ButtonStyle(
                         backgroundColor: MaterialStateProperty.resolveWith(
                           (states) => states.contains(MaterialState.disabled)
