@@ -7,8 +7,10 @@ import 'package:firebase_database/firebase_database.dart';   // (si lo usas)
 import 'package:firebase_core/firebase_core.dart';           // (si lo usas)
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';          // ← NUEVO
 import '../../services/notification_service.dart';                    // ← NUEVO
+import '../../utils/auth_error_utils.dart';
 
 import '../../explore_screen/main_screen/explore_screen.dart';
 import '../../main/colors.dart';
@@ -31,6 +33,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final TextEditingController emailController    = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController phoneController   = TextEditingController();
+
+  String? _phoneNumber;
+  bool _isEmail = true;
+  String? _verificationId;
 
   bool isLoading = false;
   bool _rememberLogin = false;
@@ -130,6 +137,113 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _loginWithPhone() async {
+    final phone = _phoneNumber ?? phoneController.text.trim();
+    if (phone.isEmpty) {
+      _showPopup('Introduce tu número de teléfono y después pulsa en "Iniciar sesión".');
+      return;
+    }
+
+    setState(() => isLoading = true);
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: phone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (cred) async {
+        try {
+          final userCred = await FirebaseAuth.instance.signInWithCredential(cred);
+          await _onPhoneLogged(userCred);
+        } catch (e) {
+          if (e is FirebaseAuthException) {
+            AuthErrorUtils.showError(context, e);
+          } else {
+            _showPopup('Error: $e');
+          }
+          if (mounted) setState(() => isLoading = false);
+        }
+      },
+      verificationFailed: (e) {
+        if (mounted) {
+          AuthErrorUtils.showError(context, e);
+          setState(() => isLoading = false);
+        }
+      },
+      codeSent: (verId, _) {
+        if (mounted) setState(() => isLoading = false);
+        _verificationId = verId;
+        _showSMSDialog(verId);
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
+  }
+
+  void _showSMSDialog(String verId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Introduce el código recibido por SMS',
+          textAlign: TextAlign.center,
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Código',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final code = controller.text.trim();
+              if (code.isEmpty) return;
+              final cred = PhoneAuthProvider.credential(
+                verificationId: verId,
+                smsCode: code,
+              );
+              try {
+                final userCred =
+                    await FirebaseAuth.instance.signInWithCredential(cred);
+                Navigator.of(context).pop();
+                await _onPhoneLogged(userCred);
+              } on FirebaseAuthException catch (e) {
+                AuthErrorUtils.showError(context, e);
+              }
+            },
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onPhoneLogged(UserCredential cred) async {
+    final user = cred.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('No se pudo iniciar sesión')));
+      return;
+    }
+
+    if (!await _userDocExists(user.uid)) {
+      await _auth.signOut();
+      if (mounted) _showNoProfileDialog();
+      return;
+    }
+
+    await PresenceService.init(user);
+
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('notificationsEnabled') ?? true;
+    await NotificationService.instance.init(enabled: enabled);
+
+    await _goToExplore();
   }
 
   /* ───────────────────────────────────────────────────────────
@@ -313,17 +427,96 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 10),
             Text('- o -', style: GoogleFonts.roboto(fontSize: 18)),
             const SizedBox(height: 10),
-            _inputField(controller: emailController, hint: 'Correo electrónico',
-                keyboardType: TextInputType.emailAddress),
-            const SizedBox(height: 20),
-            _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 30),
+              width: double.infinity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  InkWell(
+                    onTap: () => setState(() => _isEmail = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: _isEmail ? AppColors.planColor : AppColors.lightLilac,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: AppColors.greyBorder),
+                      ),
+                      child: Text(
+                        'Correo electrónico',
+                        style: TextStyle(
+                          color: _isEmail ? Colors.white : Colors.black,
+                          fontFamily: 'Inter-Regular',
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  InkWell(
+                    onTap: () => setState(() => _isEmail = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: !_isEmail ? AppColors.planColor : AppColors.lightLilac,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: AppColors.greyBorder),
+                      ),
+                      child: Text(
+                        'Número de teléfono',
+                        style: TextStyle(
+                          color: !_isEmail ? Colors.white : Colors.black,
+                          fontFamily: 'Inter-Regular',
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 10),
-            _rememberCheckbox(),
+            if (_isEmail)
+              _inputField(
+                controller: emailController,
+                hint: 'Correo electrónico',
+                keyboardType: TextInputType.emailAddress,
+              )
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: IntlPhoneField(
+                  controller: phoneController,
+                  initialCountryCode: 'ES',
+                  decoration: InputDecoration(
+                    hintText: 'Número de teléfono',
+                    hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  onChanged: (phone) => _phoneNumber = phone.completeNumber,
+                ),
+              ),
+            if (_isEmail) ...[
+              const SizedBox(height: 20),
+              _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
+              const SizedBox(height: 10),
+              _rememberCheckbox(),
+            ] else
+              const SizedBox(height: 20),
             const SizedBox(height: 20),
             SizedBox(
               width: 200,
               child: ElevatedButton(
-                onPressed: _loginWithEmail,
+                onPressed: _isEmail ? _loginWithEmail : _loginWithPhone,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color.fromARGB(236, 0, 4, 227),
