@@ -1233,7 +1233,7 @@ class PlanCardState extends State<PlanCard> {
 
                   // Botones de acción (like, chat, share) → Se añade SingleChildScrollView para evitar overflow
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                    padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
                     child: Builder(
                       builder: (context) {
                         final textScale =
@@ -1307,22 +1307,16 @@ class PlanCardState extends State<PlanCard> {
 
                         final corner = _buildParticipantsCorner();
 
-                        return textScale <= 1.2
-                            ? Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [actions, corner],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  actions,
-                                  const SizedBox(height: 8),
-                                  Align(
-                                      alignment: Alignment.centerRight,
-                                      child: corner),
-                                ],
-                              );
+                        return Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            actions,
+                            corner,
+                          ],
+                        );
                       },
                     ),
                   ),

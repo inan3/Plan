@@ -1356,22 +1356,14 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               final actionsRow = _buildActionButtonsRow(plan);
               final corner = _buildParticipantsCorner(participants);
 
-              if (textScale <= 1.2) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [actionsRow, corner],
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              return Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: actionsRow,
-                  ),
-                  const SizedBox(height: 8),
-                  Align(alignment: Alignment.centerRight, child: corner),
+                  actionsRow,
+                  corner,
                 ],
               );
             },
