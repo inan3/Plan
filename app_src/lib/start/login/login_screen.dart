@@ -517,10 +517,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             const SizedBox(height: 20),
             _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
-            if (_isEmail) ...[
-              const SizedBox(height: 10),
-              _rememberCheckbox(),
-            ],
+            const SizedBox(height: 10),
+            _rememberCheckbox(),
             const SizedBox(height: 20),
             SizedBox(
               width: 200,
