@@ -3,13 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_database/firebase_database.dart';   // (si lo usas)
-import 'package:firebase_core/firebase_core.dart';           // (si lo usas)
+import 'package:firebase_database/firebase_database.dart'; // (si lo usas)
+import 'package:firebase_core/firebase_core.dart'; // (si lo usas)
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';          // ← NUEVO
 import '../../services/notification_service.dart';                    // ← NUEVO
+import '../../utils/auth_error_utils.dart';
 
 import '../../explore_screen/main_screen/explore_screen.dart';
 import '../../main/colors.dart';
@@ -30,7 +32,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final TextEditingController emailController    = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController   = TextEditingController();
 
@@ -113,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await PresenceService.init(user);
 
       /* ─── NUEVO: reinicia notificaciones para este usuario ─── */
-      final prefs   = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       final enabled = prefs.getBool('notificationsEnabled') ?? true;
       await NotificationService.instance.init(enabled: enabled);
       /* ──────────────────────────────────────────────────────── */
@@ -192,8 +194,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final GoogleSignInAccount? acc = await GoogleSignIn().signIn();
       if (acc == null) return;
 
-      final auth  = await acc.authentication;
-      final cred  = GoogleAuthProvider.credential(
+      final auth = await acc.authentication;
+      final cred = GoogleAuthProvider.credential(
         accessToken: auth.accessToken,
         idToken: auth.idToken,
       );
@@ -217,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await PresenceService.init(user);
 
       /* ─── NUEVO: reinicia notificaciones para este usuario ─── */
-      final prefs   = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       final enabled = prefs.getBool('notificationsEnabled') ?? true;
       await NotificationService.instance.init(enabled: enabled);
       /* ──────────────────────────────────────────────────────── */
@@ -231,7 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error de inicio de sesión con Google.')),
+          const SnackBar(
+              content: Text('Error de inicio de sesión con Google.')),
         );
       }
     } finally {
@@ -252,7 +255,9 @@ class _LoginScreenState extends State<LoginScreen> {
           'Debes registrarte primero.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Aceptar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Aceptar')),
         ],
       ),
     );
@@ -264,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (_) => AlertDialog(
         title: const Text('No hay perfil'),
         content: const Text(
-          'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?'),
+            'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -286,7 +291,9 @@ class _LoginScreenState extends State<LoginScreen> {
         title: const Text('Error de inicio de sesión'),
         content: Text(msg),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Aceptar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Aceptar')),
         ],
       ),
     );
@@ -352,10 +359,12 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(height: 150, child: Image.asset('assets/plan-sin-fondo.png')),
+            SizedBox(
+                height: 150, child: Image.asset('assets/plan-sin-fondo.png')),
             const SizedBox(height: 30),
             Text('Inicio de sesión',
-                style: GoogleFonts.roboto(fontSize: 28, fontWeight: FontWeight.bold)),
+                style: GoogleFonts.roboto(
+                    fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             _googleButton(),
             const SizedBox(height: 10),
@@ -442,7 +451,41 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 20),
             _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
             const SizedBox(height: 10),
-            _rememberCheckbox(),
+            if (_isEmail)
+              _inputField(
+                controller: emailController,
+                hint: 'Correo electrónico',
+                keyboardType: TextInputType.emailAddress,
+              )
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: IntlPhoneField(
+                  controller: phoneController,
+                  initialCountryCode: 'ES',
+                  decoration: InputDecoration(
+                    hintText: 'Número de teléfono',
+                    hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  onChanged: (phone) => _phoneNumber = phone.completeNumber,
+                ),
+              ),
+            if (_isEmail) ...[
+              const SizedBox(height: 20),
+              _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
+              const SizedBox(height: 10),
+              _rememberCheckbox(),
+            ] else
+              const SizedBox(height: 20),
             const SizedBox(height: 20),
             SizedBox(
               width: 200,
@@ -451,16 +494,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color.fromARGB(236, 0, 4, 227),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
                   elevation: 10,
                 ),
-                child: const Text('Iniciar sesión', style: TextStyle(fontSize: 20)),
+                child: const Text(
+                  'Iniciar sesión',
+                  style: TextStyle(
+                      fontSize: 20, color: Colors.white), // ← color blanco
+                ),
               ),
             ),
             const SizedBox(height: 20),
             GestureDetector(
               onTap: () => Navigator.push(
-                  context, MaterialPageRoute(builder: (_) => const RecoverPasswordScreen())),
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const RecoverPasswordScreen())),
               child: const Text('¿Olvidaste tu contraseña?',
                   style: TextStyle(decoration: TextDecoration.underline)),
             ),
@@ -494,7 +544,8 @@ class _LoginScreenState extends State<LoginScreen> {
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           backgroundColor: const Color.fromARGB(236, 0, 4, 227),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           elevation: 10,
         ),
       ),
@@ -512,7 +563,9 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))
+        ],
       ),
       child: TextField(
         controller: controller,
@@ -522,13 +575,12 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: hint,
           hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           suffixIcon: obscure
               ? IconButton(
                   icon: Icon(
-                    _showPassword
-                        ? Icons.visibility_off
-                        : Icons.visibility,
+                    _showPassword ? Icons.visibility_off : Icons.visibility,
                   ),
                   onPressed: () =>
                       setState(() => _showPassword = !_showPassword),
@@ -548,7 +600,8 @@ class _LoginScreenState extends State<LoginScreen> {
             value: _rememberLogin,
             onChanged: (v) => setState(() => _rememberLogin = v ?? false),
             activeColor: AppColors.planColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             side: const BorderSide(color: AppColors.planColor),
           ),
           const SizedBox(width: 8),
