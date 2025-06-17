@@ -120,6 +120,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
+      final missing = <String>[];
+      if (emailController.text.trim().isEmpty) missing.add('correo');
+      if (passwordController.text.trim().isEmpty) missing.add('contraseña');
+      final msg =
+          'Introduce tu ${missing.join(' y ')} y después pulsa en "Registrarse".';
+      _showPopup(msg);
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -201,8 +212,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _registerWithPhone() async {
     final phone = _phoneNumber ?? phoneController.text.trim();
-    if (phone.isEmpty) {
-      _showPopup('Introduce tu n\u00famero de tel\u00e9fono');
+    if (phone.isEmpty || passwordController.text.trim().isEmpty) {
+      final missing = <String>[];
+      if (phone.isEmpty) missing.add('número de teléfono');
+      if (passwordController.text.trim().isEmpty) missing.add('contraseña');
+      final msg =
+          'Introduce tu ${missing.join(' y ')} y después pulsa en "Registrarse".';
+      _showPopup(msg);
       return;
     }
 

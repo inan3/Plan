@@ -78,6 +78,17 @@ class _LoginScreenState extends State<LoginScreen> {
    * ───────────────────────────────────────────────────────── */
   Future<void> _loginWithEmail() async {
     if (!mounted) return;
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
+      final missing = <String>[];
+      if (emailController.text.trim().isEmpty) missing.add('correo');
+      if (passwordController.text.trim().isEmpty) missing.add('contraseña');
+      final msg =
+          'Introduce tu ${missing.join(' y ')} y después pulsa en "Iniciar sesión".';
+      _showPopup(msg);
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -233,6 +244,22 @@ class _LoginScreenState extends State<LoginScreen> {
           TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Aceptar')),
+        ],
+      ),
+    );
+  }
+
+  void _showPopup(String msg) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Atención'),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
