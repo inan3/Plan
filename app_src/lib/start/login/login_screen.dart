@@ -144,8 +144,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final phone = _phoneNumber.isNotEmpty
         ? _phoneNumber
         : phoneController.text.trim();
-    if (phone.isEmpty) {
-      _showPopup('Introduce tu número de teléfono y después pulsa en "Iniciar sesión".');
+    final password = passwordController.text.trim();
+    if (phone.isEmpty || password.isEmpty) {
+      final missing = <String>[];
+      if (phone.isEmpty) missing.add('número de teléfono');
+      if (password.isEmpty) missing.add('contraseña');
+      _showPopup(
+          'Introduce tu ${missing.join(' y ')} y después pulsa en "Iniciar sesión".');
       return;
     }
 
@@ -242,6 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
 
   /* ───────────────────────────────────────────────────────────
    *  Google
