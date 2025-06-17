@@ -569,15 +569,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   Widget _buildActionButtonsRow(PlanModel plan) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _buildLikeButton(),
-        const SizedBox(width: 8),
         _buildMessageButton(plan),
-        const SizedBox(width: 8),
         _buildShareButton(plan),
-        const SizedBox(width: 8),
         _buildViewButton(plan),
       ],
     );
@@ -960,34 +958,39 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         displayText = '${displayText.substring(0, cut)}...';
       }
 
+      final maxWidth = MediaQuery.of(context).size.width * 0.55;
+
       return GestureDetector(
         onTap: () async {
           await _showParticipantsModal(participants);
           if (mounted) setState(() {});
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-                backgroundColor: Colors.blueGrey[400],
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  displayText,
-                  style: const TextStyle(color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+                  backgroundColor: Colors.blueGrey[400],
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    displayText,
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1358,8 +1361,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
               if (textScale <= 1.2) {
                 return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [actionsRow, corner],
+                  children: [
+                    Expanded(child: actionsRow),
+                    const SizedBox(width: 8),
+                    Flexible(child: corner),
+                  ],
                 );
               }
 

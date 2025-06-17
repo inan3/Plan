@@ -703,31 +703,36 @@ class PlanCardState extends State<PlanCard> {
       String displayText = '$name, $age';
       displayText = _truncate(displayText, maxChars);
 
+      final maxWidth = MediaQuery.of(context).size.width * 0.55;
+
       return GestureDetector(
         onTap: () => _showParticipantsModal(_participants),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
-                backgroundColor: Colors.blueGrey[400],
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  displayText,
-                  style: const TextStyle(color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+                  backgroundColor: Colors.blueGrey[400],
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    displayText,
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1309,18 +1314,24 @@ class PlanCardState extends State<PlanCard> {
 
                         return textScale <= 1.2
                             ? Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [actions, corner],
+                                children: [
+                                  Expanded(child: actions),
+                                  const SizedBox(width: 8),
+                                  Flexible(child: corner),
+                                ],
                               )
                             : Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  actions,
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: actions,
+                                  ),
                                   const SizedBox(height: 8),
                                   Align(
-                                      alignment: Alignment.centerRight,
-                                      child: corner),
+                                    alignment: Alignment.centerRight,
+                                    child: corner,
+                                  ),
                                 ],
                               );
                       },
