@@ -141,13 +141,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginWithPhone() async {
     if (!mounted) return;
-    final phone = phoneController.text.trim();
+    final phone = _phoneNumber.isNotEmpty
+        ? _phoneNumber
+        : phoneController.text.trim();
     final password = passwordController.text.trim();
     if (phone.isEmpty || password.isEmpty) {
       final missing = <String>[];
       if (phone.isEmpty) missing.add('número de teléfono');
       if (password.isEmpty) missing.add('contraseña');
-      _showPopup('Introduce tu ' + missing.join(' y ') + ' y después pulsa en "Iniciar sesión".');
+      _showPopup(
+          'Introduce tu ${missing.join(' y ')} y después pulsa en "Iniciar sesión".');
       return;
     }
 
@@ -182,6 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => isLoading = false);
     }
   }
+
 
   /* ───────────────────────────────────────────────────────────
    *  Google
@@ -446,47 +450,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
-                  // Solo usamos el número tal cual se escribe
+                  onChanged: (phone) => _phoneNumber = phone.completeNumber,
                 ),
               ),
             const SizedBox(height: 20),
             _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
-            const SizedBox(height: 10),
-            if (_isEmail)
-              _inputField(
-                controller: emailController,
-                hint: 'Correo electrónico',
-                keyboardType: TextInputType.emailAddress,
-              )
-            else
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 30),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-                  ],
-                ),
-                child: IntlPhoneField(
-                  controller: phoneController,
-                  initialCountryCode: 'ES',
-                  decoration: InputDecoration(
-                    hintText: 'Número de teléfono',
-                    hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
-                  onChanged: (phone) => _phoneNumber = phone.completeNumber,
-                ),
-              ),
             if (_isEmail) ...[
-              const SizedBox(height: 20),
-              _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
               const SizedBox(height: 10),
               _rememberCheckbox(),
-            ] else
-              const SizedBox(height: 20),
+            ],
             const SizedBox(height: 20),
             SizedBox(
               width: 200,
