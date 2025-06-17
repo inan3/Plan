@@ -7,15 +7,11 @@ import 'package:firebase_database/firebase_database.dart'; // (si lo usas)
 import 'package:firebase_core/firebase_core.dart'; // (si lo usas)
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
-<<<<<<< HEAD
-import 'package:shared_preferences/shared_preferences.dart'; // ← NUEVO
-import '../../services/notification_service.dart'; // ← NUEVO
-=======
+
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';          // ← NUEVO
 import '../../services/notification_service.dart';                    // ← NUEVO
 import '../../utils/auth_error_utils.dart';
->>>>>>> 402bcda923f745d9596caf3c117062e72165bc5b
 
 import '../../explore_screen/main_screen/explore_screen.dart';
 import '../../main/colors.dart';
@@ -40,9 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController   = TextEditingController();
 
-  String? _phoneNumber;
   bool _isEmail = true;
-  String? _verificationId;
 
   bool isLoading = false;
   bool _rememberLogin = false;
@@ -145,110 +139,47 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginWithPhone() async {
-    final phone = _phoneNumber ?? phoneController.text.trim();
-    if (phone.isEmpty) {
-      _showPopup('Introduce tu número de teléfono y después pulsa en "Iniciar sesión".');
+    if (!mounted) return;
+    final phone = phoneController.text.trim();
+    final password = passwordController.text.trim();
+    if (phone.isEmpty || password.isEmpty) {
+      final missing = <String>[];
+      if (phone.isEmpty) missing.add('número de teléfono');
+      if (password.isEmpty) missing.add('contraseña');
+      _showPopup('Introduce tu ' + missing.join(' y ') + ' y después pulsa en "Iniciar sesión".');
       return;
     }
 
     setState(() => isLoading = true);
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: phone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (cred) async {
-        try {
-          final userCred = await FirebaseAuth.instance.signInWithCredential(cred);
-          await _onPhoneLogged(userCred);
-        } catch (e) {
-          if (e is FirebaseAuthException) {
-            AuthErrorUtils.showError(context, e);
-          } else {
-            _showPopup('Error: $e');
-          }
-          if (mounted) setState(() => isLoading = false);
-        }
-      },
-      verificationFailed: (e) {
-        if (mounted) {
-          AuthErrorUtils.showError(context, e);
-          setState(() => isLoading = false);
-        }
-      },
-      codeSent: (verId, _) {
-        if (mounted) setState(() => isLoading = false);
-        _verificationId = verId;
-        _showSMSDialog(verId);
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
-  }
 
-  void _showSMSDialog(String verId) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Introduce el código recibido por SMS',
-          textAlign: TextAlign.center,
-        ),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Código',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final code = controller.text.trim();
-              if (code.isEmpty) return;
-              final cred = PhoneAuthProvider.credential(
-                verificationId: verId,
-                smsCode: code,
-              );
-              try {
-                final userCred =
-                    await FirebaseAuth.instance.signInWithCredential(cred);
-                Navigator.of(context).pop();
-                await _onPhoneLogged(userCred);
-              } on FirebaseAuthException catch (e) {
-                AuthErrorUtils.showError(context, e);
-              }
-            },
-            child: const Text('Continuar'),
-          ),
-        ],
-      ),
-    );
-  }
+    try {
+      final email = phone.replaceAll('+', '') + '@phoneuser.local';
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-  Future<void> _onPhoneLogged(UserCredential cred) async {
-    final user = cred.user;
-    if (user == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('No se pudo iniciar sesión')));
-      return;
+      final user = cred.user;
+      if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
+
+      if (!await _userDocExists(user.uid)) {
+        await _auth.signOut();
+        if (mounted) _showNoProfileDialog();
+        return;
+      }
+
+      await PresenceService.init(user);
+
+      final prefs = await SharedPreferences.getInstance();
+      final enabled = prefs.getBool('notificationsEnabled') ?? true;
+      await NotificationService.instance.init(enabled: enabled);
+
+      await _goToExplore();
+    } on FirebaseAuthException {
+      if (mounted) _showErrorDialog('Teléfono o contraseña incorrectos.');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-
-    if (!await _userDocExists(user.uid)) {
-      await _auth.signOut();
-      if (mounted) _showNoProfileDialog();
-      return;
-    }
-
-    await PresenceService.init(user);
-
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool('notificationsEnabled') ?? true;
-    await NotificationService.instance.init(enabled: enabled);
-
-    await _goToExplore();
   }
 
   /* ───────────────────────────────────────────────────────────
@@ -488,6 +419,37 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 10),
+            if (_isEmail)
+              _inputField(
+                controller: emailController,
+                hint: 'Correo electrónico',
+                keyboardType: TextInputType.emailAddress,
+              )
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: IntlPhoneField(
+                  controller: phoneController,
+                  initialCountryCode: 'ES',
+                  decoration: InputDecoration(
+                    hintText: 'Número de teléfono',
+                    hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  // Solo usamos el número tal cual se escribe
+                ),
+              ),
+            const SizedBox(height: 20),
+            _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
             const SizedBox(height: 10),
             if (_isEmail)
               _inputField(
