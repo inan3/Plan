@@ -156,30 +156,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => isLoading = true);
 
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (cred) async {
-        try {
-          final userCred = await _auth.signInWithCredential(cred);
-          await _onPhoneLogin(userCred);
-        } catch (e) {
-          if (e is FirebaseAuthException) {
-            AuthErrorUtils.showError(context, e);
-          }
-          if (mounted) setState(() => isLoading = false);
-        }
-      },
-      verificationFailed: (e) {
-        AuthErrorUtils.showError(context, e);
-        if (mounted) setState(() => isLoading = false);
-      },
-      codeSent: (verId, _) {
-        if (mounted) setState(() => isLoading = false);
-        _showSMSDialog(verId);
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
+    try {
+      final email = phone.replaceAll('+', '') + '@phone.local';
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await _onPhoneLogin(cred);
+    } on FirebaseAuthException catch (e) {
+      AuthErrorUtils.showError(context, e);
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   Future<void> _onPhoneLogin(UserCredential cred) async {
