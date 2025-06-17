@@ -36,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController   = TextEditingController();
 
+  String _phoneNumber = '';
   bool _isEmail = true;
 
   bool isLoading = false;
