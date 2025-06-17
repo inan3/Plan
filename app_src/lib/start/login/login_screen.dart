@@ -7,6 +7,7 @@ import 'package:firebase_database/firebase_database.dart';   // (si lo usas)
 import 'package:firebase_core/firebase_core.dart';           // (si lo usas)
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';          // ← NUEVO
 import '../../services/notification_service.dart';                    // ← NUEVO
 
@@ -31,6 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final TextEditingController emailController    = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController phoneController   = TextEditingController();
+
+  bool _isEmail = true;
 
   bool isLoading = false;
   bool _rememberLogin = false;
@@ -127,6 +131,50 @@ class _LoginScreenState extends State<LoginScreen> {
       await _goToExplore();
     } on FirebaseAuthException {
       if (mounted) _showErrorDialog('Correo o contraseña incorrectos.');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _loginWithPhone() async {
+    if (!mounted) return;
+    final phone = phoneController.text.trim();
+    final password = passwordController.text.trim();
+    if (phone.isEmpty || password.isEmpty) {
+      final missing = <String>[];
+      if (phone.isEmpty) missing.add('número de teléfono');
+      if (password.isEmpty) missing.add('contraseña');
+      _showPopup('Introduce tu ' + missing.join(' y ') + ' y después pulsa en "Iniciar sesión".');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final email = phone.replaceAll('+', '') + '@phoneuser.local';
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = cred.user;
+      if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
+
+      if (!await _userDocExists(user.uid)) {
+        await _auth.signOut();
+        if (mounted) _showNoProfileDialog();
+        return;
+      }
+
+      await PresenceService.init(user);
+
+      final prefs = await SharedPreferences.getInstance();
+      final enabled = prefs.getBool('notificationsEnabled') ?? true;
+      await NotificationService.instance.init(enabled: enabled);
+
+      await _goToExplore();
+    } on FirebaseAuthException {
+      if (mounted) _showErrorDialog('Teléfono o contraseña incorrectos.');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -313,8 +361,84 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 10),
             Text('- o -', style: GoogleFonts.roboto(fontSize: 18)),
             const SizedBox(height: 10),
-            _inputField(controller: emailController, hint: 'Correo electrónico',
-                keyboardType: TextInputType.emailAddress),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 30),
+              width: double.infinity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  InkWell(
+                    onTap: () => setState(() => _isEmail = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: _isEmail ? AppColors.planColor : AppColors.lightLilac,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: AppColors.greyBorder),
+                      ),
+                      child: Text(
+                        'Correo electrónico',
+                        style: TextStyle(
+                          color: _isEmail ? Colors.white : Colors.black,
+                          fontFamily: 'Inter-Regular',
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  InkWell(
+                    onTap: () => setState(() => _isEmail = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: !_isEmail ? AppColors.planColor : AppColors.lightLilac,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: AppColors.greyBorder),
+                      ),
+                      child: Text(
+                        'Número de teléfono',
+                        style: TextStyle(
+                          color: !_isEmail ? Colors.white : Colors.black,
+                          fontFamily: 'Inter-Regular',
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_isEmail)
+              _inputField(
+                controller: emailController,
+                hint: 'Correo electrónico',
+                keyboardType: TextInputType.emailAddress,
+              )
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: IntlPhoneField(
+                  controller: phoneController,
+                  initialCountryCode: 'ES',
+                  decoration: InputDecoration(
+                    hintText: 'Número de teléfono',
+                    hintStyle: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  // Solo usamos el número tal cual se escribe
+                ),
+              ),
             const SizedBox(height: 20),
             _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
             const SizedBox(height: 10),
@@ -323,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(
               width: 200,
               child: ElevatedButton(
-                onPressed: _loginWithEmail,
+                onPressed: _isEmail ? _loginWithEmail : _loginWithPhone,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color.fromARGB(236, 0, 4, 227),
