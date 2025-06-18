@@ -414,13 +414,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     final dayPlans = _plansByDate[dateKey];
     final bool hasPlans = (dayPlans != null && dayPlans.isNotEmpty);
 
-    String iconPath = '';
-    DateTime? planDate;
-    if (hasPlans) {
-      final PlanModel plan = dayPlans.first;
-      iconPath = plan.iconAsset ?? '';
-      planDate = plan.startTimestamp;
-    }
+    // Solo mostramos un indicador para los d\xEDas con planes. Ya no usamos
+    // el icono propio del plan, sino una imagen com\xFAn para todos.
 
     return GestureDetector(
       onTap: () => _onDayTapped(date),
@@ -447,11 +442,15 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                       ),
                     ),
                   ),
-                  // Icono centrado con color según si ya pasó o no
+                  // Imagen del plan centrada, lo suficientemente pequeña para
+                  // no ocultar el n\xFAmero del d\xEDa.
                   Center(
-                    child: (iconPath.isNotEmpty)
-                        ? _buildPlanIcon(iconPath, planDate)
-                        : const Icon(Icons.event),
+                    child: Image.asset(
+                      'assets/plan-sin-fondo.png',
+                      width: 24,
+                      height: 24,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ],
               )
