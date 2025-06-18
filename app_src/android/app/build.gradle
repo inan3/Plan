@@ -34,6 +34,7 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.gms:play-services-recaptcha'
 
     // ⚠️  AÑADE ESTA LÍNEA para que el task l8DexDesugarLibDebug tenga algo que procesar
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
