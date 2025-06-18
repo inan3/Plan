@@ -8,10 +8,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PrivilegeLevelDetails extends StatefulWidget {
   final String userId; // ID del usuario para buscar sus datos en Firestore
+  final bool showAllInfo; // controla si se muestran las indicaciones y las insignias
 
   const PrivilegeLevelDetails({
     Key? key,
     required this.userId,
+    this.showAllInfo = true,
   }) : super(key: key);
 
   // MÉTODO ESTÁTICO para actualizar estadísticas de suscripciones
@@ -637,10 +639,12 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                       ),
                       const SizedBox(height: 14),
                       _buildIndicatorsRow(),
-                      const SizedBox(height: 12),
-                      _buildNextLevelHint(),
-                      const SizedBox(height: 16),
-                      _buildPrivilegeIconsRow(),
+                      if (widget.showAllInfo) ...[
+                        const SizedBox(height: 12),
+                        _buildNextLevelHint(),
+                        const SizedBox(height: 16),
+                        _buildPrivilegeIconsRow(),
+                      ],
                       const SizedBox(height: 20),
                     ],
                   ),
