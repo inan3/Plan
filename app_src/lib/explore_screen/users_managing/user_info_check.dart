@@ -642,7 +642,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
               alignment: Alignment.center,
               child: Material(
                 color: Colors.transparent,
-                child: PrivilegeLevelDetails(userId: widget.userId),
+                child: PrivilegeLevelDetails(
+                  userId: widget.userId,
+                  showAllInfo: false,
+                ),
               ),
             ),
           ),

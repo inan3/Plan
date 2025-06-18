@@ -439,7 +439,10 @@ class ProfileScreenState extends State<ProfileScreen> {
             alignment: Alignment.center,
             child: Material(
                 color: Colors.transparent,
-                child: PrivilegeLevelDetails(userId: user.uid)),
+                child: PrivilegeLevelDetails(
+                  userId: user.uid,
+                  showAllInfo: true,
+                )),
           ),
         ),
       ),
