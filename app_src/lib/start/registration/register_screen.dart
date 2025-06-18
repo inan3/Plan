@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dating_app/main/colors.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 import 'register_with_google.dart';
 import 'verification_provider.dart';
 import 'email_verification_screen.dart';
@@ -26,14 +25,11 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
-  final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmController = TextEditingController();
-  String? _phoneNumber;
 
   bool _showPassword = false;
   bool _showConfirm = false;
-  bool _isEmail = true;
 
   bool get _hasUppercase => passwordController.text.contains(RegExp(r'[A-Z]'));
   bool get _hasNumber => passwordController.text.contains(RegExp(r'[0-9]'));
@@ -52,7 +48,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     emailController.dispose();
-    phoneController.dispose();
     passwordController.dispose();
     confirmController.dispose();
     super.dispose();
@@ -210,108 +205,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  Future<void> _registerWithPhone() async {
-    final phone = _phoneNumber ?? phoneController.text.trim();
-    if (phone.isEmpty || passwordController.text.trim().isEmpty) {
-      final missing = <String>[];
-      if (phone.isEmpty) missing.add('número de teléfono');
-      if (passwordController.text.trim().isEmpty) missing.add('contraseña');
-      final msg =
-          'Introduce tu ${missing.join(' y ')} y después pulsa en "Registrarse".';
-      _showPopup(msg);
-      return;
-    }
-
-    setState(() => isLoading = true);
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: phone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (cred) async {
-        try {
-          final userCred =
-              await FirebaseAuth.instance.signInWithCredential(cred);
-          _onPhoneUserCreated(userCred);
-        } catch (e) {
-          if (e is FirebaseAuthException) {
-            AuthErrorUtils.showError(context, e);
-          } else {
-            _showPopup('Error: $e');
-          }
-          setState(() => isLoading = false);
-        }
-      },
-      verificationFailed: (e) {
-        AuthErrorUtils.showError(context, e);
-        setState(() => isLoading = false);
-      },
-      codeSent: (verId, _) {
-        setState(() => isLoading = false);
-        _showSMSDialog(verId);
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
-  }
-
-  void _showSMSDialog(String verId) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Introduce el código recibido por SMS',
-          textAlign: TextAlign.center,
-        ),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Código',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final code = controller.text.trim();
-              if (code.isEmpty) return;
-              final cred = PhoneAuthProvider.credential(
-                  verificationId: verId, smsCode: code);
-              try {
-                final userCred = await FirebaseAuth.instance
-                    .signInWithCredential(cred);
-                Navigator.of(context).pop();
-                _onPhoneUserCreated(userCred);
-              } on FirebaseAuthException catch (e) {
-                AuthErrorUtils.showError(context, e);
-              }
-            },
-            child: const Text('Continuar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onPhoneUserCreated(UserCredential cred) {
-    final user = cred.user;
-    if (user == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('No se pudo crear usuario')));
-      return;
-    }
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UserRegistrationScreen(
-          provider: VerificationProvider.phone,
-          firebaseUser: user,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -401,130 +294,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Selector Correo/Teléfono
+                    // Campo correo
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 30),
-                      width: double.infinity,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          InkWell(
-                            onTap: () => setState(() => _isEmail = true),
-                          child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: _isEmail
-                                    ? AppColors.planColor
-                                    : AppColors.lightLilac,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: AppColors.greyBorder),
-                              ),
-                              child: Text(
-                                'Correo electrónico',
-                                style: TextStyle(
-                                  color:
-                                      _isEmail ? Colors.white : Colors.black,
-                                  fontFamily: 'Inter-Regular',
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          InkWell(
-                            onTap: () => setState(() => _isEmail = false),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: !_isEmail
-                                    ? AppColors.planColor
-                                    : AppColors.lightLilac,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: AppColors.greyBorder),
-                              ),
-                              child: Text(
-                                'Número de teléfono',
-                                style: TextStyle(
-                                  color:
-                                      !_isEmail ? Colors.white : Colors.black,
-                                  fontFamily: 'Inter-Regular',
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Campo correo o teléfono
-                    if (_isEmail)
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 30),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            hintText: 'Correo electrónico',
-                            hintStyle: GoogleFonts.roboto(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
+                      child: TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          hintText: 'Correo electrónico',
+                          hintStyle: GoogleFonts.roboto(
+                            fontSize: 16,
+                            color: Colors.grey,
                           ),
-                        ),
-                      )
-                    else
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 30),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: IntlPhoneField(
-                          controller: phoneController,
-                          initialCountryCode: 'ES',
-                          decoration: InputDecoration(
-                            hintText: 'Número de teléfono',
-                            hintStyle: GoogleFonts.roboto(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
                           ),
-                          onChanged: (phone) => _phoneNumber = phone.completeNumber,
                         ),
                       ),
+                    ),
                     const SizedBox(height: 20),
 
                     // Campo contraseña
@@ -706,10 +506,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 } else if (!_termsAccepted) {
                                   _showPopup(
                                       'Para continuar debes marcar que has leído y aceptas nuestra Política de Privacidad y Condiciones de uso');
-                                } else if (_isEmail) {
-                                  _register();
                                 } else {
-                                  _registerWithPhone();
+                                  _register();
                                 }
                               },
                         style: ElevatedButton.styleFrom(
