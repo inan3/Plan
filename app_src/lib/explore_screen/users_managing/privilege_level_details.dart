@@ -272,63 +272,32 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   }
 
   Widget _buildNextLevelHint() {
-    final int currentIndex = _mapPrivilegeToIndex(_privilegeLevel);
-    final int? nextIndex = _getNextLevelIndex(currentIndex);
-    if (nextIndex == null) {
-      return Column(
-        children: const [
-          SizedBox(height: 8),
-          Text(
-            "¡Felicidades! Ya estás en el nivel más alto de privilegios.",
-            style: TextStyle(color: Colors.white, fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      );
-    }
+    final normalized = _privilegeLevel.toLowerCase().replaceAll('á', 'a');
 
-    final _LevelRequirement nextReq = _requirements[nextIndex];
-    int neededPlans = nextReq.minPlans - _totalCreatedPlans;
-    if (neededPlans < 0) neededPlans = 0;
-    bool needMaxParts = (_maxParticipantsInOnePlan < nextReq.minMaxParts);
-    int neededMaxPartsThreshold = nextReq.minMaxParts;
-    int neededTotalParts = nextReq.minTotalParts - _totalParticipantsUntilNow;
-    if (neededTotalParts < 0) neededTotalParts = 0;
-
-    List<String> parts = [];
-    if (neededPlans > 0) {
-      parts.add("crear $neededPlans plan${neededPlans > 1 ? 'es' : ''}");
+    late final String message;
+    switch (normalized) {
+      case 'premium':
+        message =
+            'Crea 50 planes, logra 50 participantes en un solo plan y reúne 2000 participantes en total para pasar al nivel de privilegio Golden.';
+        break;
+      case 'golden':
+        message =
+            'Crea 500 planes, logra 500 participantes en un solo plan y reúne 10000 participantes en total para pasar al nivel de privilegio VIP.';
+        break;
+      case 'vip':
+        message = 'Estás disfrutando del nivel de privilegio VIP.';
+        break;
+      default:
+        message =
+            'Crea 5 planes, logra 5 participantes en un solo plan y reúne 20 participantes en total para pasar al nivel de privilegio Premium.';
     }
-    if (needMaxParts) {
-      parts.add("un plan que supere el umbral máximo de $neededMaxPartsThreshold participantes");
-    }
-    if (neededTotalParts > 0) {
-      parts.add("reunir $neededTotalParts participantes más en tus siguientes planes");
-    }
-
-    if (parts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final String nextLevelName = nextReq.name;
-    String missing;
-    if (parts.length == 1) {
-      missing = parts.first;
-    } else if (parts.length == 2) {
-      missing = "${parts[0]} y ${parts[1]}";
-    } else {
-      missing = "${parts[0]}, ${parts[1]} y ${parts[2]}";
-    }
-
-    final message =
-        "Te falta $missing para pasar al nivel de privilegio $nextLevelName";
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 14),
       child: Row(
         children: [
           SvgPicture.asset(
-            "assets/icono-informacion.svg",
+            'assets/icono-informacion.svg',
             width: 20,
             height: 20,
             color: Colors.white,
