@@ -508,34 +508,35 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
         maxValue == 0 ? 0 : (currentValue / maxValue).clamp(0.0, 1.0);
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: width,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(borderRadius),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: const Color.fromARGB(255, 108, 104, 104),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    progress == 0
-                        ? Colors.transparent
-                        : (progressColor ?? Colors.white),
+        Expanded(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: width),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: const Color.fromARGB(255, 108, 104, 104),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      progress == 0
+                          ? Colors.transparent
+                          : (progressColor ?? Colors.white),
+                    ),
+                    minHeight: height,
                   ),
-                  minHeight: height,
                 ),
-              ),
-              Text(
-                "$currentValue",
-                style: TextStyle(
-                  color: progress == 0 ? Colors.white : Colors.black,
-                  fontSize: 10,
+                Text(
+                  "$currentValue",
+                  style: TextStyle(
+                    color: progress == 0 ? Colors.white : Colors.black,
+                    fontSize: 10,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 6),
