@@ -22,6 +22,8 @@ class UpdateService {
     final minRequired = rc.getInt('min_version_code');
     final info = await PackageInfo.fromPlatform();
     final current = int.tryParse(info.buildNumber) ?? 0;
+    debugPrint("min_version_code = $minRequired");
+    debugPrint("buildNumber = $current");
     return current < minRequired;
   }
 }
