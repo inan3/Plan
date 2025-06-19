@@ -30,6 +30,7 @@ import 'start/registration/user_registration_screen.dart';
 import 'start/registration/verification_provider.dart';
 import 'start/registration/local_registration_service.dart';
 
+import 'services/update_service.dart';
 /* ─────────────────────────────────────────────────────────
  *  Handler FCM en background
  * ────────────────────────────────────────────────────────*/
@@ -160,7 +161,7 @@ class _MyAppState extends State<MyApp> {
     return ValueListenableBuilder<Locale>(
       valueListenable: LanguageService.locale,
       builder: (context, locale, _) {
-        return MaterialApp(
+        return ForceUpdateGuard(child: MaterialApp(
           navigatorKey: _navigatorKey,
           locale: locale,
           supportedLocales: const [Locale('es'), Locale('en')],
@@ -175,7 +176,7 @@ class _MyAppState extends State<MyApp> {
           // Always start at WelcomeScreen. It handles auth changes internally.
           // This ensures that every app launch shows the welcome screen first.
           home: const WelcomeScreen(),
-        );
+        ));
       },
     );
   }
