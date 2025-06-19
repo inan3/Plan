@@ -40,6 +40,7 @@ dependencies:
   mobile_scanner: ^3.0.0
   google_sign_in: ^6.3.0
   firebase_messaging: ^15.2.5
+  firebase_remote_config: ^4.3.4
   flutter_local_notifications: ^17.0.0
   cloud_functions: ^5.5.0
   receive_sharing_intent:
