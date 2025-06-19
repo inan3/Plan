@@ -5,10 +5,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PrivilegeLevelDetails extends StatefulWidget {
   final String userId; // ID del usuario para buscar sus datos en Firestore
-  final bool showAllInfo; // controla si se muestran las indicaciones y las insignias
+  final bool
+      showAllInfo; // controla si se muestran las indicaciones y las insignias
 
   const PrivilegeLevelDetails({
     Key? key,
@@ -23,7 +25,8 @@ class PrivilegeLevelDetails extends StatefulWidget {
     String userId,
     int currentPlanParticipants,
   ) async {
-    final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(userId);
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(userDocRef);
       if (!snapshot.exists) return;
@@ -106,7 +109,10 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
         _privilegeLevel = (data['privilegeLevel'] ?? 'Básico').toString();
 
         // Verificamos si el nivel debe cambiar
-        await _checkAndUpdatePrivilegeLevel();
+        final me = FirebaseAuth.instance.currentUser;
+        if (me != null && me.uid == widget.userId) {
+          await _checkAndUpdatePrivilegeLevel(); // solo si es su propio perfil
+        }
 
         // Volvemos a leer en caso de que se actualizara
         final updatedDoc = await FirebaseFirestore.instance
@@ -114,10 +120,11 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
             .doc(widget.userId)
             .get();
         final updatedData = updatedDoc.data() ?? {};
-        _privilegeLevel = (updatedData['privilegeLevel'] ?? 'Básico').toString();
+        _privilegeLevel =
+            (updatedData['privilegeLevel'] ?? 'Básico').toString();
 
         setState(() {
-          _privilegeInfo = "Nivel $_privilegeLevel";
+          _privilegeInfo = _privilegeLevel;
         });
       } else {
         setState(() {
@@ -329,7 +336,8 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     ];
     final iconNames = ["Básico", "Premium", "Golden", "VIP"];
 
-    Widget arrow = const Icon(Icons.arrow_forward, color: Colors.grey, size: 20);
+    Widget arrow =
+        const Icon(Icons.arrow_forward, color: Colors.grey, size: 20);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -362,10 +370,26 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   }
 
   final _grayscaleFilter = const ColorFilter.matrix([
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0,      0,      0,      1, 0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ]);
 
   Widget _buildPrivilegeIconButton({
