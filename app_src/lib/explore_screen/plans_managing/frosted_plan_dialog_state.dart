@@ -943,13 +943,15 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   }
 
   Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
-    final count = participants.length;
+    final filtered =
+        participants.where((p) => p['uid'] != widget.plan.createdBy).toList();
+    final count = filtered.length;
     if (count == 0) {
       return const SizedBox.shrink();
     }
 
     if (count == 1) {
-      final p = participants[0];
+      final p = filtered[0];
       final pic = p['photoUrl'] ?? '';
       String name = p['name'] ?? 'Usuario';
       final age = p['age']?.toString() ?? '';
@@ -962,7 +964,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
       return GestureDetector(
         onTap: () async {
-          await _showParticipantsModal(participants);
+          await _showParticipantsModal(filtered);
           if (mounted) setState(() {});
         },
         child: Container(
@@ -992,8 +994,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         ),
       );
     } else {
-      final p1 = participants[0];
-      final p2 = participants[1];
+      final p1 = filtered[0];
+      final p2 = filtered[1];
       final pic1 = p1['photoUrl'] ?? '';
       final pic2 = p2['photoUrl'] ?? '';
 
@@ -1007,7 +1009,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
       return GestureDetector(
         onTap: () async {
-          await _showParticipantsModal(participants);
+          await _showParticipantsModal(filtered);
           if (mounted) setState(() {});
         },
         child: SizedBox(
@@ -1479,7 +1481,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   ),
                 );
               }
-              final allParts = snapshot.data ?? [];
+              final allParts = (snapshot.data ?? [])
+                  .where((p) => p['uid'] != plan.createdBy)
+                  .toList();
 
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -1515,8 +1519,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     if (plan.special_plan == 1) {
       return const SizedBox.shrink();
     }
+    final filtered =
+        participants.where((p) => p['uid'] != widget.plan.createdBy).toList();
     final bool isParticipant =
-        participants.any((p) => p['uid'] == _currentUser?.uid);
+        filtered.any((p) => p['uid'] == _currentUser?.uid);
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance

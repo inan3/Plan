@@ -689,12 +689,14 @@ class PlanCardState extends State<PlanCard> {
   // Participantes en la esquina
   // ─────────────────────────────────────────────────────────────
   Widget _buildParticipantsCorner() {
-    if (_participants.isEmpty) return const SizedBox.shrink();
-    final count = _participants.length;
+    final participants =
+        _participants.where((p) => p['uid'] != widget.plan.createdBy).toList();
+    if (participants.isEmpty) return const SizedBox.shrink();
+    final count = participants.length;
 
     // Solo 1
     if (count == 1) {
-      final p = _participants[0];
+      final p = participants[0];
       final pic = p['photoUrl'] ?? '';
       String name = p['name'] ?? 'Usuario';
       final age = p['age']?.toString() ?? '';
@@ -704,7 +706,7 @@ class PlanCardState extends State<PlanCard> {
       displayText = _truncate(displayText, maxChars);
 
       return GestureDetector(
-        onTap: () => _showParticipantsModal(_participants),
+        onTap: () => _showParticipantsModal(participants),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -734,8 +736,8 @@ class PlanCardState extends State<PlanCard> {
     }
     // Si hay 2 o más
     else {
-      final p1 = _participants[0];
-      final p2 = _participants[1];
+      final p1 = participants[0];
+      final p2 = participants[1];
       final pic1 = p1['photoUrl'] ?? '';
       final pic2 = p2['photoUrl'] ?? '';
 
@@ -749,7 +751,7 @@ class PlanCardState extends State<PlanCard> {
           : (avatarSize + overlapOffset);
 
       return GestureDetector(
-        onTap: () => _showParticipantsModal(_participants),
+        onTap: () => _showParticipantsModal(participants),
         child: SizedBox(
           width: containerWidth,
           height: avatarSize,
@@ -1152,7 +1154,9 @@ class PlanCardState extends State<PlanCard> {
             ),
           );
         }
-        _participants = snap.data ?? [];
+        _participants = (snap.data ?? [])
+            .where((p) => p['uid'] != plan.createdBy)
+            .toList();
         final totalP = _participants.length;
         final maxP = plan.maxParticipants ?? 0;
         final bool isFull = (maxP > 0 && totalP >= maxP);
