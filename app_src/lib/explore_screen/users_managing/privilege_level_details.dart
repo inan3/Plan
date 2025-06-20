@@ -280,6 +280,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         firstColumn,
         secondColumn,
