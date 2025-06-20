@@ -1485,24 +1485,33 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   .where((p) => p['uid'] != plan.createdBy)
                   .toList();
 
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildHeaderRow(),
-                    _buildMediaSection(
-                      plan,
-                      allParts,
-                      isUserCreator: isUserCreator,
+              return Stack(
+                children: [
+                  SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        _buildHeaderRow(),
+                        _buildMediaSection(
+                          plan,
+                          allParts,
+                          isUserCreator: isUserCreator,
+                        ),
+                        _buildLocationArea(plan),
+                        const SizedBox(height: 16),
+                        _buildAdditionalInfoBox(plan),
+                        const SizedBox(height: 16),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                      ],
                     ),
-                    _buildLocationArea(plan),
-                    const SizedBox(height: 16),
-                    _buildAdditionalInfoBox(plan),
-                    const SizedBox(height: 16),
-                    _buildCheckInArea(plan, allParts, isUserCreator),
-                    const SizedBox(height: 30),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    bottom: MediaQuery.of(context).size.height * 0.1,
+                    left: 0,
+                    right: 0,
+                    child: _buildCheckInArea(plan, allParts, isUserCreator),
+                  ),
+                ],
               );
             },
           ),
