@@ -29,8 +29,14 @@ class UpdateService {
 }
 
 class ForceUpdateGuard extends StatelessWidget {
-  const ForceUpdateGuard({super.key, required this.child});
+  const ForceUpdateGuard({
+    super.key,
+    required this.child,
+    required this.navigatorKey,
+  });
+
   final Widget child;
+  final GlobalKey<NavigatorState> navigatorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +47,7 @@ class ForceUpdateGuard extends StatelessWidget {
         if (mustUpdate) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             showDialog<void>(
-              context: context,
+              context: navigatorKey.currentContext!,
               barrierDismissible: false,
               builder: (_) => WillPopScope(
                 onWillPop: () async {

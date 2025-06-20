@@ -161,22 +161,25 @@ class _MyAppState extends State<MyApp> {
     return ValueListenableBuilder<Locale>(
       valueListenable: LanguageService.locale,
       builder: (context, locale, _) {
-        return ForceUpdateGuard(child: MaterialApp(
+        return ForceUpdateGuard(
           navigatorKey: _navigatorKey,
-          locale: locale,
-          supportedLocales: const [Locale('es'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          title: 'Plan',
-          theme: ThemeData(primarySwatch: Colors.pink),
-          // Always start at WelcomeScreen. It handles auth changes internally.
-          // This ensures that every app launch shows the welcome screen first.
-          home: const WelcomeScreen(),
-        ));
+          child: MaterialApp(
+            navigatorKey: _navigatorKey,
+            locale: locale,
+            supportedLocales: const [Locale('es'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            title: 'Plan',
+            theme: ThemeData(primarySwatch: Colors.pink),
+            // Always start at WelcomeScreen. It handles auth changes internally.
+            // This ensures that every app launch shows the welcome screen first.
+            home: const WelcomeScreen(),
+          ),
+        );
       },
     );
   }
