@@ -59,11 +59,45 @@ class AttendanceManaging {
   /// Cuando un usuario ingresa o escanea un código válido, se confirma su asistencia:
   /// - Se añade su uid a "checkedInUsers" en el documento del plan.
   static Future<void> confirmAttendance(String planId, String uid) async {
-    final planRef = FirebaseFirestore.instance.collection('plans').doc(planId);
-    final planDoc = await planRef.get();
-    if (planDoc.data()?['special_plan'] == 1) return;
-    await planRef.update({
-      'checkedInUsers': FieldValue.arrayUnion([uid]),
+    final db = FirebaseFirestore.instance;
+    final planRef = db.collection('plans').doc(planId);
+
+    await db.runTransaction((transaction) async {
+      final planSnap = await transaction.get(planRef);
+      if (!planSnap.exists) return;
+
+      final data = planSnap.data() as Map<String, dynamic>;
+      if (data['special_plan'] == 1) return;
+
+      final List<dynamic> checked = data['checkedInUsers'] ?? [];
+      if (checked.contains(uid)) return;
+
+      // Añade el usuario al plan
+      transaction.update(planRef, {
+        'checkedInUsers': FieldValue.arrayUnion([uid]),
+      });
+
+      final creatorId = data['createdBy']?.toString() ?? '';
+      if (creatorId.isEmpty) return;
+
+      final creatorRef = db.collection('users').doc(creatorId);
+      final creatorSnap = await transaction.get(creatorRef);
+      if (!creatorSnap.exists) return;
+
+      final creatorData = creatorSnap.data() as Map<String, dynamic>;
+      int total = creatorData['total_participants_until_now'] ?? 0;
+      int maxPart = creatorData['max_participants_in_one_plan'] ?? 0;
+
+      total += 1;
+      final currentParticipants = checked.length + 1;
+      if (currentParticipants > maxPart) {
+        maxPart = currentParticipants;
+      }
+
+      transaction.update(creatorRef, {
+        'total_participants_until_now': total,
+        'max_participants_in_one_plan': maxPart,
+      });
     });
   }
 
