@@ -1589,7 +1589,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 width: btnW,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue,
+                    backgroundColor: AppColors.planColor,
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
@@ -1615,7 +1615,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     width: btnW,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.blue,
+                        backgroundColor: AppColors.planColor,
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () {
