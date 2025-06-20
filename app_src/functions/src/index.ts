@@ -66,13 +66,13 @@ export const sendPushOnNotification = onDocumentCreated(
     const notif = {
       title: titles[n.type] ?? "Notificación",
       body:
-        n.type === "special_plan_deleted"
-          ? `${n.senderName} ha eliminado el plan especial`
-          : n.type === "special_plan_left"
-              ? `${n.senderName} ha decidido abandonar el plan especial`
-              : n.senderName
-                  ? `${n.senderName} • ${n.planType ?? ""}`
-                  : "Abre la app para más detalles",
+        n.type === "special_plan_deleted" ?
+          `${n.senderName} ha eliminado el plan especial` :
+          n.type === "special_plan_left" ?
+            `${n.senderName} ha decidido abandonar el plan especial` :
+            n.senderName ?
+              `${n.senderName} • ${n.planType ?? ""}` :
+              "Abre la app para más detalles",
     };
 
     const resp = await getMessaging().sendEachForMulticast({
@@ -168,9 +168,7 @@ export const sendPushOnMessage = onDocumentCreated(
   }
 );
 
-
-// Eliminado para evitar notificaciones duplicadas al comentar en un plan.
-// Las notificaciones de comentarios se manejan mediante `sendPushOnNotification`.
+// Notificaciones de comentarios vía `sendPushOnNotification`.
 
 export const notifyRemovedParticipants = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
@@ -180,10 +178,9 @@ export const notifyRemovedParticipants = onDocumentWritten(
     if (!before || !after) return;
 
     const removed: string[] =
-      before.participants
-        ?.filter((p: string) =>
-          !(after.participants ?? []).includes(p)
-        ) ?? [];
+      before.participants?.filter(
+        (p: string) => !(after.participants ?? []).includes(p)
+      ) ?? [];
     if (removed.length === 0) return;
 
     const db = getFirestore();
@@ -225,7 +222,9 @@ export const updateCreatorStats = onDocumentWritten(
     const afterChecked: string[] = after.checkedInUsers ?? [];
     if (afterChecked.length <= beforeChecked.length) return;
 
-    const added = afterChecked.filter((u: string) => !beforeChecked.includes(u));
+    const added = afterChecked.filter(
+      (u: string) => !beforeChecked.includes(u)
+    );
     if (added.length === 0) return;
 
     const creatorId: string = after.createdBy;
@@ -239,7 +238,8 @@ export const updateCreatorStats = onDocumentWritten(
       if (!snap.exists) return;
 
       const data = snap.data() ?? {};
-      const total = (data.total_participants_until_now ?? 0) + added.length;
+      const total =
+        (data.total_participants_until_now ?? 0) + added.length;
       const maxPart = Math.max(
         data.max_participants_in_one_plan ?? 0,
         afterChecked.length
