@@ -1169,7 +1169,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                 child: const Text(
                                   'ASISTE',
                                   style: TextStyle(
-                                    color: AppColors.blue,
+                                    color: AppColors.planColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1506,7 +1506,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     ),
                   ),
                   Positioned(
-                    bottom: MediaQuery.of(context).size.height * 0.03,
+                    bottom: MediaQuery.of(context).size.height * 0.1,
                     left: 0,
                     right: 0,
                     child: _buildCheckInArea(plan, allParts, isUserCreator),
@@ -1532,8 +1532,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         participants.where((p) => p['uid'] != widget.plan.createdBy).toList();
     final bool isParticipant =
         filtered.any((p) => p['uid'] == _currentUser?.uid);
-
-    final double btnW = MediaQuery.of(context).size.width * 0.8;
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -1585,25 +1583,22 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           if (!checkInActive) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: SizedBox(
-                width: btnW,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    await AttendanceManaging.startCheckIn(plan.id);
-                    if (!mounted) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckInCreatorScreen(planId: plan.id),
-                      ),
-                    );
-                  },
-                  child: const Text("Iniciar Check-in"),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.planColor,
+                  foregroundColor: Colors.white,
                 ),
+                onPressed: () async {
+                  await AttendanceManaging.startCheckIn(plan.id);
+                  if (!mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                    ),
+                  );
+                },
+                child: const Text("Iniciar Check-in"),
               ),
             );
           } else {
@@ -1611,37 +1606,31 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Column(
                 children: [
-                  SizedBox(
-                    width: btnW,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CheckInCreatorScreen(planId: plan.id),
-                          ),
-                        );
-                      },
-                      child: const Text("Ver Check-in (QR)"),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.planColor,
+                      foregroundColor: Colors.white,
                     ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                        ),
+                      );
+                    },
+                    child: const Text("Ver Check-in (QR)"),
                   ),
                   const SizedBox(height: 6),
-                  SizedBox(
-                    width: btnW,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () async {
-                        await AttendanceManaging.finalizeCheckIn(plan.id);
-                      },
-                      child: const Text("Finalizar Check-in"),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
                     ),
+                    onPressed: () async {
+                      await AttendanceManaging.finalizeCheckIn(plan.id);
+                    },
+                    child: const Text("Finalizar Check-in"),
                   ),
                 ],
               ),
@@ -1654,22 +1643,19 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           if (checkInActive) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: SizedBox(
-                width: btnW,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckInParticipantScreen(planId: plan.id),
-                      ),
-                    );
-                  },
-                  child: const Text("Confirmar asistencia"),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
                 ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckInParticipantScreen(planId: plan.id),
+                    ),
+                  );
+                },
+                child: const Text("Confirmar asistencia"),
               ),
             );
           } else {
