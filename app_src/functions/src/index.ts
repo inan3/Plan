@@ -214,6 +214,45 @@ export const notifyRemovedParticipants = onDocumentWritten(
   }
 );
 
+export const updateCreatorStats = onDocumentWritten(
+  {region: "europe-west1", document: "/plans/{planId}"},
+  async (event: WrittenEvent) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const beforeChecked: string[] = before.checkedInUsers ?? [];
+    const afterChecked: string[] = after.checkedInUsers ?? [];
+    if (afterChecked.length <= beforeChecked.length) return;
+
+    const added = afterChecked.filter((u: string) => !beforeChecked.includes(u));
+    if (added.length === 0) return;
+
+    const creatorId: string = after.createdBy;
+    if (!creatorId) return;
+
+    const db = getFirestore();
+    const creatorRef = db.doc(`users/${creatorId}`);
+
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(creatorRef);
+      if (!snap.exists) return;
+
+      const data = snap.data() ?? {};
+      const total = (data.total_participants_until_now ?? 0) + added.length;
+      const maxPart = Math.max(
+        data.max_participants_in_one_plan ?? 0,
+        afterChecked.length
+      );
+
+      tx.update(creatorRef, {
+        total_participants_until_now: total,
+        max_participants_in_one_plan: maxPart,
+      });
+    });
+  }
+);
+
 export const createWelcomeNotification = onDocumentCreated(
   {region: "europe-west1", document: "/users/{userId}"},
   async (event: CreatedEvent) => {
