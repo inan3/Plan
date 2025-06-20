@@ -1169,7 +1169,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                 child: const Text(
                                   'ASISTE',
                                   style: TextStyle(
-                                    color: AppColors.blue,
+                                    color: AppColors.planColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

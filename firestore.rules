@@ -16,7 +16,7 @@ service cloud.firestore {
       allow update, delete: if request.auth.uid == resource.data.createdBy
         || ((request.auth.uid in resource.data.invitedUsers
             || request.auth.uid in resource.data.participants)
-            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'invitedUsers', 'removedParticipants', 'commentsCount']));
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'invitedUsers', 'removedParticipants', 'commentsCount', 'checkedInUsers']));
     }
 
     match /notifications/{id} {
