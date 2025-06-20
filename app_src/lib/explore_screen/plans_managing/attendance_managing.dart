@@ -77,27 +77,6 @@ class AttendanceManaging {
         'checkedInUsers': FieldValue.arrayUnion([uid]),
       });
 
-      final creatorId = data['createdBy']?.toString() ?? '';
-      if (creatorId.isEmpty) return;
-
-      final creatorRef = db.collection('users').doc(creatorId);
-      final creatorSnap = await transaction.get(creatorRef);
-      if (!creatorSnap.exists) return;
-
-      final creatorData = creatorSnap.data() as Map<String, dynamic>;
-      int total = creatorData['total_participants_until_now'] ?? 0;
-      int maxPart = creatorData['max_participants_in_one_plan'] ?? 0;
-
-      total += 1;
-      final currentParticipants = checked.length + 1;
-      if (currentParticipants > maxPart) {
-        maxPart = currentParticipants;
-      }
-
-      transaction.update(creatorRef, {
-        'total_participants_until_now': total,
-        'max_participants_in_one_plan': maxPart,
-      });
     });
   }
 
