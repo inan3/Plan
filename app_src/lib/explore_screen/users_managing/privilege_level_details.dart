@@ -184,98 +184,107 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     final int maxMaxPartsBar = thresholdReq.minMaxParts;
     final int maxTotalPartsBar = thresholdReq.minTotalParts;
 
-    return Column(
+    Widget createdPlansText = Column(
+      children: const [
+        Text(
+          "Planes creados",
+          style: TextStyle(color: Colors.white, fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    Widget maxPartsText = Column(
+      children: const [
+        Text(
+          "Máx. participantes",
+          style: TextStyle(color: Colors.white, fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+        Text(
+          "en un plan",
+          style: TextStyle(color: Colors.white, fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    Widget totalPartsText = Column(
+      children: const [
+        Text(
+          "Total de participantes",
+          style: TextStyle(color: Colors.white, fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+        Text(
+          "reunidos hasta ahora",
+          style: TextStyle(color: Colors.white, fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    Widget firstColumn = SizedBox(
+      width: w,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTriangleIcon(),
+          const SizedBox(height: 8),
+          _buildProgressWithText(
+            currentValue: _totalCreatedPlans,
+            maxValue: maxPlansBar,
+            width: w,
+          ),
+          const SizedBox(height: 4),
+          createdPlansText,
+        ],
+      ),
+    );
+
+    Widget secondColumn = SizedBox(
+      width: w,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSquareIcon(),
+          const SizedBox(height: 8),
+          _buildProgressWithText(
+            currentValue: _maxParticipantsInOnePlan,
+            maxValue: maxMaxPartsBar,
+            width: w,
+          ),
+          const SizedBox(height: 4),
+          maxPartsText,
+        ],
+      ),
+    );
+
+    Widget thirdColumn = SizedBox(
+      width: w,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildPentagonIcon(),
+          const SizedBox(height: 8),
+          _buildProgressWithText(
+            currentValue: _totalParticipantsUntilNow,
+            maxValue: maxTotalPartsBar,
+            width: w,
+          ),
+          const SizedBox(height: 4),
+          totalPartsText,
+        ],
+      ),
+    );
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(child: Center(child: _buildTriangleIcon())),
-            Expanded(child: Center(child: _buildSquareIcon())),
-            Expanded(child: Center(child: _buildPentagonIcon())),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: Center(
-                child: _buildProgressWithText(
-                  currentValue: _totalCreatedPlans,
-                  maxValue: maxPlansBar,
-                  width: w,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: _buildProgressWithText(
-                  currentValue: _maxParticipantsInOnePlan,
-                  maxValue: maxMaxPartsBar,
-                  width: w,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: _buildProgressWithText(
-                  currentValue: _totalParticipantsUntilNow,
-                  maxValue: maxTotalPartsBar,
-                  width: w,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 1),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: Column(
-                children: const [
-                  Text(
-                    "Planes creados",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: const [
-                  Text(
-                    "Máx. participantes",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    "en un plan",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: const [
-                  Text(
-                    "Total de participantes",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    "reunidos hasta ahora",
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        firstColumn,
+        secondColumn,
+        thirdColumn,
       ],
     );
   }
@@ -563,10 +572,12 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
             ),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(
-          "$maxValue",
-          style: const TextStyle(color: Colors.white, fontSize: 10),
+        Padding(
+          padding: const EdgeInsets.only(left: 2),
+          child: Text(
+            "$maxValue",
+            style: const TextStyle(color: Colors.white, fontSize: 10),
+          ),
         ),
       ],
     );
