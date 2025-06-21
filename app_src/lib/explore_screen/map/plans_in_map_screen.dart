@@ -10,6 +10,7 @@ import '../../main/colors.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../models/plan_model.dart';
 
+import '../users_managing/user_info_check.dart';
 class _MarkerData {
   final BitmapDescriptor icon;
   final Offset anchor;
@@ -244,7 +245,7 @@ class PlansInMapScreen {
           position: pos,
           icon: iconData.icon,
           anchor: iconData.anchor,
-          onTap: () {},
+          onTap: () => UserInfoCheck.open(context, uid),
         ),
       );
     }
