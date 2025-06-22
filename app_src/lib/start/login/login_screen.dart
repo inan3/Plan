@@ -118,7 +118,8 @@ class _LoginScreenState extends State<LoginScreen> {
               .limit(1)
               .get();
           if (snap.docs.isNotEmpty) {
-            emailToUse = snap.docs.first.get('email') ?? '';
+            emailToUse =
+                snap.docs.first.data()['email']?.toString() ?? '';
           }
         }
 
