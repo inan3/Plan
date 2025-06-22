@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Fallback: buscar directamente en Firestore por el nombre de usuario
           final snap = await FirebaseFirestore.instance
               .collection('users')
-              .where('user_name_lowercase', isEqualTo: input.toLowerCase())
+              .where('user_name', isEqualTo: input)
               .limit(1)
               .get();
           if (snap.docs.isNotEmpty) {
