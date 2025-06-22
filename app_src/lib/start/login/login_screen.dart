@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
           emailToUse = (res.data['email'] ?? '').toString();
           print('_loginWithEmail: getEmailByUsername -> $emailToUse');
         } on FirebaseFunctionsException catch (e) {
-          print('_loginWithEmail: getEmailByUsername error ${e.code}');
+          print('_loginWithEmail: getEmailByUsername error ${e.code} ${e.message}');
           emailToUse = '';
         }
 
@@ -179,6 +179,12 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       print('_loginWithEmail: FirebaseAuthException ${e.code}');
       if (mounted) _showErrorDialog('Correo, usuario o contraseña incorrectos.');
+    } on FirebaseException catch (e) {
+      print('_loginWithEmail: FirebaseException ${e.code} ${e.message}');
+      if (mounted) _showErrorDialog('No se pudo acceder a los datos de usuario.');
+    } catch (e) {
+      print('_loginWithEmail: unexpected error $e');
+      if (mounted) _showErrorDialog('Ha ocurrido un error al iniciar sesión.');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
