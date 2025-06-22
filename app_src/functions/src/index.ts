@@ -1,3 +1,4 @@
+// functions/src/index.ts
 import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
@@ -6,13 +7,14 @@ import {
   onDocumentCreated,
   onDocumentWritten,
 } from "firebase-functions/v2/firestore";
-
 import * as functions from "firebase-functions/v1";
+
 import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {HttpsError} from "firebase-functions/v1/https";
 
 import type {DocumentSnapshot} from "firebase-admin/firestore";
 
+/* ──────────────────────── tipos ──────────────────────── */
 interface CreatedEvent<T = DocumentSnapshot> {
   data?: T;
   params: Record<string, string>;
@@ -26,8 +28,10 @@ interface WrittenEvent<T = DocumentSnapshot> {
   params: Record<string, string>;
 }
 
+/* ──────────────────────── init ──────────────────────── */
 initializeApp();
 
+/* ──────────────────────── textos ──────────────────────── */
 const titles: Record<string, string> = {
   join_request: "Solicitud de unión",
   invitation: "Invitación a un plan",
@@ -47,8 +51,10 @@ const titles: Record<string, string> = {
   special_plan_left: "Salida de plan especial",
 };
 
+/* ──────────────────────── visión ──────────────────────── */
 const vision = new ImageAnnotatorClient();
 
+/* ──────────────────── detección explícitos ──────────────────── */
 export const detectExplicitContent = functions
   .region("europe-west1")
   .https.onCall(async (data) => {
@@ -56,15 +62,18 @@ export const detectExplicitContent = functions
     if (!base64) {
       throw new HttpsError("invalid-argument", "Image data missing");
     }
-    const [result] = await vision.safeSearchDetection(Buffer.from(base64, "base64"));
+    const [result] = await vision.safeSearchDetection(
+      Buffer.from(base64, "base64")
+    );
     const ann = result.safeSearchAnnotation;
     if (!ann) return {explicit: false};
-    const isExplicit = [ann.adult, ann.violence, ann.racy].some((v) =>
-      v === "LIKELY" || v === "VERY_LIKELY"
+    const isExplicit = [ann.adult, ann.violence, ann.racy].some(
+      (v) => v === "LIKELY" || v === "VERY_LIKELY"
     );
     return {explicit: isExplicit};
   });
 
+/* ────────────────────── notificaciones ────────────────────── */
 export const sendPushOnNotification = onDocumentCreated(
   {region: "europe-west1", document: "/notifications/{id}"},
   async (event: CreatedEvent) => {
@@ -124,6 +133,7 @@ export const sendPushOnNotification = onDocumentCreated(
   }
 );
 
+/* ────────────────── limpieza datos usuario ────────────────── */
 export const cleanupUserData = functions
   .region("europe-west1")
   .auth.user()
@@ -137,6 +147,7 @@ export const cleanupUserData = functions
     }
   });
 
+/* ────────────────────── push de mensajes ───────────────────── */
 export const sendPushOnMessage = onDocumentCreated(
   {region: "europe-west1", document: "/messages/{id}"},
   async (event: CreatedEvent) => {
@@ -188,8 +199,7 @@ export const sendPushOnMessage = onDocumentCreated(
   }
 );
 
-// Notificaciones de comentarios vía `sendPushOnNotification`.
-
+/* ─── notificaciones de eliminación / salida de participantes ─── */
 export const notifyRemovedParticipants = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
   async (event: WrittenEvent) => {
@@ -224,13 +234,12 @@ export const notifyRemovedParticipants = onDocumentWritten(
           timestamp: FieldValue.serverTimestamp(),
           read: false,
         });
-
-        // El push se enviará mediante sendPushOnNotification
       })
     );
   }
 );
 
+/* ─────────────── actualización de estadísticas ─────────────── */
 export const updateCreatorStats = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
   async (event: WrittenEvent) => {
@@ -242,9 +251,7 @@ export const updateCreatorStats = onDocumentWritten(
     const afterChecked: string[] = after.checkedInUsers ?? [];
     if (afterChecked.length <= beforeChecked.length) return;
 
-    const added = afterChecked.filter(
-      (u: string) => !beforeChecked.includes(u)
-    );
+    const added = afterChecked.filter((u: string) => !beforeChecked.includes(u));
     if (added.length === 0) return;
 
     const creatorId: string = after.createdBy;
@@ -258,8 +265,7 @@ export const updateCreatorStats = onDocumentWritten(
       if (!snap.exists) return;
 
       const data = snap.data() ?? {};
-      const total =
-        (data.total_participants_until_now ?? 0) + added.length;
+      const total = (data.total_participants_until_now ?? 0) + added.length;
       const maxPart = Math.max(
         data.max_participants_in_one_plan ?? 0,
         afterChecked.length
@@ -273,6 +279,7 @@ export const updateCreatorStats = onDocumentWritten(
   }
 );
 
+/* ────────────────── notificación de bienvenida ───────────────── */
 export const createWelcomeNotification = onDocumentCreated(
   {region: "europe-west1", document: "/users/{userId}"},
   async (event: CreatedEvent) => {
@@ -297,6 +304,7 @@ export const createWelcomeNotification = onDocumentCreated(
   }
 );
 
+/* ──────────── búsqueda de email por username ──────────── */
 export const getEmailByUsername = functions
   .region("europe-west1")
   .https.onCall(async (data) => {
@@ -312,8 +320,8 @@ export const getEmailByUsername = functions
       .limit(1)
       .get();
 
-    if (snap.empty) return { email: null };
+    if (snap.empty) return {email: null};
 
     const email = snap.docs[0].get("email") as string | undefined;
-    return { email: email ?? null };
+    return {email: email ?? null};
   });
