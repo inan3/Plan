@@ -62,8 +62,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<bool> _userDocExists(String uid) async {
+    print('_userDocExists: checking $uid');
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    print('_userDocExists: exists=${doc.exists}');
     if (!doc.exists) return false;
     final name = (doc.data()?['name'] ?? '').toString();
     return name.isNotEmpty;
@@ -71,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _goToExplore() async {
     if (!mounted) return;
+    print('_goToExplore: navigating to ExploreScreen');
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const ExploreScreen()),
@@ -98,6 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       String input = emailController.text.trim();
       String emailToUse = input;
+      print('_loginWithEmail: input=$input');
 
       if (!input.contains('@')) {
         final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -106,12 +110,14 @@ class _LoginScreenState extends State<LoginScreen> {
               .httpsCallable('getEmailByUsername')
               .call({'username': input});
           emailToUse = (res.data['email'] ?? '').toString();
-        } on FirebaseFunctionsException catch (_) {
+          print('_loginWithEmail: getEmailByUsername -> $emailToUse');
+        } on FirebaseFunctionsException catch (e) {
+          print('_loginWithEmail: getEmailByUsername error ${e.code}');
           emailToUse = '';
         }
 
         if (emailToUse.isEmpty) {
-          // Fallback: buscar directamente en Firestore por el nombre de usuario
+          print('_loginWithEmail: fallback Firestore lookup for $input');
           final snap = await FirebaseFirestore.instance
               .collection('users')
               .where('user_name', isEqualTo: input)
@@ -120,6 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
           if (snap.docs.isNotEmpty) {
             emailToUse =
                 snap.docs.first.data()['email']?.toString() ?? '';
+            print('_loginWithEmail: fallback found -> $emailToUse');
+          } else {
+            print('_loginWithEmail: fallback found no documents');
           }
         }
 
@@ -127,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (mounted) {
             _showErrorDialog('Correo o nombre de usuario incorrectos.');
           }
+          print('_loginWithEmail: no email found for username');
           return;
         }
       }
@@ -135,8 +145,10 @@ class _LoginScreenState extends State<LoginScreen> {
         email: emailToUse,
         password: passwordController.text.trim(),
       );
+      print('_loginWithEmail: attempting signIn with $emailToUse');
 
       final user = credential.user;
+      print('_loginWithEmail: signIn success uid=${user?.uid}');
       if (user == null) throw FirebaseAuthException(code: 'USER_NULL');
 
       if (!await _userDocExists(user.uid)) {
@@ -164,7 +176,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       await _goToExplore();
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e) {
+      print('_loginWithEmail: FirebaseAuthException ${e.code}');
       if (mounted) _showErrorDialog('Correo, usuario o contraseña incorrectos.');
     } finally {
       if (mounted) setState(() => isLoading = false);
