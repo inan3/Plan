@@ -148,7 +148,7 @@ class _SearcherState extends State<Searcher> {
         }
       }
 
-      // Buscar usuarios por nombre y/o por planes
+      // Buscar usuarios por nombre, nombre de usuario y/o por planes
       final usersSnap =
           await FirebaseFirestore.instance.collection('users').get();
 
@@ -159,12 +159,16 @@ class _SearcherState extends State<Searcher> {
         final nameLower =
             (data['nameLowercase'] ?? userName.toString().toLowerCase())
                 .toString();
+        final usernameLower =
+            (data['user_name_lowercase'] ?? data['user_name']?.toString().toLowerCase() ?? '')
+                .toString();
 
         final bool nameMatches = nameLower.contains(queryLower);
+        final bool usernameMatches = usernameLower.contains(queryLower);
         final bool planMatches = matchingPlanCreators.contains(userId);
         final bool hasPlan = allPlanCreators.contains(userId);
 
-        if (!nameMatches && !planMatches) continue;
+        if (!nameMatches && !usernameMatches && !planMatches) continue;
 
         final userAge = data['age']?.toString() ?? '';
         final photoUrl = data['photoUrl'] ?? '';
