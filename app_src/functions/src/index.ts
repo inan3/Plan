@@ -316,7 +316,7 @@ export const getEmailByUsername = functions
     const db = getFirestore();
     const snap = await db
       .collection("users")
-      .where("user_name_lowercase", "==", username.toLowerCase())
+      .where("user_name", "==", username)
       .limit(1)
       .get();
 
