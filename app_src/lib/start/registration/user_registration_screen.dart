@@ -13,6 +13,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 // Importación para "reverse geocoding"
 import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates, Placemark;
+import '../../explore_screen/profile/user_images_managing.dart';
 
 // Importa tus colores desde tu archivo principal (ajusta el import si lo requieres)
 import 'package:dating_app/main/colors.dart' as MyColors;
@@ -244,6 +245,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
   /// Sube un archivo a Firebase Storage y devuelve la URL
   Future<String?> _uploadFileToFirebase(File file, String fileName) async {
     try {
+      if (await UserImagesManaging.checkExplicit(file)) {
+        await UserImagesManaging.showExplicitDialog(context);
+        return null;
+      }
       final ref = FirebaseStorage.instance.ref().child(fileName);
       await ref.putFile(file);
       return await ref.getDownloadURL();

@@ -13,6 +13,7 @@ import 'package:geolocator/geolocator.dart'; // Si lo usas
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../profile/user_images_managing.dart';
 
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
@@ -1799,6 +1800,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   Future<void> _uploadAndSendImage(XFile imageFile) async {
     try {
+      if (await UserImagesManaging.checkExplicit(File(imageFile.path))) {
+        await UserImagesManaging.showExplicitDialog(context);
+        return;
+      }
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('chat_images')
