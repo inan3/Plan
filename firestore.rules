@@ -4,8 +4,7 @@ service cloud.firestore {
 
     match /users/{uid} {
       // Permitir consultas públicas por nombre de usuario.
-      allow list: if true;
-      allow get: if request.auth != null;
+      allow read: if request.auth != null || resource.data.user_name != null;
       allow create, update, delete: if request.auth.uid == uid;
       match /{sub=**} {
         allow read: if request.auth != null;
