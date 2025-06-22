@@ -296,3 +296,24 @@ export const createWelcomeNotification = onDocumentCreated(
     });
   }
 );
+
+export const getEmailByUsername = functions
+  .region("europe-west1")
+  .https.onCall(async (data) => {
+    const username = (data?.username as string | undefined)?.trim();
+    if (!username) {
+      throw new HttpsError("invalid-argument", "Missing username");
+    }
+
+    const db = getFirestore();
+    const snap = await db
+      .collection("users")
+      .where("user_name_lowercase", "==", username.toLowerCase())
+      .limit(1)
+      .get();
+
+    if (snap.empty) return { email: null };
+
+    const email = snap.docs[0].get("email") as string | undefined;
+    return { email: email ?? null };
+  });

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_database/firebase_database.dart'; // (si lo usas)
 import 'package:firebase_core/firebase_core.dart'; // (si lo usas)
 import 'package:google_sign_in/google_sign_in.dart';
@@ -99,18 +100,15 @@ class _LoginScreenState extends State<LoginScreen> {
       String emailToUse = input;
 
       if (!input.contains('@')) {
-        final snap = await FirebaseFirestore.instance
-            .collection('users')
-            .where('user_name_lowercase', isEqualTo: input.toLowerCase())
-            .limit(1)
-            .get();
-        if (snap.docs.isEmpty) {
-          if (mounted) {
-            _showErrorDialog('Correo o nombre de usuario incorrectos.');
-          }
-          return;
+        final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+        try {
+          final res = await functions
+              .httpsCallable('getEmailByUsername')
+              .call({'username': input});
+          emailToUse = (res.data['email'] ?? '').toString();
+        } on FirebaseFunctionsException {
+          emailToUse = '';
         }
-        emailToUse = (snap.docs.first.data()['email'] ?? '').toString();
         if (emailToUse.isEmpty) {
           if (mounted) {
             _showErrorDialog('Correo o nombre de usuario incorrectos.');
