@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
       final missing = <String>[];
-      if (emailController.text.trim().isEmpty) missing.add('correo');
+      if (emailController.text.trim().isEmpty) missing.add('correo o usuario');
       if (passwordController.text.trim().isEmpty) missing.add('contraseña');
       final msg =
           'Introduce tu ${missing.join(' y ')} y después pulsa en "Iniciar sesión".';
@@ -95,8 +95,32 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
+      String input = emailController.text.trim();
+      String emailToUse = input;
+
+      if (!input.contains('@')) {
+        final snap = await FirebaseFirestore.instance
+            .collection('users')
+            .where('user_name_lowercase', isEqualTo: input.toLowerCase())
+            .limit(1)
+            .get();
+        if (snap.docs.isEmpty) {
+          if (mounted) {
+            _showErrorDialog('Correo o nombre de usuario incorrectos.');
+          }
+          return;
+        }
+        emailToUse = (snap.docs.first.data()['email'] ?? '').toString();
+        if (emailToUse.isEmpty) {
+          if (mounted) {
+            _showErrorDialog('Correo o nombre de usuario incorrectos.');
+          }
+          return;
+        }
+      }
+
       final credential = await _auth.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
+        email: emailToUse,
         password: passwordController.text.trim(),
       );
 
@@ -129,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await _goToExplore();
     } on FirebaseAuthException {
-      if (mounted) _showErrorDialog('Correo o contraseña incorrectos.');
+      if (mounted) _showErrorDialog('Correo, usuario o contraseña incorrectos.');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -327,8 +351,8 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 10),
             _inputField(
               controller: emailController,
-              hint: 'Correo electrónico',
-              keyboardType: TextInputType.emailAddress,
+              hint: 'Correo electrónico o nombre de usuario',
+              keyboardType: TextInputType.text,
             ),
             const SizedBox(height: 20),
             _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),

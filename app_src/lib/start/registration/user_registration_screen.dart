@@ -392,6 +392,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         'uid': user.uid,
         'name': name,
         'nameLowercase': name.toLowerCase(),
+        'email': user.email ?? '',
+        'emailLowercase': user.email?.toLowerCase() ?? '',
         'user_name': username,
         'user_name_lowercase': username.toLowerCase(),
         'age': age,
