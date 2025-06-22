@@ -6,23 +6,125 @@
   <title>Eliminar cuenta</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Poppins', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#f5f5f5; margin:0; }
-    .container { background:#fff; padding:2rem; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.1); width:100%; max-width:400px; }
-    input { width:100%; padding:.8rem; margin:.5rem 0; border:1px solid #ccc; border-radius:4px; }
-    button { width:100%; padding:.8rem; margin-top:1rem; background:#d9534f; color:#fff; border:none; border-radius:4px; font-size:1rem; cursor:pointer; }
-    button:disabled { background:#aaa; cursor:default; }
-    #msg { color:red; text-align:center; margin-top:.5rem; }
+    :root {
+      --brand: #5D17EB;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 72px;
+    }
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 72px;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      z-index: 100;
+    }
+    header img { height: 48px; }
+    header span {
+      margin-left: 1rem;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #444;
+    }
+    .container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    input {
+      width: 100%;
+      padding: .8rem;
+      margin: .5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: .8rem;
+      margin-top: 1rem;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:disabled { background: #aaa; cursor: default; }
+    #msg { color: red; text-align: center; margin-top: .5rem; }
+    #confirmPopup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    #confirmPopup .popup-content {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    #confirmPopup .btn-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    #acceptBtn { background: var(--brand); color: #fff; border: none; border-radius: 30px; flex: 1; padding: .6rem; }
+    #cancelBtn {
+      background: #fff;
+      color: #000;
+      border: 1px solid #000;
+      border-radius: 30px;
+      flex: 1;
+      padding: .6rem;
+    }
   </style>
 </head>
 <body>
+  <header>
+    <img src="plan-sin-fondo.png" alt="Plan Social">
+    <span>Servicio de Plan</span>
+  </header>
   <div class="container">
     <h2>Eliminar cuenta</h2>
     <p>Introduce tu correo y contraseña para confirmar la eliminación permanente de tu cuenta.</p>
     <input id="email" type="email" placeholder="Correo electrónico" />
     <input id="pwd" type="password" placeholder="Contraseña" />
-    <button id="loginBtn">Iniciar sesión</button>
-    <button id="deleteBtn" disabled>Eliminar cuenta</button>
+    <button id="deleteBtn">Eliminar cuenta</button>
     <p id="msg"></p>
+  </div>
+  <div id="confirmPopup">
+    <div class="popup-content">
+      <p>¿Estás seguro de que deseas continuar con la eliminación de tu cuenta? Si aceptas, todos tus datos quedarán definitivamente eliminados de nuestra base de datos sin posibilidad de recuperar tu cuenta nuevamente.</p>
+      <div class="btn-group">
+        <button id="acceptBtn">Aceptar</button>
+        <button id="cancelBtn">Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -47,30 +149,31 @@
     const db = getFirestore(app);
     const storage = getStorage(app);
 
-    const loginBtn = document.getElementById('loginBtn');
     const deleteBtn = document.getElementById('deleteBtn');
     const msg = document.getElementById('msg');
     const inpEmail = document.getElementById('email');
     const inpPwd = document.getElementById('pwd');
+    const popup = document.getElementById('confirmPopup');
+    const acceptBtn = document.getElementById('acceptBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
 
-    loginBtn.addEventListener('click', async () => {
+    deleteBtn.addEventListener('click', () => {
+      msg.textContent = '';
+      popup.style.display = 'flex';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      popup.style.display = 'none';
+    });
+
+    acceptBtn.addEventListener('click', async () => {
+      popup.style.display = 'none';
+      deleteBtn.disabled = true;
       msg.textContent = '';
       try {
         await signInWithEmailAndPassword(auth, inpEmail.value.trim(), inpPwd.value);
-        msg.textContent = 'Autenticado. Pulsa "Eliminar cuenta" para continuar.';
-        deleteBtn.disabled = false;
-      } catch (e) {
-        msg.textContent = e.message;
-      }
-    });
-
-    deleteBtn.addEventListener('click', async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-      msg.textContent = '';
-      loginBtn.disabled = true;
-      deleteBtn.disabled = true;
-      try {
+        const user = auth.currentUser;
+        if (!user) throw new Error('Autenticación fallida');
         const docRef = doc(db, 'users', user.uid);
         const snap = await getDoc(docRef);
         const data = snap.data();
@@ -98,7 +201,6 @@
           msg.textContent = 'Error: ' + e.message;
         }
         deleteBtn.disabled = false;
-        loginBtn.disabled = false;
       }
     });
   </script>
