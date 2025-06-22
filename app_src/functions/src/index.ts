@@ -309,7 +309,9 @@ export const getEmailByUsername = functions
   .region("europe-west1")
   .https.onCall(async (data) => {
     const username = (data?.username as string | undefined)?.trim();
+    console.log(`[getEmailByUsername] username=${username}`);
     if (!username) {
+      console.log("[getEmailByUsername] Missing username");
       throw new HttpsError("invalid-argument", "Missing username");
     }
 
@@ -319,9 +321,14 @@ export const getEmailByUsername = functions
       .where("user_name", "==", username)
       .limit(1)
       .get();
+    console.log(`[getEmailByUsername] docs found: ${snap.size}`);
 
-    if (snap.empty) return {email: null};
+    if (snap.empty) {
+      console.log("[getEmailByUsername] no document found");
+      return {email: null};
+    }
 
     const email = snap.docs[0].get("email") as string | undefined;
+    console.log(`[getEmailByUsername] email=${email}`);
     return {email: email ?? null};
   });
