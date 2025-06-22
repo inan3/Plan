@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eliminar cuenta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#f5f5f5; margin:0; }
+    .container { background:#fff; padding:2rem; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.1); width:100%; max-width:400px; }
+    input { width:100%; padding:.8rem; margin:.5rem 0; border:1px solid #ccc; border-radius:4px; }
+    button { width:100%; padding:.8rem; margin-top:1rem; background:#d9534f; color:#fff; border:none; border-radius:4px; font-size:1rem; cursor:pointer; }
+    button:disabled { background:#aaa; cursor:default; }
+    #msg { color:red; text-align:center; margin-top:.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Eliminar cuenta</h2>
+    <p>Introduce tu correo y contraseña para confirmar la eliminación permanente de tu cuenta.</p>
+    <input id="email" type="email" placeholder="Correo electrónico" />
+    <input id="pwd" type="password" placeholder="Contraseña" />
+    <button id="loginBtn">Iniciar sesión</button>
+    <button id="deleteBtn" disabled>Eliminar cuenta</button>
+    <p id="msg"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    import { getStorage, ref, deleteObject } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA-BHmsMAtT4Zs2wK2BTpyu1UWKNZqoG14",
+      authDomain: "plansocialapp.es",
+      databaseURL: "https://plan-social-app-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "plan-social-app",
+      storageBucket: "plan-social-app.firebasestorage.app",
+      messagingSenderId: "861608593316",
+      appId: "1:861608593316:web:fa8964d140025bb0e96331",
+      measurementId: "G-Y9Q5WB4REW"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const loginBtn = document.getElementById('loginBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const msg = document.getElementById('msg');
+    const inpEmail = document.getElementById('email');
+    const inpPwd = document.getElementById('pwd');
+
+    loginBtn.addEventListener('click', async () => {
+      msg.textContent = '';
+      try {
+        await signInWithEmailAndPassword(auth, inpEmail.value.trim(), inpPwd.value);
+        msg.textContent = 'Autenticado. Pulsa "Eliminar cuenta" para continuar.';
+        deleteBtn.disabled = false;
+      } catch (e) {
+        msg.textContent = e.message;
+      }
+    });
+
+    deleteBtn.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      msg.textContent = '';
+      loginBtn.disabled = true;
+      deleteBtn.disabled = true;
+      try {
+        const docRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(docRef);
+        const data = snap.data();
+        if (data) {
+          const urls = [];
+          const addUrl = u => { if (typeof u === 'string' && u) urls.push(u); };
+          addUrl(data.photoUrl);
+          addUrl(data.coverPhotoUrl);
+          ['coverPhotos', 'additionalPhotos'].forEach(k => {
+            const list = data[k];
+            if (Array.isArray(list)) list.forEach(addUrl);
+          });
+          for (const url of urls) {
+            try { await deleteObject(ref(storage, url)); } catch (_) {}
+          }
+        }
+        await deleteDoc(docRef);
+        await user.delete();
+        alert('Tu cuenta se ha eliminado correctamente.');
+        location.href = 'index.html';
+      } catch (e) {
+        if (e.code === 'auth/requires-recent-login') {
+          msg.textContent = 'Por seguridad, vuelve a iniciar sesión para eliminar tu cuenta.';
+        } else {
+          msg.textContent = 'Error: ' + e.message;
+        }
+        deleteBtn.disabled = false;
+        loginBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
