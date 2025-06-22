@@ -106,9 +106,22 @@ class _LoginScreenState extends State<LoginScreen> {
               .httpsCallable('getEmailByUsername')
               .call({'username': input});
           emailToUse = (res.data['email'] ?? '').toString();
-        } on FirebaseFunctionsException {
+        } on FirebaseFunctionsException catch (_) {
           emailToUse = '';
         }
+
+        if (emailToUse.isEmpty) {
+          // Fallback: buscar directamente en Firestore por el nombre de usuario
+          final snap = await FirebaseFirestore.instance
+              .collection('users')
+              .where('user_name_lowercase', isEqualTo: input.toLowerCase())
+              .limit(1)
+              .get();
+          if (snap.docs.isNotEmpty) {
+            emailToUse = snap.docs.first.get('email') ?? '';
+          }
+        }
+
         if (emailToUse.isEmpty) {
           if (mounted) {
             _showErrorDialog('Correo o nombre de usuario incorrectos.');
