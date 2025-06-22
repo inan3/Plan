@@ -5,28 +5,53 @@ plugins {
     id "com.google.gms.google-services"
 }
 
+import java.util.Properties
+
+// Carga las credenciales del keystore
+def keystoreProperties = new Properties()
+def keystorePropsFile = rootProject.file("key.properties")
+if (keystorePropsFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropsFile))
+}
+
 android {
-    namespace = "com.company.plan"
-    compileSdk = flutter.compileSdkVersion      // 34 recomendado
+    namespace "com.company.plan"
+    compileSdk flutter.compileSdkVersion      // 34 recomendado
 
     defaultConfig {
-        applicationId = "com.company.plan"
-        minSdk = 23                              // ≥21 para desugaring
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId "com.company.plan"
+        minSdk 23
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
     }
 
-  compileOptions {
-    sourceCompatibility JavaVersion.VERSION_17
-    targetCompatibility JavaVersion.VERSION_17
-    coreLibraryDesugaringEnabled true
-  }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
+    }
 
-  kotlinOptions { jvmTarget = "17" }
+    kotlinOptions { jvmTarget = "17" }
+
+    signingConfigs {
+        release {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+    }
 
     buildTypes {
-        release { signingConfig = signingConfigs.debug }
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+        }
+        debug {
+            signingConfig signingConfigs.release   // opcional: usa misma clave en debug
+        }
     }
 }
 
@@ -34,7 +59,5 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.android.material:material:1.9.0'
-
-    // ⚠️  AÑADE ESTA LÍNEA para que el task l8DexDesugarLibDebug tenga algo que procesar
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
