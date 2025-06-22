@@ -2,6 +2,9 @@
 
 import 'dart:io';
 import 'dart:ui';
+import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -13,6 +16,45 @@ import 'package:flutter_svg/flutter_svg.dart';
 class UserImagesManaging {
   static final ImagePicker _imagePicker = ImagePicker();
   static const placeholderImageUrl = "https://via.placeholder.com/150";
+
+  static Future<bool> checkExplicit(File image) async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final bytes = await image.readAsBytes();
+      final result = await functions
+          .httpsCallable('detectExplicitContent')
+          .call({'image': base64Encode(bytes)});
+      return result.data['explicit'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<void> showExplicitDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: const Text(
+            'Esta imagen de contenido explícito incumple la Norma sobre Contenido Sexual. Visita: Condiciones de uso'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              launchUrl(
+                Uri.parse(
+                    'https://plansocialapp.es/terms_and_conditions.html'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: const Text('Condiciones de uso'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ---------------
   // Foto de perfil
@@ -97,6 +139,10 @@ class UserImagesManaging {
     required Function(String) onProfileUpdated,
   }) async {
     try {
+      if (await checkExplicit(image)) {
+        await showExplicitDialog(context);
+        return;
+      }
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       final ref = FirebaseStorage.instance
@@ -239,6 +285,10 @@ class UserImagesManaging {
     required Function(List<String>) onImagesUpdated,
   }) async {
     try {
+      if (await checkExplicit(image)) {
+        await showExplicitDialog(context);
+        return;
+      }
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
@@ -388,6 +438,10 @@ class UserImagesManaging {
     required Function(List<String>) onNewPhotoUrls,
   }) async {
     try {
+      if (await checkExplicit(image)) {
+        await showExplicitDialog(context);
+        return;
+      }
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 

@@ -21,6 +21,10 @@ import {
   uploadBytes,
   getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js';
+import {
+  getFunctions,
+  httpsCallable
+} from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-functions.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyA-BHmsMAtT4Zs2wK2BTpyu1UWKNZqoG14",
@@ -37,6 +41,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app, 'europe-west1');
 
 setLogLevel('debug');
 
@@ -54,6 +59,47 @@ const coverPhotos = document.getElementById('coverPhotos');
 const completeMsg = document.getElementById('completeMsg');
 const step1 = document.getElementById('registerStep1');
 const step2 = document.getElementById('registerStep2');
+
+async function isExplicit(file) {
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onloadend = async () => {
+      try {
+        const base64 = reader.result.split(',')[1];
+        const callable = httpsCallable(functions, 'detectExplicitContent');
+        const result = await callable({ image: base64 });
+        resolve(result.data.explicit);
+      } catch (e) {
+        resolve(false);
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function showExplicitPopup() {
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.right = '0';
+  overlay.style.bottom = '0';
+  overlay.style.background = 'rgba(0,0,0,0.5)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.innerHTML = `
+    <div style="background:#fff;padding:20px;border-radius:8px;text-align:center;max-width:300px;">
+      <p>Esta imagen de contenido explícito incumple la Norma sobre Contenido Sexual. Visita:</p>
+      <button id="termsBtn" style="margin-top:8px;border:none;background:none;color:#007bff;text-decoration:underline">Condiciones de uso</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.getElementById('termsBtn').onclick = () => {
+    window.open('https://plansocialapp.es/terms_and_conditions.html', '_blank');
+  };
+}
 
 emailRegisterBtn?.addEventListener('click', async () => {
   regMsg.textContent = '';
@@ -107,12 +153,20 @@ completeProfileBtn?.addEventListener('click', async () => {
   try {
     let photoUrl = '';
     if (profilePhoto.files[0]) {
+      if (await isExplicit(profilePhoto.files[0])) {
+        showExplicitPopup();
+        return;
+      }
       const refP = storageRef(storage, `users/${auth.currentUser.uid}/profilePhoto/${profilePhoto.files[0].name}`);
       await uploadBytes(refP, profilePhoto.files[0]);
       photoUrl = await getDownloadURL(refP);
     }
     const coverUrls = [];
     for (const file of coverPhotos.files) {
+      if (await isExplicit(file)) {
+        showExplicitPopup();
+        return;
+      }
       const refC = storageRef(storage, `users/${auth.currentUser.uid}/coverPhotos/${file.name}`);
       await uploadBytes(refC, file);
       coverUrls.push(await getDownloadURL(refC));

@@ -8,6 +8,8 @@ import {
 } from "firebase-functions/v2/firestore";
 
 import * as functions from "firebase-functions/v1";
+import {ImageAnnotatorClient} from "@google-cloud/vision";
+import {HttpsError} from "firebase-functions/v1/https";
 
 import type {DocumentSnapshot} from "firebase-admin/firestore";
 
@@ -44,6 +46,24 @@ const titles: Record<string, string> = {
   special_plan_deleted: "Plan especial eliminado",
   special_plan_left: "Salida de plan especial",
 };
+
+const vision = new ImageAnnotatorClient();
+
+export const detectExplicitContent = functions
+  .region("europe-west1")
+  .https.onCall(async (data) => {
+    const base64 = data?.image as string | undefined;
+    if (!base64) {
+      throw new HttpsError("invalid-argument", "Image data missing");
+    }
+    const [result] = await vision.safeSearchDetection(Buffer.from(base64, "base64"));
+    const ann = result.safeSearchAnnotation;
+    if (!ann) return {explicit: false};
+    const isExplicit = [ann.adult, ann.violence, ann.racy].some((v) =>
+      v === "LIKELY" || v === "VERY_LIKELY"
+    );
+    return {explicit: isExplicit};
+  });
 
 export const sendPushOnNotification = onDocumentCreated(
   {region: "europe-west1", document: "/notifications/{id}"},

@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'user_images_managing.dart';
 
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
@@ -168,6 +169,10 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
   /// Subir la imagen al Storage y guardar su URL en Firestore
   Future<void> _uploadMemory(File file) async {
     try {
+      if (await UserImagesManaging.checkExplicit(file)) {
+        await UserImagesManaging.showExplicitDialog(context);
+        return;
+      }
       final ref = FirebaseStorage.instance
           .ref()
           .child('plan_memories')
