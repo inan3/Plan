@@ -7,7 +7,7 @@ plugins {
 
 import java.util.Properties
 
-// Carga las credenciales del keystore
+/* ---------- keystore ---------- */
 def keystoreProperties = new Properties()
 def keystorePropsFile = rootProject.file("key.properties")
 if (keystorePropsFile.exists()) {
@@ -16,7 +16,7 @@ if (keystorePropsFile.exists()) {
 
 android {
     namespace "com.company.plan"
-    compileSdk flutter.compileSdkVersion      // 34 recomendado
+    compileSdk flutter.compileSdkVersion    // 34
 
     defaultConfig {
         applicationId "com.company.plan"
@@ -48,10 +48,9 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
+            ndk { debugSymbolLevel 'SYMBOL_TABLE' }   // genera símbolos nativos
         }
-        debug {
-            signingConfig signingConfigs.release   // opcional: usa misma clave en debug
-        }
+        debug { signingConfig signingConfigs.release }
     }
 }
 

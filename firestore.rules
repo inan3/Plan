@@ -16,8 +16,12 @@ service cloud.firestore {
       allow update, delete: if request.auth.uid == resource.data.createdBy
         || ((request.auth.uid in resource.data.invitedUsers
             || request.auth.uid in resource.data.participants)
-            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'invitedUsers', 'removedParticipants', 'commentsCount', 'checkedInUsers']));
-    }
+                        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'invitedUsers', 'removedParticipants', 'commentsCount', 'checkedInUsers']))
+        || (request.auth != null
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['likes'])
+            && (request.resource.data.likes == resource.data.likes + 1
+                || request.resource.data.likes == resource.data.likes - 1));
+		}
 
     match /notifications/{id} {
       allow create: if request.auth.uid == request.resource.data.senderId
