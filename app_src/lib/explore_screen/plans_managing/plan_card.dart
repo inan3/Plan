@@ -126,21 +126,26 @@ class PlanCardState extends State<PlanCard> {
     final userRef =
         FirebaseFirestore.instance.collection('users').doc(_currentUser!.uid);
 
+    final bool newLiked = !_liked;
+    setState(() {
+      _liked = newLiked;
+      _likeCount = math.max(0, _likeCount + (newLiked ? 1 : -1));
+    });
+
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snap = await transaction.get(planRef);
       if (!snap.exists) return;
 
       int currentLikes = snap.data()?['likes'] ?? 0;
-      if (!_liked) {
+      if (newLiked) {
         currentLikes++;
       } else {
-        currentLikes = (currentLikes > 0) ? currentLikes - 1 : 0;
+        currentLikes = currentLikes > 0 ? currentLikes - 1 : 0;
       }
       transaction.update(planRef, {'likes': currentLikes});
-      setState(() => _likeCount = currentLikes);
     });
 
-    if (!_liked) {
+    if (newLiked) {
       await userRef.update({
         'favourites': FieldValue.arrayUnion([widget.plan.id])
       });
@@ -149,7 +154,6 @@ class PlanCardState extends State<PlanCard> {
         'favourites': FieldValue.arrayRemove([widget.plan.id])
       });
     }
-    setState(() => _liked = !_liked);
   }
 
   // ─────────────────────────────────────────────────────────────
