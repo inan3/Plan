@@ -366,6 +366,55 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
+  Widget _buildPlanIntro(PlanModel plan) {
+    return Center(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95,
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      plan.type,
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    plan.description,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButton({
     required String iconPath,
     required String countText,
@@ -1492,12 +1541,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     child: Column(
                       children: [
                         _buildHeaderRow(),
-                        _buildMediaSection(
-                          plan,
-                          allParts,
-                          isUserCreator: isUserCreator,
-                        ),
-                        _buildLocationArea(plan),
+                    _buildMediaSection(
+                      plan,
+                      allParts,
+                      isUserCreator: isUserCreator,
+                    ),
+                    _buildPlanIntro(plan),
+                    _buildLocationArea(plan),
                         const SizedBox(height: 16),
                         _buildAdditionalInfoBox(plan),
                         const SizedBox(height: 16),
