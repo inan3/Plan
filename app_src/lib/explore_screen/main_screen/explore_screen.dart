@@ -383,16 +383,16 @@ class ExploreScreenState extends State<ExploreScreen> {
     validUsers.sort((a, b) {
       final dataA = a.data() as Map<String, dynamic>;
       final dataB = b.data() as Map<String, dynamic>;
-      final double latA =
-          double.tryParse(dataA['latitude']?.toString() ?? '') ?? 0;
-      final double lngA =
-          double.tryParse(dataA['longitude']?.toString() ?? '') ?? 0;
-      final double latB =
-          double.tryParse(dataB['latitude']?.toString() ?? '') ?? 0;
-      final double lngB =
-          double.tryParse(dataB['longitude']?.toString() ?? '') ?? 0;
-      final distanceA = computeDistance(referenceLat, referenceLng, latA, lngA);
-      final distanceB = computeDistance(referenceLat, referenceLng, latB, lngB);
+      final double? latA = double.tryParse(dataA['latitude']?.toString() ?? '');
+      final double? lngA = double.tryParse(dataA['longitude']?.toString() ?? '');
+      final double? latB = double.tryParse(dataB['latitude']?.toString() ?? '');
+      final double? lngB = double.tryParse(dataB['longitude']?.toString() ?? '');
+      final distanceA = (latA != null && lngA != null)
+          ? computeDistance(referenceLat, referenceLng, latA, lngA)
+          : double.infinity;
+      final distanceB = (latB != null && lngB != null)
+          ? computeDistance(referenceLat, referenceLng, latB, lngB)
+          : double.infinity;
       return distanceA.compareTo(distanceB);
     });
 
