@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import '../../utils/auth_error_utils.dart';
+import '../../services/location_update_service.dart';
 
 class RecoverPasswordScreen extends StatefulWidget {
   const RecoverPasswordScreen({Key? key}) : super(key: key);
@@ -130,6 +131,7 @@ class _RecoverPasswordScreenState extends State<RecoverPasswordScreen> {
                 final userCred = await _auth.signInWithCredential(cred);
                 await userCred.user!.updatePassword(pwd);
                 await _auth.signOut();
+                LocationUpdateService.dispose();
                 Navigator.of(context).pop();
                 _showSnack('Contraseña actualizada');
                 Navigator.of(context).pop();

@@ -13,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../login/login_screen.dart';
 import '../welcome_screen.dart';
 import '../../utils/auth_error_utils.dart';
+import '../../services/location_update_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -180,6 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             return;
           }
           await FirebaseAuth.instance.signOut();
+          LocationUpdateService.dispose();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../start/welcome_screen.dart';
 import '../users_managing/presence_service.dart';
+import '../../services/location_update_service.dart';
 
 class CloseSessionScreen extends StatefulWidget {
   const CloseSessionScreen({super.key});
@@ -36,6 +37,7 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
         }
 
         PresenceService.dispose(); // sin await
+        LocationUpdateService.dispose();
         await FirebaseAuth.instance.signOut();
       }
 

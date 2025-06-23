@@ -12,6 +12,7 @@ import 'registration/user_registration_screen.dart';
 import 'registration/verification_provider.dart';
 import 'registration/email_verification_screen.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
+import '../services/location_update_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -133,6 +134,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         // Todo OK → ir a ExploreScreen
         if (mounted) {
           await PresenceService.init(user);
+          await LocationUpdateService.init(user);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const ExploreScreen()),

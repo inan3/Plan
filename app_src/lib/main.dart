@@ -23,6 +23,7 @@ import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/fcm_token_service.dart';
 import 'explore_screen/users_managing/presence_service.dart';
+import 'services/location_update_service.dart';
 import 'explore_screen/chats/chats_screen.dart';
 import 'explore_screen/main_screen/explore_screen.dart';
 import 'start/welcome_screen.dart';
@@ -73,11 +74,12 @@ Future<void> main() async {
   );
   FirebaseMessaging.onMessage.listen(NotificationService.instance.show);
 
-  // 6 ▸ Presencia + token si hay sesión persistente
+  // 6 ▸ Presencia, ubicación y token si hay sesión persistente
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
     PresenceService.dispose();
     await PresenceService.init(user);
+    await LocationUpdateService.init(user);
     await FcmTokenService.register(user);
   }
 
@@ -104,6 +106,7 @@ Future<void> signOutAndRemoveToken() async {
   }
   // Stop presence updates for the current user before signing out.
   PresenceService.dispose();
+  LocationUpdateService.dispose();
   await FirebaseAuth.instance.signOut();
 }
 

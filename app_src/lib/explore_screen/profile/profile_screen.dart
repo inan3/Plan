@@ -18,6 +18,7 @@ import '../future_plans/future_plans.dart';
 // Manejo de imágenes
 import 'user_images_managing.dart';
 import '../users_managing/presence_service.dart';
+import '../../services/location_update_service.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -673,6 +674,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                   }
 
                   PresenceService.dispose();
+                  LocationUpdateService.dispose();
                   await FirebaseAuth.instance.signOut();
 
                   if (!mounted) return;
