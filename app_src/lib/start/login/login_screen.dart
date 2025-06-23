@@ -15,6 +15,7 @@ import '../../utils/auth_error_utils.dart';
 import '../../explore_screen/main_screen/explore_screen.dart';
 import '../../main/colors.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
+import '../../services/location_update_service.dart';
 import 'recover_password.dart';
 import '../registration/register_screen.dart';
 import '../welcome_screen.dart';
@@ -105,6 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!await _userDocExists(user.uid)) {
         await _auth.signOut();
+        LocationUpdateService.dispose();
         if (mounted) _showNoProfileDialog();
         return;
       }
@@ -160,6 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!await _userDocExists(user.uid)) {
         await _auth.signOut();
+        LocationUpdateService.dispose();
         if (!mounted) return;
         final create = await _showGoogleNoProfileDialog();
         if (create == true && mounted) {
