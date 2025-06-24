@@ -45,6 +45,7 @@ const titles: Record<string, string> = {
   removed_from_plan: "Has sido eliminado de un plan",
   special_plan_deleted: "Plan especial eliminado",
   special_plan_left: "Salida de plan especial",
+  plan_checkin_started: "Check-in iniciado",
 };
 
 const vision = new ImageAnnotatorClient();
@@ -270,6 +271,48 @@ export const updateCreatorStats = onDocumentWritten(
         max_participants_in_one_plan: maxPart,
       });
     });
+  }
+);
+
+export const notifyCheckInStarted = onDocumentWritten(
+  {region: "europe-west1", document: "/plans/{planId}"},
+  async (event: WrittenEvent) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const wasActive = before.checkInActive ?? false;
+    const isActive = after.checkInActive ?? false;
+    if (wasActive || !isActive) return;
+
+    const checked: string[] = after.checkedInUsers ?? [];
+    const participants: string[] = after.participants ?? [];
+    const creatorId: string = after.createdBy;
+    const planId = event.params.planId;
+    const planType: string = after.type ?? "Plan";
+
+    const db = getFirestore();
+    const creatorSnap = await db.doc(`users/${creatorId}`).get();
+    const senderName: string = creatorSnap.get("name") ?? "";
+    const senderPhoto: string = creatorSnap.get("photoUrl") ?? "";
+
+    await Promise.all(
+      participants
+        .filter((uid) => uid !== creatorId && !checked.includes(uid))
+        .map(async (uid) => {
+          await db.collection("notifications").add({
+            type: "plan_checkin_started",
+            receiverId: uid,
+            senderId: creatorId,
+            planId,
+            planType,
+            senderProfilePic: senderPhoto,
+            senderName,
+            timestamp: FieldValue.serverTimestamp(),
+            read: false,
+          });
+        })
+    );
   }
 );
 

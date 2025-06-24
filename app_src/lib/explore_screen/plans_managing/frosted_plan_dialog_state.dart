@@ -1719,52 +1719,64 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           if (!isParticipant) {
             return const SizedBox.shrink();
           }
-          if (checkInActive) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: textW,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.grey[300], size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Para confirmar tu asistencia, pulsa «Confirmar asistencia» y utiliza la cámara para escanear el código QR o introduce el código de seis dígitos facilitado por el organizador.',
-                            style: TextStyle(color: Colors.grey[300], fontSize: 12),
-                          ),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: textW,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.grey[300], size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Para confirmar tu asistencia, pulsa «Confirmar asistencia» y utiliza la cámara para escanear el código QR o introduce el código de seis dígitos facilitado por el organizador.',
+                          style: TextStyle(color: Colors.grey[300], fontSize: 12),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: btnW,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orangeAccent,
                       ),
-                      onPressed: () {
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: btnW,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent,
+                    ),
+                    onPressed: () {
+                      if (checkInActive) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => CheckInParticipantScreen(planId: plan.id),
                           ),
                         );
-                      },
-                      child: const Text("Confirmar asistencia"),
-                    ),
+                      } else {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Check-in no iniciado'),
+                            content: const Text('El organizador del plan aún no ha iniciado el Check-in. Se te notificará una vez que se haya iniciado.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text("Confirmar asistencia"),
                   ),
-                ],
-              ),
-            );
-          } else {
-            return const SizedBox.shrink();
-          }
+                ),
+              ],
+            ),
+          );
         }
       },
     );

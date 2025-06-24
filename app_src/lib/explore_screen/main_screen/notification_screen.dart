@@ -865,6 +865,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       _handleDeleteNotification(doc),
                                 ),
                               );
+                            case 'plan_checkin_started':
+                              return ListTile(
+                                leading: leadingAvatar,
+                                title: Text(
+                                  'El organizador del plan $planType ha iniciado el Check-in. Confirma tu asistencia.',
+                                ),
+                                subtitle: buildSubtitle('Plan: $planType'),
+                                isThreeLine: true,
+                                onTap: () => _showPlanDetails(context, planId),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _handleDeleteNotification(doc),
+                                ),
+                              );
                             case 'welcome':
                               final String message = data['message'] ??
                                   '¡Bienvenido a Plan!';
