@@ -1635,25 +1635,47 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           if (!checkInActive) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: SizedBox(
-                width: btnW,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.planColor,
-                    foregroundColor: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: btnW,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.grey[300], size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Inicia el registro de asistencia para que los participantes escaneen el código QR o introduzcan el código de seis dígitos y confirmen su presencia en tu plan. Con cada check-in tu nivel de privilegio aumentará, lo que te permitirá aprovechar al máximo la app y, por ejemplo, crear planes de pago. Para ver tu progreso, abre tu perfil y toca la INSIGNIA situada justo debajo de tu nombre.',
+                            style: TextStyle(color: Colors.grey[300], fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  onPressed: () async {
-                    await AttendanceManaging.startCheckIn(plan.id);
-                    if (!mounted) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: btnW,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.planColor,
+                        foregroundColor: Colors.white,
                       ),
-                    );
-                  },
-                  child: const Text("Iniciar Check-in"),
-                ),
+                      onPressed: () async {
+                        await AttendanceManaging.startCheckIn(plan.id);
+                        if (!mounted) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                          ),
+                        );
+                      },
+                      child: const Text("Iniciar Check-in"),
+                    ),
+                  ),
+                ],
               ),
             );
           } else {
@@ -1704,22 +1726,44 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           if (checkInActive) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: SizedBox(
-                width: btnW,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: btnW,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.grey[300], size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Para confirmar tu asistencia, pulsa «Confirmar asistencia» y utiliza la cámara para escanear el código QR o introduce el código de seis dígitos facilitado por el organizador.',
+                            style: TextStyle(color: Colors.grey[300], fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CheckInParticipantScreen(planId: plan.id),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: btnW,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orangeAccent,
                       ),
-                    );
-                  },
-                  child: const Text("Confirmar asistencia"),
-                ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CheckInParticipantScreen(planId: plan.id),
+                          ),
+                        );
+                      },
+                      child: const Text("Confirmar asistencia"),
+                    ),
+                  ),
+                ],
               ),
             );
           } else {
