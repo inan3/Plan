@@ -743,6 +743,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             : const Color.fromARGB(235, 84, 87, 228));
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         if (_isPrivate && !isFollowing) {
           _showPrivateToast();
@@ -813,7 +814,19 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         .collection('followers')
         .where('userId', isEqualTo: userId)
         .get();
-    return snap.size;
+
+    int counter = 0;
+    for (final doc in snap.docs) {
+      final followerId = doc.data()['followerId'];
+      if (followerId == null) continue;
+      final uDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(followerId)
+          .get();
+      if (uDoc.exists) counter++;
+    }
+
+    return counter;
   }
 
   Future<int> _getFollowedCount(String userId) async {
@@ -821,7 +834,19 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         .collection('followed')
         .where('userId', isEqualTo: userId)
         .get();
-    return snap.size;
+
+    int counter = 0;
+    for (final doc in snap.docs) {
+      final followedId = doc.data()['followedId'];
+      if (followedId == null) continue;
+      final uDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(followedId)
+          .get();
+      if (uDoc.exists) counter++;
+    }
+
+    return counter;
   }
 
   //----------------------------------------------------------------------------

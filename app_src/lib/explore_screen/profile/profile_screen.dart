@@ -453,19 +453,43 @@ class ProfileScreenState extends State<ProfileScreen> {
   // ---------------------- STATS ----------------------
 
   Future<int> _getFollowersCount(String userId) async {
-    final snapshot = await FirebaseFirestore.instance
+    final snap = await FirebaseFirestore.instance
         .collection('followers')
         .where('userId', isEqualTo: userId)
         .get();
-    return snapshot.size;
+
+    int counter = 0;
+    for (final doc in snap.docs) {
+      final followerId = doc.data()['followerId'];
+      if (followerId == null) continue;
+      final uDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(followerId)
+          .get();
+      if (uDoc.exists) counter++;
+    }
+
+    return counter;
   }
 
   Future<int> _getFollowingCount(String userId) async {
-    final snapshot = await FirebaseFirestore.instance
+    final snap = await FirebaseFirestore.instance
         .collection('followed')
         .where('userId', isEqualTo: userId)
         .get();
-    return snapshot.size;
+
+    int counter = 0;
+    for (final doc in snap.docs) {
+      final followedId = doc.data()['followedId'];
+      if (followedId == null) continue;
+      final uDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(followedId)
+          .get();
+      if (uDoc.exists) counter++;
+    }
+
+    return counter;
   }
 
   Future<int> _getFuturePlanCount() async {
@@ -552,6 +576,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) return;
