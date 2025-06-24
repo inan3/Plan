@@ -1551,15 +1551,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         const SizedBox(height: 16),
                         _buildAdditionalInfoBox(plan),
                         const SizedBox(height: 16),
-                        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                        _buildCheckInArea(plan, allParts, isUserCreator),
+                        const SizedBox(height: 16),
                       ],
                     ),
-                  ),
-                  Positioned(
-                    bottom: MediaQuery.of(context).size.height * 0.03,
-                    left: 0,
-                    right: 0,
-                    child: _buildCheckInArea(plan, allParts, isUserCreator),
                   ),
                 ],
               );
@@ -1584,6 +1579,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         filtered.any((p) => p['uid'] == _currentUser?.uid);
 
     final double btnW = MediaQuery.of(context).size.width * 0.8;
+    final double textW = MediaQuery.of(context).size.width * 0.95;
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -1639,7 +1635,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: btnW,
+                    width: textW,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1730,7 +1726,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: btnW,
+                    width: textW,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
