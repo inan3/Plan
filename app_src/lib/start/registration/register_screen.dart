@@ -37,7 +37,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool get _match => passwordController.text == confirmController.text;
 
   bool isLoading = false;
-  bool _termsAccepted = false;
 
   @override
   void initState() {
@@ -430,68 +429,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 30),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Checkbox(
-                          value: _termsAccepted,
-                          onChanged: (v) =>
-                              setState(() => _termsAccepted = v ?? false),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            decoration: TextDecoration.none,
                           ),
-                          side: BorderSide(color: AppColors.planColor),
-                          checkColor: Colors.white,
-                          activeColor: AppColors.planColor,
-                        ),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 14,
-                                decoration: TextDecoration.none,
-                              ),
-                              children: [
-                                const TextSpan(text: 'He leído y acepto los '),
-                                TextSpan(
-                                  text: 'Términos y Condiciones',
-                                  style: const TextStyle(color: Colors.blue),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () => launchUrl(
-                                          Uri.parse(
-                                              'https://plansocialapp.es/terms_and_conditions.html'),
-                                          mode: LaunchMode.externalApplication,
-                                        ),
-                                ),
-                                const TextSpan(text: ', la '),
-                                TextSpan(
-                                  text: 'Política de Privacidad',
-                                  style: const TextStyle(color: Colors.blue),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () => launchUrl(
-                                          Uri.parse(
-                                              'https://plansocialapp.es/privacy_policy.html'),
-                                          mode: LaunchMode.externalApplication,
-                                        ),
-                                ),
-                                const TextSpan(text: ' y de '),
-                                TextSpan(
-                                  text: 'Cookies',
-                                  style: const TextStyle(color: Colors.blue),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () => launchUrl(
-                                          Uri.parse(
-                                              'https://plansocialapp.es/cookies.html'),
-                                          mode: LaunchMode.externalApplication,
-                                        ),
-                                ),
-                                const TextSpan(text: '.'),
-                              ],
+                          children: [
+                            const TextSpan(
+                                text:
+                                    'Al continuar, confirmo que he leído y acepto los '),
+                            TextSpan(
+                              text: 'Términos y Condiciones',
+                              style: const TextStyle(color: Colors.blue),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => launchUrl(
+                                      Uri.parse(
+                                          'https://plansocialapp.es/terms_and_conditions.html'),
+                                      mode: LaunchMode.externalApplication,
+                                    ),
                             ),
-                          ),
+                            const TextSpan(text: ', la '),
+                            TextSpan(
+                              text: 'Política de Privacidad',
+                              style: const TextStyle(color: Colors.blue),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => launchUrl(
+                                      Uri.parse(
+                                          'https://plansocialapp.es/privacy_policy.html'),
+                                      mode: LaunchMode.externalApplication,
+                                    ),
+                            ),
+                            const TextSpan(text: ' y de '),
+                            TextSpan(
+                              text: 'Cookies',
+                              style: const TextStyle(color: Colors.blue),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => launchUrl(
+                                      Uri.parse(
+                                          'https://plansocialapp.es/cookies.html'),
+                                      mode: LaunchMode.externalApplication,
+                                    ),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -505,9 +491,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : () {
                                 if (!_match) {
                                   _showPopup('Las contraseñas no coinciden');
-                                } else if (!_termsAccepted) {
-                                  _showPopup(
-                                      'Para continuar debes marcar que has leído y aceptas nuestra Política de Privacidad y Condiciones de uso');
                                 } else {
                                   _register();
                                 }
