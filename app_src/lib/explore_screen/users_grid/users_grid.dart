@@ -221,7 +221,7 @@ class _UsersGridState extends State<UsersGrid> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.only(bottom: 100),
+      padding: const EdgeInsets.only(bottom: 120),
       shrinkWrap: true,
       physics: const BouncingScrollPhysics(),
       itemCount: _processedUsers.length + (_loadingMore ? 1 : 0),

@@ -198,7 +198,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                   ),
                 ),
                 Positioned(
-                  bottom: 24,
+                  bottom: 44,
                   left: 0,
                   right: 0,
                   child: Column(
