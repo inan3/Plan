@@ -545,7 +545,7 @@ class ExploreScreenState extends State<ExploreScreen> {
                     ? _buildExplorePage()
                     : _otherPages[_currentIndex - 1],
                 Positioned(
-                  bottom: 20,
+                  bottom: 40,
                   left: 0,
                   right: 0,
                   child: Center(
