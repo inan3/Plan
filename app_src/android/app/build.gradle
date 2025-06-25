@@ -17,6 +17,7 @@ if (keystorePropsFile.exists()) {
 android {
     namespace "com.company.plan"
     compileSdk flutter.compileSdkVersion    // 34
+    ndkVersion "26.2.11394342"  // Android NDK r26 para alineación de 16 KB
 
     defaultConfig {
         applicationId "com.company.plan"
