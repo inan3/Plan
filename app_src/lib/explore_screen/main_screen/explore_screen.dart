@@ -68,7 +68,6 @@ class ExploreScreenState extends State<ExploreScreen> {
   void initState() {
     super.initState();
     isMenuOpen = widget.initiallyOpenSidebar;
-    _setStatusBarDark();
     _otherPages = [
       const MapScreen(),
       const ChatsScreen(),
@@ -113,13 +112,6 @@ class ExploreScreenState extends State<ExploreScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _setStatusBarDark() {
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ));
   }
 
   void _onSearchChanged(String value) {}
