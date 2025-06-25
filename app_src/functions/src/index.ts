@@ -57,11 +57,13 @@ export const detectExplicitContent = functions
     if (!base64) {
       throw new HttpsError("invalid-argument", "Image data missing");
     }
-    const [result] = await vision.safeSearchDetection(Buffer.from(base64, "base64"));
+    const [result] = await vision.safeSearchDetection(
+      Buffer.from(base64, "base64"),
+    );
     const ann = result.safeSearchAnnotation;
     if (!ann) return {explicit: false};
-    const isExplicit = [ann.adult, ann.violence, ann.racy].some((v) =>
-      v === "LIKELY" || v === "VERY_LIKELY"
+    const isExplicit = [ann.adult, ann.violence, ann.racy].some(
+      (v) => v === "LIKELY" || v === "VERY_LIKELY",
     );
     return {explicit: isExplicit};
   });
@@ -81,7 +83,9 @@ export const sendPushOnNotification = onDocumentCreated(
     const sendSnap = await db.doc(`users/${n.senderId}`).get();
     const sendTokens: string[] = sendSnap.get("tokens") ?? [];
 
-    let tokens = recvTokens.filter((t) => !sendTokens.includes(t));
+    let tokens = recvTokens.filter(
+      (t) => !sendTokens.includes(t),
+    );
     if (tokens.length === 0) tokens = recvTokens;
 
     const notif = {
@@ -122,7 +126,7 @@ export const sendPushOnNotification = onDocumentCreated(
         tokens: FieldValue.arrayRemove(...invalid),
       });
     }
-  }
+  },
 );
 
 export const cleanupUserData = functions
@@ -154,7 +158,9 @@ export const sendPushOnMessage = onDocumentCreated(
     const senderTokens: string[] = senderSnap.get("tokens") ?? [];
     const senderName: string = senderSnap.get("name") ?? "";
 
-    let tokens = recvTokens.filter((t) => !senderTokens.includes(t));
+    let tokens = recvTokens.filter(
+      (t) => !senderTokens.includes(t),
+    );
     if (tokens.length === 0) tokens = recvTokens;
 
     const resp = await getMessaging().sendEachForMulticast({
@@ -186,7 +192,7 @@ export const sendPushOnMessage = onDocumentCreated(
         tokens: FieldValue.arrayRemove(...invalid),
       });
     }
-  }
+  },
 );
 
 // Notificaciones de comentarios vía `sendPushOnNotification`.
@@ -200,7 +206,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
 
     const removed: string[] =
       before.participants?.filter(
-        (p: string) => !(after.participants ?? []).includes(p)
+        (p: string) => !(after.participants ?? []).includes(p),
       ) ?? [];
     if (removed.length === 0) return;
 
@@ -225,11 +231,10 @@ export const notifyRemovedParticipants = onDocumentWritten(
           timestamp: FieldValue.serverTimestamp(),
           read: false,
         });
-
-        // El push se enviará mediante sendPushOnNotification
-      })
+        // push via sendPushOnNotification
+      }),
     );
-  }
+  },
 );
 
 export const updateCreatorStats = onDocumentWritten(
@@ -244,7 +249,7 @@ export const updateCreatorStats = onDocumentWritten(
     if (afterChecked.length <= beforeChecked.length) return;
 
     const added = afterChecked.filter(
-      (u: string) => !beforeChecked.includes(u)
+      (u: string) => !beforeChecked.includes(u),
     );
     if (added.length === 0) return;
 
@@ -263,7 +268,7 @@ export const updateCreatorStats = onDocumentWritten(
         (data.total_participants_until_now ?? 0) + added.length;
       const maxPart = Math.max(
         data.max_participants_in_one_plan ?? 0,
-        afterChecked.length
+        afterChecked.length,
       );
 
       tx.update(creatorRef, {
@@ -271,7 +276,7 @@ export const updateCreatorStats = onDocumentWritten(
         max_participants_in_one_plan: maxPart,
       });
     });
-  }
+  },
 );
 
 export const notifyCheckInStarted = onDocumentWritten(
@@ -298,7 +303,9 @@ export const notifyCheckInStarted = onDocumentWritten(
 
     await Promise.all(
       participants
-        .filter((uid) => uid !== creatorId && !checked.includes(uid))
+        .filter(
+          (uid) => uid !== creatorId && !checked.includes(uid),
+        )
         .map(async (uid) => {
           await db.collection("notifications").add({
             type: "plan_checkin_started",
@@ -311,9 +318,9 @@ export const notifyCheckInStarted = onDocumentWritten(
             timestamp: FieldValue.serverTimestamp(),
             read: false,
           });
-        })
+        }),
     );
-  }
+  },
 );
 
 export const createWelcomeNotification = onDocumentCreated(
@@ -331,11 +338,11 @@ export const createWelcomeNotification = onDocumentCreated(
       senderName: "Plan",
       senderProfilePic: "",
       message:
-        "El equipo de Plan te da la bienvenida a la app que te conecta con " +
-        "nuevas experiencias y personas. ¡Comienza a explorar y a crear " +
-        "momentos inolvidables!",
+        "El equipo de Plan te da la bienvenida a la app que te conecta " +
+        "con nuevas experiencias y personas. ¡Comienza a explorar y a " +
+        "crear momentos inolvidables!",
       timestamp: FieldValue.serverTimestamp(),
       read: false,
     });
-  }
+  },
 );
