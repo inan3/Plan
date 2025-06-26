@@ -72,6 +72,7 @@ class PlansInMapScreen {
       final type = data['type'] as String?;
       final uid = data['createdBy'] as String?;
       if (lat == null || lng == null || type == null || uid == null) continue;
+      if (lat == 0.0 || lng == 0.0) continue;
       if (onlyFollowed && !followedUids.contains(uid)) {
         continue;
       }
@@ -236,6 +237,7 @@ class PlansInMapScreen {
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
       if (lat == null || lng == null) continue;
+      if (lat == 0.0 || lng == 0.0) continue;
       final photoUrl = data['photoUrl'] as String? ?? '';
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
