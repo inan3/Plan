@@ -75,18 +75,35 @@ class _FollowingScreenState extends State<FollowingScreen> {
       final snap = await FirebaseFirestore.instance
           .collection('plans')
           .where('createdBy', isEqualTo: userId)
-          .where('start_timestamp', isGreaterThan: Timestamp.fromDate(DateTime.now()))
-          .orderBy('start_timestamp')
+          .where('special_plan', isEqualTo: 0)
           .get();
 
-      if (snap.docs.isEmpty) return null;
+      final now = DateTime.now();
+      final futures = snap.docs
+          .map((d) {
+            final data = d.data() as Map<String, dynamic>;
+            final ts = data['start_timestamp'];
+            if (ts is Timestamp && ts.toDate().isAfter(now)) {
+              return {
+                'id': d.id,
+                'type': data['type'] ?? '',
+                'start': ts.toDate(),
+              };
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
 
-      final first = snap.docs.first;
-      final pData = first.data() as Map<String, dynamic>;
+      if (futures.isEmpty) return null;
+
+      futures.sort((a, b) => (a['start'] as DateTime)
+          .compareTo(b['start'] as DateTime));
+
       return _PlanInfo(
-        id: first.id,
-        name: pData['type'] ?? '',
-        additional: snap.docs.length - 1,
+        id: futures.first['id'] as String,
+        name: futures.first['type'] as String,
+        additional: futures.length - 1,
       );
     } catch (_) {
       return null;
