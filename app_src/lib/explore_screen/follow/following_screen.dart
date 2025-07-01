@@ -4,7 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Eliminamos import innecesario de campanas:
 // import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../models/plan_model.dart';
+import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../users_managing/user_info_check.dart';
+import '../../main/colors.dart';
 
 /// Pantalla de seguidores/seguidos.
 /// Se muestra como un modal a pantalla casi completa (deja libre el 10 % superior)
@@ -106,6 +109,26 @@ class _FollowingScreenState extends State<FollowingScreen> {
             .get();
         if (uDoc.exists && uDoc.data() != null) {
           final data = uDoc.data()!;
+          String? planId;
+          String? planName;
+          int additional = 0;
+          try {
+            final plansSnap = await FirebaseFirestore.instance
+                .collection('plans')
+                .where('createdBy', isEqualTo: relatedUid)
+                .where('start_timestamp',
+                    isGreaterThan: Timestamp.fromDate(DateTime.now()))
+                .orderBy('start_timestamp')
+                .get();
+            if (plansSnap.docs.isNotEmpty) {
+              final first = plansSnap.docs.first;
+              final pData = first.data() as Map<String, dynamic>;
+              planId = first.id;
+              planName = pData['type'] ?? '';
+              additional = plansSnap.docs.length - 1;
+            }
+          } catch (_) {}
+
           items.add(
             _UserItem(
               uid: relatedUid,
@@ -114,6 +137,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
                   ? data['age'].toString()
                   : null,
               photoUrl: data['photoUrl'] ?? '',
+              upcomingPlanId: planId,
+              upcomingPlanName: planName,
+              additionalPlans: additional,
             ),
           );
         }
@@ -231,7 +257,29 @@ class _FollowingScreenState extends State<FollowingScreen> {
                           ),
                           title: Text(u.name),
                           subtitle: u.age != null ? Text('${u.age} años') : null,
-                          trailing: null,
+                          trailing: u.upcomingPlanId != null
+                              ? InkWell(
+                                  onTap: () => _onPlanTap(u.upcomingPlanId!),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border:
+                                          Border.all(color: AppColors.planColor),
+                                    ),
+                                    child: Text(
+                                      u.additionalPlans > 0
+                                          ? '${u.upcomingPlanName} +${u.additionalPlans}'
+                                          : u.upcomingPlanName!,
+                                      style: const TextStyle(
+                                        color: AppColors.planColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : null,
                           onTap: () {
                             // 1) Cerramos primero el modal
                             Navigator.of(context).pop();
@@ -251,6 +299,46 @@ class _FollowingScreenState extends State<FollowingScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _onPlanTap(String planId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(planId)
+        .get();
+    if (!doc.exists || doc.data() == null) return;
+    final plan = PlanModel.fromMap({'id': doc.id, ...doc.data()!});
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => new_frosted.FrostedPlanDialog(
+          plan: plan,
+          fetchParticipants: _fetchAllPlanParticipants,
+        ),
+      ),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+      PlanModel plan) async {
+    final List<Map<String, dynamic>> res = [];
+    final uids = plan.participants ?? [];
+    for (final uid in uids) {
+      final uDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (uDoc.exists) {
+        final d = uDoc.data()!;
+        res.add({
+          'uid': uid,
+          'name': d['name'] ?? 'Usuario',
+          'age': d['age']?.toString() ?? '',
+          'photoUrl': d['photoUrl'] ?? '',
+          'isCreator': uid == plan.createdBy,
+        });
+      }
+    }
+    return res;
   }
 }
 
@@ -302,11 +390,17 @@ class _UserItem {
   final String name;
   final String? age;
   final String photoUrl;
+  final String? upcomingPlanId;
+  final String? upcomingPlanName;
+  final int additionalPlans;
 
   _UserItem({
     required this.uid,
     required this.name,
     required this.age,
     required this.photoUrl,
+    this.upcomingPlanId,
+    this.upcomingPlanName,
+    this.additionalPlans = 0,
   });
 }
