@@ -70,6 +70,29 @@ class _FollowingScreenState extends State<FollowingScreen> {
 
   bool _loading = true;
 
+  Future<_PlanInfo?> _getNextPlanInfo(String userId) async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('plans')
+          .where('createdBy', isEqualTo: userId)
+          .where('start_timestamp', isGreaterThan: Timestamp.fromDate(DateTime.now()))
+          .orderBy('start_timestamp')
+          .get();
+
+      if (snap.docs.isEmpty) return null;
+
+      final first = snap.docs.first;
+      final pData = first.data() as Map<String, dynamic>;
+      return _PlanInfo(
+        id: first.id,
+        name: pData['type'] ?? '',
+        additional: snap.docs.length - 1,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -107,42 +130,24 @@ class _FollowingScreenState extends State<FollowingScreen> {
             .collection('users')
             .doc(relatedUid)
             .get();
-        if (uDoc.exists && uDoc.data() != null) {
-          final data = uDoc.data()!;
-          String? planId;
-          String? planName;
-          int additional = 0;
-          try {
-            final plansSnap = await FirebaseFirestore.instance
-                .collection('plans')
-                .where('createdBy', isEqualTo: relatedUid)
-                .where('start_timestamp',
-                    isGreaterThan: Timestamp.fromDate(DateTime.now()))
-                .orderBy('start_timestamp')
-                .get();
-            if (plansSnap.docs.isNotEmpty) {
-              final first = plansSnap.docs.first;
-              final pData = first.data() as Map<String, dynamic>;
-              planId = first.id;
-              planName = pData['type'] ?? '';
-              additional = plansSnap.docs.length - 1;
-            }
-          } catch (_) {}
+        if (!uDoc.exists || uDoc.data() == null) continue;
 
-          items.add(
-            _UserItem(
-              uid: relatedUid,
-              name: data['name'] ?? 'Usuario',
-              age: (data['age']?.toString() ?? '').isNotEmpty
-                  ? data['age'].toString()
-                  : null,
-              photoUrl: data['photoUrl'] ?? '',
-              upcomingPlanId: planId,
-              upcomingPlanName: planName,
-              additionalPlans: additional,
-            ),
-          );
-        }
+        final data = uDoc.data()!;
+        final planInfo = await _getNextPlanInfo(relatedUid);
+
+        items.add(
+          _UserItem(
+            uid: relatedUid,
+            name: data['name'] ?? 'Usuario',
+            age: (data['age']?.toString() ?? '').isNotEmpty
+                ? data['age'].toString()
+                : null,
+            photoUrl: data['photoUrl'] ?? '',
+            upcomingPlanId: planInfo?.id,
+            upcomingPlanName: planInfo?.name,
+            additionalPlans: planInfo?.additional ?? 0,
+          ),
+        );
       }
 
       setState(() {
@@ -403,4 +408,12 @@ class _UserItem {
     this.upcomingPlanName,
     this.additionalPlans = 0,
   });
+}
+
+class _PlanInfo {
+  final String id;
+  final String name;
+  final int additional;
+
+  _PlanInfo({required this.id, required this.name, required this.additional});
 }
