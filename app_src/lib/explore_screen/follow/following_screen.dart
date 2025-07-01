@@ -4,7 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Eliminamos import innecesario de campanas:
 // import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../models/plan_model.dart';
+import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../users_managing/user_info_check.dart';
+import '../../main/colors.dart';
 
 /// Pantalla de seguidores/seguidos.
 /// Se muestra como un modal a pantalla casi completa (deja libre el 10 % superior)
@@ -67,6 +70,46 @@ class _FollowingScreenState extends State<FollowingScreen> {
 
   bool _loading = true;
 
+  Future<_PlanInfo?> _getNextPlanInfo(String userId) async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('plans')
+          .where('createdBy', isEqualTo: userId)
+          .where('special_plan', isEqualTo: 0)
+          .get();
+
+      final now = DateTime.now();
+      final futures = snap.docs
+          .map((d) {
+            final data = d.data() as Map<String, dynamic>;
+            final ts = data['start_timestamp'];
+            if (ts is Timestamp && ts.toDate().isAfter(now)) {
+              return {
+                'id': d.id,
+                'type': data['type'] ?? '',
+                'start': ts.toDate(),
+              };
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      if (futures.isEmpty) return null;
+
+      futures.sort((a, b) => (a['start'] as DateTime)
+          .compareTo(b['start'] as DateTime));
+
+      return _PlanInfo(
+        id: futures.first['id'] as String,
+        name: futures.first['type'] as String,
+        additional: futures.length - 1,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -104,19 +147,24 @@ class _FollowingScreenState extends State<FollowingScreen> {
             .collection('users')
             .doc(relatedUid)
             .get();
-        if (uDoc.exists && uDoc.data() != null) {
-          final data = uDoc.data()!;
-          items.add(
-            _UserItem(
-              uid: relatedUid,
-              name: data['name'] ?? 'Usuario',
-              age: (data['age']?.toString() ?? '').isNotEmpty
-                  ? data['age'].toString()
-                  : null,
-              photoUrl: data['photoUrl'] ?? '',
-            ),
-          );
-        }
+        if (!uDoc.exists || uDoc.data() == null) continue;
+
+        final data = uDoc.data()!;
+        final planInfo = await _getNextPlanInfo(relatedUid);
+
+        items.add(
+          _UserItem(
+            uid: relatedUid,
+            name: data['name'] ?? 'Usuario',
+            age: (data['age']?.toString() ?? '').isNotEmpty
+                ? data['age'].toString()
+                : null,
+            photoUrl: data['photoUrl'] ?? '',
+            upcomingPlanId: planInfo?.id,
+            upcomingPlanName: planInfo?.name,
+            additionalPlans: planInfo?.additional ?? 0,
+          ),
+        );
       }
 
       setState(() {
@@ -231,7 +279,29 @@ class _FollowingScreenState extends State<FollowingScreen> {
                           ),
                           title: Text(u.name),
                           subtitle: u.age != null ? Text('${u.age} años') : null,
-                          trailing: null,
+                          trailing: u.upcomingPlanId != null
+                              ? InkWell(
+                                  onTap: () => _onPlanTap(u.upcomingPlanId!),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border:
+                                          Border.all(color: AppColors.planColor),
+                                    ),
+                                    child: Text(
+                                      u.additionalPlans > 0
+                                          ? '${u.upcomingPlanName} +${u.additionalPlans}'
+                                          : u.upcomingPlanName!,
+                                      style: const TextStyle(
+                                        color: AppColors.planColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : null,
                           onTap: () {
                             // 1) Cerramos primero el modal
                             Navigator.of(context).pop();
@@ -251,6 +321,46 @@ class _FollowingScreenState extends State<FollowingScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _onPlanTap(String planId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(planId)
+        .get();
+    if (!doc.exists || doc.data() == null) return;
+    final plan = PlanModel.fromMap({'id': doc.id, ...doc.data()!});
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => new_frosted.FrostedPlanDialog(
+          plan: plan,
+          fetchParticipants: _fetchAllPlanParticipants,
+        ),
+      ),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAllPlanParticipants(
+      PlanModel plan) async {
+    final List<Map<String, dynamic>> res = [];
+    final uids = plan.participants ?? [];
+    for (final uid in uids) {
+      final uDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (uDoc.exists) {
+        final d = uDoc.data()!;
+        res.add({
+          'uid': uid,
+          'name': d['name'] ?? 'Usuario',
+          'age': d['age']?.toString() ?? '',
+          'photoUrl': d['photoUrl'] ?? '',
+          'isCreator': uid == plan.createdBy,
+        });
+      }
+    }
+    return res;
   }
 }
 
@@ -302,11 +412,25 @@ class _UserItem {
   final String name;
   final String? age;
   final String photoUrl;
+  final String? upcomingPlanId;
+  final String? upcomingPlanName;
+  final int additionalPlans;
 
   _UserItem({
     required this.uid,
     required this.name,
     required this.age,
     required this.photoUrl,
+    this.upcomingPlanId,
+    this.upcomingPlanName,
+    this.additionalPlans = 0,
   });
+}
+
+class _PlanInfo {
+  final String id;
+  final String name;
+  final int additional;
+
+  _PlanInfo({required this.id, required this.name, required this.additional});
 }
