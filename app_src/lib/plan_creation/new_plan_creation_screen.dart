@@ -189,6 +189,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   bool _isPaid = false;
   double? _price;
 
+  // Estado de carga para la configuración de Stripe
+  bool _isOnboardingLoading = false;
+
   // Marcador en el mapa
   Future<BitmapDescriptor>? _markerIconFuture;
 
@@ -1622,16 +1625,32 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                         const SizedBox(height: 10),
                         ElevatedButton(
-                          onPressed: () {
-                            StripeService.instance.startOnboarding(context);
-                          },
+                          onPressed: _isOnboardingLoading
+                              ? null
+                              : () async {
+                                  setState(() => _isOnboardingLoading = true);
+                                  await StripeService.instance
+                                      .startOnboarding(context);
+                                  if (mounted) {
+                                    setState(
+                                        () => _isOnboardingLoading = false);
+                                  }
+                                },
                           style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.planColor),
-                          child: const Text(
-                            'Configurar cuenta bancaria',
-                            style: TextStyle(
-                                color: Colors.white, fontFamily: 'Inter-Regular'),
-                          ),
+                          child: _isOnboardingLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Text(
+                                  'Configurar cuenta bancaria',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Inter-Regular'),
+                                ),
                         ),
                         const SizedBox(height: 20),
                       ],
