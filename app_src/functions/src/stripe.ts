@@ -1,46 +1,61 @@
-import * as functions from "firebase-functions/v1";
-import { getFirestore } from "firebase-admin/firestore";
+/* eslint-disable max-len */
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {defineSecret} from "firebase-functions/params";
+import {getFirestore} from "firebase-admin/firestore";
 import Stripe from "stripe";
 
-const stripe = new Stripe(functions.config().stripe.secret as string, {
-  apiVersion: "2023-10-16",
-});
+/* ---- secreto ---- */
+const STRIPE_SECRET = defineSecret("STRIPE_SECRET_KEY");
+let stripe: Stripe | undefined;
+const getStripe = () =>
+  stripe ?? (stripe = new Stripe(STRIPE_SECRET.value(), {apiVersion:
+    "2022-11-15"}));
 
-export const createStripeAccount = functions
-  .region("europe-west1")
-  .https.onCall(async (data, context) => {
-    const uid = context.auth?.uid;
-    if (!uid) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
+/* ---- createStripeAccount ---- */
+export const createStripeAccount = onCall(
+  {region: "europe-west1", secrets: [STRIPE_SECRET]},
+  async (req) => {
+    if (!req.auth?.uid) {
+      throw new HttpsError("unauthenticated",
+        "Debe iniciar sesión");
+    }
+    const {email} = req.data as { email?: string };
+    const account = await getStripe().accounts.create({type: "express", email});
+    await getFirestore().doc(`users/${req.auth.uid}`).update({
+      stripeAccountId: account.id});
+    return {accountId: account.id};
+  },
+);
 
-    const email = data?.email as string | undefined;
-    const account = await stripe.accounts.create({ type: "express", email });
-    await getFirestore().doc(`users/${uid}`).update({ stripeAccountId: account.id });
-    return { accountId: account.id };
-  });
-
-export const createAccountLink = functions
-  .region("europe-west1")
-  .https.onCall(async (data, context) => {
-    const uid = context.auth?.uid;
-    if (!uid) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
-
-    const accountId = data?.accountId as string;
-    const link = await stripe.accountLinks.create({
+/* ---- createAccountLink ---- */
+export const createAccountLink = onCall(
+  {region: "europe-west1", secrets: [STRIPE_SECRET]},
+  async (req) => {
+    if (!req.auth?.uid) {
+      throw new HttpsError("unauthenticated",
+        "Debe iniciar sesión");
+    }
+    const {accountId} = req.data as { accountId: string };
+    const link = await getStripe().accountLinks.create({
       account: accountId,
       refresh_url: "https://example.com/reauth",
       return_url: "https://example.com/return",
       type: "account_onboarding",
     });
-    return { url: link.url };
-  });
+    return {url: link.url};
+  },
+);
 
-export const retrieveAccount = functions
-  .region("europe-west1")
-  .https.onCall(async (data, context) => {
-    const uid = context.auth?.uid;
-    if (!uid) throw new functions.https.HttpsError("unauthenticated", "Debe iniciar sesión");
-
-    const accountId = data?.accountId as string;
-    const account = await stripe.accounts.retrieve(accountId);
-    return { account };
-  });
+/* ---- retrieveAccount ---- */
+export const retrieveAccount = onCall(
+  {region: "europe-west1", secrets: [STRIPE_SECRET]},
+  async (req) => {
+    if (!req.auth?.uid) {
+      throw new HttpsError("unauthenticated",
+        "Debe iniciar sesión");
+    }
+    const {accountId} = req.data as { accountId: string };
+    const account = await getStripe().accounts.retrieve(accountId);
+    return {account};
+  },
+);

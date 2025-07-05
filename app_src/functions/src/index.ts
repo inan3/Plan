@@ -1,6 +1,12 @@
+/* eslint max-len: ["error", 80] */
+
 import {initializeApp} from "firebase-admin/app";
 import {getMessaging} from "firebase-admin/messaging";
-import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {
+  getFirestore,
+  FieldValue,
+  DocumentSnapshot,
+} from "firebase-admin/firestore";
 
 import {
   onDocumentCreated,
@@ -11,7 +17,7 @@ import * as functions from "firebase-functions/v1";
 import {ImageAnnotatorClient} from "@google-cloud/vision";
 import {HttpsError} from "firebase-functions/v1/https";
 
-import type {DocumentSnapshot} from "firebase-admin/firestore";
+/* ---------- Tipos ---------- */
 
 interface CreatedEvent<T = DocumentSnapshot> {
   data?: T;
@@ -19,14 +25,15 @@ interface CreatedEvent<T = DocumentSnapshot> {
 }
 
 interface WrittenEvent<T = DocumentSnapshot> {
-  data?: {
-    before?: T;
-    after?: T;
-  };
+  data?: { before?: T; after?: T };
   params: Record<string, string>;
 }
 
+/* ---------- Inicialización ---------- */
+
 initializeApp();
+
+/* ---------- Constantes ---------- */
 
 const titles: Record<string, string> = {
   join_request: "Solicitud de unión",
@@ -48,7 +55,11 @@ const titles: Record<string, string> = {
   plan_checkin_started: "Check-in iniciado",
 };
 
-const vision = new ImageAnnotatorClient();
+/* ---------- Utilidades ---------- */
+
+const visionClient = () => new ImageAnnotatorClient();
+
+/* ---------- Funciones ---------- */
 
 export const detectExplicitContent = functions
   .region("europe-west1")
@@ -57,15 +68,18 @@ export const detectExplicitContent = functions
     if (!base64) {
       throw new HttpsError("invalid-argument", "Image data missing");
     }
-    const [result] = await vision.safeSearchDetection(
+
+    const [result] = await visionClient().safeSearchDetection(
       Buffer.from(base64, "base64"),
     );
     const ann = result.safeSearchAnnotation;
     if (!ann) return {explicit: false};
-    const isExplicit = [ann.adult, ann.violence, ann.racy].some(
-      (v) => v === "LIKELY" || v === "VERY_LIKELY",
+
+    const risky = ["LIKELY", "VERY_LIKELY"];
+    const explicit = [ann.adult, ann.violence, ann.racy].some((v) =>
+      risky.includes(v as string),
     );
-    return {explicit: isExplicit};
+    return {explicit};
   });
 
 export const sendPushOnNotification = onDocumentCreated(
@@ -83,9 +97,7 @@ export const sendPushOnNotification = onDocumentCreated(
     const sendSnap = await db.doc(`users/${n.senderId}`).get();
     const sendTokens: string[] = sendSnap.get("tokens") ?? [];
 
-    let tokens = recvTokens.filter(
-      (t) => !sendTokens.includes(t),
-    );
+    let tokens = recvTokens.filter((t) => !sendTokens.includes(t));
     if (tokens.length === 0) tokens = recvTokens;
 
     const notif = {
@@ -96,7 +108,7 @@ export const sendPushOnNotification = onDocumentCreated(
           n.type === "special_plan_left" ?
             `${n.senderName} ha decidido abandonar el plan especial` :
             n.senderName ?
-              `${n.senderName} • ${n.planType ?? ""}` :
+              `${n.senderName} • ${(n.planType ?? "")}` :
               "Abre la app para más detalles",
     };
 
@@ -111,15 +123,15 @@ export const sendPushOnNotification = onDocumentCreated(
       },
     });
 
-    const invalid: string[] = [];
-    resp.responses.forEach((r, i) => {
-      if (
+    const invalid = resp.responses
+      .map((r, i) =>
         !r.success &&
-        r.error?.code === "messaging/registration-token-not-registered"
-      ) {
-        invalid.push(tokens[i]);
-      }
-    });
+        r.error?.code ===
+          "messaging/registration-token-not-registered" ?
+          tokens[i] :
+          undefined,
+      )
+      .filter(Boolean) as string[];
 
     if (invalid.length) {
       await receiverRef.update({
@@ -129,18 +141,20 @@ export const sendPushOnNotification = onDocumentCreated(
   },
 );
 
+/* ---- cleanupUserData ---- */
+
 export const cleanupUserData = functions
   .region("europe-west1")
   .auth.user()
   .onDelete(async (user) => {
-    const uid = user.uid;
-    const db = getFirestore();
     try {
-      await db.doc(`users/${uid}`).delete();
-    } catch (e: unknown) {
+      await getFirestore().doc(`users/${user.uid}`).delete();
+    } catch (e) {
       console.error("Failed to clean user data", e);
     }
   });
+
+/* ---- sendPushOnMessage ---- */
 
 export const sendPushOnMessage = onDocumentCreated(
   {region: "europe-west1", document: "/messages/{id}"},
@@ -158,9 +172,7 @@ export const sendPushOnMessage = onDocumentCreated(
     const senderTokens: string[] = senderSnap.get("tokens") ?? [];
     const senderName: string = senderSnap.get("name") ?? "";
 
-    let tokens = recvTokens.filter(
-      (t) => !senderTokens.includes(t),
-    );
+    let tokens = recvTokens.filter((t) => !senderTokens.includes(t));
     if (tokens.length === 0) tokens = recvTokens;
 
     const resp = await getMessaging().sendEachForMulticast({
@@ -177,15 +189,15 @@ export const sendPushOnMessage = onDocumentCreated(
       },
     });
 
-    const invalid: string[] = [];
-    resp.responses.forEach((r, i) => {
-      if (
+    const invalid = resp.responses
+      .map((r, i) =>
         !r.success &&
-        r.error?.code === "messaging/registration-token-not-registered"
-      ) {
-        invalid.push(tokens[i]);
-      }
-    });
+        r.error?.code ===
+          "messaging/registration-token-not-registered" ?
+          tokens[i] :
+          undefined,
+      )
+      .filter(Boolean) as string[];
 
     if (invalid.length) {
       await receiverRef.update({
@@ -195,7 +207,7 @@ export const sendPushOnMessage = onDocumentCreated(
   },
 );
 
-// Notificaciones de comentarios vía `sendPushOnNotification`.
+/* ---- notifyRemovedParticipants ---- */
 
 export const notifyRemovedParticipants = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
@@ -204,7 +216,7 @@ export const notifyRemovedParticipants = onDocumentWritten(
     const after = event.data?.after?.data();
     if (!before || !after) return;
 
-    const removed: string[] =
+    const removed =
       before.participants?.filter(
         (p: string) => !(after.participants ?? []).includes(p),
       ) ?? [];
@@ -231,11 +243,12 @@ export const notifyRemovedParticipants = onDocumentWritten(
           timestamp: FieldValue.serverTimestamp(),
           read: false,
         });
-        // push via sendPushOnNotification
       }),
     );
   },
 );
+
+/* ---- updateCreatorStats ---- */
 
 export const updateCreatorStats = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
@@ -248,9 +261,7 @@ export const updateCreatorStats = onDocumentWritten(
     const afterChecked: string[] = after.checkedInUsers ?? [];
     if (afterChecked.length <= beforeChecked.length) return;
 
-    const added = afterChecked.filter(
-      (u: string) => !beforeChecked.includes(u),
-    );
+    const added = afterChecked.filter((u) => !beforeChecked.includes(u));
     if (added.length === 0) return;
 
     const creatorId: string = after.createdBy;
@@ -264,20 +275,19 @@ export const updateCreatorStats = onDocumentWritten(
       if (!snap.exists) return;
 
       const data = snap.data() ?? {};
-      const total =
-        (data.total_participants_until_now ?? 0) + added.length;
-      const maxPart = Math.max(
-        data.max_participants_in_one_plan ?? 0,
-        afterChecked.length,
-      );
-
       tx.update(creatorRef, {
-        total_participants_until_now: total,
-        max_participants_in_one_plan: maxPart,
+        total_participants_until_now:
+          (data.total_participants_until_now ?? 0) + added.length,
+        max_participants_in_one_plan: Math.max(
+          data.max_participants_in_one_plan ?? 0,
+          afterChecked.length,
+        ),
       });
     });
   },
 );
+
+/* ---- notifyCheckInStarted ---- */
 
 export const notifyCheckInStarted = onDocumentWritten(
   {region: "europe-west1", document: "/plans/{planId}"},
@@ -303,9 +313,7 @@ export const notifyCheckInStarted = onDocumentWritten(
 
     await Promise.all(
       participants
-        .filter(
-          (uid) => uid !== creatorId && !checked.includes(uid),
-        )
+        .filter((uid) => uid !== creatorId && !checked.includes(uid))
         .map(async (uid) => {
           await db.collection("notifications").add({
             type: "plan_checkin_started",
@@ -323,6 +331,8 @@ export const notifyCheckInStarted = onDocumentWritten(
   },
 );
 
+/* ---- createWelcomeNotification ---- */
+
 export const createWelcomeNotification = onDocumentCreated(
   {region: "europe-west1", document: "/users/{userId}"},
   async (event: CreatedEvent) => {
@@ -330,20 +340,23 @@ export const createWelcomeNotification = onDocumentCreated(
     const data = event.data?.data();
     if (!data) return;
 
-    const db = getFirestore();
-    await db.collection("notifications").add({
+    const msg =
+      "El equipo de Plan te da la bienvenida a la app que te conecta " +
+      "con nuevas experiencias y personas. ¡Comienza a explorar y a " +
+      "crear momentos inolvidables!";
+
+    await getFirestore().collection("notifications").add({
       type: "welcome",
       receiverId: userId,
       senderId: "system",
       senderName: "Plan",
       senderProfilePic: "",
-      message:
-        "El equipo de Plan te da la bienvenida a la app que te conecta " +
-        "con nuevas experiencias y personas. ¡Comienza a explorar y a " +
-        "crear momentos inolvidables!",
+      message: msg,
       timestamp: FieldValue.serverTimestamp(),
       read: false,
     });
   },
 );
-\nexport * from "./stripe";
+
+/* ---- Stripe exports ---- */
+export * from "./stripe";
