@@ -40,6 +40,10 @@ class PlanModel {
   List<String>? viewedBy;
   int share_count;
 
+  // Pago
+  bool isPaid;
+  double price;
+
   // Varias imágenes + video
   List<String>? images;
   List<String>? originalImages;
@@ -90,6 +94,9 @@ class PlanModel {
     this.videoUrl,
     this.creatorProfilePrivacy,
     this.invitedUsers,
+
+    this.isPaid = false,
+    this.price = 0.0,
 
     // Campo nuevo
     this.typeLowercase,
@@ -152,6 +159,9 @@ class PlanModel {
       'videoUrl': videoUrl ?? '',
       'creatorProfilePrivacy': creatorProfilePrivacy ?? 0,
 
+      'isPaid': isPaid,
+      'price': price,
+
       // Check-in
       'checkInActive': checkInActive ?? false,
       'checkInCode': checkInCode ?? '',
@@ -210,6 +220,9 @@ class PlanModel {
           : <String>[],
       videoUrl: map['videoUrl'] ?? '',
       creatorProfilePrivacy: map['creatorProfilePrivacy'] ?? 0,
+
+      isPaid: map['isPaid'] ?? false,
+      price: _parseDouble(map['price']) ?? 0.0,
 
       // Campo para búsqueda case-insensitive
       typeLowercase: map['typeLowercase'] ?? '',
@@ -275,6 +288,8 @@ class PlanModel {
     List<String>? images,
     List<String>? originalImages,
     String? videoUrl,
+    bool isPaid = false,
+    double price = 0.0,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -330,6 +345,9 @@ class PlanModel {
       videoUrl: videoUrl ?? '',
       creatorProfilePrivacy: privacy,
 
+      isPaid: isPaid,
+      price: price,
+
       // Check-in
       checkInActive: false,
       checkInCode: '',
@@ -371,6 +389,8 @@ class PlanModel {
     List<String>? images,
     List<String>? originalImages,
     String? videoUrl,
+    bool isPaid = false,
+    double price = 0.0,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -402,6 +422,8 @@ class PlanModel {
       'images': images ?? [],
       'originalImages': originalImages ?? [],
       'videoUrl': videoUrl ?? '',
+      'isPaid': isPaid,
+      'price': price,
     };
 
     await docRef.update(updates);

@@ -17,6 +17,7 @@ import 'frosted_plan_dialog_state.dart';
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
 import '../profile/profile_screen.dart';
+import '../../services/purchase_service.dart';
 
 /// Tarjeta que muestra cada Plan en la lista
 class PlanCard extends StatefulWidget {
@@ -184,6 +185,11 @@ class PlanCardState extends State<PlanCard> {
     final int maxPart = plan.maxParticipants ?? 0;
     if (maxPart > 0 && participantes >= maxPart) {
       return; // Sin acción
+    }
+
+    if (plan.isPaid && _joinState == JoinState.none) {
+      await PurchaseService.instance.startPlanPurchase(context, plan);
+      return;
     }
 
     // Alternar join_request
