@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../services/stripe_service.dart';
 
 import '../main/colors.dart';
 import '../models/plan_model.dart';
@@ -1621,7 +1622,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                         ),
                         const SizedBox(height: 10),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            StripeService.instance.startOnboarding(context);
+                          },
                           style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.planColor),
                           child: const Text(
