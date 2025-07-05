@@ -15,6 +15,7 @@ import '../users_managing/user_info_check.dart';
 import 'attendance_managing.dart';
 import '../../main/colors.dart';
 import '../profile/profile_screen.dart';
+import '../../services/purchase_service.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
@@ -673,9 +674,14 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           );
           return;
         }
-        if (maxP > 0 && pCount >= maxP) {
-          return;
-        }
+      if (maxP > 0 && pCount >= maxP) {
+        return;
+      }
+
+      if (plan.isPaid) {
+        await PurchaseService.instance.startPlanPurchase(context, plan);
+        return;
+      }
 
         final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
         await FirebaseFirestore.instance.collection('notifications').add({

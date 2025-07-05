@@ -184,6 +184,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   // Visibilidad
   String? _selectedVisibility;
 
+  // Pago del plan
+  bool _isPaid = false;
+  double? _price;
+
   // Marcador en el mapa
   Future<BitmapDescriptor>? _markerIconFuture;
 
@@ -241,6 +245,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
       // VISIBILITY
       _selectedVisibility = plan.visibility ?? "Público";
+
+      _isPaid = plan.isPaid;
+      _price = plan.price;
     }
   }
 
@@ -1538,6 +1545,96 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       ),
                       const SizedBox(height: 20),
 
+                      // ¿Plan de pago?
+                      Row(
+                        children: [
+                          const Text(
+                            '¿Este plan es de pago?',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Inter-Regular',
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                          const Spacer(),
+                          Switch(
+                            value: _isPaid,
+                            onChanged: (v) {
+                              setState(() => _isPaid = v);
+                            },
+                            activeColor: AppColors.planColor,
+                          ),
+                        ],
+                      ),
+                      if (_isPaid) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 124, 120, 120)
+                                .withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text(
+                                '€',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Inter-Regular',
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _price = double.tryParse(value);
+                                    });
+                                  },
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding:
+                                        EdgeInsets.symmetric(vertical: 8),
+                                    hintText: 'Precio en euros',
+                                    hintStyle: TextStyle(
+                                      color: Colors.white70,
+                                      fontFamily: 'Inter-Regular',
+                                      decoration: TextDecoration.none,
+                                    ),
+                                    border: InputBorder.none,
+                                  ),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Inter-Regular',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.planColor),
+                          child: const Text(
+                            'Configurar cuenta bancaria',
+                            style: TextStyle(
+                                color: Colors.white, fontFamily: 'Inter-Regular'),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Botón: Finalizar o Actualizar
+
                       // Botón: Finalizar o Actualizar
                       ElevatedButton(
                         onPressed: _onCreateOrUpdatePlanPressed,
@@ -1736,6 +1833,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
               ? uploadedOriginalImages
               : (widget.planToEdit!.originalImages ?? []),
           videoUrl: widget.planToEdit!.videoUrl,
+          isPaid: _isPaid,
+          price: _price ?? 0,
         );
       } else {
         // -------------------------------------------------------------------
@@ -1762,6 +1861,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           images: uploadedCroppedImages,
           originalImages: uploadedOriginalImages,
           videoUrl: null,
+          isPaid: _isPaid,
+          price: _price ?? 0,
         );
       }
 
