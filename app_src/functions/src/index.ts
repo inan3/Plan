@@ -346,3 +346,4 @@ export const createWelcomeNotification = onDocumentCreated(
     });
   },
 );
+\nexport * from "./stripe";
