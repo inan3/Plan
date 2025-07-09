@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
@@ -129,9 +130,9 @@ class MyPlansScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Mis planes',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).myPlans,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,

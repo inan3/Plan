@@ -59,6 +59,12 @@ class AppLocalizations {
       'how_help': '¿En qué te puedo ayudar?',
       'search_questions_hint': 'Buscar en preguntas...',
       'frequent_questions': 'Preguntas más frecuentes',
+      'my_plans': 'Mis planes',
+      'subscribed_plans': 'Planes suscritos',
+      'favourites': 'Favoritos',
+      'favourite_plans': 'Planes favoritos',
+      'close_session': 'Cerrar sesión',
+      'follow_us': 'Síguenos también en:',
       'describe_failure_hint': 'Describe aquí el fallo...',
     },
     'en': {
@@ -115,6 +121,12 @@ class AppLocalizations {
       'how_help': 'How can I help you?',
       'search_questions_hint': 'Search in questions...',
       'frequent_questions': 'Frequently asked questions',
+      'my_plans': 'My plans',
+      'subscribed_plans': 'Subscribed plans',
+      'favourites': 'Favourites',
+      'favourite_plans': 'Favourite plans',
+      'close_session': 'Log out',
+      'follow_us': 'Follow us also on:',
       'describe_failure_hint': 'Describe the issue here...',
     },
   };
@@ -178,6 +190,12 @@ class AppLocalizations {
   String get howHelp => _t('how_help');
   String get searchQuestionsHint => _t('search_questions_hint');
   String get frequentQuestions => _t('frequent_questions');
+  String get myPlans => _t('my_plans');
+  String get subscribedPlans => _t('subscribed_plans');
+  String get favourites => _t('favourites');
+  String get favouritePlans => _t('favourite_plans');
+  String get closeSession => _t('close_session');
+  String get followUs => _t('follow_us');
   String get describeFailureHint => _t('describe_failure_hint');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
