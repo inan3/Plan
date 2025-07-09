@@ -10,6 +10,7 @@ import 'package:geocoding/geocoding.dart';
 import '../../main/colors.dart'; // Define AppColors
 import '../../main/keys.dart'; // Contiene las claves APIKeys.androidApiKey y APIKeys.iosApiKey
 import '../../utils/plans_list.dart'; // Lista de planes
+import '../../l10n/app_localizations.dart';
 
 // El diálogo acepta opcionalmente filtros iniciales para preservar el último estado.
 class ExploreScreenFilterDialog extends StatefulWidget {
@@ -177,20 +178,19 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Permiso de ubicación'),
-          content: const Text(
-              'El permiso de ubicación ha sido denegado permanentemente. Ve a la configuración de la app para habilitarlo.'),
+          title: Text(t.locationPermissionTitle),
+          content: Text(t.locationPermissionMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
+              child: Text(t.cancel),
             ),
             TextButton(
               onPressed: () {
                 openAppSettings();
                 Navigator.of(context).pop();
               },
-              child: const Text('Configuración'),
+              child: Text(t.configuration),
             ),
           ],
         ),
@@ -281,6 +281,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final List<Map<String, dynamic>> planSugeridos = planBusqueda.isNotEmpty
         ? plans.where((plan) {
             final nombre = plan['name'].toString().toLowerCase();
@@ -318,9 +319,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Filtrar Planes',
-                      style: TextStyle(
+                    Text(
+                      t.filterPlans,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppColors.planColor,
@@ -334,14 +335,14 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          '¿Qué deseas ver?',
-                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        Text(
+                          t.whatToShow,
+                          style: const TextStyle(fontSize: 16, color: Colors.black),
                         ),
                         Row(
                           children: [
                             Text(
-                              _onlyPlans ? 'Solo planes' : 'Todo',
+                              _onlyPlans ? t.onlyPlans : t.everything,
                               style: const TextStyle(
                                   fontSize: 14, color: Colors.black),
                             ),
@@ -368,8 +369,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Planes',
-                        style: TextStyle(
+                        t.plans,
+                        style: const TextStyle(
                           fontSize: 16,
                           color: Colors.black,
                         ),
@@ -397,7 +398,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                               border: Border.all(color: AppColors.greyBorder),
                             ),
                             child: Text(
-                              'Solo de personas que sigo',
+                              t.onlyFollowed,
                               style: TextStyle(
                                 color:
                                     _onlyFollowed ? Colors.white : Colors.black,
@@ -446,9 +447,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                     ],
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      '- o -',
-                      style: TextStyle(
+                    Text(
+                      t.orSeparator,
+                      style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
                       ),
@@ -461,7 +462,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.lightLilac,
-                          hintText: 'Busca por nombre...',
+                          hintText: t.searchByNameHint,
                           hintStyle: const TextStyle(
                             color: Colors.black54,
                           ),
@@ -526,8 +527,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          '¿En qué región buscas planes?',
-                          style: TextStyle(
+                          t.searchRegion,
+                          style: const TextStyle(
                             fontSize: 16,
                             color: Colors.black,
                           ),
@@ -547,7 +548,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: AppColors.lightLilac,
-                            hintText: 'Ciudad, país...',
+                            hintText: t.regionHint,
                             hintStyle: const TextStyle(
                               color: Colors.black54,
                             ),
@@ -613,8 +614,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       const SizedBox(height: 10),
                       Center(
                         child: Text(
-                          '- o -',
-                          style: TextStyle(
+                          t.orSeparator,
+                          style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
                           ),
@@ -634,7 +635,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         ),
                         onPressed: _requestLocationPermission,
                         child: Text(
-                          'Tu ubicación actual',
+                          t.currentLocation,
                           style: TextStyle(
                             color:
                                 locationAllowed ? Colors.white : Colors.black,
@@ -651,8 +652,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '¿Para qué fecha buscas planes?',
-                      style: TextStyle(
+                      t.planDateQuestion,
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black,
                       ),
@@ -685,7 +686,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                     child: Text(
                       _selectedDate != null
                           ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                          : 'Selecciona una fecha',
+                          : t.selectDate,
                       style: const TextStyle(color: Colors.white),
                     ),
                   ),
@@ -697,8 +698,8 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '¿Qué rango de edad?',
-                      style: TextStyle(
+                      t.whatAgeRange,
+                      style: const TextStyle(
                         fontSize: 16,
                           color: Colors.black,
                         ),
@@ -750,9 +751,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         ),
                       ),
                       onPressed: _limpiarFiltros,
-                      child: const Text(
-                        'Limpiar Filtro',
-                        style: TextStyle(color: Colors.white),
+                      child: Text(
+                        t.clearFilter,
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -760,9 +761,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
-                          child: const Text(
-                            'Cancelar',
-                            style: TextStyle(color: Colors.black),
+                          child: Text(
+                            t.cancel,
+                            style: const TextStyle(color: Colors.black),
                           ),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
@@ -772,9 +773,9 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                             backgroundColor: AppColors.planColor,
                           ),
                           onPressed: _aplicarFiltros,
-                          child: const Text(
-                            'Aceptar',
-                            style: TextStyle(color: Colors.white),
+                          child: Text(
+                            t.accept,
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
