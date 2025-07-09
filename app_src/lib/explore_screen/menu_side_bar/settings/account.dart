@@ -11,9 +11,10 @@ class AccountScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cuenta'),
+        title: Text(t.account),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
@@ -32,7 +33,7 @@ class AccountScreen extends StatelessWidget {
                       width: 24,
                       height: 24,
                     ),
-                    title: const Text('Editar perfil'),
+                    title: Text(t.editProfile),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
@@ -48,7 +49,7 @@ class AccountScreen extends StatelessWidget {
                       width: 24,
                       height: 24,
                     ),
-                    title: const Text('Cambiar la contraseña de tu cuenta'),
+                    title: Text(t.changeAccountPassword),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
@@ -65,27 +66,27 @@ class AccountScreen extends StatelessWidget {
                       height: 24,
                       color: Colors.red,
                     ),
-                    title: const Text(
-                      'Eliminar mi perfil',
-                      style: TextStyle(color: Colors.red),
+                    title: Text(
+                      t.deleteProfile,
+                      style: const TextStyle(color: Colors.red),
                     ),
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Confirmar eliminación'),
-                          content: const Text('¿Estás seguro de que quieres eliminar tu perfil?'),
+                          title: Text(t.deleteConfirmation),
+                          content: Text(t.deleteQuestion),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('Cancelar'),
+                              child: Text(t.cancel),
                             ),
                             TextButton(
                               onPressed: () async {
                                 Navigator.of(ctx).pop();
                                 await _deleteAccount(context);
                               },
-                              child: const Text('Aceptar'),
+                              child: Text(t.accept),
                             ),
                           ],
                         ),
@@ -164,11 +165,11 @@ Future<void> _deleteAccount(BuildContext context) async {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          content: const Text('Tu cuenta se ha eliminado correctamente.'),
+          content: Text(t.deleteSuccess),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Aceptar'),
+              child: Text(t.accept),
             ),
           ],
         ),
@@ -238,24 +239,23 @@ class _ReauthDialogState extends State<_ReauthDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('Reautenticación requerida'),
+      title: Text(t.reauthRequired),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-                'Por cuestiones de seguridad debes introducir tus credenciales de inicio de sesión para eliminar tu cuenta definitivamente'),
+            Text(t.reauthExplanation),
             const SizedBox(height: 16),
             TextField(
               controller: _emailCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Correo electrónico o teléfono'),
+              decoration: InputDecoration(labelText: t.emailOrPhone),
             ),
             TextField(
               controller: _passCtrl,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
+              decoration: InputDecoration(labelText: t.password),
             ),
           ],
         ),
@@ -263,7 +263,7 @@ class _ReauthDialogState extends State<_ReauthDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
+          child: Text(t.cancel),
         ),
         TextButton(
           onPressed: () async {
@@ -281,19 +281,18 @@ class _ReauthDialogState extends State<_ReauthDialog> {
               await showDialog(
                 context: context,
                 builder: (_) => AlertDialog(
-                  content: const Text(
-                      'No ha sido posible autenticarte. Credenciales incorrectas.'),
+                  content: Text(t.reauthFailed),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Aceptar'),
+                      child: Text(t.accept),
                     ),
                   ],
                 ),
               );
             }
           },
-          child: const Text('Continuar con la eliminación'),
+          child: Text(t.continueDelete),
         ),
       ],
     );
@@ -343,7 +342,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final age = int.tryParse(_ageController.text.trim());
     if (name.isEmpty || username.isEmpty || age == null) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Campos inválidos')));
+          .showSnackBar(SnackBar(content: Text(t.invalidFields)));
       return;
     }
 
@@ -360,7 +359,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
+            .showSnackBar(SnackBar(content: Text(t.profileUpdated)));
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -382,30 +381,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar perfil')),
+      appBar: AppBar(title: Text(t.editProfile)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
+              decoration: InputDecoration(labelText: t.name),
             ),
             TextField(
               controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Nombre de usuario'),
+              decoration: InputDecoration(labelText: t.username),
             ),
             TextField(
               controller: _ageController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Edad'),
+              decoration: InputDecoration(labelText: t.age),
             ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
-                child: const Text('Guardar'),
+                child: Text(t.save),
               ),
             ),
           ],
@@ -446,7 +445,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final confirm = _confirmController.text;
     if (current.isEmpty || newPwd.isEmpty || newPwd != confirm) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Revisa los campos')));
+          .showSnackBar(SnackBar(content: Text(t.checkFields)));
       return;
     }
 
@@ -458,7 +457,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       await user.updatePassword(newPwd);
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Contraseña actualizada')));
+            .showSnackBar(SnackBar(content: Text(t.passwordUpdated)));
         Navigator.of(context).pop();
       }
     } on FirebaseAuthException catch (e) {
@@ -473,8 +472,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Cambiar contraseña')),
+      appBar: AppBar(title: Text(t.changePassword)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -482,26 +482,24 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             TextField(
               controller: _currentController,
               obscureText: true,
-              decoration:
-                  const InputDecoration(labelText: 'Contraseña actual'),
+              decoration: InputDecoration(labelText: t.currentPassword),
             ),
             TextField(
               controller: _newController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Nueva contraseña'),
+              decoration: InputDecoration(labelText: t.newPassword),
             ),
             TextField(
               controller: _confirmController,
               obscureText: true,
-              decoration:
-                  const InputDecoration(labelText: 'Confirmar contraseña'),
+              decoration: InputDecoration(labelText: t.confirmPassword),
             ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saving ? null : _change,
-                child: const Text('Actualizar'),
+                child: Text(t.update),
               ),
             ),
           ],

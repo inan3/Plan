@@ -72,9 +72,10 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
+    final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Privacidad'),
+        title: Text(t.privacy),
         leading: BackButton(onPressed: () => Navigator.of(context).pop()),
       ),
       backgroundColor: Colors.grey.shade200,
@@ -83,9 +84,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Controla quién puede ver tu perfil.',
-              style: TextStyle(
+            Text(
+              t.controlProfileVisibility,
+              style: const TextStyle(
                 fontSize: 12,
                 color: Colors.black54,
               ),
@@ -101,12 +102,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Visibilidad',
+                        t.visibility,
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
                     Text(
-                      _isVisibilityPublic ? 'Público' : 'Privado',
+                      _isVisibilityPublic ? t.public : t.private,
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.black54,
@@ -129,9 +130,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Permite que otros vean si estás en línea o tu última conexión.',
-              style: TextStyle(
+            Text(
+              t.activityPrivacyDesc,
+              style: const TextStyle(
                 fontSize: 12,
                 color: Colors.black54,
               ),
@@ -147,12 +148,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Estado de actividad',
+                        t.activityStatus,
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
                     Text(
-                      _isActivityPublic ? 'Público' : 'Privado',
+                      _isActivityPublic ? t.public : t.private,
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.black54,

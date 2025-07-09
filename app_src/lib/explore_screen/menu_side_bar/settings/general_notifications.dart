@@ -47,9 +47,10 @@ class _GeneralNotificationsScreenState extends State<GeneralNotificationsScreen>
       );
     }
 
+    final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notificaciones'),
+        title: Text(t.notifications),
         leading: BackButton(onPressed: () => Navigator.of(context).pop()),
       ),
       backgroundColor: Colors.grey.shade200,
@@ -58,9 +59,9 @@ class _GeneralNotificationsScreenState extends State<GeneralNotificationsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Activa o desactiva las notificaciones globales de Plan.',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+            Text(
+              t.notificationsDesc,
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
             ),
             const SizedBox(height: 8),
             Material(
@@ -70,10 +71,10 @@ class _GeneralNotificationsScreenState extends State<GeneralNotificationsScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Row(
                   children: [
-                    const Expanded(
-                      child: Text('Habilitar notificaciones', style: TextStyle(fontSize: 16)),
+                    Expanded(
+                      child: Text(t.enableNotifications, style: const TextStyle(fontSize: 16)),
                     ),
-                    Text(_enabled ? 'Habilitado' : 'Deshabilitado',
+                    Text(_enabled ? t.enabled : t.disabled,
                         style: const TextStyle(fontSize: 14, color: Colors.black54)),
                     const SizedBox(width: 8),
                     Switch(
@@ -90,13 +91,12 @@ class _GeneralNotificationsScreenState extends State<GeneralNotificationsScreen>
             ),
             const SizedBox(height: 32),
             // Espacio reservado para notificaciones de chat
-            const Text(
-              'Chat (pendiente de implementación)',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black45),
+            Text(
+              t.chatPending,
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black45),
             ),
           ],
         ),
       ),
     );
-  }
-}
+  }}
