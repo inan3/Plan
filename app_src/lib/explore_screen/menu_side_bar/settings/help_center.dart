@@ -10,8 +10,9 @@ class HelpCenterScreen extends StatefulWidget {
 }
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
-  /// Lista de preguntas y respuestas que se muestran en la pantalla.
-  final List<Map<String, String>> _faqs = [
+  /// Preguntas frecuentes por idioma.
+  final Map<String, List<Map<String, String>>> _faqsByLang = {
+    'es': [
     {
       'q': '¿Cómo creo un nuevo plan?',
       'a': '1. Toca el botón “+” para abrir el formulario de creación de plan.\n'
@@ -87,20 +88,99 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           '• Dashboard avanzado con exportación CSV y reportes mensuales.\n'
           '• Atención al cliente en tiempo real y acceso anticipado a funcionalidades beta.'
     },
-  ];
+    ],
+    'en': [
+      {
+        'q': 'How do I create a new plan?',
+        'a': '1. Tap the “+” button to open the plan creation form.\n'
+            '2. Select or type the plan type in the selector.\n'
+            '3. Add up to 3 images or 1 video by tapping “Multimedia content” and choose from gallery or camera (video max 15s).\n'
+            '4. Tap “Plan date and time” to choose dates and times; check “All day” or “Include end date” if you want.\n'
+            '5. Select the meeting point on the map to set the location.\n'
+            '6. Adjust the age restriction with the slider and set the maximum participants.\n'
+            '7. Write a brief description of the plan.\n'
+            '8. Choose the visibility (Public, Private or Only my followers).\n'
+            '9. Finally tap “Finish Plan” and your plan will be published. You can see it in “My plans” and share it with friends.'
+      },
+      {
+        'q': 'How do I search for plans near me?',
+        'a': '1. Open the Explore section by tapping the house icon in the bottom bar.\n'
+            '2. The list of users is sorted by proximity using your location and the computeDistance function.\n'
+            '3. Adjust filters: tap the funnel icon to filter by age or distance.\n'
+            '4. If you prefer a map, tap the map icon in the bottom bar to see markers of users with public plans.\n'
+            '5. Tap a marker or a profile in the list to see their plans (PlanCard) and join.'
+      },
+      {
+        'q': 'How do I invite someone to a plan?',
+        'a': '1. On the profile of a user without plans, tap the “Invite to a Plan” button.\n'
+            '2. Choose “Existing” to select one of your active plans or “New” to create a private plan.\n'
+            '3. If you select Existing, choose a plan from the list and confirm the invitation in the dialog.\n'
+            '4. If you select New, complete the quick private plan form (type, date, location and description) and finish.\n'
+            '5. Upon confirming, a notification is sent to the invited user and you will see a success message.'
+      },
+      {
+        'q': 'What is a private plan?',
+        'a': 'A private plan is only visible to you and the people you share it with. Nobody else can see it or join.'
+      },
+      {
+        'q': 'How does the map work?',
+        'a': 'The map shows all public plans you can interact with and join if you want. '
+            'You can see the location of plans on the map and tap the markers to see more details about each plan. '
+            'You can also filter plans according to your interests and preferences. '
+            'You can zoom in, zoom out and move the map to see plans all over the world.'
+      },
+      {
+        'q': 'How do privilege levels work?',
+        'a': 'Levels define advantages and additional tools according to your activity in the app:\n'
+            '\n'
+            '**Basic**\n'
+            '• Create 1 active plan at a time.\n'
+            '• Join public plans without limit.\n'
+            '• Basic chat inside the plan.\n'
+            '• Support via FAQ and email.\n'
+            '\n'
+            '**Premium**\n'
+            '• Everything above plus more features to enhance your experience:\n'
+            '• Create up to 3 active plans at a time and recurring plans (e.g. every Friday).\n'
+            '• Add up to 10 photos + 1 long video (30 s) to promote your plans.\n'
+            '• Co-organizers: assign 1 person to help you manage the plan.\n'
+            '• Custom push notifications (choose when reminders are sent).\n'
+            '\n'
+            '**Golden**\n'
+            '• Create events with price (in-app ticketing); the app charges the standard fee.\n'
+            '• Combine your account as normal user and event/plan organizer company.\n'
+            '• Create unlimited active plans at the same time.\n'
+            '• Configure participant admission based on their privilege level (e.g. only Golden/VIP users can join).\n'
+            '• Boost your plan once per week to appear first in the list and with a golden pin on the map.\n'
+            '• Analytics: see who visited your plans, confirmation rate and interest heatmap.\n'
+            '• Customer support via chat with response in less than 24 hours.\n'
+            '\n'
+            '**VIP**\n'
+            '• All previous benefits without limits plus top priority in the discovery algorithm.\n'
+            '• Verified badge and unique short URL to share plans.\n'
+            '• Possibility to sponsor plans (your logo visible on the Explore cover).\n'
+            '• Multiple co-organizers and custom roles (moderator, photographer, etc.).\n'
+            '• Advanced dashboard with CSV export and monthly reports.\n'
+            '• Real-time customer support and early access to beta features.'
+      },
+    ],
+  };
 
   String _search = '';
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _faqs.where((item) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final faqs = _faqsByLang[locale] ?? _faqsByLang['es']!;
+    final filtered = faqs.where((item) {
       final text = (item['q']! + ' ' + item['a']!).toLowerCase();
       return text.contains(_search.toLowerCase());
     }).toList();
 
+    final t = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Centro de ayuda'),
+        title: Text(t.helpCenter),
         leading: BackButton(onPressed: () => Navigator.of(context).pop()),
       ),
       backgroundColor: Colors.grey.shade200,
@@ -117,15 +197,15 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '¿En qué te puedo ayudar?',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            Text(
+              t.howHelp,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
             // Buscador
             TextField(
               decoration: InputDecoration(
-                hintText: 'Buscar en preguntas...',
+                hintText: t.searchQuestionsHint,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -136,9 +216,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               onChanged: (value) => setState(() => _search = value),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Preguntas más frecuentes',
-              style: TextStyle(
+            Text(
+              t.frequentQuestions,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.black54,

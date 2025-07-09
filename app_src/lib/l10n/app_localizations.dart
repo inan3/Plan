@@ -19,6 +19,47 @@ class AppLocalizations {
       'report_failures': 'Reportar fallos de la aplicación',
       'send': 'Enviar',
       'search': 'Buscar',
+      'edit_profile': 'Editar perfil',
+      'change_account_password': 'Cambiar la contraseña de tu cuenta',
+      'delete_profile': 'Eliminar mi perfil',
+      'delete_confirmation': 'Confirmar eliminación',
+      'delete_question': '¿Estás seguro de que quieres eliminar tu perfil?',
+      'cancel': 'Cancelar',
+      'accept': 'Aceptar',
+      'delete_success': 'Tu cuenta se ha eliminado correctamente.',
+      'reauth_required': 'Reautenticación requerida',
+      'reauth_explanation': 'Por cuestiones de seguridad debes introducir tus credenciales de inicio de sesión para eliminar tu cuenta definitivamente',
+      'reauth_failed': 'No ha sido posible autenticarte. Credenciales incorrectas.',
+      'email_or_phone': 'Correo electrónico o teléfono',
+      'password': 'Contraseña',
+      'continue_delete': 'Continuar con la eliminación',
+      'name': 'Nombre',
+      'username': 'Nombre de usuario',
+      'age': 'Edad',
+      'save': 'Guardar',
+      'change_password': 'Cambiar contraseña',
+      'current_password': 'Contraseña actual',
+      'new_password': 'Nueva contraseña',
+      'confirm_password': 'Confirmar contraseña',
+      'update': 'Actualizar',
+      'invalid_fields': 'Campos inválidos',
+      'profile_updated': 'Perfil actualizado',
+      'check_fields': 'Revisa los campos',
+      'password_updated': 'Contraseña actualizada',
+      'visibility': 'Visibilidad',
+      'public': 'Público',
+      'private': 'Privado',
+      'control_profile_visibility': 'Controla quién puede ver tu perfil.',
+      'activity_privacy_desc': 'Permite que otros vean si estás en línea o tu última conexión.',
+      'activity_status': 'Estado de actividad',
+      'notifications_desc': 'Activa o desactiva las notificaciones globales de Plan.',
+      'enable_notifications': 'Habilitar notificaciones',
+      'enabled': 'Habilitado',
+      'disabled': 'Deshabilitado',
+      'chat_pending': 'Chat (pendiente de implementación)',
+      'how_help': '¿En qué te puedo ayudar?',
+      'search_questions_hint': 'Buscar en preguntas...',
+      'frequent_questions': 'Preguntas más frecuentes',
     },
     'en': {
       'settings': 'Settings',
@@ -34,6 +75,47 @@ class AppLocalizations {
       'report_failures': 'Report app failures',
       'send': 'Send',
       'search': 'Search',
+      'edit_profile': 'Edit profile',
+      'change_account_password': 'Change your account password',
+      'delete_profile': 'Delete my profile',
+      'delete_confirmation': 'Confirm deletion',
+      'delete_question': 'Are you sure you want to delete your profile?',
+      'cancel': 'Cancel',
+      'accept': 'Accept',
+      'delete_success': 'Your account has been deleted successfully.',
+      'reauth_required': 'Reauthentication required',
+      'reauth_explanation': 'For security reasons you must enter your login credentials to permanently delete your account',
+      'reauth_failed': 'Unable to authenticate. Wrong credentials.',
+      'email_or_phone': 'Email or phone',
+      'password': 'Password',
+      'continue_delete': 'Continue with deletion',
+      'name': 'Name',
+      'username': 'Username',
+      'age': 'Age',
+      'save': 'Save',
+      'change_password': 'Change password',
+      'current_password': 'Current password',
+      'new_password': 'New password',
+      'confirm_password': 'Confirm password',
+      'update': 'Update',
+      'invalid_fields': 'Invalid fields',
+      'profile_updated': 'Profile updated',
+      'check_fields': 'Check the fields',
+      'password_updated': 'Password updated',
+      'visibility': 'Visibility',
+      'public': 'Public',
+      'private': 'Private',
+      'control_profile_visibility': 'Control who can see your profile.',
+      'activity_privacy_desc': "Allow others to see if you're online or your last connection.",
+      'activity_status': 'Activity status',
+      'notifications_desc': 'Enable or disable Plan global notifications.',
+      'enable_notifications': 'Enable notifications',
+      'enabled': 'Enabled',
+      'disabled': 'Disabled',
+      'chat_pending': 'Chat (pending implementation)',
+      'how_help': 'How can I help you?',
+      'search_questions_hint': 'Search in questions...',
+      'frequent_questions': 'Frequently asked questions',
     },
   };
 
@@ -56,6 +138,47 @@ class AppLocalizations {
   String get reportFailures => _t('report_failures');
   String get send => _t('send');
   String get search => _t('search');
+  String get editProfile => _t('edit_profile');
+  String get changeAccountPassword => _t('change_account_password');
+  String get deleteProfile => _t('delete_profile');
+  String get deleteConfirmation => _t('delete_confirmation');
+  String get deleteQuestion => _t('delete_question');
+  String get cancel => _t('cancel');
+  String get accept => _t('accept');
+  String get deleteSuccess => _t('delete_success');
+  String get reauthRequired => _t('reauth_required');
+  String get reauthExplanation => _t('reauth_explanation');
+  String get reauthFailed => _t('reauth_failed');
+  String get emailOrPhone => _t('email_or_phone');
+  String get password => _t('password');
+  String get continueDelete => _t('continue_delete');
+  String get name => _t('name');
+  String get username => _t('username');
+  String get age => _t('age');
+  String get save => _t('save');
+  String get changePassword => _t('change_password');
+  String get currentPassword => _t('current_password');
+  String get newPassword => _t('new_password');
+  String get confirmPassword => _t('confirm_password');
+  String get update => _t('update');
+  String get invalidFields => _t('invalid_fields');
+  String get profileUpdated => _t('profile_updated');
+  String get checkFields => _t('check_fields');
+  String get passwordUpdated => _t('password_updated');
+  String get visibility => _t('visibility');
+  String get public => _t('public');
+  String get private => _t('private');
+  String get controlProfileVisibility => _t('control_profile_visibility');
+  String get activityPrivacyDesc => _t('activity_privacy_desc');
+  String get activityStatus => _t('activity_status');
+  String get notificationsDesc => _t('notifications_desc');
+  String get enableNotifications => _t('enable_notifications');
+  String get enabled => _t('enabled');
+  String get disabled => _t('disabled');
+  String get chatPending => _t('chat_pending');
+  String get howHelp => _t('how_help');
+  String get searchQuestionsHint => _t('search_questions_hint');
+  String get frequentQuestions => _t('frequent_questions');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
