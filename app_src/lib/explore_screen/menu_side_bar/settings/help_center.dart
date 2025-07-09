@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Pantalla de Centro de Ayuda con buscador y preguntas frecuentes.
 class HelpCenterScreen extends StatefulWidget {

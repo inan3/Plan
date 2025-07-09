@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../../start/welcome_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -106,6 +107,8 @@ class AccountScreen extends StatelessWidget {
 Future<void> _deleteAccount(BuildContext context) async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
+
+  final t = AppLocalizations.of(context);
 
   showDialog(
     context: context,
@@ -337,6 +340,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    final t = AppLocalizations.of(context);
     final name = _nameController.text.trim();
     final username = _usernameController.text.trim();
     final age = int.tryParse(_ageController.text.trim());
@@ -374,6 +378,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -436,6 +441,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _saving = false;
 
   Future<void> _change() async {
+    final t = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email;
     if (user == null || email == null) return;
