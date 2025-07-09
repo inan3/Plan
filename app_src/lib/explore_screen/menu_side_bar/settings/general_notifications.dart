@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/notification_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 class GeneralNotificationsScreen extends StatefulWidget {
   const GeneralNotificationsScreen({Key? key}) : super(key: key);
