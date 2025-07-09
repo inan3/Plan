@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 
 import 'package:dating_app/main/colors.dart';
 import 'my_plans_screen.dart';
@@ -116,7 +117,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       _buildProfileHeader(),
                       _buildMenuItemWithBadge(
                         icon: 'assets/icono-calendario.svg',
-                        title: 'Mis Planes',
+                        title: AppLocalizations.of(context).myPlans,
                         destination: const MyPlansScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -128,7 +129,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItemWithBadge(
                         icon: 'assets/union.svg',
-                        title: 'Planes Suscritos',
+                        title: AppLocalizations.of(context).subscribedPlans,
                         destination: SubscribedPlansScreen(
                           userId: currentUserId ?? '',
                         ),
@@ -142,7 +143,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItemWithBadge(
                         icon: 'assets/icono-corazon.svg',
-                        title: 'Favoritos',
+                        title: AppLocalizations.of(context).favourites,
                         destination: const FavouritesScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -154,7 +155,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-ajustes.svg',
-                        title: 'Ajustes',
+                        title: AppLocalizations.of(context).settings,
                         destination: const SettingsScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -162,7 +163,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-cerrar-sesion.svg',
-                        title: 'Cerrar Sesión',
+                        title: AppLocalizations.of(context).closeSession,
                         destination: const CloseSessionScreen(),
                         iconColor: Colors.red,
                         textColor: Colors.red,
@@ -205,7 +206,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Síguenos también en:',
+                        AppLocalizations.of(context).followUs,
                         style: GoogleFonts.roboto(color: Colors.white),
                         textAlign: TextAlign.center,
                       ),
