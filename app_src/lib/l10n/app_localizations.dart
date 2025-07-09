@@ -65,6 +65,9 @@ class AppLocalizations {
       'search_questions_hint': 'Buscar en preguntas...',
       'frequent_questions': 'Preguntas más frecuentes',
       'describe_failure_hint': 'Describe aquí el fallo...',
+      'no_plans_yet': 'No tienes planes aún.',
+      'no_joined_plans_yet': 'No te has unido a ningún plan aún...',
+      'no_favourite_plans_yet': 'No tienes planes favoritos aún.',
     },
     'en': {
       'settings': 'Settings',
@@ -126,6 +129,9 @@ class AppLocalizations {
       'search_questions_hint': 'Search in questions...',
       'frequent_questions': 'Frequently asked questions',
       'describe_failure_hint': 'Describe the issue here...',
+      'no_plans_yet': "You don't have any plans yet.",
+      'no_joined_plans_yet': "You haven't joined any plan yet...",
+      'no_favourite_plans_yet': "You don't have any favourite plans yet.",
     },
   };
 
@@ -194,6 +200,9 @@ class AppLocalizations {
   String get searchQuestionsHint => _t('search_questions_hint');
   String get frequentQuestions => _t('frequent_questions');
   String get describeFailureHint => _t('describe_failure_hint');
+  String get noPlansYet => _t('no_plans_yet');
+  String get noJoinedPlansYet => _t('no_joined_plans_yet');
+  String get noFavouritePlansYet => _t('no_favourite_plans_yet');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
