@@ -13,6 +13,8 @@ import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
 import 'meeting_location_screen.dart';
 import '../utils/plans_list.dart';
+import '../l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
 
 /// Función auxiliar para convertir un SVG en BitmapDescriptor aplicando un color.
 Future<BitmapDescriptor> getCustomSvgMarker(
@@ -62,9 +64,10 @@ class NewPlanCreationScreen {
     PlanModel? planToEdit,
     bool isEditMode = false,
   }) {
+    final t = AppLocalizations.of(context);
     showGeneralDialog(
       context: context,
-      barrierLabel: "Nuevo Plan",
+      barrierLabel: t.newPlan,
       barrierDismissible: true,
       barrierColor: Colors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 500),
@@ -406,9 +409,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   /// Popup para subir la imagen
   void _showMediaSelectionPopup() {
+    final t = AppLocalizations.of(context);
     showGeneralDialog(
       context: context,
-      barrierLabel: "Selecciona medio",
+      barrierLabel: t.selectMedia,
       barrierDismissible: true,
       barrierColor: Colors.black.withOpacity(0.5),
       pageBuilder: (context, anim1, anim2) => Center(
@@ -437,9 +441,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "¿Qué deseas subir?",
-                style: TextStyle(
+              Text(
+                t.whatToUpload,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -453,9 +457,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
                 },
-                child: const Text(
-                  "Imagen (galería)",
-                  style: TextStyle(
+                child: Text(
+                  t.imageGallery,
+                  style: const TextStyle(
                     color: Colors.white,
                     decoration: TextDecoration.none,
                     fontFamily: 'Inter-Regular',
@@ -467,9 +471,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
-                child: const Text(
-                  "Imagen (cámara)",
-                  style: TextStyle(
+                child: Text(
+                  t.imageCamera,
+                  style: const TextStyle(
                     color: Colors.white,
                     decoration: TextDecoration.none,
                     fontFamily: 'Inter-Regular',
@@ -485,8 +489,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   /// Elegir imagen y recortarla
   Future<void> _pickImage(ImageSource source) async {
+    final t = AppLocalizations.of(context);
     if (_selectedCroppedImages.length >= 1) {
-      _showErrorPopup("Solo se permite subir una imagen.");
+      _showErrorPopup(t.onlyOneImage);
       return;
     }
     final picker = ImagePicker();
@@ -512,15 +517,16 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   /// Error popup
   void _showErrorPopup(String message) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Atención"),
+        title: Text(t.attention),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child: Text(t.ok),
           )
         ],
       ),
@@ -568,9 +574,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       createdBy: '',
     );
 
+    final t = AppLocalizations.of(context);
     showGeneralDialog(
       context: context,
-      barrierLabel: "Ubicación",
+      barrierLabel: t.meetingLocation,
       barrierDismissible: true,
       barrierColor: Colors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 300),
@@ -625,11 +632,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 5),
-        const Center(
+        Center(
           child: Text(
-            "Punto de encuentro para el Plan",
+            AppLocalizations.of(context).meetingPoint,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               decoration: TextDecoration.none,
@@ -736,32 +743,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
 
   /// Formato para fecha en texto
   String _formatHumanReadableDateOnly(DateTime date) {
-    final Map<int, String> weekdays = {
-      1: "Lunes",
-      2: "Martes",
-      3: "Miércoles",
-      4: "Jueves",
-      5: "Viernes",
-      6: "Sábado",
-      7: "Domingo",
-    };
-    final Map<int, String> months = {
-      1: "Enero",
-      2: "Febrero",
-      3: "Marzo",
-      4: "Abril",
-      5: "Mayo",
-      6: "Junio",
-      7: "Julio",
-      8: "Agosto",
-      9: "Septiembre",
-      10: "Octubre",
-      11: "Noviembre",
-      12: "Diciembre",
-    };
-    final weekday = weekdays[date.weekday] ?? "";
-    final monthName = months[date.month] ?? "";
-    return "$weekday, ${date.day} de $monthName de ${date.year}";
+    final locale = Localizations.localeOf(context).languageCode;
+    return DateFormat('EEEE, d MMMM y', locale).format(date);
   }
 
   String _formatHumanReadableTime(TimeOfDay time) {
@@ -794,7 +777,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
             color: Colors.white,
           ),
           children: [
-            const TextSpan(text: "Hasta "),
+            TextSpan(text: AppLocalizations.of(context).until + ' '),
             TextSpan(
               text: "$endDateText$endTimeText",
               style: const TextStyle(
@@ -851,11 +834,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(
+          Center(
             child: Text(
-              "Fecha y hora del plan",
+              AppLocalizations.of(context).planDateTime,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontFamily: 'Inter-Regular',
@@ -1047,8 +1030,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
         Center(
           child: Text(
             widget.isEditMode
-                ? "Editar contenido multimedia"
-                : "Contenido multimedia",
+                ? AppLocalizations.of(context).editMedia
+                : AppLocalizations.of(context).mediaContent,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -1136,8 +1119,8 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       // Título
                       Text(
                         widget.isEditMode
-                            ? "Edita tu plan como desees"
-                            : "¡Hazle saber a la gente el plan que deseas compartir!",
+                            ? AppLocalizations.of(context).editPlanTitle
+                            : AppLocalizations.of(context).sharePlanTitle,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 18,
@@ -1179,7 +1162,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                       child: Text(
                                         _customPlan ??
                                             _selectedPlan ??
-                                            "Elige un plan",
+                                            AppLocalizations.of(context).chooseAPlan,
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontFamily: 'Inter-Regular',
@@ -1215,10 +1198,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       const SizedBox(height: 20),
 
                       // Restricción de edad
-                      const Text(
-                        "Restricción de edad para el plan",
+                      Text(
+                        AppLocalizations.of(context).ageRestriction,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontFamily: 'Inter-Regular',
@@ -1267,7 +1250,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              "Participan edades de ${_ageRange.start.round()} a ${_ageRange.end.round()} años",
+                              AppLocalizations.of(context).planAgeRange(
+                                  _ageRange.start.round(),
+                                  _ageRange.end.round()),
                               style: const TextStyle(
                                 color: Color.fromARGB(255, 223, 199, 199),
                                 fontSize: 14,
@@ -1281,10 +1266,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       const SizedBox(height: 20),
 
                       // Máximo participantes
-                      const Text(
-                        "Máximo número de participantes",
+                      Text(
+                        AppLocalizations.of(context).maxParticipants,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontFamily: 'Inter-Regular',
@@ -1319,11 +1304,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     _maxParticipants = int.tryParse(value);
                                   });
                                 },
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(vertical: 8),
-                                  hintText: "Ingresa un número...",
-                                  hintStyle: TextStyle(
+                                  hintText: AppLocalizations.of(context).enterNumber,
+                                  hintStyle: const TextStyle(
                                     color: Colors.white70,
                                     fontFamily: 'Inter-Regular',
                                     decoration: TextDecoration.none,
@@ -1342,10 +1327,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       const SizedBox(height: 20),
 
                       // Descripción
-                      const Text(
-                        "Breve descripción del plan",
+                      Text(
+                        AppLocalizations.of(context).planDescription,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontFamily: 'Inter-Regular',
@@ -1369,9 +1354,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           controller: widget.isEditMode && widget.planToEdit != null
                               ? TextEditingController(text: _planDescription ?? '')
                               : null,
-                          decoration: const InputDecoration(
-                            hintText: "Describe brevemente tu plan...",
-                            hintStyle: TextStyle(
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(context).describePlan,
+                            hintStyle: const TextStyle(
                               color: Colors.white70,
                               fontFamily: 'Inter-Regular',
                               decoration: TextDecoration.none,
@@ -1387,10 +1372,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                       const SizedBox(height: 20),
 
                       // Visibilidad
-                      const Text(
-                        "Este plan es:",
+                      Text(
+                        AppLocalizations.of(context).thisPlanIs,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontFamily: 'Inter-Regular',
@@ -1404,7 +1389,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             onTap: () {
                               setState(() => _selectedVisibility = "Público");
                               _showVisibilityPopup(
-                                "Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él",
+                                AppLocalizations.of(context).publicPlanDesc,
                               );
                             },
                             child: Container(
@@ -1430,10 +1415,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     color: Colors.white,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    "Público",
+                                  Text(
+                                    AppLocalizations.of(context).public,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontFamily: 'Inter-Regular',
                                       decoration: TextDecoration.none,
@@ -1448,8 +1433,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                             onTap: () {
                               setState(() => _selectedVisibility = "Privado");
                               _showVisibilityPopup(
-                                "Los planes privados son visibles solo por aquellos a quienes se lo compartas. "
-                                'Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.',
+                                AppLocalizations.of(context).privatePlanDesc,
                               );
                             },
                             child: Container(
@@ -1475,10 +1459,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     color: Colors.white,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    "Privado",
+                                  Text(
+                                    AppLocalizations.of(context).private,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontFamily: 'Inter-Regular',
                                       decoration: TextDecoration.none,
@@ -1494,7 +1478,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                               setState(() =>
                                   _selectedVisibility = "Solo para mis seguidores");
                               _showVisibilityPopup(
-                                "Estos planes solo serán visibles para las personas que te siguen.",
+                                AppLocalizations.of(context).followersPlanDesc,
                               );
                             },
                             child: Container(
@@ -1521,10 +1505,10 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                                     color: Colors.white,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    "Solo para mis seguidores",
+                                  Text(
+                                    AppLocalizations.of(context).onlyFollowers,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontFamily: 'Inter-Regular',
                                       decoration: TextDecoration.none,
@@ -1549,7 +1533,9 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: Text(
-                          widget.isEditMode ? "Actualizar Plan" : "Crear Plan",
+                          widget.isEditMode
+                              ? AppLocalizations.of(context).updatePlan
+                              : AppLocalizations.of(context).createPlan,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -1595,10 +1581,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   void _showVisibilityPopup(String message) {
     _visibilityTimer?.cancel();
 
+    final t = AppLocalizations.of(context);
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      barrierLabel: "Info Visibilidad",
+      barrierLabel: t.visibilityInfo,
       barrierColor: Colors.black54,
       pageBuilder: (context, anim1, anim2) {
         return Center(
@@ -1768,7 +1755,7 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
       // Regresar y cerrar el popup
       Navigator.pop(context);
     } catch (error) {
-      _showErrorPopup("Ocurrió un error al procesar el plan.");
+      _showErrorPopup(AppLocalizations.of(context).planProcessError);
     }
   }
 }
@@ -1842,9 +1829,9 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Incluir fecha final",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      Text(
+                        AppLocalizations.of(context).includeEndDate,
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       Switch(
                         value: includeEndDate,
@@ -1869,9 +1856,9 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Fecha de inicio",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      Text(
+                        AppLocalizations.of(context).startDate,
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       Row(
                         children: [
@@ -1879,7 +1866,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                             onTap: _pickStartDate,
                             child: _buildFrostedGlassContainer(
                               startDate == null
-                                  ? "Elige Fecha"
+                                  ? AppLocalizations.of(context).chooseDate
                                   : _formatNumericDateOnly(startDate!),
                             ),
                           ),
@@ -1888,7 +1875,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                             onTap: _pickStartTime,
                             child: _buildFrostedGlassContainer(
                               startTime == null
-                                  ? "Elige Hora"
+                                  ? AppLocalizations.of(context).chooseTime
                                   : _formatNumericTime(startTime!),
                             ),
                           ),
@@ -1901,9 +1888,9 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Fecha final",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      Text(
+                        AppLocalizations.of(context).endDate,
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       includeEndDate
                           ? Row(
@@ -1912,7 +1899,7 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                                   onTap: _pickEndDate,
                                   child: _buildFrostedGlassContainer(
                                     endDate == null
-                                        ? "Elige Día"
+                                        ? AppLocalizations.of(context).chooseDay
                                         : _formatNumericDateOnly(endDate!),
                                   ),
                                 ),
@@ -1921,13 +1908,13 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                                   onTap: _pickEndTime,
                                   child: _buildFrostedGlassContainer(
                                     endTime == null
-                                        ? "Elige Hora"
+                                        ? AppLocalizations.of(context).chooseTime
                                         : _formatNumericTime(endTime!),
                                   ),
                                 ),
                               ],
                             )
-                          : _buildFrostedGlassContainer("Sin elegir"),
+                          : _buildFrostedGlassContainer(AppLocalizations.of(context).notSelected),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -1936,9 +1923,9 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, null),
-                        child: const Text(
-                          "Cancelar",
-                          style: TextStyle(color: Colors.white70),
+                        child: Text(
+                          AppLocalizations.of(context).cancel,
+                          style: const TextStyle(color: Colors.white70),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1948,13 +1935,12 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                             showDialog(
                               context: context,
                               builder: (_) => AlertDialog(
-                                title: const Text('Error'),
-                                content: const Text(
-                                    'Debes elegir la fecha y hora de inicio.'),
+                                title: Text(AppLocalizations.of(context).error),
+                                content: Text(AppLocalizations.of(context).mustSelectStart),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('Aceptar'),
+                                    child: Text(AppLocalizations.of(context).accept),
                                   ),
                                 ],
                               ),
@@ -1972,9 +1958,9 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.blue,
                         ),
-                        child: const Text(
-                          "Aceptar",
-                          style: TextStyle(color: Colors.white),
+                        child: Text(
+                          AppLocalizations.of(context).accept,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
@@ -2090,14 +2076,12 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
-              title: const Text("Error"),
-              content: const Text(
-                "La fecha final debe ser posterior a la fecha/hora de inicio.",
-              ),
+              title: Text(AppLocalizations.of(context).error),
+              content: Text(AppLocalizations.of(context).endAfterStartError),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Aceptar"),
+                  child: Text(AppLocalizations.of(context).accept),
                 ),
               ],
             ),
@@ -2131,7 +2115,7 @@ class _PreviewAndRecropScreenState extends State<_PreviewAndRecropScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Vista previa"),
+        title: Text(AppLocalizations.of(context).preview),
         backgroundColor: Colors.black,
         actions: [
           IconButton(

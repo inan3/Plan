@@ -88,6 +88,48 @@ class AppLocalizations {
       'select_date': 'Selecciona una fecha',
       'what_age_range': '¿Qué rango de edad?',
       'clear_filter': 'Limpiar Filtro',
+      'new_plan': 'Nuevo Plan',
+      'select_media': 'Selecciona medio',
+      'what_to_upload': '¿Qué deseas subir?',
+      'image_gallery': 'Imagen (galería)',
+      'image_camera': 'Imagen (cámara)',
+      'only_one_image': 'Solo se permite subir una imagen.',
+      'attention': 'Atención',
+      'ok': 'OK',
+      'meeting_point': 'Punto de encuentro para el Plan',
+      'meeting_location': 'Ubicación',
+      'plan_date_time': 'Fecha y hora del plan',
+      'edit_media': 'Editar contenido multimedia',
+      'media_content': 'Contenido multimedia',
+      'edit_plan_title': 'Edita tu plan como desees',
+      'share_plan_title': '¡Hazle saber a la gente el plan que deseas compartir!',
+      'choose_a_plan': 'Elige un plan',
+      'age_restriction': 'Restricción de edad para el plan',
+      'max_participants': 'Máximo número de participantes',
+      'enter_number': 'Ingresa un número...',
+      'plan_description': 'Breve descripción del plan',
+      'describe_plan': 'Describe brevemente tu plan...',
+      'this_plan_is': 'Este plan es:',
+      'public_plan_desc': 'Los planes públicos son visibles a todo el mundo y cualquiera puede unirse a él',
+      'private_plan_desc': 'Los planes privados son visibles solo por aquellos a quienes se lo compartas. Dirígete a la sección de "Mis Planes" para compartirlo con quien quieras.',
+      'followers_plan_desc': 'Estos planes solo serán visibles para las personas que te siguen.',
+      'only_followers': 'Solo para mis seguidores',
+      'update_plan': 'Actualizar Plan',
+      'create_plan': 'Crear Plan',
+      'visibility_info': 'Info Visibilidad',
+      'plan_process_error': 'Ocurrió un error al procesar el plan.',
+      'include_end_date': 'Incluir fecha final',
+      'start_date': 'Fecha de inicio',
+      'choose_date': 'Elige Fecha',
+      'choose_time': 'Elige Hora',
+      'end_date': 'Fecha final',
+      'choose_day': 'Elige Día',
+      'not_selected': 'Sin elegir',
+      'preview': 'Vista previa',
+      'error': 'Error',
+      'must_select_start': 'Debes elegir la fecha y hora de inicio.',
+      'end_after_start_error': 'La fecha final debe ser posterior a la fecha/hora de inicio.',
+      'until': 'Hasta',
     },
     'en': {
       'settings': 'Settings',
@@ -172,6 +214,48 @@ class AppLocalizations {
       'select_date': 'Select a date',
       'what_age_range': 'What age range?',
       'clear_filter': 'Clear Filter',
+      'new_plan': 'New Plan',
+      'select_media': 'Select media',
+      'what_to_upload': 'What would you like to upload?',
+      'image_gallery': 'Image (gallery)',
+      'image_camera': 'Image (camera)',
+      'only_one_image': 'Only one image is allowed.',
+      'attention': 'Attention',
+      'ok': 'OK',
+      'meeting_point': 'Meeting point for the Plan',
+      'meeting_location': 'Location',
+      'plan_date_time': 'Plan date and time',
+      'edit_media': 'Edit media content',
+      'media_content': 'Media content',
+      'edit_plan_title': 'Edit your plan as you wish',
+      'share_plan_title': 'Let people know the plan you want to share!',
+      'choose_a_plan': 'Choose a plan',
+      'age_restriction': 'Age restriction for the plan',
+      'max_participants': 'Maximum number of participants',
+      'enter_number': 'Enter a number...',
+      'plan_description': 'Brief description of the plan',
+      'describe_plan': 'Briefly describe your plan...',
+      'this_plan_is': 'This plan is:',
+      'public_plan_desc': 'Public plans are visible to everyone and anyone can join.',
+      'private_plan_desc': 'Private plans are only visible to those you share them with. Go to "My Plans" to share it with whoever you want.',
+      'followers_plan_desc': 'These plans will only be visible to people who follow you.',
+      'only_followers': 'Only for my followers',
+      'update_plan': 'Update Plan',
+      'create_plan': 'Create Plan',
+      'visibility_info': 'Visibility Info',
+      'plan_process_error': 'An error occurred while processing the plan.',
+      'include_end_date': 'Include end date',
+      'start_date': 'Start date',
+      'choose_date': 'Choose Date',
+      'choose_time': 'Choose Time',
+      'end_date': 'End date',
+      'choose_day': 'Choose Day',
+      'not_selected': 'Not selected',
+      'preview': 'Preview',
+      'error': 'Error',
+      'must_select_start': 'You must choose a start date and time.',
+      'end_after_start_error': 'The end date must be after the start date/time.',
+      'until': 'Until',
     },
   };
 
@@ -262,6 +346,54 @@ class AppLocalizations {
   String get selectDate => _t('select_date');
   String get whatAgeRange => _t('what_age_range');
   String get clearFilter => _t('clear_filter');
+  String get newPlan => _t('new_plan');
+  String get selectMedia => _t('select_media');
+  String get whatToUpload => _t('what_to_upload');
+  String get imageGallery => _t('image_gallery');
+  String get imageCamera => _t('image_camera');
+  String get onlyOneImage => _t('only_one_image');
+  String get attention => _t('attention');
+  String get ok => _t('ok');
+  String get meetingPoint => _t('meeting_point');
+  String get meetingLocation => _t('meeting_location');
+  String get planDateTime => _t('plan_date_time');
+  String get editMedia => _t('edit_media');
+  String get mediaContent => _t('media_content');
+  String get editPlanTitle => _t('edit_plan_title');
+  String get sharePlanTitle => _t('share_plan_title');
+  String get chooseAPlan => _t('choose_a_plan');
+  String get ageRestriction => _t('age_restriction');
+  String get maxParticipants => _t('max_participants');
+  String get enterNumber => _t('enter_number');
+  String get planDescription => _t('plan_description');
+  String get describePlan => _t('describe_plan');
+  String get thisPlanIs => _t('this_plan_is');
+  String get publicPlanDesc => _t('public_plan_desc');
+  String get privatePlanDesc => _t('private_plan_desc');
+  String get followersPlanDesc => _t('followers_plan_desc');
+  String get onlyFollowers => _t('only_followers');
+  String get updatePlan => _t('update_plan');
+  String get createPlan => _t('create_plan');
+  String get visibilityInfo => _t('visibility_info');
+  String get planProcessError => _t('plan_process_error');
+  String get includeEndDate => _t('include_end_date');
+  String get startDate => _t('start_date');
+  String get chooseDate => _t('choose_date');
+  String get chooseTime => _t('choose_time');
+  String get endDate => _t('end_date');
+  String get chooseDay => _t('choose_day');
+  String get notSelected => _t('not_selected');
+  String get preview => _t('preview');
+  String get error => _t('error');
+  String get mustSelectStart => _t('must_select_start');
+  String get endAfterStartError => _t('end_after_start_error');
+  String get until => _t('until');
+
+  String planAgeRange(int start, int end) {
+    return locale.languageCode == 'en'
+        ? 'Participants from \$start to \$end years old'
+        : 'Participan edades de \$start a \$end años';
+  }
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
