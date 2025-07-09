@@ -294,11 +294,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: TextField(
                         controller: _failureController,
                         maxLines: 5,
-                        decoration: const InputDecoration(
-                          hintText: 'Describe aquí el fallo...',
+                        decoration: InputDecoration(
+                          hintText:
+                              AppLocalizations.of(context).describeFailureHint,
                           border: InputBorder.none,
                           contentPadding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         ),
                       ),
                     ),
