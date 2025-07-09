@@ -283,9 +283,14 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final String lang = AppLocalizations.of(context).locale.languageCode;
     final List<Map<String, dynamic>> planSugeridos = planBusqueda.isNotEmpty
         ? plans.where((plan) {
-            final nombre = plan['name'].toString().toLowerCase();
+            final nombre = (lang == 'en'
+                    ? (plan['name_en'] ?? plan['name'])
+                    : plan['name'])
+                .toString()
+                .toLowerCase();
             return nombre.contains(planBusqueda.toLowerCase());
           }).toList()
         : [];
@@ -411,7 +416,11 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                           ),
                         ),
                         ...plans.map((plan) {
-                        final String name = plan['name'];
+                        final String lang =
+                            AppLocalizations.of(context).locale.languageCode;
+                        final String name = lang == 'en'
+                            ? (plan['name_en'] ?? plan['name'])
+                            : plan['name'];
                         final bool selected = _selectedPlans.contains(name);
                         return InkWell(
                           onTap: () {
@@ -490,10 +499,14 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: planSugeridos.map((plan) {
+                            final String lang =
+                                AppLocalizations.of(context).locale.languageCode;
+                            final String name = lang == 'en'
+                                ? (plan['name_en'] ?? plan['name'])
+                                : plan['name'];
                             return GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  final name = plan['name'];
                                   if (_selectedPlans.contains(name)) {
                                     _selectedPlans.remove(name);
                                   } else {
@@ -507,7 +520,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 16, vertical: 12),
                                 child: Text(
-                                  plan['name'],
+                                  name,
                                   style: const TextStyle(
                                     color: Colors.black,
                                     fontFamily: 'Inter-Regular',

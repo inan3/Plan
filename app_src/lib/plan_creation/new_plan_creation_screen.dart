@@ -314,7 +314,11 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
                     spacing: 6,
                     runSpacing: 6,
                     children: plans.map((plan) {
-                      final String name = plan['name'];
+                      final String lang =
+                          AppLocalizations.of(context).locale.languageCode;
+                      final String name = lang == 'en'
+                          ? (plan['name_en'] ?? plan['name'])
+                          : plan['name'];
                       final bool selected = _selectedPlan == name;
                       return InkWell(
                         onTap: () {
