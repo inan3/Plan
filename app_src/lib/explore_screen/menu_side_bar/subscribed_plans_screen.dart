@@ -14,6 +14,29 @@ import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../plans_managing/plan_card.dart';
 
 import '../main_screen/explore_screen.dart';
+import '../../plan_creation/new_plan_creation_screen.dart';
+
+class _ExploreScreenWithNewPlan extends StatefulWidget {
+  const _ExploreScreenWithNewPlan();
+
+  @override
+  State<_ExploreScreenWithNewPlan> createState() => _ExploreScreenWithNewPlanState();
+}
+
+class _ExploreScreenWithNewPlanState extends State<_ExploreScreenWithNewPlan> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NewPlanCreationScreen.showPopup(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const ExploreScreen();
+  }
+}
 
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId;
@@ -301,12 +324,8 @@ class SubscribedPlansScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text(
-              'No tienes planes suscritos aún.',
-              style: TextStyle(color: Colors.white),
-            ),
-          );
+          return _buildEmptyState(
+              context, 'No te has unido a ningún plan aún...');
         }
         final planIds = snapshot.data!.docs
             .map((doc) => (doc.data() as Map<String, dynamic>)['id'] as String?)
@@ -322,12 +341,8 @@ class SubscribedPlansScreen extends StatelessWidget {
             }
             final plans = planSnapshot.data!;
             if (plans.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No tienes planes suscritos aún.',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
+              return _buildEmptyState(
+                  context, 'No te has unido a ningún plan aún...');
             }
 
             return ListView.builder(
@@ -409,6 +424,39 @@ class SubscribedPlansScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, String message) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const _ExploreScreenWithNewPlan(),
+              ),
+            );
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Colors.grey,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 }
