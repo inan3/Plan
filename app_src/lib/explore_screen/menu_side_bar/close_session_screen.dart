@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../start/welcome_screen.dart';
 import '../users_managing/presence_service.dart';
 import '../../services/location_update_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class CloseSessionScreen extends StatefulWidget {
   const CloseSessionScreen({super.key});
@@ -22,6 +23,7 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
   }
 
   Future<void> _logout() async {
+    final t = AppLocalizations.of(context);
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -50,7 +52,7 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cerrar sesión: $e')),
+          SnackBar(content: Text("${t.closeSession} error: $e")),
         );
       }
     }

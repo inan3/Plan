@@ -56,6 +56,11 @@ class AppLocalizations {
       'enable_notifications': 'Habilitar notificaciones',
       'enabled': 'Habilitado',
       'disabled': 'Deshabilitado',
+      'my_plans': 'Mis Planes',
+      'subscribed_plans': 'Planes Suscritos',
+      'favourites': 'Favoritos',
+      'close_session': 'Cerrar Sesión',
+      'follow_us_also_on': 'Síguenos también en:',
       'how_help': '¿En qué te puedo ayudar?',
       'search_questions_hint': 'Buscar en preguntas...',
       'frequent_questions': 'Preguntas más frecuentes',
@@ -112,6 +117,11 @@ class AppLocalizations {
       'enable_notifications': 'Enable notifications',
       'enabled': 'Enabled',
       'disabled': 'Disabled',
+      'my_plans': 'My Plans',
+      'subscribed_plans': 'Subscribed Plans',
+      'favourites': 'Favourites',
+      'close_session': 'Close Session',
+      'follow_us_also_on': 'Follow us also on:',
       'how_help': 'How can I help you?',
       'search_questions_hint': 'Search in questions...',
       'frequent_questions': 'Frequently asked questions',
@@ -175,6 +185,11 @@ class AppLocalizations {
   String get enableNotifications => _t('enable_notifications');
   String get enabled => _t('enabled');
   String get disabled => _t('disabled');
+  String get myPlans => _t('my_plans');
+  String get subscribedPlans => _t('subscribed_plans');
+  String get favourites => _t('favourites');
+  String get closeSession => _t('close_session');
+  String get followUsAlsoOn => _t('follow_us_also_on');
   String get howHelp => _t('how_help');
   String get searchQuestionsHint => _t('search_questions_hint');
   String get frequentQuestions => _t('frequent_questions');

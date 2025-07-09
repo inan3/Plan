@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/plans_list.dart' as plansData;
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../plans_managing/plan_card.dart';
@@ -289,6 +290,7 @@ class SubscribedPlansScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     Widget content = StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('subscriptions')
@@ -381,9 +383,9 @@ class SubscribedPlansScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Planes suscritos',
-                    style: TextStyle(
+                  Text(
+                    t.subscribedPlans,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
