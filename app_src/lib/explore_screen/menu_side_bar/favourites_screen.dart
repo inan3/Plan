@@ -82,10 +82,10 @@ class FavouritesScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(
+            return Center(
               child: Text(
-                'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.blueGrey),
+                t.noFavouritePlansYet,
+                style: const TextStyle(color: Colors.blueGrey),
               ),
             );
           }
@@ -93,10 +93,10 @@ class FavouritesScreen extends StatelessWidget {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final favouritePlanIds = List<String>.from(data['favourites'] ?? []);
           if (favouritePlanIds.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
-                'No tienes planes favoritos aún...',
-                style: TextStyle(color: Colors.blueGrey),
+                t.noFavouritePlansYet,
+                style: const TextStyle(color: Colors.blueGrey),
               ),
             );
           }
@@ -108,10 +108,10 @@ class FavouritesScreen extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text(
-                    'No tienes planes favoritos aún...',
-                    style: TextStyle(color: Colors.blueGrey),
+                    t.noFavouritePlansYet,
+                    style: const TextStyle(color: Colors.blueGrey),
                   ),
                 );
               }

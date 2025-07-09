@@ -94,10 +94,10 @@ class MyPlansScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
-                'No tienes planes aún...',
-                style: TextStyle(color: Colors.blueGrey),
+                t.noPlansYet,
+                style: const TextStyle(color: Colors.blueGrey),
               ),
             );
           }

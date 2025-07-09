@@ -301,10 +301,10 @@ class SubscribedPlansScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No te has unido a ningún plan aún...',
-              style: TextStyle(color: Colors.blueGrey),
+              t.noJoinedPlansYet,
+              style: const TextStyle(color: Colors.blueGrey),
             ),
           );
         }
@@ -322,10 +322,10 @@ class SubscribedPlansScreen extends StatelessWidget {
             }
             final plans = planSnapshot.data!;
             if (plans.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
-                  'No te has unido a ningún plan aún...',
-                  style: TextStyle(color: Colors.blueGrey),
+                  t.noJoinedPlansYet,
+                  style: const TextStyle(color: Colors.blueGrey),
                 ),
               );
             }
