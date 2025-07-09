@@ -65,6 +65,10 @@ class AppLocalizations {
       'favourite_plans': 'Planes favoritos',
       'close_session': 'Cerrar sesión',
       'follow_us': 'Síguenos también en:',
+      'describe_failure_hint': 'Describe aquí el fallo...',
+      'no_plans_created_yet': 'No tienes creado ningún plan aún...',
+      'no_favourite_plans_yet': 'No tienes ningún plan favorito aún...',
+      'no_joined_plans_yet': 'No te has unido a ningún plan aún...',
     },
     'en': {
       'settings': 'Settings',
@@ -126,6 +130,10 @@ class AppLocalizations {
       'favourite_plans': 'Favourite plans',
       'close_session': 'Log out',
       'follow_us': 'Follow us also on:',
+      'describe_failure_hint': 'Describe the issue here...',
+      'no_plans_created_yet': "You haven't created any plans yet...",
+      'no_favourite_plans_yet': "You don't have any favourite plans yet...",
+      'no_joined_plans_yet': "You haven't joined any plans yet...",
     },
   };
 
@@ -194,6 +202,10 @@ class AppLocalizations {
   String get favouritePlans => _t('favourite_plans');
   String get closeSession => _t('close_session');
   String get followUs => _t('follow_us');
+  String get describeFailureHint => _t('describe_failure_hint');
+  String get noPlansCreatedYet => _t('no_plans_created_yet');
+  String get noFavouritePlansYet => _t('no_favourite_plans_yet');
+  String get noJoinedPlansYet => _t('no_joined_plans_yet');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
