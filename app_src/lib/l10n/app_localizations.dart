@@ -56,7 +56,6 @@ class AppLocalizations {
       'enable_notifications': 'Habilitar notificaciones',
       'enabled': 'Habilitado',
       'disabled': 'Deshabilitado',
-      'chat_pending': 'Chat (pendiente de implementación)',
       'how_help': '¿En qué te puedo ayudar?',
       'search_questions_hint': 'Buscar en preguntas...',
       'frequent_questions': 'Preguntas más frecuentes',
@@ -112,7 +111,6 @@ class AppLocalizations {
       'enable_notifications': 'Enable notifications',
       'enabled': 'Enabled',
       'disabled': 'Disabled',
-      'chat_pending': 'Chat (pending implementation)',
       'how_help': 'How can I help you?',
       'search_questions_hint': 'Search in questions...',
       'frequent_questions': 'Frequently asked questions',
@@ -175,7 +173,6 @@ class AppLocalizations {
   String get enableNotifications => _t('enable_notifications');
   String get enabled => _t('enabled');
   String get disabled => _t('disabled');
-  String get chatPending => _t('chat_pending');
   String get howHelp => _t('how_help');
   String get searchQuestionsHint => _t('search_questions_hint');
   String get frequentQuestions => _t('frequent_questions');

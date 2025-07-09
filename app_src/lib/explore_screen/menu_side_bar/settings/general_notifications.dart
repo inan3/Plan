@@ -91,13 +91,7 @@ class _GeneralNotificationsScreenState extends State<GeneralNotificationsScreen>
               ),
             ),
             const SizedBox(height: 32),
-            // Espacio reservado para notificaciones de chat
-            Text(
-              t.chatPending,
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black45),
-            ),
           ],
         ),
       ),
-    );
-  }}
+    );  }}
