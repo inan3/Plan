@@ -15,6 +15,7 @@ import '../../plan_creation/meeting_location_screen.dart';
 import '../../plan_creation/new_plan_creation_screen.dart';
 import '../../../main/colors.dart';
 import 'invite_existing_plan_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// ***************************************************************************
 /// CONSTANTES DE ANCHOS Y ALTOS FIJOS (SIN MEDIAQUERY)
@@ -618,7 +619,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                 children: [
                   Expanded(
                     child: Text(
-                      _customPlan ?? _selectedPlan ?? "Elige un plan",
+                      _customPlan ??
+                          _selectedPlan ??
+                          AppLocalizations.of(context).chooseAPlan,
                       style: const TextStyle(
                         color: Colors.white,
                         fontFamily: 'Inter-Regular',
@@ -745,9 +748,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                     }).toList(),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    '- o -',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).orSeparator,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.none,
@@ -769,7 +772,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                       fontFamily: 'Inter-Regular',
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Escribe tu plan...',
+                      hintText: AppLocalizations.of(context).writePlanHint,
                       hintStyle: const TextStyle(
                         color: Colors.white70,
                         decoration: TextDecoration.none,

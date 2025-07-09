@@ -104,6 +104,7 @@ class AppLocalizations {
       'edit_plan_title': 'Edita tu plan como desees',
       'share_plan_title': '¡Hazle saber a la gente el plan que deseas compartir!',
       'choose_a_plan': 'Elige un plan',
+      'write_plan_hint': 'Escribe tu plan...',
       'age_restriction': 'Restricción de edad para el plan',
       'max_participants': 'Máximo número de participantes',
       'enter_number': 'Ingresa un número...',
@@ -230,6 +231,7 @@ class AppLocalizations {
       'edit_plan_title': 'Edit your plan as you wish',
       'share_plan_title': 'Let people know the plan you want to share!',
       'choose_a_plan': 'Choose a plan',
+      'write_plan_hint': 'Type your plan...',
       'age_restriction': 'Age restriction for the plan',
       'max_participants': 'Maximum number of participants',
       'enter_number': 'Enter a number...',
@@ -362,6 +364,7 @@ class AppLocalizations {
   String get editPlanTitle => _t('edit_plan_title');
   String get sharePlanTitle => _t('share_plan_title');
   String get chooseAPlan => _t('choose_a_plan');
+  String get writePlanHint => _t('write_plan_hint');
   String get ageRestriction => _t('age_restriction');
   String get maxParticipants => _t('max_participants');
   String get enterNumber => _t('enter_number');
@@ -391,8 +394,8 @@ class AppLocalizations {
 
   String planAgeRange(int start, int end) {
     return locale.languageCode == 'en'
-        ? 'Participants from \$start to \$end years old'
-        : 'Participan edades de \$start a \$end años';
+        ? 'Participants from $start to $end years old'
+        : 'Participan edades de $start a $end años';
   }
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
