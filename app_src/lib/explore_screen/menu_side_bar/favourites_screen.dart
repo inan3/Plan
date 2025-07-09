@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
@@ -181,9 +182,9 @@ class FavouritesScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Planes favoritos',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).favouritePlans,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
