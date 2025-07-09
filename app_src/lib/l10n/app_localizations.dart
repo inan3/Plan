@@ -68,6 +68,25 @@ class AppLocalizations {
       'no_plans_yet': 'No tienes planes aún.',
       'no_joined_plans_yet': 'No te has unido a ningún plan aún...',
       'no_favourite_plans_yet': 'No tienes planes favoritos aún.',
+      'location_permission_title': 'Permiso de ubicación',
+      'location_permission_message':
+          'El permiso de ubicación ha sido denegado permanentemente. Ve a la configuración de la app para habilitarlo.',
+      'configuration': 'Configuración',
+      'filter_plans': 'Filtrar Planes',
+      'what_to_show': '¿Qué deseas ver?',
+      'only_plans': 'Solo planes',
+      'everything': 'Todo',
+      'plans': 'Planes',
+      'only_followed': 'Solo de personas que sigo',
+      'or_separator': '- o -',
+      'search_by_name_hint': 'Busca por nombre...',
+      'search_region': '¿En qué región buscas planes?',
+      'region_hint': 'Ciudad, país...',
+      'current_location': 'Tu ubicación actual',
+      'plan_date_question': '¿Para qué fecha buscas planes?',
+      'select_date': 'Selecciona una fecha',
+      'what_age_range': '¿Qué rango de edad?',
+      'clear_filter': 'Limpiar Filtro',
     },
     'en': {
       'settings': 'Settings',
@@ -132,6 +151,25 @@ class AppLocalizations {
       'no_plans_yet': "You don't have any plans yet.",
       'no_joined_plans_yet': "You haven't joined any plan yet...",
       'no_favourite_plans_yet': "You don't have any favourite plans yet.",
+      'location_permission_title': 'Location permission',
+      'location_permission_message':
+          'Location permission has been permanently denied. Go to app settings to enable it.',
+      'configuration': 'Settings',
+      'filter_plans': 'Filter Plans',
+      'what_to_show': 'What do you want to see?',
+      'only_plans': 'Only plans',
+      'everything': 'Everything',
+      'plans': 'Plans',
+      'only_followed': 'Only from people I follow',
+      'or_separator': '- or -',
+      'search_by_name_hint': 'Search by name...',
+      'search_region': 'In which region are you looking for plans?',
+      'region_hint': 'City, country...',
+      'current_location': 'Your current location',
+      'plan_date_question': 'For what date are you looking for plans?',
+      'select_date': 'Select a date',
+      'what_age_range': 'What age range?',
+      'clear_filter': 'Clear Filter',
     },
   };
 
@@ -203,6 +241,24 @@ class AppLocalizations {
   String get noPlansYet => _t('no_plans_yet');
   String get noJoinedPlansYet => _t('no_joined_plans_yet');
   String get noFavouritePlansYet => _t('no_favourite_plans_yet');
+  String get locationPermissionTitle => _t('location_permission_title');
+  String get locationPermissionMessage => _t('location_permission_message');
+  String get configuration => _t('configuration');
+  String get filterPlans => _t('filter_plans');
+  String get whatToShow => _t('what_to_show');
+  String get onlyPlans => _t('only_plans');
+  String get everything => _t('everything');
+  String get plans => _t('plans');
+  String get onlyFollowed => _t('only_followed');
+  String get orSeparator => _t('or_separator');
+  String get searchByNameHint => _t('search_by_name_hint');
+  String get searchRegion => _t('search_region');
+  String get regionHint => _t('region_hint');
+  String get currentLocation => _t('current_location');
+  String get planDateQuestion => _t('plan_date_question');
+  String get selectDate => _t('select_date');
+  String get whatAgeRange => _t('what_age_range');
+  String get clearFilter => _t('clear_filter');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();

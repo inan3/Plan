@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'explore_screen_filter.dart';
+import '../../l10n/app_localizations.dart';
 import 'explore_app_bar.dart';
 import '../users_grid/users_grid.dart';
 import '../menu_side_bar/menu_side_bar_screen.dart';
@@ -190,6 +191,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildSearchContainer() {
+    final t = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15, top: 0, bottom: 10),
       child: Container(
@@ -239,10 +241,10 @@ class ExploreScreenState extends State<ExploreScreen> {
                             _showSearchResults = value.isNotEmpty;
                           });
                         },
-                        decoration: const InputDecoration(
-                          hintText: 'Buscar...',
+                        decoration: InputDecoration(
+                          hintText: '${t.search}...',
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                         ),
                       ),
                     ),
