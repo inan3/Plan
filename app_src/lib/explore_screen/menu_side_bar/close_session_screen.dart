@@ -19,7 +19,7 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
   @override
   void initState() {
     super.initState();
-    _logout();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _logout());
   }
 
   Future<void> _logout() async {
