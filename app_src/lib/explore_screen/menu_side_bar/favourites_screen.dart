@@ -9,6 +9,62 @@ import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../main_screen/explore_screen.dart';
+import '../../plan_creation/new_plan_creation_screen.dart';
+
+class _ExploreScreenWithNewPlan extends StatefulWidget {
+  const _ExploreScreenWithNewPlan();
+
+  @override
+  State<_ExploreScreenWithNewPlan> createState() => _ExploreScreenWithNewPlanState();
+}
+
+class _ExploreScreenWithNewPlanState extends State<_ExploreScreenWithNewPlan> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NewPlanCreationScreen.showPopup(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const ExploreScreen();
+  }
+
+  Widget _buildEmptyState(BuildContext context, String message) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const _ExploreScreenWithNewPlan(),
+              ),
+            );
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Colors.grey,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({Key? key}) : super(key: key);
@@ -82,23 +138,15 @@ class FavouritesScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(
-              child: Text(
-                'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
+            return _buildEmptyState(
+                context, 'No tienes planes favoritos aún...');
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final favouritePlanIds = List<String>.from(data['favourites'] ?? []);
           if (favouritePlanIds.isEmpty) {
-            return const Center(
-              child: Text(
-                'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
+            return _buildEmptyState(
+                context, 'No tienes planes favoritos aún...');
           }
 
           return FutureBuilder<List<PlanModel>>(
@@ -108,12 +156,8 @@ class FavouritesScreen extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'No tienes planes favoritos aún.',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                );
+                return _buildEmptyState(
+                    context, 'No tienes planes favoritos aún...');
               }
 
               final plans = planSnapshot.data!;
