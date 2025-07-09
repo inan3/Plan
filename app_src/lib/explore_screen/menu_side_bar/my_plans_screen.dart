@@ -14,6 +14,7 @@ import '../plans_managing/plan_card.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 
 import '../main_screen/explore_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 
 class MyPlansScreen extends StatelessWidget {
@@ -92,10 +93,14 @@ class MyPlansScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+            final t = AppLocalizations.of(context);
+            return Center(
               child: Text(
-                'No tienes planes aún.',
-                style: TextStyle(color: Colors.white),
+                t.noPlansCreatedYet,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             );
           }

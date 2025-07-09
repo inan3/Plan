@@ -8,6 +8,7 @@ import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../main_screen/explore_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class FavouritesScreen extends StatelessWidget {
   const FavouritesScreen({Key? key}) : super(key: key);
@@ -80,10 +81,14 @@ class FavouritesScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(
+            final t = AppLocalizations.of(context);
+            return Center(
               child: Text(
-                'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.white),
+                t.noFavouritePlansYet,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             );
           }
@@ -91,10 +96,14 @@ class FavouritesScreen extends StatelessWidget {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final favouritePlanIds = List<String>.from(data['favourites'] ?? []);
           if (favouritePlanIds.isEmpty) {
-            return const Center(
+            final t = AppLocalizations.of(context);
+            return Center(
               child: Text(
-                'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.white),
+                t.noFavouritePlansYet,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             );
           }
@@ -106,10 +115,14 @@ class FavouritesScreen extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
-                return const Center(
+                final t = AppLocalizations.of(context);
+                return Center(
                   child: Text(
-                    'No tienes planes favoritos aún.',
-                    style: TextStyle(color: Colors.white),
+                    t.noFavouritePlansYet,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 );
               }

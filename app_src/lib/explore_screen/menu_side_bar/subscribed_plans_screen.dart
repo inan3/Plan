@@ -13,6 +13,7 @@ import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../plans_managing/plan_card.dart';
 
 import '../main_screen/explore_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class SubscribedPlansScreen extends StatelessWidget {
   final String userId;
@@ -299,10 +300,14 @@ class SubscribedPlansScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          final t = AppLocalizations.of(context);
+          return Center(
             child: Text(
-              'No tienes planes suscritos aún.',
-              style: TextStyle(color: Colors.white),
+              t.noJoinedPlansYet,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           );
         }
@@ -320,10 +325,14 @@ class SubscribedPlansScreen extends StatelessWidget {
             }
             final plans = planSnapshot.data!;
             if (plans.isEmpty) {
-              return const Center(
+              final t = AppLocalizations.of(context);
+              return Center(
                 child: Text(
-                  'No tienes planes suscritos aún.',
-                  style: TextStyle(color: Colors.white),
+                  t.noJoinedPlansYet,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               );
             }
