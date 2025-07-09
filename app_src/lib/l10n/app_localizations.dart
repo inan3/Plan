@@ -59,6 +59,7 @@ class AppLocalizations {
       'how_help': '¿En qué te puedo ayudar?',
       'search_questions_hint': 'Buscar en preguntas...',
       'frequent_questions': 'Preguntas más frecuentes',
+      'describe_failure_hint': 'Describe aquí el fallo...',
     },
     'en': {
       'settings': 'Settings',
@@ -114,6 +115,7 @@ class AppLocalizations {
       'how_help': 'How can I help you?',
       'search_questions_hint': 'Search in questions...',
       'frequent_questions': 'Frequently asked questions',
+      'describe_failure_hint': 'Describe the issue here...',
     },
   };
 
@@ -176,6 +178,7 @@ class AppLocalizations {
   String get howHelp => _t('how_help');
   String get searchQuestionsHint => _t('search_questions_hint');
   String get frequentQuestions => _t('frequent_questions');
+  String get describeFailureHint => _t('describe_failure_hint');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
