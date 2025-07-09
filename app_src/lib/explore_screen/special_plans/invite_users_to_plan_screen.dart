@@ -745,9 +745,9 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                     }).toList(),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    '- o -',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).orSeparator,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.none,
@@ -769,7 +769,7 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
                       fontFamily: 'Inter-Regular',
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Escribe tu plan...',
+                      hintText: AppLocalizations.of(context).writePlanHint,
                       hintStyle: const TextStyle(
                         color: Colors.white70,
                         decoration: TextDecoration.none,
