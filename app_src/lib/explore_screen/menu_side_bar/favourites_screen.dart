@@ -85,7 +85,7 @@ class FavouritesScreen extends StatelessWidget {
             return const Center(
               child: Text(
                 'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.blueGrey),
               ),
             );
           }
@@ -95,8 +95,8 @@ class FavouritesScreen extends StatelessWidget {
           if (favouritePlanIds.isEmpty) {
             return const Center(
               child: Text(
-                'No tienes planes favoritos aún.',
-                style: TextStyle(color: Colors.white),
+                'No tienes planes favoritos aún...',
+                style: TextStyle(color: Colors.blueGrey),
               ),
             );
           }
@@ -110,8 +110,8 @@ class FavouritesScreen extends StatelessWidget {
               if (!planSnapshot.hasData || planSnapshot.data!.isEmpty) {
                 return const Center(
                   child: Text(
-                    'No tienes planes favoritos aún.',
-                    style: TextStyle(color: Colors.white),
+                    'No tienes planes favoritos aún...',
+                    style: TextStyle(color: Colors.blueGrey),
                   ),
                 );
               }

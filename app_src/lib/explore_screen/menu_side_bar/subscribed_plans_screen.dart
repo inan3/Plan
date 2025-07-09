@@ -304,7 +304,7 @@ class SubscribedPlansScreen extends StatelessWidget {
           return const Center(
             child: Text(
               'No te has unido a ningún plan aún...',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.blueGrey),
             ),
           );
         }
@@ -325,7 +325,7 @@ class SubscribedPlansScreen extends StatelessWidget {
               return const Center(
                 child: Text(
                   'No te has unido a ningún plan aún...',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.blueGrey),
                 ),
               );
             }

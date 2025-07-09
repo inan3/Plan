@@ -96,8 +96,8 @@ class MyPlansScreen extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
               child: Text(
-                'No tienes planes aún.',
-                style: TextStyle(color: Colors.white),
+                'No tienes planes aún...',
+                style: TextStyle(color: Colors.blueGrey),
               ),
             );
           }
