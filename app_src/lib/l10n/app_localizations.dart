@@ -65,6 +65,7 @@ class AppLocalizations {
       'favourite_plans': 'Planes favoritos',
       'close_session': 'Cerrar sesión',
       'follow_us': 'Síguenos también en:',
+      'describe_failure_hint': 'Describe aquí el fallo...',
     },
     'en': {
       'settings': 'Settings',
@@ -126,6 +127,7 @@ class AppLocalizations {
       'favourite_plans': 'Favourite plans',
       'close_session': 'Log out',
       'follow_us': 'Follow us also on:',
+      'describe_failure_hint': 'Describe the issue here...',
     },
   };
 
@@ -194,6 +196,7 @@ class AppLocalizations {
   String get favouritePlans => _t('favourite_plans');
   String get closeSession => _t('close_session');
   String get followUs => _t('follow_us');
+  String get describeFailureHint => _t('describe_failure_hint');
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
