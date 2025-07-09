@@ -1585,45 +1585,46 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext ctx) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildFloatingOption(
-                svgPath: 'assets/icono-ubicacion.svg',
-                label: 'Ubicación',
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await _handleSendLocationWithPicker();
-                },
-              ),
-              _buildFloatingOption(
-                svgPath: 'assets/plan-sin-fondo.png',
-                label: 'Plan',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showPlanSelection();
-                },
-              ),
-              _buildFloatingOption(
-                svgPath: 'assets/icono-imagen.svg',
-                label: 'Foto',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _handleSelectImage();
-                },
-              ),
-            ],
-          ),
-        );
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildFloatingOption(
+                  svgPath: 'assets/icono-ubicacion.svg',
+                  label: 'Ubicación',
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _handleSendLocationWithPicker();
+                  },
+                ),
+                _buildFloatingOption(
+                  svgPath: 'assets/plan-sin-fondo.png',
+                  label: 'Plan',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showPlanSelection();
+                  },
+                ),
+                _buildFloatingOption(
+                  svgPath: 'assets/icono-imagen.svg',
+                  label: 'Foto',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _handleSelectImage();
+                  },
+                ),
+              ],
+            ),
+          );
       },
     );
   }
