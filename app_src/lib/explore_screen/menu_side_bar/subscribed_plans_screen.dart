@@ -303,7 +303,7 @@ class SubscribedPlansScreen extends StatelessWidget {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
             child: Text(
-              'No tienes planes suscritos aún.',
+              'No te has unido a ningún plan aún...',
               style: TextStyle(color: Colors.white),
             ),
           );
@@ -324,7 +324,7 @@ class SubscribedPlansScreen extends StatelessWidget {
             if (plans.isEmpty) {
               return const Center(
                 child: Text(
-                  'No tienes planes suscritos aún.',
+                  'No te has unido a ningún plan aún...',
                   style: TextStyle(color: Colors.white),
                 ),
               );
