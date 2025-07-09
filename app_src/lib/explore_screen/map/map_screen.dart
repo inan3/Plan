@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import '../../main/keys.dart';
 import 'plans_in_map_screen.dart';
 import '../main_screen/explore_screen_filter.dart';
+import '../../l10n/app_localizations.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -288,7 +289,8 @@ class MapScreenState extends State<MapScreen> {
                           focusNode: _searchFocusNode,
                           style: const TextStyle(color: Colors.black),
                           decoration: InputDecoration(
-                            hintText: 'Buscar dirección o planes...',
+                            hintText: AppLocalizations.of(context)
+                                .searchAddressPlansHint,
                             hintStyle: const TextStyle(color: Colors.grey),
                             prefixIcon:
                                 const Icon(Icons.search, color: Colors.grey),

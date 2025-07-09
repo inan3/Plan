@@ -80,6 +80,7 @@ class AppLocalizations {
       'only_followed': 'Solo de personas que sigo',
       'or_separator': '- o -',
       'search_by_name_hint': 'Busca por nombre...',
+      'search_address_plans_hint': 'Buscar dirección o planes...',
       'search_region': '¿En qué región buscas planes?',
       'region_hint': 'Ciudad, país...',
       'current_location': 'Tu ubicación actual',
@@ -163,6 +164,7 @@ class AppLocalizations {
       'only_followed': 'Only from people I follow',
       'or_separator': '- or -',
       'search_by_name_hint': 'Search by name...',
+      'search_address_plans_hint': 'Search address or plans...',
       'search_region': 'In which region are you looking for plans?',
       'region_hint': 'City, country...',
       'current_location': 'Your current location',
@@ -252,6 +254,7 @@ class AppLocalizations {
   String get onlyFollowed => _t('only_followed');
   String get orSeparator => _t('or_separator');
   String get searchByNameHint => _t('search_by_name_hint');
+  String get searchAddressPlansHint => _t('search_address_plans_hint');
   String get searchRegion => _t('search_region');
   String get regionHint => _t('region_hint');
   String get currentLocation => _t('current_location');
