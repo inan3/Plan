@@ -249,10 +249,16 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(name),
+      body: SafeArea(
+        bottom: true,
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).padding.bottom,
+          ),
+          child: Column(
+            children: [
+              _buildHeader(name),
             const SizedBox(height: 30),
             _buildPrivilegeButton(),
             _buildBioAndStats(),

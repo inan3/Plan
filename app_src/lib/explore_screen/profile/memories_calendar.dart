@@ -501,7 +501,6 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     return Center(
       child: Container(
         width: side,
-        height: side * 1.3,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: const LinearGradient(
@@ -515,6 +514,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Padding(
               padding: EdgeInsets.all(8.0),
@@ -532,19 +532,13 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: _buildDaysOfWeekRow(),
             ),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _buildCalendarDays(),
-                  ],
-                ),
+            Container(
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: _buildCalendarDays(),
             ),
           ],
         ),

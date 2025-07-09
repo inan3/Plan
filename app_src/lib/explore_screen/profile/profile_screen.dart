@@ -607,9 +607,15 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      body: SafeArea(
+        bottom: true,
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).padding.bottom,
+          ),
+          child: Column(
+            children: [
             SizedBox(
               height: 380, // 300 portada + 80 avatar
               child: Stack(
