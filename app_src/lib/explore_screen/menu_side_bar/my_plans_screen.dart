@@ -96,7 +96,7 @@ class MyPlansScreen extends StatelessWidget {
             return const Center(
               child: Text(
                 'No tienes planes aún.',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.grey),
               ),
             );
           }

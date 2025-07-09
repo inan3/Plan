@@ -303,7 +303,7 @@ class SubscribedPlansScreen extends StatelessWidget {
           return const Center(
             child: Text(
               'No tienes planes suscritos aún.',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.grey),
             ),
           );
         }
@@ -324,7 +324,7 @@ class SubscribedPlansScreen extends StatelessWidget {
               return const Center(
                 child: Text(
                   'No tienes planes suscritos aún.',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.grey),
                 ),
               );
             }
