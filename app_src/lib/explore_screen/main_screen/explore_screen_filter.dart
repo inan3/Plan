@@ -164,6 +164,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   }
 
   Future<void> _requestLocationPermission() async {
+    final t = AppLocalizations.of(context);
     PermissionStatus status = await Permission.location.request();
 
     if (status.isGranted) {
