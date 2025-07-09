@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../main_screen/explore_screen.dart';
 
 class FavouritesScreen extends StatelessWidget {
@@ -60,6 +61,7 @@ class FavouritesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     Widget content;
     if (user == null) {
@@ -181,9 +183,9 @@ class FavouritesScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Planes favoritos',
-                    style: TextStyle(
+                  Text(
+                    t.favourites,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,

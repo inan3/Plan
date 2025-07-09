@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../utils/plans_list.dart' as plansData;
 import '../../plan_creation/new_plan_creation_screen.dart';
 import '../plans_managing/plan_card.dart';
@@ -71,6 +72,7 @@ class MyPlansScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final currentUser = FirebaseAuth.instance.currentUser;
 
     Widget content;
@@ -129,9 +131,9 @@ class MyPlansScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Mis planes',
-                    style: TextStyle(
+                  Text(
+                    t.myPlans,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,

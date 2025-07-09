@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:dating_app/main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'my_plans_screen.dart';
 import 'favourites_screen.dart';
 import 'settings/settings_screen.dart';
@@ -57,6 +58,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
+    final t = AppLocalizations.of(context);
 
     return Stack(
       children: [
@@ -116,7 +118,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       _buildProfileHeader(),
                       _buildMenuItemWithBadge(
                         icon: 'assets/icono-calendario.svg',
-                        title: 'Mis Planes',
+                        title: t.myPlans,
                         destination: const MyPlansScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -128,7 +130,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItemWithBadge(
                         icon: 'assets/union.svg',
-                        title: 'Planes Suscritos',
+                        title: t.subscribedPlans,
                         destination: SubscribedPlansScreen(
                           userId: currentUserId ?? '',
                         ),
@@ -142,7 +144,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItemWithBadge(
                         icon: 'assets/icono-corazon.svg',
-                        title: 'Favoritos',
+                        title: t.favourites,
                         destination: const FavouritesScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -154,7 +156,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-ajustes.svg',
-                        title: 'Ajustes',
+                        title: t.settings,
                         destination: const SettingsScreen(),
                         iconColor: Colors.white,
                         textColor: Colors.white,
@@ -162,7 +164,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       ),
                       _buildMenuItem(
                         icon: 'assets/icono-cerrar-sesion.svg',
-                        title: 'Cerrar Sesión',
+                        title: t.closeSession,
                         destination: const CloseSessionScreen(),
                         iconColor: Colors.red,
                         textColor: Colors.red,
@@ -205,7 +207,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Síguenos también en:',
+                        t.followUsAlsoOn,
                         style: GoogleFonts.roboto(color: Colors.white),
                         textAlign: TextAlign.center,
                       ),
@@ -400,7 +402,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
       builder: (context, AsyncSnapshot snapshot) {
         int count = 0;
         if (snapshot.hasData) {
-          if (title == 'Favoritos') {
+          if (index == 2) {
             final data = (snapshot.data as DocumentSnapshot?)?.data()
                 as Map<String, dynamic>?;
             count = (data?['favourites'] as List<dynamic>?)?.length ?? 0;
