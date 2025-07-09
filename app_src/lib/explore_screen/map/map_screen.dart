@@ -247,6 +247,8 @@ class MapScreenState extends State<MapScreen> {
             initialCameraPosition: _initialPosition,
             markers: _markers,
             polylines: _polylines,
+            zoomControlsEnabled: false,
+            myLocationButtonEnabled: false,
             onMapCreated: (c) {
               _controller.complete(c);
               if (_currentPosition != null) {
