@@ -1376,8 +1376,6 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       },
     );
   }
-}
-
 Future<void> _pickImage(ImageSource source) async {
   final picker = ImagePicker();
   final pickedFile = await picker.pickImage(source: source);
@@ -1496,6 +1494,7 @@ Future<void> _onFinishPlan() async {
       SnackBar(content: Text("Error al crear el plan: $err")),
     );
   }
+}
 }
 
 // MÉTODOS AUXILIARES GLOBALES (idénticos al original)
