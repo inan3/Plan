@@ -1615,9 +1615,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
-                SizedBox(height: 8),
+              children: [
+                const Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
+                const SizedBox(height: 8),
                 Text(
                   AppLocalizations.of(context).attendanceConfirmed,
                   textAlign: TextAlign.center,

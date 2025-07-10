@@ -13,6 +13,7 @@ import '../users_grid/users_grid_helpers.dart'; // buildPlaceholder, buildProfil
 import 'plan_share_sheet.dart';
 import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
+import '../../l10n/app_localizations.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
@@ -402,8 +403,7 @@ class PlanCardState extends State<PlanCard> {
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context).writeMessage,
                     filled: true,
-                    fillColor: const ui.Color.fromARGB(
-                        255, 177, 177, 177), // dark gray background
+                    fillColor: const ui.Color.fromARGB(255, 177, 177, 177),
                     hintStyle: const TextStyle(color: Colors.black54),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -991,12 +991,10 @@ class PlanCardState extends State<PlanCard> {
     if (widget.hideJoinButton) {
       return const SizedBox.shrink();
     }
-
     final plan = widget.plan;
     final int pCount = plan.participants?.length ?? 0;
     final int maxP = plan.maxParticipants ?? 0;
     final bool isFull = (maxP > 0 && pCount >= maxP);
-
     if (isFull) {
       // Cupo completo => texto
       return ClipRRect(
@@ -1008,7 +1006,7 @@ class PlanCardState extends State<PlanCard> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Text(
               AppLocalizations.of(context).fullCapacity,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.redAccent,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
@@ -1031,7 +1029,6 @@ class PlanCardState extends State<PlanCard> {
           buttonText = AppLocalizations.of(context).join;
           break;
       }
-
       return GestureDetector(
         onTap: _onJoinTap,
         child: ClipRRect(
@@ -1131,8 +1128,6 @@ class PlanCardState extends State<PlanCard> {
 
   // ─────────────────────────────────────────────────────────────
   // BUILD PRINCIPAL
-  // ─────────────────────────────────────────────────────────────
-  @override
   Widget build(BuildContext context) {
     final plan = widget.plan;
     final name = widget.userData['name']?.toString().trim() ?? 'Usuario';
@@ -1158,9 +1153,7 @@ class PlanCardState extends State<PlanCard> {
             ),
           );
         }
-        _participants = (snap.data ?? [])
-            .where((p) => p['uid'] != plan.createdBy)
-            .toList();
+        _participants = snap.data ?? [];
         final totalP = _participants.length;
         final maxP = plan.maxParticipants ?? 0;
         final bool isFull = (maxP > 0 && totalP >= maxP);
@@ -1197,10 +1190,8 @@ class PlanCardState extends State<PlanCard> {
                         GestureDetector(
                           onTap: () async {
                             final creatorUid = plan.createdBy;
-                            final currentUid =
-                                FirebaseAuth.instance.currentUser?.uid;
-                            if (creatorUid.isNotEmpty &&
-                                creatorUid != currentUid) {
+                            final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                            if (creatorUid.isNotEmpty && creatorUid != currentUid) {
                               await UserInfoCheck.open(context, creatorUid);
                               if (mounted) setState(() {});
                             }
@@ -1212,12 +1203,10 @@ class PlanCardState extends State<PlanCard> {
                       ],
                     ),
                   ),
-
                   // Imagen principal
                   GestureDetector(
                     onTap: () => _openPlanDetails(context, plan),
-                    child: (plan.backgroundImage != null &&
-                            plan.backgroundImage!.isNotEmpty)
+                    child: (plan.backgroundImage != null && plan.backgroundImage!.isNotEmpty)
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: AspectRatio(
@@ -1225,8 +1214,7 @@ class PlanCardState extends State<PlanCard> {
                               child: Image.network(
                                 plan.backgroundImage!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    buildPlaceholder(),
+                                errorBuilder: (_, __, ___) => buildPlaceholder(),
                               ),
                             ),
                           )
@@ -1238,15 +1226,12 @@ class PlanCardState extends State<PlanCard> {
                             ),
                           ),
                   ),
-
                   // Botones de acción (like, chat, share) → Se añade SingleChildScrollView para evitar overflow
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
                     child: Builder(
                       builder: (context) {
-                        final textScale =
-                            MediaQuery.of(context).textScaleFactor;
-
+                        final textScale = MediaQuery.of(context).textScaleFactor;
                         final actions = FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
@@ -1265,9 +1250,7 @@ class PlanCardState extends State<PlanCard> {
                                     .doc(plan.id)
                                     .snapshots(),
                                 builder: (ctx, snap) {
-                                  final data = snap.data?.data()
-                                          as Map<String, dynamic>? ??
-                                      {};
+                                  final data = snap.data?.data() as Map<String, dynamic>? ?? {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/mensaje.svg',
                                     countText: '${data['commentsCount'] ?? 0}',
@@ -1282,9 +1265,7 @@ class PlanCardState extends State<PlanCard> {
                                     .doc(plan.id)
                                     .snapshots(),
                                 builder: (ctx, snap) {
-                                  final data = snap.data?.data()
-                                          as Map<String, dynamic>? ??
-                                      {};
+                                  final data = snap.data?.data() as Map<String, dynamic>? ?? {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/icono-compartir.svg',
                                     countText: '${data['share_count'] ?? 0}',
@@ -1299,9 +1280,7 @@ class PlanCardState extends State<PlanCard> {
                                     .doc(plan.id)
                                     .snapshots(),
                                 builder: (ctx, snap) {
-                                  final data = snap.data?.data()
-                                          as Map<String, dynamic>? ??
-                                      {};
+                                  final data = snap.data?.data() as Map<String, dynamic>? ?? {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/icono-ojo.svg',
                                     countText: '${data['views'] ?? 0}',
@@ -1312,9 +1291,7 @@ class PlanCardState extends State<PlanCard> {
                             ],
                           ),
                         );
-
                         final corner = _buildParticipantsCorner();
-
                         return Wrap(
                           alignment: WrapAlignment.spaceBetween,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -1328,7 +1305,6 @@ class PlanCardState extends State<PlanCard> {
                       },
                     ),
                   ),
-
                   // Texto: "X/Y participantes"
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1347,7 +1323,6 @@ class PlanCardState extends State<PlanCard> {
                       ),
                     ),
                   ),
-
                   // plan.type y fecha/hora
                   if (dateText.isNotEmpty) ...[
                     Padding(
