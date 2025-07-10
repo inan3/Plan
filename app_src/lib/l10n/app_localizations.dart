@@ -180,6 +180,31 @@ class AppLocalizations {
       'plan_id_label': 'ID del Plan',
       'age_restriction_label': 'Restricción de edad',
       'ends_at_label': 'Finaliza',
+      'future_plans': 'Planes futuros',
+      'followers': 'Seguidores',
+      'following': 'Seguidos',
+      'memories': 'Memorias',
+      'close': 'Cerrar',
+      'level_basic': 'Nivel Básico',
+      'level_premium': 'Nivel Premium',
+      'level_golden': 'Nivel Golden',
+      'level_vip': 'Nivel VIP',
+      'next_hint_basic':
+          'Crea 5 planes, logra 5 participantes en un solo plan y reúne 20 participantes en total para pasar al nivel de privilegio Premium.',
+      'next_hint_premium':
+          'Crea 50 planes, logra 50 participantes en un solo plan y reúne 2000 participantes en total para pasar al nivel de privilegio Golden.',
+      'next_hint_golden':
+          'Crea 500 planes, logra 500 participantes en un solo plan y reúne 10000 participantes en total para pasar al nivel de privilegio VIP.',
+      'next_hint_vip': 'Estás disfrutando del nivel de privilegio VIP.',
+      'info_basic': 'El nivel Básico es el más bajo. Para pasar a Premium:\n- Crear 5 planes.\n- Alcanzar 5 participantes en un plan.\n- 20 participantes en total.',
+      'info_premium': 'El nivel Premium es el segundo nivel. Para pasar al siguiente nivel de Golden:\n- Crear 50 planes.\n- Máximo de 50 participantes en un plan.\n- 2000 participantes en total.',
+      'info_golden': 'El nivel Golden es el penúltimo nivel. Para pasar a VIP:\n- Crear 500 planes.\n- Alcanzar 500 participantes en un plan.\n- 10000 participantes en total.',
+      'info_vip': 'Este es el nivel más alto, sin límites.',
+      'created_plans': 'Planes creados',
+      'max_participants': 'Máx. participantes',
+      'in_a_plan': 'en un plan',
+      'total_participants': 'Total de participantes',
+      'gathered_so_far': 'reunidos hasta ahora',
     },
     'en': {
       'settings': 'Settings',
@@ -356,6 +381,31 @@ class AppLocalizations {
       'plan_id_label': 'Plan ID',
       'age_restriction_label': 'Age restriction',
       'ends_at_label': 'Ends',
+      'future_plans': 'Future plans',
+      'followers': 'Followers',
+      'following': 'Following',
+      'memories': 'Memories',
+      'close': 'Close',
+      'level_basic': 'Basic Level',
+      'level_premium': 'Premium Level',
+      'level_golden': 'Golden Level',
+      'level_vip': 'VIP Level',
+      'next_hint_basic':
+          'Create 5 plans, get 5 participants in one plan and gather 20 participants in total to reach the Premium privilege level.',
+      'next_hint_premium':
+          'Create 50 plans, get 50 participants in one plan and gather 2000 participants in total to reach the Golden privilege level.',
+      'next_hint_golden':
+          'Create 500 plans, get 500 participants in one plan and gather 10000 participants in total to reach the VIP privilege level.',
+      'next_hint_vip': 'You are enjoying the VIP privilege level.',
+      'info_basic': 'The Basic level is the lowest. To move to Premium:\n- Create 5 plans.\n- Reach 5 participants in a plan.\n- 20 participants in total.',
+      'info_premium': 'The Premium level is the second level. To move to Golden:\n- Create 50 plans.\n- Maximum of 50 participants in a plan.\n- 2000 participants in total.',
+      'info_golden': 'The Golden level is the penultimate level. To move to VIP:\n- Create 500 plans.\n- Reach 500 participants in a plan.\n- 10000 participants in total.',
+      'info_vip': 'This is the highest level, with no limits.',
+      'created_plans': 'Created plans',
+      'max_participants': 'Max. participants',
+      'in_a_plan': 'in one plan',
+      'total_participants': 'Total participants',
+      'gathered_so_far': 'gathered so far',
     },
   };
 
@@ -535,6 +585,28 @@ class AppLocalizations {
   String get planIdLabel => _t('plan_id_label');
   String get ageRestrictionLabel => _t('age_restriction_label');
   String get endsAt => _t('ends_at_label');
+  String get futurePlans => _t('future_plans');
+  String get followers => _t('followers');
+  String get following => _t('following');
+  String get memories => _t('memories');
+  String get close => _t('close');
+  String get levelBasic => _t('level_basic');
+  String get levelPremium => _t('level_premium');
+  String get levelGolden => _t('level_golden');
+  String get levelVip => _t('level_vip');
+  String get nextHintBasic => _t('next_hint_basic');
+  String get nextHintPremium => _t('next_hint_premium');
+  String get nextHintGolden => _t('next_hint_golden');
+  String get nextHintVip => _t('next_hint_vip');
+  String get infoBasic => _t('info_basic');
+  String get infoPremium => _t('info_premium');
+  String get infoGolden => _t('info_golden');
+  String get infoVip => _t('info_vip');
+  String get createdPlans => _t('created_plans');
+  String get maxParticipantsText => _t('max_participants');
+  String get inAPlan => _t('in_a_plan');
+  String get totalParticipantsText => _t('total_participants');
+  String get gatheredSoFar => _t('gathered_so_far');
 
   String planAgeRange(int start, int end) {
     return locale.languageCode == 'en'
