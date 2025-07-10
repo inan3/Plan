@@ -1775,9 +1775,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     showDialog(
       context: context,
       builder: (context) {
+        final t = AppLocalizations.of(context);
         return AlertDialog(
-          title: const Text('Seleccionar imagen'),
-          content: const Text('Elige desde dónde obtener la foto'),
+          title: Text(t.selectImage),
+          content: Text(t.choosePhotoSource),
           actions: [
             TextButton(
               onPressed: () async {
@@ -1789,7 +1790,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   _uploadAndSendImage(image);
                 }
               },
-              child: const Text('Cámara'),
+              child: Text(t.camera),
             ),
             TextButton(
               onPressed: () async {
@@ -1801,7 +1802,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   _uploadAndSendImage(image);
                 }
               },
-              child: const Text('Galería'),
+              child: Text(t.gallery),
             ),
           ],
         );

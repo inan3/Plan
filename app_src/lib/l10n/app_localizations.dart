@@ -237,6 +237,18 @@ class AppLocalizations {
           'Este usuario no ha creado planes futuros aún...',
       'follow_to_view_future_plans':
           'Debes seguir a esta cuenta para ver sus planes futuros',
+      'choose_location': 'Elegir ubicación',
+      'search_address_hint': 'Busca una dirección...',
+      'current_address_label': 'Dirección actual:',
+      'confirm_location': 'Confirmar ubicación',
+      'select_plans': 'Seleccionar Planes',
+      'my_plans_tab': 'Mis Planes',
+      'subscribed_tab': 'Suscritos',
+      'no_subscribed_plans_yet': 'No tienes planes suscritos aún.',
+      'select_image': 'Seleccionar imagen',
+      'choose_photo_source': 'Elige desde dónde obtener la foto',
+      'camera': 'Cámara',
+      'gallery': 'Galería',
       'no_results': 'Sin resultados',
     },
     'en': {
@@ -471,6 +483,18 @@ class AppLocalizations {
           "This user hasn't created future plans yet...",
       'follow_to_view_future_plans':
           'You must follow this account to view their future plans',
+      'choose_location': 'Choose Location',
+      'search_address_hint': 'Search for an address...',
+      'current_address_label': 'Current address:',
+      'confirm_location': 'Confirm location',
+      'select_plans': 'Select Plans',
+      'my_plans_tab': 'My Plans',
+      'subscribed_tab': 'Subscribed',
+      'no_subscribed_plans_yet': "You don't have subscribed plans yet.",
+      'select_image': 'Select image',
+      'choose_photo_source': 'Choose where to get the photo',
+      'camera': 'Camera',
+      'gallery': 'Gallery',
       'no_results': 'No results',
     },
   };
@@ -679,6 +703,18 @@ class AppLocalizations {
   String get gatheredSoFar => _t('gathered_so_far');
   String get noFuturePlansUser => _t('no_future_plans_user');
   String get followToViewFuturePlans => _t('follow_to_view_future_plans');
+  String get chooseLocation => _t('choose_location');
+  String get searchAddressHint => _t('search_address_hint');
+  String get currentAddressLabel => _t('current_address_label');
+  String get confirmLocation => _t('confirm_location');
+  String get selectPlans => _t('select_plans');
+  String get myPlansTab => _t('my_plans_tab');
+  String get subscribedTab => _t('subscribed_tab');
+  String get noSubscribedPlansYet => _t('no_subscribed_plans_yet');
+  String get selectImage => _t('select_image');
+  String get choosePhotoSource => _t('choose_photo_source');
+  String get camera => _t('camera');
+  String get gallery => _t('gallery');
   String get noResults => _t('no_results');
   String get sendMessage => _t('send_message');
   String get follow => _t('follow');

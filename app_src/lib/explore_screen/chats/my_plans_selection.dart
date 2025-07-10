@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/plan_model.dart';
 import '../plans_managing/plan_card.dart'; // Ajusta la ruta a tu plan_card.dart
+import '../../l10n/app_localizations.dart';
 
 class MyPlansSelection extends StatelessWidget {
   final Set<String> selectedIds;
@@ -80,10 +81,11 @@ class MyPlansSelection extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          final t = AppLocalizations.of(context);
+          return Center(
             child: Text(
-              'No tienes planes aún.',
-              style: TextStyle(color: Colors.black),
+              t.noPlansYet,
+              style: const TextStyle(color: Colors.black),
             ),
           );
         }
