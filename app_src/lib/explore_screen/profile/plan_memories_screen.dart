@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'user_images_managing.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
@@ -245,10 +246,11 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Plan y Memorias"),
+        title: Text(t.planAndMemories),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -336,21 +338,22 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   /// Cabecera "Memorias" centrada
   Widget _buildMemoriesSection() {
+    final t = AppLocalizations.of(context);
     return Column(
-      children: const [
-        SizedBox(height: 12),
+      children: [
+        const SizedBox(height: 12),
         Center(
           child: Text(
-            "Memorias",
-            style: TextStyle(
+            t.memories,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        SizedBox(height: 8),
-        Divider(thickness: 1),
-        SizedBox(height: 16),
+        const SizedBox(height: 8),
+        const Divider(thickness: 1),
+        const SizedBox(height: 16),
       ],
     );
   }
