@@ -8,6 +8,7 @@ import 'package:geocoding/geocoding.dart'; // para convertir dirección <-> coor
 import '../../main/colors.dart';
 // Si tienes tu getCustomSvgMarker:
 import '../../plan_creation/new_plan_creation_screen.dart' show getCustomSvgMarker;
+import '../../l10n/app_localizations.dart';
 
 class LocationPickScreen extends StatefulWidget {
   final double? initialLat;
@@ -175,12 +176,13 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final markerLat = _selectedLat ?? 0.0;
     final markerLng = _selectedLng ?? 0.0;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Elegir ubicación"),
+        title: Text(t.chooseLocation),
         backgroundColor: AppColors.white,
         actions: [
           IconButton(
@@ -200,7 +202,7 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: "Busca una dirección...",
+                      hintText: t.searchAddressHint,
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _isSearching
                           ? const Padding(
@@ -256,7 +258,7 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
               color: Colors.grey.shade200,
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                "Dirección actual: $_selectedAddress",
+                '${t.currentAddressLabel} $_selectedAddress',
                 style: const TextStyle(fontSize: 14),
               ),
             ),
@@ -267,7 +269,7 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
               child: ElevatedButton.icon(
                 onPressed: _onConfirmLocation,
                 icon: const Icon(Icons.check),
-                label: const Text("Confirmar ubicación"),
+                label: Text(t.confirmLocation),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: AppColors.planColor,

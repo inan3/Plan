@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
 // IMPORTA plan_card.dart
 import '../plans_managing/plan_card.dart';
+import '../../l10n/app_localizations.dart';
 
 class SubscribedPlansSelection extends StatelessWidget {
   final Set<String> selectedIds;
@@ -115,10 +116,11 @@ class SubscribedPlansSelection extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          final t = AppLocalizations.of(context);
+          return Center(
             child: Text(
-              'No tienes planes suscritos aún.',
-              style: TextStyle(color: Colors.black),
+              t.noSubscribedPlansYet,
+              style: const TextStyle(color: Colors.black),
             ),
           );
         }
@@ -140,10 +142,11 @@ class SubscribedPlansSelection extends StatelessWidget {
             }
             final plans = planSnapshot.data ?? [];
             if (plans.isEmpty) {
-              return const Center(
+              final t = AppLocalizations.of(context);
+              return Center(
                 child: Text(
-                  'No tienes planes suscritos aún.',
-                  style: TextStyle(color: Colors.black),
+                  t.noSubscribedPlansYet,
+                  style: const TextStyle(color: Colors.black),
                 ),
               );
             }
