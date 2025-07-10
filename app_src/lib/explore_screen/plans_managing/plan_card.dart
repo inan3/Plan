@@ -14,6 +14,7 @@ import 'plan_share_sheet.dart';
 import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
 import '../../l10n/app_localizations.dart';
+import 'plan_chat_screen.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
@@ -309,23 +310,11 @@ class PlanCardState extends State<PlanCard> {
   // (6) Popup Chat
   // ─────────────────────────────────────────────────────────────
   void _onMessageButtonTap() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.5,
-          minChildSize: 0.4,
-          maxChildSize: 0.95,
-          builder: (ctx, scrollController) {
-            return _buildChatPopup(widget.plan, scrollController);
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlanChatScreen(plan: widget.plan),
+      ),
     );
   }
 

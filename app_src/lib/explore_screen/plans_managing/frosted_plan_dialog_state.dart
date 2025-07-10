@@ -16,6 +16,7 @@ import '../users_managing/user_info_check.dart';
 import 'attendance_managing.dart';
 import '../../main/colors.dart';
 import '../profile/profile_screen.dart';
+import 'plan_chat_screen.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
@@ -79,23 +80,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     _incrementViewCount();
     if (widget.openChat) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          isDismissible: true,
-          enableDrag: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) {
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.5,
-              minChildSize: 0.4,
-              maxChildSize: 0.95,
-              builder: (ctx, scrollController) {
-                return _buildChatPopup(widget.plan, scrollController);
-              },
-            );
-          },
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlanChatScreen(plan: widget.plan),
+          ),
         );
       });
     }
@@ -488,23 +477,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           iconPath: 'assets/mensaje.svg',
           countText: countText,
           onTap: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              isDismissible: true,
-              enableDrag: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) {
-                return DraggableScrollableSheet(
-                  expand: false,
-                  initialChildSize: 0.5,
-                  minChildSize: 0.4,
-                  maxChildSize: 0.95,
-                  builder: (ctx, scrollController) {
-                    return _buildChatPopup(plan, scrollController);
-                  },
-                );
-              },
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PlanChatScreen(plan: plan),
+              ),
             );
           },
         );
