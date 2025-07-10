@@ -216,7 +216,7 @@ class _PlanChatScreenState extends State<PlanChatScreen> {
                 ],
               ),
             ),
-            const Divider(color: Colors.black),
+            
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
