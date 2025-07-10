@@ -500,9 +500,12 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
         return DraggableScrollableSheet(
+          expand: false,
           initialChildSize: 0.5,
           minChildSize: 0.4,
           maxChildSize: 0.95,

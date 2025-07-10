@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../main/colors.dart';
 
 class ImageShareSheet extends StatefulWidget {
   final String imageUrl;
@@ -95,7 +96,7 @@ class _ImageShareSheetState extends State<ImageShareSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 35, 57, 80),
+        color: AppColors.shareSheetBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

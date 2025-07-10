@@ -79,21 +79,23 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     _incrementViewCount();
     if (widget.openChat) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
+        showModalBottomSheet(
           context: context,
-          builder: (_) => Dialog(
-            insetPadding: EdgeInsets.only(
-              top: MediaQuery.of(context).size.height * 0.25,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            ),
-            backgroundColor: AppColors.lightTurquoise,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: _buildChatPopup(widget.plan),
-          ),
+          isScrollControlled: true,
+          isDismissible: true,
+          enableDrag: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.5,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              builder: (ctx, scrollController) {
+                return _buildChatPopup(widget.plan, scrollController);
+              },
+            );
+          },
         );
       });
     }
@@ -486,21 +488,21 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           iconPath: 'assets/mensaje.svg',
           countText: countText,
           onTap: () {
-            showDialog(
+            showModalBottomSheet(
               context: context,
+              isScrollControlled: true,
+              isDismissible: true,
+              enableDrag: true,
+              backgroundColor: Colors.transparent,
               builder: (_) {
-                return Dialog(
-                  insetPadding: EdgeInsets.only(
-                    top: MediaQuery.of(context).size.height * 0.25,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                  ),
-                  backgroundColor: AppColors.lightTurquoise,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: _buildChatPopup(plan),
+                return DraggableScrollableSheet(
+                  expand: false,
+                  initialChildSize: 0.5,
+                  minChildSize: 0.4,
+                  maxChildSize: 0.95,
+                  builder: (ctx, scrollController) {
+                    return _buildChatPopup(plan, scrollController);
+                  },
                 );
               },
             );
@@ -558,16 +560,19 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
         return DraggableScrollableSheet(
+          expand: false,
           initialChildSize: 0.5,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (BuildContext context, ScrollController scrollController) {
             return Container(
               decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 35, 57, 80),
+                color: AppColors.shareSheetBackground,
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(20),
                 ),
@@ -727,8 +732,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     );
   }
 
-  Widget _buildChatPopup(PlanModel plan) {
-    return Column(
+  Widget _buildChatPopup(PlanModel plan, ScrollController scrollController) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.shareSheetBackground,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
       mainAxisSize: MainAxisSize.max,
       children: [
         Padding(
@@ -741,20 +751,20 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   AppLocalizations.of(context).planChat,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: AppColors.planColor,
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.planColor),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
         ),
-        const Divider(color: AppColors.planColor),
+        const Divider(color: Colors.white),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -766,7 +776,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               if (snap.hasError) {
                 return const Center(
                   child: Text('Error al cargar mensajes',
-                      style: TextStyle(color: Colors.black)),
+                      style: TextStyle(color: Colors.white)),
                 );
               }
               if (snap.connectionState == ConnectionState.waiting) {
@@ -776,10 +786,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               if (docs.isEmpty) {
                 return const Center(
                   child: Text('No hay mensajes todavía',
-                      style: TextStyle(color: Colors.black)),
+                      style: TextStyle(color: Colors.white)),
                 );
               }
               return ListView(
+                controller: scrollController,
                 children: docs.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   return _buildMessageItem(data);
@@ -798,18 +809,18 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   decoration: InputDecoration(
                     hintText: "Escribe un mensaje...",
                     filled: true,
-                    fillColor: const ui.Color.fromARGB(255, 177, 177, 177),
-                    hintStyle: const TextStyle(color: Colors.black54),
+                    fillColor: Colors.white10,
+                    hintStyle: const TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  style: const TextStyle(color: Colors.black),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send, color: AppColors.planColor),
+                icon: const Icon(Icons.send, color: Colors.white),
                 onPressed: () => _sendMessage(plan),
               ),
             ],
@@ -852,7 +863,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         senderName,
         textAlign: isMe ? TextAlign.right : TextAlign.left,
         style: const TextStyle(
-          color: Colors.black,
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
@@ -862,12 +873,12 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final msgWidget = Text(
       text,
       textAlign: isMe ? TextAlign.right : TextAlign.left,
-      style: const TextStyle(color: Colors.black, fontSize: 13),
+      style: const TextStyle(color: Colors.white, fontSize: 13),
     );
 
     final timeWidget = Text(
       timeStr,
-      style: const TextStyle(color: Colors.black54, fontSize: 12),
+      style: const TextStyle(color: Colors.white70, fontSize: 12),
     );
 
     return Padding(
