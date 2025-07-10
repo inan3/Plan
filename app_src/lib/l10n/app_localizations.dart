@@ -171,6 +171,13 @@ class AppLocalizations {
       'manual_entry': 'Si no puedes escanear el código QR,\ningrésalo manualmente:',
       'error_loading_messages': 'Error al cargar mensajes',
       'no_messages_yet': 'No hay mensajes todavía',
+      'disable_notifications': 'Deshabilitar notificaciones',
+      'report_profile': 'Reportar perfil',
+      'block_profile': 'Bloquear perfil',
+      'unblock_profile': 'Desbloquear perfil',
+      'plan_id_label': 'ID del Plan',
+      'age_restriction_label': 'Restricción de edad',
+      'ends_at_label': 'Finaliza',
     },
     'en': {
       'settings': 'Settings',
@@ -338,6 +345,13 @@ class AppLocalizations {
       'manual_entry': "If you can't scan the QR code,\nenter it manually:",
       'error_loading_messages': 'Error loading messages',
       'no_messages_yet': 'No messages yet',
+      'disable_notifications': 'Disable notifications',
+      'report_profile': 'Report profile',
+      'block_profile': 'Block profile',
+      'unblock_profile': 'Unblock profile',
+      'plan_id_label': 'Plan ID',
+      'age_restriction_label': 'Age restriction',
+      'ends_at_label': 'Ends',
     },
   };
 
@@ -508,11 +522,24 @@ class AppLocalizations {
   String get manualEntry => _t('manual_entry');
   String get errorLoadingMessages => _t('error_loading_messages');
   String get noMessagesYet => _t('no_messages_yet');
+  String get disableNotifications => _t('disable_notifications');
+  String get reportProfile => _t('report_profile');
+  String get blockProfile => _t('block_profile');
+  String get unblockProfile => _t('unblock_profile');
+  String get planIdLabel => _t('plan_id_label');
+  String get ageRestrictionLabel => _t('age_restriction_label');
+  String get endsAt => _t('ends_at_label');
 
   String planAgeRange(int start, int end) {
     return locale.languageCode == 'en'
         ? 'Participants from $start to $end years old'
         : 'Participan edades de $start a $end años';
+  }
+
+  String ageRestrictionRange(int start, int end) {
+    return locale.languageCode == 'en'
+        ? 'Age restriction: $start - $end years'
+        : 'Restricción de edad: $start - $end años';
   }
 
   static const LocalizationsDelegate<AppLocalizations> delegate =

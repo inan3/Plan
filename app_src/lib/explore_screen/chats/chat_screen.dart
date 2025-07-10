@@ -400,9 +400,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       builder: (BuildContext ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final t = AppLocalizations.of(context);
             // Cambiamos el texto según si está bloqueado o no.
             final blockText =
-                _isPartnerBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
+                _isPartnerBlocked ? t.unblockProfile : t.blockProfile;
 
             return Material(
               color: Colors.transparent,
@@ -461,8 +462,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                       const SizedBox(width: 8),
                                       Text(
                                         _notificationsEnabled
-                                            ? 'Deshabilitar notificaciones'
-                                            : 'Habilitar notificaciones',
+                                            ? t.disableNotifications
+                                            : t.enableNotifications,
                                         style: const TextStyle(
                                           color: Colors.white,
                                         ),
@@ -490,9 +491,9 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Text(
-                                        'Reportar perfil',
-                                        style: TextStyle(color: Colors.white),
+                                      Text(
+                                        t.reportProfile,
+                                        style: const TextStyle(color: Colors.white),
                                       ),
                                     ],
                                   ),
