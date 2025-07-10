@@ -214,6 +214,20 @@ class AppLocalizations {
       'in_a_plan': 'en un plan',
       'total_participants': 'Total de participantes',
       'gathered_so_far': 'reunidos hasta ahora',
+      'report_user_title': 'Reportar Usuario',
+      'select_report_reasons':
+          'Selecciona los motivos por los que deseas reportar este perfil',
+      'report_optional_comment':
+          '¿Por qué quieres reportar este perfil? (opcional)',
+      'describe_briefly_hint': 'Describe brevemente...',
+      'back': 'Volver',
+      'report_sent_success': 'Reporte enviado con éxito',
+      'report_error': 'Ocurrió un error al enviar reporte.',
+      'reason_inappropriate_content': 'Contenido inapropiado',
+      'reason_impersonation': 'Suplantación de identidad',
+      'reason_spam': 'Spam o publicitario',
+      'reason_abusive_language': 'Lenguaje o comportamiento abusivo',
+      'reason_inappropriate_images': 'Imágenes inapropiadas',
       'no_future_plans_user':
           'Este usuario no ha creado planes futuros aún...',
       'follow_to_view_future_plans':
@@ -429,6 +443,20 @@ class AppLocalizations {
       'in_a_plan': 'in one plan',
       'total_participants': 'Total participants',
       'gathered_so_far': 'gathered so far',
+      'report_user_title': 'Report User',
+      'select_report_reasons':
+          'Select the reasons why you want to report this profile',
+      'report_optional_comment':
+          'Why do you want to report this profile? (optional)',
+      'describe_briefly_hint': 'Briefly describe...',
+      'back': 'Back',
+      'report_sent_success': 'Report sent successfully',
+      'report_error': 'An error occurred while sending the report.',
+      'reason_inappropriate_content': 'Inappropriate content',
+      'reason_impersonation': 'Impersonation',
+      'reason_spam': 'Spam or advertising',
+      'reason_abusive_language': 'Abusive language or behavior',
+      'reason_inappropriate_images': 'Inappropriate images',
       'no_future_plans_user':
           "This user hasn't created future plans yet...",
       'follow_to_view_future_plans':
@@ -646,6 +674,19 @@ class AppLocalizations {
   String get privateProfileMemories => _t('private_profile_memories');
   String get planAndMemories => _t('plan_and_memories');
   String get noMemoriesDay => _t('no_memories_day');
+
+  String get reportUserTitle => _t('report_user_title');
+  String get selectReportReasons => _t('select_report_reasons');
+  String get reportOptionalComment => _t('report_optional_comment');
+  String get describeBrieflyHint => _t('describe_briefly_hint');
+  String get back => _t('back');
+  String get reportSentSuccess => _t('report_sent_success');
+  String get reportError => _t('report_error');
+  String get reasonInappropriateContent => _t('reason_inappropriate_content');
+  String get reasonImpersonation => _t('reason_impersonation');
+  String get reasonSpam => _t('reason_spam');
+  String get reasonAbusiveLanguage => _t('reason_abusive_language');
+  String get reasonInappropriateImages => _t('reason_inappropriate_images');
 
   String planAgeRange(int start, int end) {
     return locale.languageCode == 'en'
