@@ -419,7 +419,7 @@ class AppLocalizations {
       'future_plans': 'Future plans',
       'followers': 'Followers',
       'following': 'Following',
-      'send_message': 'Send Message',
+      'send_message': 'Send a message',
       'follow': 'Follow',
       'following_status': 'Following',
       'requested': 'Requested',

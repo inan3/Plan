@@ -750,10 +750,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         : 'assets/icono-seguidores.svg';
 
     final iconColor = isFuture
-        ? const Color.fromARGB(255, 13, 32, 53)
+        ? AppColors.planColor
         : (isFollowers
-            ? AppColors.blue
-            : const Color.fromARGB(235, 84, 87, 228));
+            ? AppColors.planColor
+            : AppColors.planColor);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -928,9 +928,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color.fromARGB(255, 13, 32, 53),
-                  Color.fromARGB(255, 72, 38, 38),
-                  Color(0xFF12232E),
+                  AppColors.planColor,
+                  AppColors.planColor,
+                  AppColors.planColor,
                 ],
               ),
               borderRadius: BorderRadius.all(Radius.circular(20)),

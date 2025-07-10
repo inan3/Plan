@@ -558,10 +558,10 @@ class ProfileScreenState extends State<ProfileScreen> {
     final iconPath =
         isPlans ? 'assets/icono-calendario.svg' : 'assets/icono-seguidores.svg';
     final iconColor = isPlans
-        ? AppColors.blue
+        ? AppColors.planColor
         : (isFollowers
-            ? AppColors.blue
-            : const Color.fromARGB(235, 84, 87, 228));
+            ? AppColors.planColor
+            : AppColors.planColor);
 
     final content = Column(
       mainAxisSize: MainAxisSize.min,
