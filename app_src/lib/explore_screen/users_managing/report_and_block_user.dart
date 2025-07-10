@@ -41,81 +41,83 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).reportUserTitle),
-      ),
-      body: SafeArea(
-        child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              AppLocalizations.of(context).selectReportReasons,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _reasons(context).length,
-              itemBuilder: (ctx, i) {
-                return ListTile(
-                  title: Text(_reasons(context)[i]),
-                  trailing: Checkbox(
-                    value: _selected[i],
-                    onChanged: (val) {
-                      setState(() {
-                        _selected[i] = val ?? false;
-                      });
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          // Título sobre la caja de texto
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                AppLocalizations.of(context).reportOptionalComment,
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-              ),
-            ),
-          ),
-          // Caja de texto
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _optionalCommentController,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                hintText: AppLocalizations.of(context).describeBrieflyHint,
-              ),
-              maxLines: 3,
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Botones
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        appBar: AppBar(
+          title: Text(AppLocalizations.of(context).reportUserTitle),
+        ),
+        body: SafeArea(
+          child: Column(
             children: [
-              OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context).back),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  AppLocalizations.of(context).selectReportReasons,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w500),
+                ),
               ),
-              ElevatedButton(
-                onPressed: _sendReport,
-                child: Text(AppLocalizations.of(context).send),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _reasons(context).length,
+                  itemBuilder: (ctx, i) {
+                    return ListTile(
+                      title: Text(_reasons(context)[i]),
+                      trailing: Checkbox(
+                        value: _selected[i],
+                        onChanged: (val) {
+                          setState(() {
+                            _selected[i] = val ?? false;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
+              // Título sobre la caja de texto
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    AppLocalizations.of(context).reportOptionalComment,
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                ),
+              ),
+              // Caja de texto
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _optionalCommentController,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: AppLocalizations.of(context).describeBrieflyHint,
+                  ),
+                  maxLines: 3,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Botones
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(AppLocalizations.of(context).back),
+                  ),
+                  ElevatedButton(
+                    onPressed: _sendReport,
+                    child: Text(AppLocalizations.of(context).send),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
             ],
           ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+        ));
   }
 
   Future<void> _sendReport() async {
@@ -352,32 +354,30 @@ class ReportAndBlockUser {
   }
 
   /// Bloquea al usuario añadiéndolo a un array 'blockedUsers' en tu documento 'users'
-  static Future<void> _blockUser(String currentUserId, String chatPartnerId) async {
-  try {
-    final docId = '${currentUserId}_$chatPartnerId'; 
-    await FirebaseFirestore.instance
-        .collection('blocked_users')
-        .doc(docId)
-        .set({
-      'blockerId': currentUserId, // quién bloquea
-      'blockedId': chatPartnerId, // quién es bloqueado
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-  } catch (e) {
+  static Future<void> _blockUser(
+      String currentUserId, String chatPartnerId) async {
+    try {
+      final docId = '${currentUserId}_$chatPartnerId';
+      await FirebaseFirestore.instance
+          .collection('blocked_users')
+          .doc(docId)
+          .set({
+        'blockerId': currentUserId, // quién bloquea
+        'blockedId': chatPartnerId, // quién es bloqueado
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {}
   }
-}
 
-/// Desbloquea al usuario eliminando ese doc en 'blocked_users'
-static Future<void> _unblockUser(String currentUserId, String chatPartnerId) async {
-  try {
-    final docId = '${currentUserId}_$chatPartnerId';
-    await FirebaseFirestore.instance
-        .collection('blocked_users')
-        .doc(docId)
-        .delete();
-
-  } catch (e) {
+  /// Desbloquea al usuario eliminando ese doc en 'blocked_users'
+  static Future<void> _unblockUser(
+      String currentUserId, String chatPartnerId) async {
+    try {
+      final docId = '${currentUserId}_$chatPartnerId';
+      await FirebaseFirestore.instance
+          .collection('blocked_users')
+          .doc(docId)
+          .delete();
+    } catch (e) {}
   }
-}
 }

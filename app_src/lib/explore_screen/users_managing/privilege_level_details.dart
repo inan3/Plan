@@ -103,13 +103,24 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     }
   }
 
+
+  bool _didLoad = false;
+
   @override
   void initState() {
     super.initState();
-    _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
-        ? 'Loading privilege level...'
-        : 'Cargando nivel de privilegios...';
-    _loadPrivilegeInfo();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didLoad) {
+      _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
+          ? 'Loading privilege level...'
+          : 'Cargando nivel de privilegios...';
+      _loadPrivilegeInfo();
+      _didLoad = true;
+    }
   }
 
   Future<void> _loadPrivilegeInfo() async {
