@@ -394,27 +394,25 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     required bool isForProfilePhoto,
     required bool isForCover,
   }) {
-    showGeneralDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.transparent,
-      barrierLabel: "Seleccionar imagen",
-      pageBuilder: (context, _, __) {
-        return Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.8,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: MyColors.AppColors.lightLilac,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      backgroundColor: Colors.black.withOpacity(0.2),
+      builder: (_) {
+        final t = AppLocalizations.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Wrap(
                 children: [
-                  TextButton(
-                    onPressed: () {
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () {
                       Navigator.pop(context);
                       _pickImage(
                         fromCamera: false,
@@ -422,17 +420,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         isForCover: isForCover,
                       );
                     },
-                    child: Text(
-                      "Seleccionar de la galeria",
-                      style: TextStyle(
-                        color: MyColors.AppColors.blue,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () {
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () {
                       Navigator.pop(context);
                       _pickImage(
                         fromCamera: true,
@@ -440,13 +432,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                         isForCover: isForCover,
                       );
                     },
-                    child: Text(
-                      "Tomar una foto",
-                      style: TextStyle(
-                        color: MyColors.AppColors.blue,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
                   ),
                 ],
               ),

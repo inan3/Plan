@@ -1772,39 +1772,51 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   Future<void> _handleSelectImage() async {
     final picker = ImagePicker();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
+      backgroundColor: Colors.black.withOpacity(0.2),
+      builder: (_) {
         final t = AppLocalizations.of(context);
-        return AlertDialog(
-          title: Text(t.selectImage),
-          content: Text(t.choosePhotoSource),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                final XFile? image = await picker.pickImage(
-                  source: ImageSource.camera,
-                );
-                if (image != null) {
-                  _uploadAndSendImage(image);
-                }
-              },
-              child: Text(t.camera),
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final XFile? image = await picker.pickImage(
+                        source: ImageSource.gallery,
+                      );
+                      if (image != null) {
+                        _uploadAndSendImage(image);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final XFile? image = await picker.pickImage(
+                        source: ImageSource.camera,
+                      );
+                      if (image != null) {
+                        _uploadAndSendImage(image);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                final XFile? image = await picker.pickImage(
-                  source: ImageSource.gallery,
-                );
-                if (image != null) {
-                  _uploadAndSendImage(image);
-                }
-              },
-              child: Text(t.gallery),
-            ),
-          ],
+          ),
         );
       },
     );

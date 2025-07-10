@@ -414,80 +414,42 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
   /// Popup para subir la imagen
   void _showMediaSelectionPopup() {
     final t = AppLocalizations.of(context);
-    showGeneralDialog(
+    showModalBottomSheet(
       context: context,
-      barrierLabel: t.selectMedia,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.5),
-      pageBuilder: (context, anim1, anim2) => Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.fromARGB(255, 13, 32, 53),
-                Color.fromARGB(255, 72, 38, 38),
-                Color(0xFF12232E),
-              ],
+      backgroundColor: Colors.black.withOpacity(0.2),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.camera);
+                    },
+                  ),
+                ],
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                t.whatToUpload,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.none,
-                  fontFamily: 'Inter-Regular',
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-                child: Text(
-                  t.imageGallery,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-                child: Text(
-                  t.imageCamera,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    fontFamily: 'Inter-Regular',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
