@@ -252,6 +252,25 @@ class AppLocalizations {
       'camera': 'Cámara',
       'gallery': 'Galería',
       'no_results': 'Sin resultados',
+      'login_title': 'Inicio de sesión',
+      'login': 'Iniciar sesión',
+      'email_label': 'Correo electrónico',
+      'email_short': 'correo',
+      'forgot_password': '¿Olvidaste tu contraseña?',
+      'no_account_register': '¿No tienes una cuenta? Regístrate.',
+      'continue_google': 'Continuar con Google',
+      'remember_login_data': 'Recordar datos de inicio de sesión',
+      'wrong_email_password': 'Correo o contraseña incorrectos.',
+      'google_login_error': 'Error de inicio de sesión con Google.',
+      'not_registered_title': 'No estás registrado',
+      'not_registered_message':
+          'No hay ningún perfil en la base de datos para este usuario. Debes registrarte primero.',
+      'google_no_profile_title': 'No hay perfil',
+      'google_no_profile_message':
+          'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?',
+      'login_error_title': 'Error de inicio de sesión',
+      'fill_fields_login':
+          'Introduce tu {fields} y después pulsa en "Iniciar sesión".',
     },
     'en': {
       'settings': 'Settings',
@@ -500,6 +519,24 @@ class AppLocalizations {
       'camera': 'Camera',
       'gallery': 'Gallery',
       'no_results': 'No results',
+      'login_title': 'Sign in',
+      'login': 'Sign in',
+      'email_label': 'Email',
+      'email_short': 'email',
+      'forgot_password': 'Forgot your password?',
+      'no_account_register': "Don't have an account? Sign up.",
+      'continue_google': 'Continue with Google',
+      'remember_login_data': 'Remember login data',
+      'wrong_email_password': 'Wrong email or password.',
+      'google_login_error': 'Google sign in error.',
+      'not_registered_title': 'Not registered',
+      'not_registered_message':
+          'There is no profile in the database for this user. You must register first.',
+      'google_no_profile_title': 'No profile',
+      'google_no_profile_message':
+          'There is no profile associated with your Google account. Create a new account?',
+      'login_error_title': 'Sign in error',
+      'fill_fields_login': 'Enter your {fields} then press "Sign in".',
     },
   };
 
@@ -722,6 +759,25 @@ class AppLocalizations {
   String get camera => _t('camera');
   String get gallery => _t('gallery');
   String get noResults => _t('no_results');
+  String get loginTitle => _t('login_title');
+  String get login => _t('login');
+  String get emailLabel => _t('email_label');
+  String get emailShort => _t('email_short');
+  String get forgotPassword => _t('forgot_password');
+  String get noAccountRegister => _t('no_account_register');
+  String get continueGoogle => _t('continue_google');
+  String get rememberLoginData => _t('remember_login_data');
+  String get wrongEmailPassword => _t('wrong_email_password');
+  String get googleLoginError => _t('google_login_error');
+  String get notRegisteredTitle => _t('not_registered_title');
+  String get notRegisteredMessage => _t('not_registered_message');
+  String get googleNoProfileTitle => _t('google_no_profile_title');
+  String get googleNoProfileMessage => _t('google_no_profile_message');
+  String get loginErrorTitle => _t('login_error_title');
+
+  String fillFieldsLogin(String fields) {
+    return _t('fill_fields_login').replaceFirst('{fields}', fields);
+  }
   String get sendMessage => _t('send_message');
   String get follow => _t('follow');
   String get followingStatus => _t('following_status');

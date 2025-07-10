@@ -16,6 +16,7 @@ import '../../explore_screen/main_screen/explore_screen.dart';
 import '../../main/colors.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 import '../../services/location_update_service.dart';
+import '../../l10n/app_localizations.dart';
 import 'recover_password.dart';
 import '../registration/register_screen.dart';
 import '../welcome_screen.dart';
@@ -85,10 +86,16 @@ class _LoginScreenState extends State<LoginScreen> {
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
       final missing = <String>[];
-      if (emailController.text.trim().isEmpty) missing.add('correo');
-      if (passwordController.text.trim().isEmpty) missing.add('contraseña');
+      if (emailController.text.trim().isEmpty) {
+        missing.add(AppLocalizations.of(context).emailShort);
+      }
+      if (passwordController.text.trim().isEmpty) {
+        missing.add(AppLocalizations.of(context).password.toLowerCase());
+      }
+      final separator =
+          AppLocalizations.of(context).locale.languageCode == 'en' ? ' and ' : ' y ';
       final msg =
-          'Introduce tu ${missing.join(' y ')} y después pulsa en "Iniciar sesión".';
+          AppLocalizations.of(context).fillFieldsLogin(missing.join(separator));
       _showPopup(msg);
       return;
     }
@@ -131,7 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await _goToExplore();
     } on FirebaseAuthException {
-      if (mounted) _showErrorDialog('Correo o contraseña incorrectos.');
+      if (mounted) {
+        _showErrorDialog(
+            AppLocalizations.of(context).wrongEmailPassword);
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -191,8 +201,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Error de inicio de sesión con Google.')),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context).googleLoginError)),
         );
       }
     } finally {
@@ -207,15 +218,13 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('No estás registrado'),
-        content: const Text(
-          'No hay ningún perfil en la base de datos para este usuario. '
-          'Debes registrarte primero.',
-        ),
+        title: Text(AppLocalizations.of(context).notRegisteredTitle),
+        content:
+            Text(AppLocalizations.of(context).notRegisteredMessage),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Aceptar')),
+              child: Text(AppLocalizations.of(context).accept)),
         ],
       ),
     );
@@ -225,17 +234,17 @@ class _LoginScreenState extends State<LoginScreen> {
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('No hay perfil'),
-        content: const Text(
-            'No hay un perfil asociado a tu cuenta de Google. ¿Crear una nueva cuenta?'),
+        title: Text(AppLocalizations.of(context).googleNoProfileTitle),
+        content:
+            Text(AppLocalizations.of(context).googleNoProfileMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Aceptar'),
+            child: Text(AppLocalizations.of(context).accept),
           ),
         ],
       ),
@@ -246,12 +255,12 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Error de inicio de sesión'),
+        title: Text(AppLocalizations.of(context).loginErrorTitle),
         content: Text(msg),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Aceptar')),
+              child: Text(AppLocalizations.of(context).accept)),
         ],
       ),
     );
@@ -261,12 +270,12 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Atención'),
+        title: Text(AppLocalizations.of(context).attention),
         content: Text(msg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(AppLocalizations.of(context).ok),
           ),
         ],
       ),
@@ -320,21 +329,25 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(
                 height: 150, child: Image.asset('assets/plan-sin-fondo.png')),
             const SizedBox(height: 30),
-            Text('Inicio de sesión',
+            Text(AppLocalizations.of(context).loginTitle,
                 style: GoogleFonts.roboto(
                     fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             _googleButton(),
             const SizedBox(height: 10),
-            Text('- o -', style: GoogleFonts.roboto(fontSize: 18)),
+            Text(AppLocalizations.of(context).orSeparator,
+                style: GoogleFonts.roboto(fontSize: 18)),
             const SizedBox(height: 10),
             _inputField(
               controller: emailController,
-              hint: 'Correo electrónico',
+              hint: AppLocalizations.of(context).emailLabel,
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
-            _inputField(controller: passwordController, hint: 'Contraseña', obscure: true),
+            _inputField(
+                controller: passwordController,
+                hint: AppLocalizations.of(context).password,
+                obscure: true),
             const SizedBox(height: 10),
             _rememberCheckbox(),
             const SizedBox(height: 20),
@@ -349,8 +362,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(30)),
                   elevation: 10,
                 ),
-                child: const Text(
-                  'Iniciar sesión',
+                child: Text(
+                  AppLocalizations.of(context).login,
                   style: TextStyle(
                       fontSize: 20, color: Colors.white), // ← color blanco
                 ),
@@ -362,8 +375,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const RecoverPasswordScreen())),
-              child: const Text('¿Olvidaste tu contraseña?',
-                  style: TextStyle(decoration: TextDecoration.underline)),
+              child: Text(AppLocalizations.of(context).forgotPassword,
+                  style: const TextStyle(decoration: TextDecoration.underline)),
             ),
             const SizedBox(height: 10),
             GestureDetector(
@@ -371,9 +384,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => const RegisterScreen()),
               ),
-              child: const Text(
-                '¿No tienes una cuenta? Regístrate.',
-                style: TextStyle(decoration: TextDecoration.underline),
+              child: Text(
+                AppLocalizations.of(context).noAccountRegister,
+                style: const TextStyle(decoration: TextDecoration.underline),
               ),
             ),
             const SizedBox(height: 40),
@@ -390,7 +403,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: ElevatedButton.icon(
         onPressed: _loginWithGoogle,
         icon: Image.asset('assets/google_logo.png', height: 24, width: 24),
-        label: Text('Continuar con Google',
+        label: Text(AppLocalizations.of(context).continueGoogle,
             style: GoogleFonts.roboto(fontSize: 18, color: Colors.white)),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -456,8 +469,8 @@ class _LoginScreenState extends State<LoginScreen> {
             side: const BorderSide(color: AppColors.planColor),
           ),
           const SizedBox(width: 8),
-          const Expanded(
-            child: Text('Recordar datos de inicio de sesión'),
+          Expanded(
+            child: Text(AppLocalizations.of(context).rememberLoginData),
           ),
         ],
       ),
