@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Pantalla a pantalla completa para reportar a un usuario.
 /// Se seleccionan hasta 6 motivos y un comentario opcional.
 /// Al enviar, se guardan en la colección 'reports' de Firestore.
@@ -20,17 +22,19 @@ class ReportUserScreen extends StatefulWidget {
 }
 
 class _ReportUserScreenState extends State<ReportUserScreen> {
-  final List<String> _reasons = [
-    'Contenido inapropiado',
-    'Suplantación de identidad',
-    'Spam o publicitario',
-    'Lenguaje o comportamiento abusivo',
-    'Imágenes inapropiadas',
-    'Otro (especificar)',
-  ];
+  List<String> _reasons(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return [
+      t.reasonInappropriateContent,
+      t.reasonImpersonation,
+      t.reasonSpam,
+      t.reasonAbusiveLanguage,
+      t.reasonInappropriateImages,
+    ];
+  }
 
   // booleans para cada motivo
-  final List<bool> _selected = [false, false, false, false, false, false];
+  final List<bool> _selected = [false, false, false, false, false];
   final TextEditingController _optionalCommentController =
       TextEditingController();
 
@@ -38,25 +42,26 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reportar Usuario"),
+        title: Text(AppLocalizations.of(context).reportUserTitle),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "Selecciona los motivos por los que deseas reportar este perfil",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              AppLocalizations.of(context).selectReportReasons,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
-              itemCount: _reasons.length,
+              itemCount: _reasons(context).length,
               itemBuilder: (ctx, i) {
                 return ListTile(
-                  title: Text(_reasons[i]),
+                  title: Text(_reasons(context)[i]),
                   trailing: Checkbox(
                     value: _selected[i],
                     onChanged: (val) {
@@ -75,7 +80,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                "¿Por qué quieres reportar este perfil? (opcional)",
+                AppLocalizations.of(context).reportOptionalComment,
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
             ),
@@ -85,9 +90,9 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _optionalCommentController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Describe brevemente...',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: AppLocalizations.of(context).describeBrieflyHint,
               ),
               maxLines: 3,
             ),
@@ -99,11 +104,11 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
             children: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Volver"),
+                child: Text(AppLocalizations.of(context).back),
               ),
               ElevatedButton(
                 onPressed: _sendReport,
-                child: const Text("Enviar"),
+                child: Text(AppLocalizations.of(context).send),
               ),
             ],
           ),
@@ -119,9 +124,10 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
 
     // Recolecta los motivos marcados
     final selectedReasons = <String>[];
-    for (int i = 0; i < _reasons.length; i++) {
+    final reasons = _reasons(context);
+    for (int i = 0; i < reasons.length; i++) {
       if (_selected[i]) {
-        selectedReasons.add(_reasons[i]);
+        selectedReasons.add(reasons[i]);
       }
     }
 
@@ -138,13 +144,13 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Reporte enviado con éxito")),
+        SnackBar(content: Text(AppLocalizations.of(context).reportSentSuccess)),
       );
 
       Navigator.pop(context); // cierra la pantalla
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Ocurrió un error al enviar reporte.")),
+        SnackBar(content: Text(AppLocalizations.of(context).reportError)),
       );
     }
   }
@@ -220,10 +226,11 @@ class ReportAndBlockUser {
                                         height: 24,
                                       ),
                                       const SizedBox(width: 12),
-                                      const Expanded(
+                                      Expanded(
                                         child: Text(
-                                          'Reportar Perfil',
-                                          style: TextStyle(
+                                          AppLocalizations.of(context)
+                                              .reportProfile,
+                                          style: const TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
                                           ),
@@ -263,8 +270,10 @@ class ReportAndBlockUser {
                                       Expanded(
                                         child: Text(
                                           isBlocked
-                                              ? 'Desbloquear Perfil'
-                                              : 'Bloquear Perfil',
+                                              ? AppLocalizations.of(context)
+                                                  .unblockProfile
+                                              : AppLocalizations.of(context)
+                                                  .blockProfile,
                                           style: const TextStyle(
                                             color: Colors.black87,
                                             fontSize: 16,
