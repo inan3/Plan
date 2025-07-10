@@ -13,6 +13,7 @@ import 'registration/verification_provider.dart';
 import 'registration/email_verification_screen.dart';
 import '../../explore_screen/users_managing/presence_service.dart';
 import '../services/location_update_service.dart';
+import '../l10n/app_localizations.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -174,6 +175,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       );
     }
 
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
       body: Stack(
         children: [
@@ -200,7 +203,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     child: Column(
                       children: [
                         Text(
-                          '¡PLAN es la plataforma social donde los intereses comunes se fusionan!',
+                          t.welcomeSlogan,
                           style: GoogleFonts.roboto(
                             fontSize: 18,
                             color: Colors.white,
@@ -210,7 +213,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '¿Y tú? ¿Qué PLAN propones?',
+                          t.welcomeQuestion,
                           style: GoogleFonts.roboto(
                             fontSize: 20,
                             color: Colors.white,
@@ -243,7 +246,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         elevation: 10,
                       ),
                       child: Text(
-                        'Iniciar sesión',
+                        t.login,
                         style: GoogleFonts.roboto(
                           fontSize: 20,
                           color: Colors.white,
@@ -276,7 +279,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         ),
                       ),
                       child: Text(
-                        'Registrarse',
+                        t.register,
                         style: GoogleFonts.roboto(
                           fontSize: 20,
                           color: const Color.fromARGB(236, 0, 4, 227),

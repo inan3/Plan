@@ -251,6 +251,11 @@ class AppLocalizations {
       'choose_photo_source': 'Elige desde dónde obtener la foto',
       'camera': 'Cámara',
       'gallery': 'Galería',
+      'welcome_slogan':
+          '¡PLAN es la plataforma social donde los intereses comunes se fusionan!',
+      'welcome_question': '¿Y tú? ¿Qué PLAN propones?',
+      'login': 'Iniciar sesión',
+      'register': 'Registrarse',
       'no_results': 'Sin resultados',
       'login_title': 'Inicio de sesión',
       'login': 'Iniciar sesión',
@@ -518,6 +523,11 @@ class AppLocalizations {
       'choose_photo_source': 'Choose where to get the photo',
       'camera': 'Camera',
       'gallery': 'Gallery',
+      'welcome_slogan':
+          'PLAN is the social platform where common interests come together!',
+      'welcome_question': "What about you? What's your PLAN?",
+      'login': 'Log in',
+      'register': 'Register',
       'no_results': 'No results',
       'login_title': 'Sign in',
       'login': 'Sign in',
@@ -786,6 +796,10 @@ class AppLocalizations {
   String get privateProfileMemories => _t('private_profile_memories');
   String get planAndMemories => _t('plan_and_memories');
   String get noMemoriesDay => _t('no_memories_day');
+  String get welcomeSlogan => _t('welcome_slogan');
+  String get welcomeQuestion => _t('welcome_question');
+  String get login => _t('login');
+  String get register => _t('register');
 
   String get reportUserTitle => _t('report_user_title');
   String get selectReportReasons => _t('select_report_reasons');
