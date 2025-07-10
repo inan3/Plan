@@ -14,6 +14,7 @@ import 'plan_share_sheet.dart';
 import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
 import '../../l10n/app_localizations.dart';
+import 'plan_chat_screen.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
@@ -309,128 +310,117 @@ class PlanCardState extends State<PlanCard> {
   // (6) Popup Chat
   // ─────────────────────────────────────────────────────────────
   void _onMessageButtonTap() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.5,
-          minChildSize: 0.4,
-          maxChildSize: 0.95,
-          builder: (ctx, scrollController) {
-            return _buildChatPopup(widget.plan, scrollController);
-          },
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlanChatScreen(plan: widget.plan),
+      ),
     );
   }
 
   Widget _buildChatPopup(PlanModel plan, ScrollController scrollController) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.shareSheetBackground,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              children: [
-                const SizedBox(width: 48),
-                Text(
-                  AppLocalizations.of(context).planChat,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+        decoration: BoxDecoration(
+          color: AppColors.shareSheetBackground,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 48),
+                    Text(
+                      AppLocalizations.of(context).planChat,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        const Divider(color: Colors.white),
+            const Divider(color: Colors.white),
 
-        // Lista de mensajes
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('plan_chat')
-                .where('planId', isEqualTo: plan.id)
-                .orderBy('timestamp', descending: false)
-                .snapshots(),
-            builder: (ctx, snap) {
-              if (snap.hasError) {
-                return Center(
-                  child: Text(AppLocalizations.of(context).errorLoadingMessages,
-                      style: const TextStyle(color: Colors.white)),
-                );
-              }
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final docs = snap.data?.docs ?? [];
-              if (docs.isEmpty) {
-                return Center(
-                  child: Text(AppLocalizations.of(context).noMessagesYet,
-                      style: const TextStyle(color: Colors.white)),
-                );
-              }
-              return ListView(
-                controller: scrollController,
-                children: docs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  return _buildMessageItem(data);
-                }).toList(),
-              );
-            },
-          ),
-        ),
+            // Lista de mensajes
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('plan_chat')
+                    .where('planId', isEqualTo: plan.id)
+                    .orderBy('timestamp', descending: false)
+                    .snapshots(),
+                builder: (ctx, snap) {
+                  if (snap.hasError) {
+                    return Center(
+                      child: Text(
+                          AppLocalizations.of(context).errorLoadingMessages,
+                          style: const TextStyle(color: Colors.white)),
+                    );
+                  }
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final docs = snap.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return Center(
+                      child: Text(AppLocalizations.of(context).noMessagesYet,
+                          style: const TextStyle(color: Colors.white)),
+                    );
+                  }
+                  return ListView(
+                    controller: scrollController,
+                    children: docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _buildMessageItem(data);
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
 
-        // Caja de texto
-        Container(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _chatController,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context).writeMessage,
-                    filled: true,
-                    fillColor: Colors.white10,
-                    hintStyle: const TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+            // Caja de texto
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _chatController,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context).writeMessage,
+                        filled: true,
+                        fillColor: Colors.white10,
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
-                  style: const TextStyle(color: Colors.white),
-                ),
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: () => _sendMessage(plan),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: () => _sendMessage(plan),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+            ),
+          ],
+        ));
   }
 
   Widget _buildMessageItem(Map<String, dynamic> data) {
@@ -1202,8 +1192,10 @@ class PlanCardState extends State<PlanCard> {
                         GestureDetector(
                           onTap: () async {
                             final creatorUid = plan.createdBy;
-                            final currentUid = FirebaseAuth.instance.currentUser?.uid;
-                            if (creatorUid.isNotEmpty && creatorUid != currentUid) {
+                            final currentUid =
+                                FirebaseAuth.instance.currentUser?.uid;
+                            if (creatorUid.isNotEmpty &&
+                                creatorUid != currentUid) {
                               await UserInfoCheck.open(context, creatorUid);
                               if (mounted) setState(() {});
                             }
@@ -1218,7 +1210,8 @@ class PlanCardState extends State<PlanCard> {
                   // Imagen principal
                   GestureDetector(
                     onTap: () => _openPlanDetails(context, plan),
-                    child: (plan.backgroundImage != null && plan.backgroundImage!.isNotEmpty)
+                    child: (plan.backgroundImage != null &&
+                            plan.backgroundImage!.isNotEmpty)
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: AspectRatio(
@@ -1226,7 +1219,8 @@ class PlanCardState extends State<PlanCard> {
                               child: Image.network(
                                 plan.backgroundImage!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => buildPlaceholder(),
+                                errorBuilder: (_, __, ___) =>
+                                    buildPlaceholder(),
                               ),
                             ),
                           )
@@ -1243,7 +1237,8 @@ class PlanCardState extends State<PlanCard> {
                     padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
                     child: Builder(
                       builder: (context) {
-                        final textScale = MediaQuery.of(context).textScaleFactor;
+                        final textScale =
+                            MediaQuery.of(context).textScaleFactor;
                         final actions = FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
@@ -1262,7 +1257,9 @@ class PlanCardState extends State<PlanCard> {
                                     .doc(plan.id)
                                     .snapshots(),
                                 builder: (ctx, snap) {
-                                  final data = snap.data?.data() as Map<String, dynamic>? ?? {};
+                                  final data = snap.data?.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/mensaje.svg',
                                     countText: '${data['commentsCount'] ?? 0}',
@@ -1277,7 +1274,9 @@ class PlanCardState extends State<PlanCard> {
                                     .doc(plan.id)
                                     .snapshots(),
                                 builder: (ctx, snap) {
-                                  final data = snap.data?.data() as Map<String, dynamic>? ?? {};
+                                  final data = snap.data?.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/icono-compartir.svg',
                                     countText: '${data['share_count'] ?? 0}',
@@ -1292,7 +1291,9 @@ class PlanCardState extends State<PlanCard> {
                                     .doc(plan.id)
                                     .snapshots(),
                                 builder: (ctx, snap) {
-                                  final data = snap.data?.data() as Map<String, dynamic>? ?? {};
+                                  final data = snap.data?.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
                                   return _buildFrostedAction(
                                     iconPath: 'assets/icono-ojo.svg',
                                     countText: '${data['views'] ?? 0}',

@@ -272,8 +272,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       Flexible(
                         child: Text(
                           AppLocalizations.of(context).additionalInfo,
-                          style:
-                              const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -284,7 +284,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                      "${AppLocalizations.of(context).planIdLabel}: ${plan.id}",
+                          "${AppLocalizations.of(context).planIdLabel}: ${plan.id}",
                           style: const TextStyle(
                             color: Color.fromARGB(255, 212, 211, 211),
                             fontWeight: FontWeight.bold,
@@ -302,8 +302,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                           Clipboard.setData(ClipboardData(text: plan.id));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content:
-                                  Text(AppLocalizations.of(context).planIdCopied),
+                              content: Text(
+                                  AppLocalizations.of(context).planIdCopied),
                             ),
                           );
                         },
@@ -734,100 +734,100 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
 
   Widget _buildChatPopup(PlanModel plan, ScrollController scrollController) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.shareSheetBackground,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              const SizedBox(width: 48),
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(context).planChat,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
+        decoration: BoxDecoration(
+          color: AppColors.shareSheetBackground,
+          borderRadius: BorderRadius.circular(20),
         ),
-        const Divider(color: Colors.white),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('plan_chat')
-                .where('planId', isEqualTo: plan.id)
-                .orderBy('timestamp', descending: false)
-                .snapshots(),
-            builder: (ctx, snap) {
-              if (snap.hasError) {
-                return const Center(
-                  child: Text('Error al cargar mensajes',
-                      style: TextStyle(color: Colors.white)),
-                );
-              }
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final docs = snap.data?.docs ?? [];
-              if (docs.isEmpty) {
-                return const Center(
-                  child: Text('No hay mensajes todavía',
-                      style: TextStyle(color: Colors.white)),
-                );
-              }
-              return ListView(
-                controller: scrollController,
-                children: docs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  return _buildMessageItem(data);
-                }).toList(),
-              );
-            },
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _chatController,
-                  decoration: InputDecoration(
-                    hintText: "Escribe un mensaje...",
-                    filled: true,
-                    fillColor: Colors.white10,
-                    hintStyle: const TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  const SizedBox(width: 48),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context).planChat,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  style: const TextStyle(color: Colors.white),
-                ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: () => _sendMessage(plan),
+            ),
+            const Divider(color: Colors.white),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('plan_chat')
+                    .where('planId', isEqualTo: plan.id)
+                    .orderBy('timestamp', descending: false)
+                    .snapshots(),
+                builder: (ctx, snap) {
+                  if (snap.hasError) {
+                    return const Center(
+                      child: Text('Error al cargar mensajes',
+                          style: TextStyle(color: Colors.white)),
+                    );
+                  }
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final docs = snap.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return const Center(
+                      child: Text('No hay mensajes todavía',
+                          style: TextStyle(color: Colors.white)),
+                    );
+                  }
+                  return ListView(
+                    controller: scrollController,
+                    children: docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _buildMessageItem(data);
+                    }).toList(),
+                  );
+                },
               ),
-            ],
-          ),
-        ),
-      ],
-    );
+            ),
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _chatController,
+                      decoration: InputDecoration(
+                        hintText: "Escribe un mensaje...",
+                        filled: true,
+                        fillColor: Colors.white10,
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: () => _sendMessage(plan),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ));
   }
 
   Widget _buildMessageItem(Map<String, dynamic> data) {
@@ -1176,10 +1176,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Expanded(
+                      const Expanded(
                         child: Text(
-                          AppLocalizations.of(context).participantsTitle,
-                          style: const TextStyle(
+                          "Participantes",
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1231,9 +1231,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                child: Text(
-                                  AppLocalizations.of(context).attends,
-                                  style: const TextStyle(
+                                child: const Text(
+                                  'ASISTE',
+                                  style: TextStyle(
                                     color: AppColors.planColor,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1557,13 +1557,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     child: Column(
                       children: [
                         _buildHeaderRow(),
-                    _buildMediaSection(
-                      plan,
-                      allParts,
-                      isUserCreator: isUserCreator,
-                    ),
-                    _buildPlanIntro(plan),
-                    _buildLocationArea(plan),
+                        _buildMediaSection(
+                          plan,
+                          allParts,
+                          isUserCreator: isUserCreator,
+                        ),
+                        _buildPlanIntro(plan),
+                        _buildLocationArea(plan),
                         const SizedBox(height: 16),
                         _buildAdditionalInfoBox(plan),
                         const SizedBox(height: 16),
@@ -1628,7 +1628,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
+                const Icon(Icons.check_circle,
+                    color: Colors.greenAccent, size: 32),
                 const SizedBox(height: 8),
                 Text(
                   AppLocalizations.of(context).attendanceConfirmed,
@@ -1655,13 +1656,15 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, color: Colors.grey[300], size: 16),
+                        Icon(Icons.info_outline,
+                            color: Colors.grey[300], size: 16),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            AppLocalizations.of(context).checkinInstructionsCreator,
-                            style:
-                                TextStyle(color: Colors.grey[300], fontSize: 12),
+                            AppLocalizations.of(context)
+                                .checkinInstructionsCreator,
+                            style: TextStyle(
+                                color: Colors.grey[300], fontSize: 12),
                           ),
                         ),
                       ],
@@ -1681,7 +1684,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                            builder: (_) =>
+                                CheckInCreatorScreen(planId: plan.id),
                           ),
                         );
                       },
@@ -1707,7 +1711,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CheckInCreatorScreen(planId: plan.id),
+                            builder: (_) =>
+                                CheckInCreatorScreen(planId: plan.id),
                           ),
                         );
                       },
@@ -1746,11 +1751,13 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, color: Colors.grey[300], size: 16),
+                      Icon(Icons.info_outline,
+                          color: Colors.grey[300], size: 16),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          AppLocalizations.of(context).checkinInstructionsParticipant,
+                          AppLocalizations.of(context)
+                              .checkinInstructionsParticipant,
                           style:
                               TextStyle(color: Colors.grey[300], fontSize: 12),
                         ),
@@ -1770,15 +1777,18 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CheckInParticipantScreen(planId: plan.id),
+                            builder: (_) =>
+                                CheckInParticipantScreen(planId: plan.id),
                           ),
                         );
                       } else {
                         showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: Text(AppLocalizations.of(context).checkinNotStartedTitle),
-                            content: Text(AppLocalizations.of(context).checkinNotStartedMsg),
+                            title: Text(AppLocalizations.of(context)
+                                .checkinNotStartedTitle),
+                            content: Text(AppLocalizations.of(context)
+                                .checkinNotStartedMsg),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),

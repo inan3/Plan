@@ -10,6 +10,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import 'plan_memories_screen.dart'; // Asegúrate de importar tu pantalla de memorias
+import '../../services/language_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class MemoriesCalendar extends StatefulWidget {
   final String userId;
@@ -45,8 +47,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   @override
   void initState() {
     super.initState();
-    final code = LanguageService.locale.value.languageCode;
-    initializeDateFormatting(code, null).then((_) {
+    final locale = LanguageService.locale.value.languageCode;
+    initializeDateFormatting(locale, null).then((_) {
       setState(() {
         _localeInitialized = true;
         _currentMonth = DateTime.now();
@@ -148,8 +150,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   void _onDayTapped(DateTime date) {
     final dateKey = DateFormat('yyyy-MM-dd').format(date);
     final dayPlans = _plansByDate[dateKey];
-    final lang = AppLocalizations.of(context).locale.languageCode;
-    final String formattedDate = DateFormat.yMMMMd(lang).format(date);
+    final locale = Localizations.localeOf(context).languageCode;
+    final String formattedDate = DateFormat.yMMMMd(locale).format(date);
 
     if (dayPlans == null || dayPlans.isEmpty) {
       // No hay planes => popup "sin memorias".
@@ -157,7 +159,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(formattedDate),
-          content: const Text("No hay memorias para este día."),
+          content: Text(AppLocalizations.of(context).noMemoriesDay),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -216,8 +218,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   /// Popup para planes futuros (aún no celebrados).
   void _showUpcomingPlanPopup(DateTime date, List<PlanModel> dayPlans) {
-    final lang = AppLocalizations.of(context).locale.languageCode;
-    final String formattedDate = DateFormat.yMMMMd(lang).format(date);
+    final locale = Localizations.localeOf(context).languageCode;
+    final String formattedDate = DateFormat.yMMMMd(locale).format(date);
     showDialog(
       context: context,
       builder: (_) {
@@ -248,8 +250,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   /// Popup para planes caducados
   void _showExpiredPlanPopup(DateTime date, List<PlanModel> dayPlans) {
-    final lang = AppLocalizations.of(context).locale.languageCode;
-    final String formattedDate = DateFormat.yMMMMd(lang).format(date);
+    final locale = Localizations.localeOf(context).languageCode;
+    final String formattedDate = DateFormat.yMMMMd(locale).format(date);
 
     showDialog(
       context: context,
@@ -329,8 +331,9 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   Widget _buildHeader() {
     if (!_localeInitialized) return const SizedBox.shrink();
-    final lang = AppLocalizations.of(context).locale.languageCode;
-    final String monthYear = DateFormat.yMMMM(lang).format(_currentMonth);
+    final locale = Localizations.localeOf(context).languageCode;
+    final String monthYear = DateFormat.yMMMM(locale).format(_currentMonth);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
       child: Row(

@@ -177,6 +177,20 @@ class AppLocalizations {
       'report_profile': 'Reportar perfil',
       'block_profile': 'Bloquear perfil',
       'unblock_profile': 'Desbloquear perfil',
+      'future_plans': 'planes futuros',
+      'followers': 'seguidores',
+      'following': 'seguidos',
+      'send_message': 'Enviar Mensaje',
+      'follow': 'Seguir',
+      'following_status': 'Siguiendo',
+      'requested': 'Solicitado',
+      'memories': 'Memorias',
+      'private_user':
+          'Este usuario es privado. Debes enviar solicitud.',
+      'private_profile_memories':
+          'Este perfil es privado. Debes seguirle y ser aceptado para ver sus memorias.',
+      'plan_and_memories': 'Plan y Memorias',
+      'no_memories_day': 'No hay memorias para este día.',
       'plan_id_label': 'ID del Plan',
       'age_restriction_label': 'Restricción de edad',
       'ends_at_label': 'Finaliza',
@@ -334,7 +348,7 @@ class AppLocalizations {
       'until': 'Until',
       'online': 'Online',
       'offline': 'Offline',
-      'write_message': 'Write a message...',
+      'write_message': 'Type a message...',
       'share_location': 'Location',
       'share_plan': 'Plan',
       'share_photo': 'Photo',
@@ -378,6 +392,20 @@ class AppLocalizations {
       'report_profile': 'Report profile',
       'block_profile': 'Block profile',
       'unblock_profile': 'Unblock profile',
+      'future_plans': 'Future plans',
+      'followers': 'Followers',
+      'following': 'Following',
+      'send_message': 'Send Message',
+      'follow': 'Follow',
+      'following_status': 'Following',
+      'requested': 'Requested',
+      'memories': 'Memories',
+      'private_user':
+          'This account is private. You must send a request.',
+      'private_profile_memories':
+          'This profile is private. You must follow and be accepted to view their memories.',
+      'plan_and_memories': 'Plan and Memories',
+      'no_memories_day': 'No memories for this day.',
       'plan_id_label': 'Plan ID',
       'age_restriction_label': 'Age restriction',
       'ends_at_label': 'Ends',
@@ -607,6 +635,15 @@ class AppLocalizations {
   String get inAPlan => _t('in_a_plan');
   String get totalParticipantsText => _t('total_participants');
   String get gatheredSoFar => _t('gathered_so_far');
+  String get sendMessage => _t('send_message');
+  String get follow => _t('follow');
+  String get followingStatus => _t('following_status');
+  String get requested => _t('requested');
+  String get memories => _t('memories');
+  String get privateUser => _t('private_user');
+  String get privateProfileMemories => _t('private_profile_memories');
+  String get planAndMemories => _t('plan_and_memories');
+  String get noMemoriesDay => _t('no_memories_day');
 
   String planAgeRange(int start, int end) {
     return locale.languageCode == 'en'

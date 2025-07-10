@@ -246,10 +246,11 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Plan y ${AppLocalizations.of(context).memories}'),
+        title: Text(t.planAndMemories),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -337,12 +338,13 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   /// Cabecera "Memorias" centrada
   Widget _buildMemoriesSection() {
+    final t = AppLocalizations.of(context);
     return Column(
       children: [
         const SizedBox(height: 12),
         Center(
           child: Text(
-            AppLocalizations.of(context).memories,
+            t.memories,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

@@ -129,12 +129,16 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
         });
       } else {
         setState(() {
-          _privilegeInfo = "No se encontró información de privilegios.";
+          _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
+              ? 'No privilege information found.'
+              : 'No se encontró información de privilegios.';
         });
       }
     } catch (e) {
       setState(() {
-        _privilegeInfo = "Error al cargar: $e";
+        _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
+            ? 'Error loading: $e'
+            : 'Error al cargar: $e';
       });
     }
   }
@@ -444,6 +448,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     final t = AppLocalizations.of(context);
     String titleText;
     String contentText;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
 
     switch (levelName.toLowerCase()) {
       case 'premium':
