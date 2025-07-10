@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../l10n/app_localizations.dart';
 
 class PrivilegeLevelDetails extends StatefulWidget {
   final String userId; // ID del usuario para buscar sus datos en Firestore
@@ -184,41 +185,43 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
     final int maxMaxPartsBar = thresholdReq.minMaxParts;
     final int maxTotalPartsBar = thresholdReq.minTotalParts;
 
+    final t = AppLocalizations.of(context);
+
     Widget createdPlansText = Column(
-      children: const [
+      children: [
         Text(
-          "Planes creados",
-          style: TextStyle(color: Colors.white, fontSize: 10),
+          t.createdPlans,
+          style: const TextStyle(color: Colors.white, fontSize: 10),
           textAlign: TextAlign.center,
         ),
       ],
     );
 
     Widget maxPartsText = Column(
-      children: const [
+      children: [
         Text(
-          "Máx. participantes",
-          style: TextStyle(color: Colors.white, fontSize: 10),
+          t.maxParticipantsText,
+          style: const TextStyle(color: Colors.white, fontSize: 10),
           textAlign: TextAlign.center,
         ),
         Text(
-          "en un plan",
-          style: TextStyle(color: Colors.white, fontSize: 10),
+          t.inAPlan,
+          style: const TextStyle(color: Colors.white, fontSize: 10),
           textAlign: TextAlign.center,
         ),
       ],
     );
 
     Widget totalPartsText = Column(
-      children: const [
+      children: [
         Text(
-          "Total de participantes",
-          style: TextStyle(color: Colors.white, fontSize: 10),
+          t.totalParticipantsText,
+          style: const TextStyle(color: Colors.white, fontSize: 10),
           textAlign: TextAlign.center,
         ),
         Text(
-          "reunidos hasta ahora",
-          style: TextStyle(color: Colors.white, fontSize: 10),
+          t.gatheredSoFar,
+          style: const TextStyle(color: Colors.white, fontSize: 10),
           textAlign: TextAlign.center,
         ),
       ],
@@ -292,22 +295,20 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   Widget _buildNextLevelHint() {
     final normalized = _privilegeLevel.toLowerCase().replaceAll('á', 'a');
 
+    final t = AppLocalizations.of(context);
     late final String message;
     switch (normalized) {
       case 'premium':
-        message =
-            'Crea 50 planes, logra 50 participantes en un solo plan y reúne 2000 participantes en total para pasar al nivel de privilegio Golden.';
+        message = t.nextHintPremium;
         break;
       case 'golden':
-        message =
-            'Crea 500 planes, logra 500 participantes en un solo plan y reúne 10000 participantes en total para pasar al nivel de privilegio VIP.';
+        message = t.nextHintGolden;
         break;
       case 'vip':
-        message = 'Estás disfrutando del nivel de privilegio VIP.';
+        message = t.nextHintVip;
         break;
       default:
-        message =
-            'Crea 5 planes, logra 5 participantes en un solo plan y reúne 20 participantes en total para pasar al nivel de privilegio Premium.';
+        message = t.nextHintBasic;
     }
 
     return Padding(
@@ -440,36 +441,26 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   }
 
   void _showPrivilegeInfoPopup(String levelName) {
+    final t = AppLocalizations.of(context);
     String titleText;
     String contentText;
 
     switch (levelName.toLowerCase()) {
       case 'premium':
-        titleText = "Nivel Premium";
-        contentText = "El nivel Premium es el segundo nivel. "
-            "Para pasar al siguiente nivel de Golden:\n"
-            "- Crear 50 planes.\n"
-            "- Máximo de 50 participantes en un plan.\n"
-            "- 2000 participantes en total.";
+        titleText = t.levelPremium;
+        contentText = t.infoPremium;
         break;
       case 'golden':
-        titleText = "Nivel Golden";
-        contentText = "El nivel Golden es el penúltimo nivel. "
-            "Para pasar a VIP:\n"
-            "- Crear 500 planes.\n"
-            "- Alcanzar 500 participantes en un plan.\n"
-            "- 10000 participantes en total.";
+        titleText = t.levelGolden;
+        contentText = t.infoGolden;
         break;
       case 'vip':
-        titleText = "Nivel VIP";
-        contentText = "Este es el nivel más alto, sin límites.";
+        titleText = t.levelVip;
+        contentText = t.infoVip;
         break;
       default:
-        titleText = "Nivel Básico";
-        contentText = "El nivel Básico es el más bajo. Para pasar a Premium:\n"
-            "- Crear 5 planes.\n"
-            "- Alcanzar 5 participantes en un plan.\n"
-            "- 20 participantes en total.";
+        titleText = t.levelBasic;
+        contentText = t.infoBasic;
         break;
     }
 
@@ -513,9 +504,9 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          "Cerrar",
-                          style: TextStyle(color: Colors.white),
+                        child: Text(
+                          AppLocalizations.of(context).close,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ),

@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/language_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../main/colors.dart';
@@ -43,7 +45,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   @override
   void initState() {
     super.initState();
-    initializeDateFormatting('es', null).then((_) {
+    final code = LanguageService.locale.value.languageCode;
+    initializeDateFormatting(code, null).then((_) {
       setState(() {
         _localeInitialized = true;
         _currentMonth = DateTime.now();
@@ -145,7 +148,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   void _onDayTapped(DateTime date) {
     final dateKey = DateFormat('yyyy-MM-dd').format(date);
     final dayPlans = _plansByDate[dateKey];
-    final String formattedDate = DateFormat.yMMMMd('es').format(date);
+    final lang = AppLocalizations.of(context).locale.languageCode;
+    final String formattedDate = DateFormat.yMMMMd(lang).format(date);
 
     if (dayPlans == null || dayPlans.isEmpty) {
       // No hay planes => popup "sin memorias".
@@ -157,7 +161,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+              child: Text(AppLocalizations.of(context).close),
             ),
           ],
         ),
@@ -212,7 +216,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   /// Popup para planes futuros (aún no celebrados).
   void _showUpcomingPlanPopup(DateTime date, List<PlanModel> dayPlans) {
-    final String formattedDate = DateFormat.yMMMMd('es').format(date);
+    final lang = AppLocalizations.of(context).locale.languageCode;
+    final String formattedDate = DateFormat.yMMMMd(lang).format(date);
     showDialog(
       context: context,
       builder: (_) {
@@ -233,7 +238,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+              child: Text(AppLocalizations.of(context).close),
             ),
           ],
         );
@@ -243,7 +248,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   /// Popup para planes caducados
   void _showExpiredPlanPopup(DateTime date, List<PlanModel> dayPlans) {
-    final String formattedDate = DateFormat.yMMMMd('es').format(date);
+    final lang = AppLocalizations.of(context).locale.languageCode;
+    final String formattedDate = DateFormat.yMMMMd(lang).format(date);
 
     showDialog(
       context: context,
@@ -256,7 +262,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
             Container(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Memorias',
+                AppLocalizations.of(context).memories,
                 style: GoogleFonts.roboto(
                   color: AppColors.white,
                   fontSize: 26,
@@ -308,7 +314,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                           ),
                         ),
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text("Cerrar"),
+                        child: Text(AppLocalizations.of(context).close),
                       ),
                     ],
                   ),
@@ -323,7 +329,8 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
 
   Widget _buildHeader() {
     if (!_localeInitialized) return const SizedBox.shrink();
-    final String monthYear = DateFormat.yMMMM('es').format(_currentMonth);
+    final lang = AppLocalizations.of(context).locale.languageCode;
+    final String monthYear = DateFormat.yMMMM(lang).format(_currentMonth);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
       child: Row(
@@ -352,7 +359,10 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   }
 
   Widget _buildDaysOfWeekRow() {
-    final daysOfWeek = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+    final lang = AppLocalizations.of(context).locale.languageCode;
+    final daysOfWeek = lang == 'en'
+        ? ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+        : ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: daysOfWeek.map((day) {
@@ -516,11 +526,11 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(8.0),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Text(
-                "Memorias",
-                style: TextStyle(
+                AppLocalizations.of(context).memories,
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
