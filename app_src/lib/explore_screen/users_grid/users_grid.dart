@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../plans_managing/firebase_services.dart';
+import '../l10n/app_localizations.dart';
 import 'users_grid_helpers.dart';
 import '../plans_managing/plan_card.dart';
 import '../special_plans/invite_users_to_plan_screen.dart';
@@ -392,9 +393,9 @@ class _UsersGridState extends State<UsersGrid> {
                             padding: const EdgeInsets.all(8),
                             color: const Color.fromARGB(255, 84, 78, 78)
                                 .withOpacity(0.3),
-                            child: const Text(
-                              'Este usuario no ha creado planes aún...',
-                              style: TextStyle(color: Colors.white),
+                            child: Text(
+                              AppLocalizations.of(context).userNoPlans,
+                              style: const TextStyle(color: Colors.white),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -432,7 +433,7 @@ class _UsersGridState extends State<UsersGrid> {
         _buildActionButton(
           context: context,
           iconPath: 'assets/agregar-usuario.svg',
-          label: 'Invítale a un Plan',
+          label: AppLocalizations.of(context).inviteToPlan,
           onTap: () => _handleInvite(context, userId),
         ),
         const SizedBox(width: 16),

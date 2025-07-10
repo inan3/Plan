@@ -15,6 +15,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../profile/user_images_managing.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
@@ -1548,8 +1550,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               ),
               child: TextField(
                 controller: _messageController,
-                decoration: const InputDecoration(
-                  hintText: "Escribe un mensaje...",
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context).writeMessage,
                   border: InputBorder.none,
                   isCollapsed: true,
                 ),
@@ -1600,7 +1602,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               children: [
                 _buildFloatingOption(
                   svgPath: 'assets/icono-ubicacion.svg',
-                  label: 'Ubicación',
+                  label: AppLocalizations.of(context).shareLocation,
                   onTap: () async {
                     Navigator.pop(ctx);
                     await _handleSendLocationWithPicker();
@@ -1608,7 +1610,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                 ),
                 _buildFloatingOption(
                   svgPath: 'assets/plan-sin-fondo.png',
-                  label: 'Plan',
+                  label: AppLocalizations.of(context).sharePlan,
                   onTap: () {
                     Navigator.pop(ctx);
                     _showPlanSelection();
@@ -1616,7 +1618,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                 ),
                 _buildFloatingOption(
                   svgPath: 'assets/icono-imagen.svg',
-                  label: 'Foto',
+                  label: AppLocalizations.of(context).sharePhoto,
                   onTap: () {
                     Navigator.pop(ctx);
                     _handleSelectImage();

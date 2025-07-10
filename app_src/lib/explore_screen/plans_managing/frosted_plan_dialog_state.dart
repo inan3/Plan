@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/plan_model.dart';
@@ -171,9 +172,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         color: Colors.white,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        "Ubicación",
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      Text(
+                        AppLocalizations.of(context).meetingLocation,
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -215,11 +217,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       ),
                     )
                   else
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        "Ubicación no disponible",
-                        style: TextStyle(
+                        AppLocalizations.of(context).locationUnavailable,
+                        style: const TextStyle(
                           color: Color.fromARGB(255, 151, 121, 215),
                           fontWeight: FontWeight.bold,
                         ),
@@ -265,10 +267,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         color: Colors.white,
                       ),
                       const SizedBox(width: 8),
-                      const Flexible(
+                      Flexible(
                         child: Text(
-                          "Información adicional",
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                          AppLocalizations.of(context).additionalInfo,
+                          style:
+                              const TextStyle(color: Colors.white, fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -296,8 +299,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: plan.id));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('ID copiado al portapapeles'),
+                            SnackBar(
+                              content:
+                                  Text(AppLocalizations.of(context).planIdCopied),
                             ),
                           );
                         },
@@ -711,9 +715,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 color: Colors.white,
               ),
               const SizedBox(width: 6),
-              const Text(
-                "Únete ahora",
-                style: TextStyle(color: Colors.white, fontSize: 14),
+              Text(
+                AppLocalizations.of(context).joinNow,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
             ],
           ),
@@ -731,11 +735,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           child: Row(
             children: [
               const SizedBox(width: 48),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  "Chat del Plan",
+                  AppLocalizations.of(context).planChat,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.planColor,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1615,9 +1619,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
                 SizedBox(height: 8),
                 Text(
-                  "Tu asistencia se ha confirmado con éxito.\n¡Disfruta del evento!",
+                  AppLocalizations.of(context).attendanceConfirmed,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ],
             ),
@@ -1643,8 +1647,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Inicia el registro de asistencia para que los participantes escaneen el código QR o introduzcan el código de seis dígitos y confirmen su presencia en tu plan. Con cada check-in tu nivel de privilegio aumentará, lo que te permitirá aprovechar al máximo la app y, por ejemplo, crear planes de pago. Para ver tu progreso, abre tu perfil y toca la INSIGNIA situada justo debajo de tu nombre.',
-                            style: TextStyle(color: Colors.grey[300], fontSize: 12),
+                            AppLocalizations.of(context).checkinInstructionsCreator,
+                            style:
+                                TextStyle(color: Colors.grey[300], fontSize: 12),
                           ),
                         ),
                       ],
@@ -1668,7 +1673,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                           ),
                         );
                       },
-                      child: const Text("Iniciar Check-in"),
+                      child: Text(AppLocalizations.of(context).startCheckin),
                     ),
                   ),
                 ],
@@ -1694,7 +1699,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                           ),
                         );
                       },
-                      child: const Text("Ver Check-in (QR)"),
+                      child: Text(AppLocalizations.of(context).viewCheckin),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1708,7 +1713,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       onPressed: () async {
                         await AttendanceManaging.finalizeCheckIn(plan.id);
                       },
-                      child: const Text("Finalizar Check-in"),
+                      child: Text(AppLocalizations.of(context).endCheckin),
                     ),
                   ),
                 ],
@@ -1733,8 +1738,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Para confirmar tu asistencia, pulsa «Confirmar asistencia» y utiliza la cámara para escanear el código QR o introduce el código de seis dígitos facilitado por el organizador.',
-                          style: TextStyle(color: Colors.grey[300], fontSize: 12),
+                          AppLocalizations.of(context).checkinInstructionsParticipant,
+                          style:
+                              TextStyle(color: Colors.grey[300], fontSize: 12),
                         ),
                       ),
                     ],
@@ -1759,8 +1765,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: const Text('Check-in no iniciado'),
-                            content: const Text('El organizador del plan aún no ha iniciado el Check-in. Se te notificará una vez que se haya iniciado.'),
+                            title: Text(AppLocalizations.of(context).checkinNotStartedTitle),
+                            content: Text(AppLocalizations.of(context).checkinNotStartedMsg),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
@@ -1771,7 +1777,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         );
                       }
                     },
-                    child: const Text("Confirmar asistencia"),
+                    child: Text(AppLocalizations.of(context).confirmAttendance),
                   ),
                 ),
               ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../l10n/app_localizations.dart';
 
 // Widget que muestra la actividad de un usuario usando Realtime Database.
 class UserActivityStatus extends StatefulWidget {
@@ -95,19 +96,28 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
     });
   }
 
-  /// Retorna un string estilo "Hace 5 minuto/s", etc.
-  String _formatLastActive(DateTime? dt) {
-    if (dt == null) return "Desconectado";
+  /// Retorna un string estilo "Hace 5 minuto/s" o "5 minutes ago" según idioma.
+  String _formatLastActive(BuildContext context, DateTime? dt) {
+    final t = AppLocalizations.of(context);
+    if (dt == null) return t.offline;
     final diff = DateTime.now().difference(dt);
 
     if (diff.inMinutes < 1) {
-      return "Hace unos segundos";
+      return t.locale.languageCode == 'en'
+          ? 'A few seconds ago'
+          : 'Hace unos segundos';
     } else if (diff.inMinutes < 60) {
-      return "Hace ${diff.inMinutes} minutos";
+      return t.locale.languageCode == 'en'
+          ? '${diff.inMinutes} minutes ago'
+          : 'Hace ${diff.inMinutes} minutos';
     } else if (diff.inHours < 24) {
-      return "Hace ${diff.inHours} horas";
+      return t.locale.languageCode == 'en'
+          ? '${diff.inHours} hours ago'
+          : 'Hace ${diff.inHours} horas';
     } else {
-      return "Hace ${diff.inDays} días";
+      return t.locale.languageCode == 'en'
+          ? '${diff.inDays} days ago'
+          : 'Hace ${diff.inDays} días';
     }
   }
 
@@ -121,15 +131,15 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
         children: [
           _buildDot(color: Colors.green),
           const SizedBox(width: 4),
-          const Text(
-            "En línea",
-            style: TextStyle(color: Colors.white, fontSize: 12),
+          Text(
+            AppLocalizations.of(context).online,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
         ],
       );
     } else {
       // Usuario desconectado
-      final info = _formatLastActive(_lastSeen);
+      final info = _formatLastActive(context, _lastSeen);
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
