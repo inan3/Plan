@@ -177,6 +177,11 @@ class AppLocalizations {
       'report_profile': 'Reportar perfil',
       'block_profile': 'Bloquear perfil',
       'unblock_profile': 'Desbloquear perfil',
+      'profile_blocked_title': 'Perfil Bloqueado',
+      'profile_unblocked_title': 'Perfil Desbloqueado',
+      'profile_blocked_message':
+          'Este perfil ha sido bloqueado, ya no podrá interactuar contigo.',
+      'profile_unblocked_message': 'Has desbloqueado a este usuario.',
       'future_plans': 'planes futuros',
       'followers': 'seguidores',
       'following': 'seguidos',
@@ -406,6 +411,11 @@ class AppLocalizations {
       'report_profile': 'Report profile',
       'block_profile': 'Block profile',
       'unblock_profile': 'Unblock profile',
+      'profile_blocked_title': 'Profile Blocked',
+      'profile_unblocked_title': 'Profile Unblocked',
+      'profile_blocked_message':
+          'This profile has been blocked and will no longer interact with you.',
+      'profile_unblocked_message': 'You have unblocked this user.',
       'future_plans': 'Future plans',
       'followers': 'Followers',
       'following': 'Following',
@@ -638,6 +648,10 @@ class AppLocalizations {
   String get reportProfile => _t('report_profile');
   String get blockProfile => _t('block_profile');
   String get unblockProfile => _t('unblock_profile');
+  String get profileBlockedTitle => _t('profile_blocked_title');
+  String get profileUnblockedTitle => _t('profile_unblocked_title');
+  String get profileBlockedMessage => _t('profile_blocked_message');
+  String get profileUnblockedMessage => _t('profile_unblocked_message');
   String get planIdLabel => _t('plan_id_label');
   String get ageRestrictionLabel => _t('age_restriction_label');
   String get endsAt => _t('ends_at_label');
