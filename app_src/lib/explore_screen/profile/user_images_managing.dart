@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../l10n/app_localizations.dart';
 
 class UserImagesManaging {
   static final ImagePicker _imagePicker = ImagePicker();
