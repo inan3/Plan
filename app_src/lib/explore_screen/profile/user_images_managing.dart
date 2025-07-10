@@ -83,52 +83,60 @@ class UserImagesManaging {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.blue),
-              title: const Text('Seleccionar de la galería'),
-              onTap: () async {
-                Navigator.pop(context);
-                final pickedFile =
-                    await _imagePicker.pickImage(source: ImageSource.gallery);
-                if (pickedFile != null) {
-                  onLoading(true);
-                  await _uploadAvatarImage(
-                    context,
-                    File(pickedFile.path),
-                    onProfileUpdated: onProfileUpdated,
-                  );
-                  onLoading(false);
-                }
-              },
+      builder: (_) {
+        final t = AppLocalizations.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final pickedFile =
+                          await _imagePicker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        onLoading(true);
+                        await _uploadAvatarImage(
+                          context,
+                          File(pickedFile.path),
+                          onProfileUpdated: onProfileUpdated,
+                        );
+                        onLoading(false);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final pickedFile =
+                          await _imagePicker.pickImage(source: ImageSource.camera);
+                      if (pickedFile != null) {
+                        onLoading(true);
+                        await _uploadAvatarImage(
+                          context,
+                          File(pickedFile.path),
+                          onProfileUpdated: onProfileUpdated,
+                        );
+                        onLoading(false);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.blue),
-              title: const Text('Tomar una foto'),
-              onTap: () async {
-                Navigator.pop(context);
-                final pickedFile =
-                    await _imagePicker.pickImage(source: ImageSource.camera);
-                if (pickedFile != null) {
-                  onLoading(true);
-                  await _uploadAvatarImage(
-                    context,
-                    File(pickedFile.path),
-                    onProfileUpdated: onProfileUpdated,
-                  );
-                  onLoading(false);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -227,54 +235,62 @@ class UserImagesManaging {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.blue),
-              title: const Text('Seleccionar de la galería'),
-              onTap: () async {
-                Navigator.pop(context);
-                final pickedFile =
-                    await _imagePicker.pickImage(source: ImageSource.gallery);
-                if (pickedFile != null) {
-                  onLoading(true);
-                  await _uploadCoverImage(
-                    context,
-                    File(pickedFile.path),
-                    currentCoverImages,
-                    onImagesUpdated: onImagesUpdated,
-                  );
-                  onLoading(false);
-                }
-              },
+      builder: (_) {
+        final t = AppLocalizations.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final pickedFile =
+                          await _imagePicker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        onLoading(true);
+                        await _uploadCoverImage(
+                          context,
+                          File(pickedFile.path),
+                          currentCoverImages,
+                          onImagesUpdated: onImagesUpdated,
+                        );
+                        onLoading(false);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final pickedFile =
+                          await _imagePicker.pickImage(source: ImageSource.camera);
+                      if (pickedFile != null) {
+                        onLoading(true);
+                        await _uploadCoverImage(
+                          context,
+                          File(pickedFile.path),
+                          currentCoverImages,
+                          onImagesUpdated: onImagesUpdated,
+                        );
+                        onLoading(false);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.blue),
-              title: const Text('Tomar una foto'),
-              onTap: () async {
-                Navigator.pop(context);
-                final pickedFile =
-                    await _imagePicker.pickImage(source: ImageSource.camera);
-                if (pickedFile != null) {
-                  onLoading(true);
-                  await _uploadCoverImage(
-                    context,
-                    File(pickedFile.path),
-                    currentCoverImages,
-                    onImagesUpdated: onImagesUpdated,
-                  );
-                  onLoading(false);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -374,24 +390,29 @@ class UserImagesManaging {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.blue),
-              title: const Text('Seleccionar imágenes'),
-              onTap: () async {
-                Navigator.pop(context);
-                final result = await FilePicker.platform.pickFiles(
-                  type: FileType.image,
-                  allowMultiple: true,
-                );
-                if (result != null) {
-                  onLoading(true);
+      builder: (_) {
+        final t = AppLocalizations.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.image,
+                        allowMultiple: true,
+                      );
+                      if (result != null) {
+                        onLoading(true);
                   for (var file in result.files) {
                     if (file.path != null) {
                       await _uploadAdditionalImage(
@@ -406,28 +427,32 @@ class UserImagesManaging {
                 }
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.blue),
-              title: const Text('Tomar una foto'),
-              onTap: () async {
-                Navigator.pop(context);
-                final pickedFile =
-                    await _imagePicker.pickImage(source: ImageSource.camera);
-                if (pickedFile != null) {
-                  onLoading(true);
-                  await _uploadAdditionalImage(
-                    context,
-                    File(pickedFile.path),
-                    currentPhotos,
-                    onNewPhotoUrls: onNewPhotoUrls,
-                  );
-                  onLoading(false);
-                }
-              },
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                  title: Text(t.takePhoto),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final pickedFile =
+                        await _imagePicker.pickImage(source: ImageSource.camera);
+                    if (pickedFile != null) {
+                      onLoading(true);
+                      await _uploadAdditionalImage(
+                        context,
+                        File(pickedFile.path),
+                        currentPhotos,
+                        onNewPhotoUrls: onNewPhotoUrls,
+                      );
+                      onLoading(false);
+                    }
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

@@ -93,6 +93,8 @@ class AppLocalizations {
       'what_to_upload': '¿Qué deseas subir?',
       'image_gallery': 'Imagen (galería)',
       'image_camera': 'Imagen (cámara)',
+      'pick_from_gallery': 'Seleccionar de la galería',
+      'take_photo': 'Hacer una foto',
       'only_one_image': 'Solo se permite subir una imagen.',
       'attention': 'Atención',
       'ok': 'OK',
@@ -339,6 +341,8 @@ class AppLocalizations {
       'what_to_upload': 'What would you like to upload?',
       'image_gallery': 'Image (gallery)',
       'image_camera': 'Image (camera)',
+      'pick_from_gallery': 'Select from gallery',
+      'take_photo': 'Take a photo',
       'only_one_image': 'Only one image is allowed.',
       'attention': 'Attention',
       'ok': 'OK',
@@ -591,6 +595,8 @@ class AppLocalizations {
   String get whatToUpload => _t('what_to_upload');
   String get imageGallery => _t('image_gallery');
   String get imageCamera => _t('image_camera');
+  String get pickFromGallery => _t('pick_from_gallery');
+  String get takePhoto => _t('take_photo');
   String get onlyOneImage => _t('only_one_image');
   String get attention => _t('attention');
   String get ok => _t('ok');

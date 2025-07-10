@@ -80,30 +80,36 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
       context: context,
       backgroundColor: Colors.black.withOpacity(0.2),
       builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.blue),
-                title: const Text('Seleccionar de la galería'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _pickMultipleImages();
-                },
+        final t = AppLocalizations.of(context);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text('Tomar una foto'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _takePhoto();
-                },
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    title: Text(t.pickFromGallery),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _pickMultipleImages();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await _takePhoto();
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
