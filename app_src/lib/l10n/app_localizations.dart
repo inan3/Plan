@@ -219,6 +219,11 @@ class AppLocalizations {
       'in_a_plan': 'en un plan',
       'total_participants': 'Total de participantes',
       'gathered_so_far': 'reunidos hasta ahora',
+      'no_future_plans_user':
+          'Este usuario no ha creado planes futuros aún...',
+      'follow_to_view_future_plans':
+          'Debes seguir a esta cuenta para ver sus planes futuros',
+      'no_results': 'Sin resultados',
     },
     'en': {
       'settings': 'Settings',
@@ -434,6 +439,11 @@ class AppLocalizations {
       'in_a_plan': 'in one plan',
       'total_participants': 'Total participants',
       'gathered_so_far': 'gathered so far',
+      'no_future_plans_user':
+          "This user hasn't created future plans yet...",
+      'follow_to_view_future_plans':
+          'You must follow this account to view their future plans',
+      'no_results': 'No results',
     },
   };
 
@@ -635,6 +645,9 @@ class AppLocalizations {
   String get inAPlan => _t('in_a_plan');
   String get totalParticipantsText => _t('total_participants');
   String get gatheredSoFar => _t('gathered_so_far');
+  String get noFuturePlansUser => _t('no_future_plans_user');
+  String get followToViewFuturePlans => _t('follow_to_view_future_plans');
+  String get noResults => _t('no_results');
   String get sendMessage => _t('send_message');
   String get follow => _t('follow');
   String get followingStatus => _t('following_status');
