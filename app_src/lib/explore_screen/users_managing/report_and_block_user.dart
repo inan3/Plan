@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../l10n/app_localizations.dart';
 
@@ -330,20 +331,21 @@ class ReportAndBlockUser {
     isBlocked = !isCurrentlyBlocked;
 
     // Mostramos popup confirmando acción
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text(isBlocked ? "Perfil Bloqueado" : "Perfil Desbloqueado"),
+          title: Text(
+            isBlocked ? t.profileBlockedTitle : t.profileUnblockedTitle,
+          ),
           content: Text(
-            isBlocked
-                ? "Este perfil ha sido bloqueado, ya no podrá interactuar contigo."
-                : "Has desbloqueado a este usuario.",
+            isBlocked ? t.profileBlockedMessage : t.profileUnblockedMessage,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("OK"),
+              child: Text(t.ok),
             ),
           ],
         );
