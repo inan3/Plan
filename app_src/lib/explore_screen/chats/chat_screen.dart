@@ -57,6 +57,8 @@ class ChatScreen extends StatefulWidget {
 
 // Mezclamos con el mixin AnswerAMessageMixin para la funcionalidad de responder
 class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
+  // Key for the three-dots button to get its position
+  final GlobalKey _menuButtonKey = GlobalKey();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -319,10 +321,8 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  // ───────── Cambiamos de blanco a gris semitransparente ─────────
                   color: const Color.fromARGB(255, 14, 14, 14).withOpacity(0.25),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: GestureDetector(
                     onTap: () {
                       UserInfoCheck.open(context, widget.chatPartnerId);
@@ -368,6 +368,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
           // Botón de tres puntos => menú
           Container(
+            key: _menuButtonKey,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -393,6 +394,16 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   /// Muestra el pop-up con “Habilitar/Deshabilitar notificaciones”,
   /// “Reportar perfil” y “Bloquear/Desbloquear perfil”.
   void _showOptionsMenu() {
+    // Get the position and size of the three-dots button
+    final RenderBox? buttonBox = _menuButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    Offset offset = Offset.zero;
+    Size buttonSize = Size.zero;
+    if (buttonBox != null && overlay != null) {
+      offset = buttonBox.localToGlobal(Offset.zero, ancestor: overlay);
+      buttonSize = buttonBox.size;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -400,15 +411,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       builder: (BuildContext ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Cambiamos el texto según si está bloqueado o no.
-            final blockText =
-                _isPartnerBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
-
+            final blockText = _isPartnerBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
             return Material(
               color: Colors.transparent,
               child: Stack(
                 children: [
-                  // Tocar fuera para cerrar el menú
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
                     child: Container(
@@ -417,20 +424,22 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                       color: Colors.transparent,
                     ),
                   ),
-
                   // El menú flotante en sí
                   Positioned(
-                    top: 55,
-                    right: 16,
+                    right: 10, // 220 is the menu width (for alignment)
+                    top: 70,
                     child: GestureDetector(
-                      onTap: () {}, // Evita que se cierre si pulsas dentro
+                      onTap: () {},
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            color:
-                                const Color.fromARGB(255, 114, 114, 114).withOpacity(0.6),
+                            constraints: const BoxConstraints(
+                              minWidth: 160,
+                              maxWidth: 240,
+                            ),
+                            color: const Color.fromARGB(255, 114, 114, 114).withOpacity(0.6),
                             padding: const EdgeInsets.symmetric(
                               vertical: 8,
                               horizontal: 12,
@@ -439,14 +448,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Notificaciones ON / OFF
                                 InkWell(
                                   onTap: () {
                                     setDialogState(() {
-                                      _notificationsEnabled =
-                                          !_notificationsEnabled;
+                                      _notificationsEnabled = !_notificationsEnabled;
                                     });
-                                    // No cerramos el menú
                                   },
                                   child: Row(
                                     children: [
@@ -459,19 +465,21 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        _notificationsEnabled
-                                            ? 'Deshabilitar notificaciones'
-                                            : 'Habilitar notificaciones',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                      Flexible(
+                                        child: Text(
+                                          _notificationsEnabled
+                                              ? 'Deshabilitar notificaciones'
+                                              : 'Habilitar notificaciones',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const Divider(color: Colors.white54),
-                                // Reportar
                                 InkWell(
                                   onTap: () {
                                     final me = FirebaseAuth.instance.currentUser;
@@ -490,27 +498,26 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Text(
-                                        'Reportar perfil',
-                                        style: TextStyle(color: Colors.white),
+                                      Flexible(
+                                        child: Text(
+                                          'Reportar perfil',
+                                          style: TextStyle(color: Colors.white),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const Divider(color: Colors.white54),
-                                // Bloquear / Desbloquear
                                 InkWell(
                                   onTap: () async {
                                     final me = FirebaseAuth.instance.currentUser;
                                     if (me == null) return;
-
-                                    // Toggle local
                                     final oldValue = _isPartnerBlocked;
                                     setState(() {
                                       _isPartnerBlocked = !_isPartnerBlocked;
                                     });
                                     setDialogState(() {});
-
                                     try {
                                       await ReportAndBlockUser.toggleBlockUser(
                                         context,
@@ -519,7 +526,6 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         oldValue,
                                       );
                                     } catch (e) {
-                                      // Si hay error, revertimos
                                       setState(() {
                                         _isPartnerBlocked = oldValue;
                                       });
@@ -535,10 +541,13 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        blockText,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                      Flexible(
+                                        child: Text(
+                                          blockText,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],

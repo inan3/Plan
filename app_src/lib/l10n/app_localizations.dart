@@ -300,7 +300,7 @@ class AppLocalizations {
       'until': 'Until',
       'online': 'Online',
       'offline': 'Offline',
-      'write_message': 'Write a message...',
+      'write_message': 'Text a message...',
       'share_location': 'Location',
       'share_plan': 'Plan',
       'share_photo': 'Photo',
