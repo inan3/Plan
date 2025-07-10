@@ -14,6 +14,7 @@ import '../profile/memories_calendar.dart';
 import '../follow/following_screen.dart';
 import '../future_plans/future_plans.dart';
 import 'report_and_block_user.dart'; // Import para Reportar/Bloquear
+import '../../l10n/app_localizations.dart';
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
@@ -450,8 +451,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       builder: (BuildContext ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final t = AppLocalizations.of(context);
             final blockText =
-                _isUserBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
+                _isUserBlocked ? t.unblockProfile : t.blockProfile;
 
             return Material(
               color: Colors.transparent,
@@ -505,8 +507,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                                       const SizedBox(width: 8),
                                       Text(
                                         _notificationsEnabled
-                                            ? 'Deshabilitar notificaciones'
-                                            : 'Habilitar notificaciones',
+                                            ? t.disableNotifications
+                                            : t.enableNotifications,
                                         style: const TextStyle(
                                           color: Colors.white,
                                         ),
@@ -534,9 +536,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Text(
-                                        'Reportar perfil',
-                                        style: TextStyle(color: Colors.white),
+                                      Text(
+                                        t.reportProfile,
+                                        style: const TextStyle(color: Colors.white),
                                       ),
                                     ],
                                   ),
@@ -671,7 +673,9 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       case 'vip':
         return 'VIP';
       default:
-        return 'Básico';
+        return Localizations.localeOf(context).languageCode == 'en'
+            ? 'Basic'
+            : 'Básico';
     }
   }
 
@@ -724,21 +728,23 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Widget _buildStatsRow(String planes, String followers, String followed) {
+    final t = AppLocalizations.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildStatItem('planes futuros', planes),
+        _buildStatItem(t.futurePlans, planes),
         const SizedBox(width: 20),
-        _buildStatItem('seguidores', followers),
+        _buildStatItem(t.followers, followers),
         const SizedBox(width: 20),
-        _buildStatItem('seguidos', followed),
+        _buildStatItem(t.following, followed),
       ],
     );
   }
 
   Widget _buildStatItem(String label, String count) {
-    final isFuture = label == 'planes futuros';
-    final isFollowers = label == 'seguidores';
+    final t = AppLocalizations.of(context);
+    final isFuture = label == t.futurePlans;
+    final isFollowers = label == t.followers;
     final iconPath = isFuture
         ? 'assets/icono-calendario.svg'
         : 'assets/icono-seguidores.svg';
@@ -860,6 +866,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   // Botones principales: Invitar, Mensaje, Seguir
   //----------------------------------------------------------------------------
   Widget _buildActionButtons(String otherUserId) {
+    final t = AppLocalizations.of(context);
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
@@ -867,14 +874,14 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
       children: [
         _buildActionButton(
           iconPath: 'assets/union.svg',
-          label: 'Invítale a un Plan',
+          label: t.inviteToPlan,
           onTap: (_isPrivate && !isFollowing && !_isRequestPending)
               ? _showPrivateToast
               : () => InviteUsersToPlanScreen.showPopup(context, otherUserId),
         ),
         _buildActionButton(
           iconPath: 'assets/mensaje.svg',
-          label: 'Enviar Mensaje',
+          label: t.sendMessage,
           onTap: () {
             if (_isPrivate && !isFollowing) {
               _showPrivateToast();
@@ -896,7 +903,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         ),
         _buildActionButton(
           iconPath: _getFollowIcon(),
-          label: _getFollowLabel(),
+          label: _getFollowLabel(t),
           onTap: _handleFollowTap,
         ),
       ],
@@ -957,13 +964,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
     );
   }
 
-  String _getFollowLabel() {
+  String _getFollowLabel(AppLocalizations t) {
     if (isFollowing) {
-      return 'Siguiendo';
+      return t.followingStatus;
     } else if (_isRequestPending) {
-      return 'Solicitado';
+      return t.requested;
     } else {
-      return 'Seguir';
+      return t.follow;
     }
   }
 
@@ -1116,9 +1123,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   // Toast si es privado y no puedo invitar/chatear
   //----------------------------------------------------------------------------
   void _showPrivateToast() {
+    final t = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Este usuario es privado. Debes enviar solicitud.'),
+      SnackBar(
+        content: Text(t.privateUser),
       ),
     );
   }
@@ -1132,10 +1140,10 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         children: [
           SvgPicture.asset('assets/icono-candado.svg', width: 40, height: 40),
           const SizedBox(height: 8),
-          const Text(
-            'Este perfil es privado. Debes seguirle y ser aceptado para ver sus memorias.',
+          Text(
+            AppLocalizations.of(context).privateProfileMemories,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+            style: const TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
       );
