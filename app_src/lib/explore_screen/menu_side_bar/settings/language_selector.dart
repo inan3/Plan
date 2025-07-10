@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../services/language_service.dart';
+import '../../../main/colors.dart';
 
 class LanguageSelectorScreen extends StatefulWidget {
   const LanguageSelectorScreen({Key? key}) : super(key: key);
@@ -50,10 +51,15 @@ class _LanguageSelectorScreenState extends State<LanguageSelectorScreen> {
               itemCount: filtered.length,
               itemBuilder: (context, index) {
                 final lang = filtered[index];
+                final code = lang.startsWith('English') ? 'en' : 'es';
+                final isSelected =
+                    LanguageService.locale.value.languageCode == code;
                 return ListTile(
                   title: Text(lang),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: AppColors.planColor)
+                      : null,
                   onTap: () {
-                    final code = lang.startsWith('English') ? 'en' : 'es';
                     LanguageService.updateLocale(code);
                     Navigator.pop(context);
                   },
