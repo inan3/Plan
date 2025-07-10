@@ -337,10 +337,10 @@ class PlanCardState extends State<PlanCard> {
             child: Row(
               children: [
                 const SizedBox(width: 48),
-                const Text(
-                  "Chat del Plan",
+                Text(
+                  AppLocalizations.of(context).planChat,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.planColor,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -366,9 +366,9 @@ class PlanCardState extends State<PlanCard> {
                 .snapshots(),
             builder: (ctx, snap) {
               if (snap.hasError) {
-                return const Center(
-                  child: Text('Error al cargar mensajes',
-                      style: TextStyle(color: Colors.black)),
+                return Center(
+                  child: Text(AppLocalizations.of(context).errorLoadingMessages,
+                      style: const TextStyle(color: Colors.black)),
                 );
               }
               if (snap.connectionState == ConnectionState.waiting) {
@@ -376,9 +376,9 @@ class PlanCardState extends State<PlanCard> {
               }
               final docs = snap.data?.docs ?? [];
               if (docs.isEmpty) {
-                return const Center(
-                  child: Text('No hay mensajes todavía',
-                      style: TextStyle(color: Colors.black)),
+                return Center(
+                  child: Text(AppLocalizations.of(context).noMessagesYet,
+                      style: const TextStyle(color: Colors.black)),
                 );
               }
               return ListView(
@@ -400,7 +400,7 @@ class PlanCardState extends State<PlanCard> {
                 child: TextField(
                   controller: _chatController,
                   decoration: InputDecoration(
-                    hintText: "Escribe un mensaje...",
+                    hintText: AppLocalizations.of(context).writeMessage,
                     filled: true,
                     fillColor: const ui.Color.fromARGB(
                         255, 177, 177, 177), // dark gray background
@@ -1006,8 +1006,8 @@ class PlanCardState extends State<PlanCard> {
           child: Container(
             color: Colors.black.withOpacity(0.2),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: const Text(
-              "Cupo completo",
+            child: Text(
+              AppLocalizations.of(context).fullCapacity,
               style: TextStyle(
                 color: Colors.redAccent,
                 fontWeight: FontWeight.bold,
@@ -1022,13 +1022,13 @@ class PlanCardState extends State<PlanCard> {
       String buttonText;
       switch (_joinState) {
         case JoinState.none:
-          buttonText = 'Unirse';
+          buttonText = AppLocalizations.of(context).join;
           break;
         case JoinState.requested:
-          buttonText = 'Unión solicitada';
+          buttonText = AppLocalizations.of(context).joinRequested;
           break;
         case JoinState.rejoin:
-          buttonText = 'Unirse';
+          buttonText = AppLocalizations.of(context).join;
           break;
       }
 
@@ -1336,8 +1336,8 @@ class PlanCardState extends State<PlanCard> {
                       alignment: Alignment.centerRight,
                       child: Text(
                         maxP > 0
-                            ? '$totalP/$maxP participantes'
-                            : '$totalP participantes',
+                            ? '$totalP/$maxP ${AppLocalizations.of(context).participants}'
+                            : '$totalP ${AppLocalizations.of(context).participants}',
                         style: TextStyle(
                           color: (isFull && maxP > 0)
                               ? Colors.redAccent

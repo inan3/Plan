@@ -131,6 +131,46 @@ class AppLocalizations {
       'must_select_start': 'Debes elegir la fecha y hora de inicio.',
       'end_after_start_error': 'La fecha final debe ser posterior a la fecha/hora de inicio.',
       'until': 'Hasta',
+      'online': 'En línea',
+      'offline': 'Desconectado',
+      'write_message': 'Escribe un mensaje...',
+      'share_location': 'Ubicación',
+      'share_plan': 'Plan',
+      'share_photo': 'Foto',
+      'user_no_plans': 'Este usuario no ha creado planes aún...',
+      'invite_to_plan': 'Invítale a un Plan',
+      'join': 'Unirse',
+      'join_requested': 'Unión solicitada',
+      'full_capacity': 'Cupo completo',
+      'participants': 'participantes',
+      'join_now': 'Únete ahora',
+      'plan_chat': 'Chat del Plan',
+      'location_unavailable': 'Ubicación no disponible',
+      'additional_info': 'Información adicional',
+      'plan_id_copied': 'ID copiado al portapapeles',
+      'start_checkin': 'Iniciar Check-in',
+      'view_checkin': 'Ver Check-in (QR)',
+      'end_checkin': 'Finalizar Check-in',
+      'checkin_instructions_creator':
+          'Inicia el registro de asistencia para que los participantes escaneen el código QR o introduzcan el código de seis dígitos y confirmen su presencia en tu plan. Con cada check-in tu nivel de privilegio aumentará, lo que te permitirá aprovechar al máximo la app y, por ejemplo, crear planes de pago. Para ver tu progreso, abre tu perfil y toca la INSIGNIA situada justo debajo de tu nombre.',
+      'checkin_instructions_participant':
+          'Para confirmar tu asistencia, pulsa «Confirmar asistencia» y utiliza la cámara para escanear el código QR o introduce el código de seis dígitos facilitado por el organizador.',
+      'checkin_not_started_title': 'Check-in no iniciado',
+      'checkin_not_started_msg':
+          'El organizador del plan aún no ha iniciado el Check-in. Se te notificará una vez que se haya iniciado.',
+      'confirm_attendance': 'Confirmar asistencia',
+      'attendance_confirmed':
+          'Tu asistencia se ha confirmado con éxito.\n¡Disfruta del evento!',
+      'checkin_not_active': 'El check-in no está activo.\nPresiona atrás para iniciar.',
+      'generating_code': 'Generando código...',
+      'alphanumeric_code': 'Código alfanumérico',
+      'validate_code': 'Validar código',
+      'invalid_code': 'El código es incorrecto o el check-in no está activo.',
+      'no_logged_user': 'No se encontró un usuario logueado.',
+      'plan_not_exists': 'Plan no existe',
+      'manual_entry': 'Si no puedes escanear el código QR,\ningrésalo manualmente:',
+      'error_loading_messages': 'Error al cargar mensajes',
+      'no_messages_yet': 'No hay mensajes todavía',
     },
     'en': {
       'settings': 'Settings',
@@ -258,6 +298,46 @@ class AppLocalizations {
       'must_select_start': 'You must choose a start date and time.',
       'end_after_start_error': 'The end date must be after the start date/time.',
       'until': 'Until',
+      'online': 'Online',
+      'offline': 'Offline',
+      'write_message': 'Write a message...',
+      'share_location': 'Location',
+      'share_plan': 'Plan',
+      'share_photo': 'Photo',
+      'user_no_plans': "This user hasn't created any plans yet...",
+      'invite_to_plan': 'Invite to a Plan',
+      'join': 'Join',
+      'join_requested': 'Join requested',
+      'full_capacity': 'Full capacity',
+      'participants': 'participants',
+      'join_now': 'Join now',
+      'plan_chat': 'Plan Chat',
+      'location_unavailable': 'Location unavailable',
+      'additional_info': 'Additional information',
+      'plan_id_copied': 'ID copied to clipboard',
+      'start_checkin': 'Start Check-in',
+      'view_checkin': 'View Check-in (QR)',
+      'end_checkin': 'End Check-in',
+      'checkin_instructions_creator':
+          'Start attendance registration so participants can scan the QR code or enter the six-digit code and confirm their presence at your plan. With each check-in your privilege level will increase, allowing you to get the most out of the app and, for example, create paid plans. To see your progress, open your profile and tap the BADGE just below your name.',
+      'checkin_instructions_participant':
+          'To confirm your attendance, tap "Confirm attendance" and use the camera to scan the QR code or enter the six-digit code provided by the organizer.',
+      'checkin_not_started_title': 'Check-in not started',
+      'checkin_not_started_msg':
+          "The organizer hasn't started Check-in yet. You'll be notified once it has started.",
+      'confirm_attendance': 'Confirm attendance',
+      'attendance_confirmed':
+          'Your attendance has been successfully confirmed.\nEnjoy the event!',
+      'checkin_not_active': 'Check-in is not active.\nPress back to start.',
+      'generating_code': 'Generating code...',
+      'alphanumeric_code': 'Alphanumeric code',
+      'validate_code': 'Validate code',
+      'invalid_code': 'The code is incorrect or check-in is not active.',
+      'no_logged_user': 'No logged user found.',
+      'plan_not_exists': 'Plan does not exist',
+      'manual_entry': "If you can't scan the QR code,\nenter it manually:",
+      'error_loading_messages': 'Error loading messages',
+      'no_messages_yet': 'No messages yet',
     },
   };
 
@@ -391,6 +471,43 @@ class AppLocalizations {
   String get mustSelectStart => _t('must_select_start');
   String get endAfterStartError => _t('end_after_start_error');
   String get until => _t('until');
+  String get online => _t('online');
+  String get offline => _t('offline');
+  String get writeMessage => _t('write_message');
+  String get shareLocation => _t('share_location');
+  String get sharePlan => _t('share_plan');
+  String get sharePhoto => _t('share_photo');
+  String get userNoPlans => _t('user_no_plans');
+  String get inviteToPlan => _t('invite_to_plan');
+  String get join => _t('join');
+  String get joinRequested => _t('join_requested');
+  String get fullCapacity => _t('full_capacity');
+  String get participants => _t('participants');
+  String get joinNow => _t('join_now');
+  String get planChat => _t('plan_chat');
+  String get locationUnavailable => _t('location_unavailable');
+  String get additionalInfo => _t('additional_info');
+  String get planIdCopied => _t('plan_id_copied');
+  String get startCheckin => _t('start_checkin');
+  String get viewCheckin => _t('view_checkin');
+  String get endCheckin => _t('end_checkin');
+  String get checkinInstructionsCreator => _t('checkin_instructions_creator');
+  String get checkinInstructionsParticipant =>
+      _t('checkin_instructions_participant');
+  String get checkinNotStartedTitle => _t('checkin_not_started_title');
+  String get checkinNotStartedMsg => _t('checkin_not_started_msg');
+  String get confirmAttendance => _t('confirm_attendance');
+  String get attendanceConfirmed => _t('attendance_confirmed');
+  String get checkinNotActive => _t('checkin_not_active');
+  String get generatingCode => _t('generating_code');
+  String get alphanumericCode => _t('alphanumeric_code');
+  String get validateCode => _t('validate_code');
+  String get invalidCode => _t('invalid_code');
+  String get noLoggedUser => _t('no_logged_user');
+  String get planNotExists => _t('plan_not_exists');
+  String get manualEntry => _t('manual_entry');
+  String get errorLoadingMessages => _t('error_loading_messages');
+  String get noMessagesYet => _t('no_messages_yet');
 
   String planAgeRange(int start, int end) {
     return locale.languageCode == 'en'
