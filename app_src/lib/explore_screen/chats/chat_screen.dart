@@ -411,7 +411,11 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
       builder: (BuildContext ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final blockText = _isPartnerBlocked ? 'Desbloquear perfil' : 'Bloquear perfil';
+            final t = AppLocalizations.of(context);
+            // Cambiamos el texto según si está bloqueado o no.
+            final blockText =
+                _isPartnerBlocked ? t.unblockProfile : t.blockProfile;
+
             return Material(
               color: Colors.transparent,
               child: Stack(
@@ -465,6 +469,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
+<<<<<<< HEAD
                                       Flexible(
                                         child: Text(
                                           _notificationsEnabled
@@ -474,6 +479,14 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                             color: Colors.white,
                                           ),
                                           overflow: TextOverflow.ellipsis,
+=======
+                                      Text(
+                                        _notificationsEnabled
+                                            ? t.disableNotifications
+                                            : t.enableNotifications,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+>>>>>>> 4eab03b23ad50e704bdcf218ebd54af60c003f16
                                         ),
                                       ),
                                     ],
@@ -498,12 +511,18 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                                         color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
+<<<<<<< HEAD
                                       Flexible(
                                         child: Text(
                                           'Reportar perfil',
                                           style: TextStyle(color: Colors.white),
                                           overflow: TextOverflow.ellipsis,
                                         ),
+=======
+                                      Text(
+                                        t.reportProfile,
+                                        style: const TextStyle(color: Colors.white),
+>>>>>>> 4eab03b23ad50e704bdcf218ebd54af60c003f16
                                       ),
                                     ],
                                   ),

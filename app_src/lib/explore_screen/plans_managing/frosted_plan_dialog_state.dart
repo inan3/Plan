@@ -282,7 +282,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     children: [
                       Expanded(
                         child: Text(
-                          "ID del Plan: ${plan.id}",
+                      "${AppLocalizations.of(context).planIdLabel}: ${plan.id}",
                           style: const TextStyle(
                             color: Color.fromARGB(255, 212, 211, 211),
                             fontWeight: FontWeight.bold,
@@ -311,7 +311,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   const SizedBox(height: 12),
                   if (plan.special_plan != 1)
                     Text(
-                      "Restricción de edad: ${plan.minAge} - ${plan.maxAge} años",
+                      AppLocalizations.of(context)
+                          .ageRestrictionRange(plan.minAge, plan.maxAge),
                       style: const TextStyle(
                         color: Color.fromARGB(255, 212, 211, 211),
                         fontWeight: FontWeight.bold,
@@ -331,7 +332,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          "Fecha de inicio: ${plan.formattedDate(plan.startTimestamp)}",
+                          "${AppLocalizations.of(context).startDate}: ${plan.formattedDate(plan.startTimestamp)}",
                           style: const TextStyle(
                             color: Color.fromARGB(255, 219, 218, 218),
                             fontSize: 15,
@@ -350,7 +351,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                           const SizedBox(width: 21),
                           Expanded(
                             child: Text(
-                              "Finaliza: ${plan.formattedDate(plan.finishTimestamp)}",
+                              "${AppLocalizations.of(context).endsAt}: ${plan.formattedDate(plan.finishTimestamp)}",
                               style: const TextStyle(
                                 color: Color.fromARGB(255, 219, 218, 218),
                                 fontSize: 15,
@@ -650,9 +651,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             borderRadius: BorderRadius.circular(30),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: const Text(
-            "Cupo completo",
-            style: TextStyle(
+          child: Text(
+            AppLocalizations.of(context).fullCapacity,
+            style: const TextStyle(
               color: Colors.redAccent,
               fontWeight: FontWeight.bold,
             ),
