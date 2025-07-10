@@ -34,6 +34,7 @@ class AppColors {
   static const Color lightLilac = Color.fromARGB(255, 247, 241, 254);
   static const Color searchLilac = Color(0xFFE6D3FF);
   static const Color lightTurquoise = Color(0xFFCCF1F0);
+  static const Color shareSheetBackground = Color.fromARGB(255, 35, 57, 80);
   static const Color greyBorder = Color(0xFFCCCCCC);
 
   // Color blanco (faltante)

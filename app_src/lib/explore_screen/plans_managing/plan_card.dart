@@ -309,25 +309,33 @@ class PlanCardState extends State<PlanCard> {
   // (6) Popup Chat
   // ─────────────────────────────────────────────────────────────
   void _onMessageButtonTap() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return Dialog(
-          insetPadding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.25,
-          ),
-          backgroundColor: AppColors.lightTurquoise,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: _buildChatPopup(widget.plan),
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          builder: (ctx, scrollController) {
+            return _buildChatPopup(widget.plan, scrollController);
+          },
         );
       },
     );
   }
 
-  Widget _buildChatPopup(PlanModel plan) {
-    return Column(
+  Widget _buildChatPopup(PlanModel plan, ScrollController scrollController) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.shareSheetBackground,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
       mainAxisSize: MainAxisSize.max,
       children: [
         // Header
@@ -342,20 +350,20 @@ class PlanCardState extends State<PlanCard> {
                   AppLocalizations.of(context).planChat,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: AppColors.planColor,
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.planColor),
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
         ),
-        const Divider(color: AppColors.planColor),
+        const Divider(color: Colors.white),
 
         // Lista de mensajes
         Expanded(
@@ -369,7 +377,7 @@ class PlanCardState extends State<PlanCard> {
               if (snap.hasError) {
                 return Center(
                   child: Text(AppLocalizations.of(context).errorLoadingMessages,
-                      style: const TextStyle(color: Colors.black)),
+                      style: const TextStyle(color: Colors.white)),
                 );
               }
               if (snap.connectionState == ConnectionState.waiting) {
@@ -379,10 +387,11 @@ class PlanCardState extends State<PlanCard> {
               if (docs.isEmpty) {
                 return Center(
                   child: Text(AppLocalizations.of(context).noMessagesYet,
-                      style: const TextStyle(color: Colors.black)),
+                      style: const TextStyle(color: Colors.white)),
                 );
               }
               return ListView(
+                controller: scrollController,
                 children: docs.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   return _buildMessageItem(data);
@@ -403,18 +412,18 @@ class PlanCardState extends State<PlanCard> {
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context).writeMessage,
                     filled: true,
-                    fillColor: const ui.Color.fromARGB(255, 177, 177, 177),
-                    hintStyle: const TextStyle(color: Colors.black54),
+                    fillColor: Colors.white10,
+                    hintStyle: const TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  style: const TextStyle(color: Colors.black),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send, color: AppColors.planColor),
+                icon: const Icon(Icons.send, color: Colors.white),
                 onPressed: () => _sendMessage(plan),
               ),
             ],
@@ -457,7 +466,7 @@ class PlanCardState extends State<PlanCard> {
         senderName,
         textAlign: isMe ? TextAlign.right : TextAlign.left,
         style: const TextStyle(
-          color: Colors.black,
+          color: Colors.white,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -466,12 +475,12 @@ class PlanCardState extends State<PlanCard> {
     final msgWidget = Text(
       text,
       textAlign: isMe ? TextAlign.right : TextAlign.left,
-      style: const TextStyle(color: Colors.black),
+      style: const TextStyle(color: Colors.white),
     );
 
     final timeWidget = Text(
       timeStr,
-      style: const TextStyle(color: Colors.black54, fontSize: 12),
+      style: const TextStyle(color: Colors.white70, fontSize: 12),
     );
 
     return Padding(
@@ -587,9 +596,12 @@ class PlanCardState extends State<PlanCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
         return DraggableScrollableSheet(
+          expand: false,
           initialChildSize: 0.5,
           minChildSize: 0.4,
           maxChildSize: 0.95,

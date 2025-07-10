@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../models/plan_model.dart';
 import '../users_grid/users_grid_helpers.dart'; // Para funciones de ayuda si hiciera falta
+import '../../main/colors.dart';
 
 /// Muestra un bottom sheet para compartir el plan con seguidores/seguidos,
 /// y también la opción de compartir con otras apps.
@@ -98,7 +99,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 35, 57, 80),
+        color: AppColors.shareSheetBackground,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
