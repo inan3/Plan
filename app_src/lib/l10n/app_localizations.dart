@@ -194,10 +194,6 @@ class AppLocalizations {
       'plan_id_label': 'ID del Plan',
       'age_restriction_label': 'Restricción de edad',
       'ends_at_label': 'Finaliza',
-      'future_plans': 'Planes futuros',
-      'followers': 'Seguidores',
-      'following': 'Seguidos',
-      'memories': 'Memorias',
       'close': 'Cerrar',
       'level_basic': 'Nivel Básico',
       'level_premium': 'Nivel Premium',
@@ -215,7 +211,6 @@ class AppLocalizations {
       'info_golden': 'El nivel Golden es el penúltimo nivel. Para pasar a VIP:\n- Crear 500 planes.\n- Alcanzar 500 participantes en un plan.\n- 10000 participantes en total.',
       'info_vip': 'Este es el nivel más alto, sin límites.',
       'created_plans': 'Planes creados',
-      'max_participants': 'Máx. participantes',
       'in_a_plan': 'en un plan',
       'total_participants': 'Total de participantes',
       'gathered_so_far': 'reunidos hasta ahora',
@@ -409,10 +404,6 @@ class AppLocalizations {
       'plan_id_label': 'Plan ID',
       'age_restriction_label': 'Age restriction',
       'ends_at_label': 'Ends',
-      'future_plans': 'Future plans',
-      'followers': 'Followers',
-      'following': 'Following',
-      'memories': 'Memories',
       'close': 'Close',
       'level_basic': 'Basic Level',
       'level_premium': 'Premium Level',
@@ -430,7 +421,6 @@ class AppLocalizations {
       'info_golden': 'The Golden level is the penultimate level. To move to VIP:\n- Create 500 plans.\n- Reach 500 participants in a plan.\n- 10000 participants in total.',
       'info_vip': 'This is the highest level, with no limits.',
       'created_plans': 'Created plans',
-      'max_participants': 'Max. participants',
       'in_a_plan': 'in one plan',
       'total_participants': 'Total participants',
       'gathered_so_far': 'gathered so far',
@@ -639,7 +629,6 @@ class AppLocalizations {
   String get follow => _t('follow');
   String get followingStatus => _t('following_status');
   String get requested => _t('requested');
-  String get memories => _t('memories');
   String get privateUser => _t('private_user');
   String get privateProfileMemories => _t('private_profile_memories');
   String get planAndMemories => _t('plan_and_memories');
