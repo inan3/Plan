@@ -128,12 +128,16 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
         });
       } else {
         setState(() {
-          _privilegeInfo = "No se encontró información de privilegios.";
+          _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
+              ? 'No privilege information found.'
+              : 'No se encontró información de privilegios.';
         });
       }
     } catch (e) {
       setState(() {
-        _privilegeInfo = "Error al cargar: $e";
+        _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
+            ? 'Error loading: $e'
+            : 'Error al cargar: $e';
       });
     }
   }
@@ -442,34 +446,31 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   void _showPrivilegeInfoPopup(String levelName) {
     String titleText;
     String contentText;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
 
     switch (levelName.toLowerCase()) {
       case 'premium':
-        titleText = "Nivel Premium";
-        contentText = "El nivel Premium es el segundo nivel. "
-            "Para pasar al siguiente nivel de Golden:\n"
-            "- Crear 50 planes.\n"
-            "- Máximo de 50 participantes en un plan.\n"
-            "- 2000 participantes en total.";
+        titleText = isEn ? 'Premium Level' : 'Nivel Premium';
+        contentText = isEn
+            ? 'The Premium level is the second. To reach Golden:\n- Create 50 plans.\n- Up to 50 participants in a plan.\n- 2000 participants in total.'
+            : 'El nivel Premium es el segundo nivel. Para pasar al siguiente nivel de Golden:\n- Crear 50 planes.\n- Máximo de 50 participantes en un plan.\n- 2000 participantes en total.';
         break;
       case 'golden':
-        titleText = "Nivel Golden";
-        contentText = "El nivel Golden es el penúltimo nivel. "
-            "Para pasar a VIP:\n"
-            "- Crear 500 planes.\n"
-            "- Alcanzar 500 participantes en un plan.\n"
-            "- 10000 participantes en total.";
+        titleText = isEn ? 'Golden Level' : 'Nivel Golden';
+        contentText = isEn
+            ? 'The Golden level is the penultimate. To reach VIP:\n- Create 500 plans.\n- Reach 500 participants in one plan.\n- 10000 participants in total.'
+            : 'El nivel Golden es el penúltimo nivel. Para pasar a VIP:\n- Crear 500 planes.\n- Alcanzar 500 participantes en un plan.\n- 10000 participantes en total.';
         break;
       case 'vip':
-        titleText = "Nivel VIP";
-        contentText = "Este es el nivel más alto, sin límites.";
+        titleText = isEn ? 'VIP Level' : 'Nivel VIP';
+        contentText =
+            isEn ? 'This is the highest level with no limits.' : 'Este es el nivel más alto, sin límites.';
         break;
       default:
-        titleText = "Nivel Básico";
-        contentText = "El nivel Básico es el más bajo. Para pasar a Premium:\n"
-            "- Crear 5 planes.\n"
-            "- Alcanzar 5 participantes en un plan.\n"
-            "- 20 participantes en total.";
+        titleText = isEn ? 'Basic Level' : 'Nivel Básico';
+        contentText = isEn
+            ? 'The Basic level is the lowest. To reach Premium:\n- Create 5 plans.\n- Reach 5 participants in one plan.\n- 20 participants in total.'
+            : 'El nivel Básico es el más bajo. Para pasar a Premium:\n- Crear 5 planes.\n- Alcanzar 5 participantes en un plan.\n- 20 participantes en total.';
         break;
     }
 
