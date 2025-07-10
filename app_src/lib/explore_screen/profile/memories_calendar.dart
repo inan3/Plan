@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/language_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../main/colors.dart';
@@ -161,7 +163,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+              child: Text(AppLocalizations.of(context).close),
             ),
           ],
         ),
@@ -238,7 +240,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+              child: Text(AppLocalizations.of(context).close),
             ),
           ],
         );
@@ -314,7 +316,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
                           ),
                         ),
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text("Cerrar"),
+                        child: Text(AppLocalizations.of(context).close),
                       ),
                     ],
                   ),
@@ -331,6 +333,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     if (!_localeInitialized) return const SizedBox.shrink();
     final locale = Localizations.localeOf(context).languageCode;
     final String monthYear = DateFormat.yMMMM(locale).format(_currentMonth);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
       child: Row(
@@ -359,14 +362,10 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   }
 
   Widget _buildDaysOfWeekRow() {
-    final locale = Localizations.localeOf(context).languageCode;
-    final baseDate = DateTime(2020, 1, 6); // Monday
-    final daysOfWeek = List.generate(7, (i) {
-      final date = baseDate.add(Duration(days: i));
-      var abbr = DateFormat('EEE', locale).format(date);
-      if (abbr.length > 2) abbr = abbr.substring(0, 2);
-      return abbr[0].toUpperCase() + abbr.substring(1);
-    });
+    final lang = AppLocalizations.of(context).locale.languageCode;
+    final daysOfWeek = lang == 'en'
+        ? ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+        : ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: daysOfWeek.map((day) {

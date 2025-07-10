@@ -14,6 +14,7 @@ import '../plans_managing/frosted_plan_dialog_state.dart';
 import 'plan_memories_screen.dart';
 import '../follow/following_screen.dart';
 import '../future_plans/future_plans.dart';
+import '../../l10n/app_localizations.dart';
 
 // Manejo de imágenes
 import 'user_images_managing.dart';
@@ -396,16 +397,17 @@ class ProfileScreenState extends State<ProfileScreen> {
       );
 
   String _mapPrivilegeLevelToTitle(String level) {
+    final t = AppLocalizations.of(context);
     final normalized = level.toLowerCase().replaceAll('á', 'a');
     switch (normalized) {
       case 'premium':
-        return "Premium";
+        return 'Premium';
       case 'golden':
-        return "Golden";
+        return 'Golden';
       case 'vip':
-        return "VIP";
+        return 'VIP';
       default:
-        return "Básico";
+        return t.locale.languageCode == 'en' ? 'Basic' : 'Básico';
     }
   }
 
@@ -430,7 +432,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.transparent,
-      barrierLabel: 'Cerrar',
+      barrierLabel: AppLocalizations.of(context).close,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (_, __, ___) => const SizedBox.shrink(),
       transitionBuilder: (_, anim, __, child) => FadeTransition(
@@ -526,7 +528,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                 snapIng.connectionState == ConnectionState.waiting) {
               return _buildStatsRow('...', '...', '...');
             }
-            return _buildStatsRow(
+      return _buildStatsRow(
               (snapPlanes.data ?? 0).toString(),
               (snapFol.data ?? 0).toString(),
               (snapIng.data ?? 0).toString(),
@@ -537,19 +539,22 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsRow(String plans, String followers, String following) =>
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Expanded(child: _buildStatItem('planes futuros', plans)),
-          Expanded(child: _buildStatItem('seguidores', followers)),
-          Expanded(child: _buildStatItem('seguidos', following)),
-        ],
-      );
+  Widget _buildStatsRow(String plans, String followers, String following) {
+    final t = AppLocalizations.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Expanded(child: _buildStatItem(t.futurePlans, plans)),
+        Expanded(child: _buildStatItem(t.followers, followers)),
+        Expanded(child: _buildStatItem(t.following, following)),
+      ],
+    );
+  }
 
   Widget _buildStatItem(String label, String count) {
-    final isPlans = label == 'planes futuros';
-    final isFollowers = label == 'seguidores';
+    final t = AppLocalizations.of(context);
+    final isPlans = label == t.futurePlans;
+    final isFollowers = label == t.followers;
     final iconPath =
         isPlans ? 'assets/icono-calendario.svg' : 'assets/icono-seguidores.svg';
     final iconColor = isPlans
@@ -720,8 +725,8 @@ class ProfileScreenState extends State<ProfileScreen> {
                     color: Colors.red.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  child: const Text('Cerrar sesión',
-                      style: TextStyle(
+                  child: Text(AppLocalizations.of(context).closeSession,
+                      style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white)),
