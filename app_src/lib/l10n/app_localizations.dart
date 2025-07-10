@@ -233,6 +233,11 @@ class AppLocalizations {
       'reason_spam': 'Spam o publicitario',
       'reason_abusive_language': 'Lenguaje o comportamiento abusivo',
       'reason_inappropriate_images': 'Imágenes inapropiadas',
+      'no_future_plans_user':
+          'Este usuario no ha creado planes futuros aún...',
+      'follow_to_view_future_plans':
+          'Debes seguir a esta cuenta para ver sus planes futuros',
+      'no_results': 'Sin resultados',
     },
     'en': {
       'settings': 'Settings',
@@ -462,6 +467,11 @@ class AppLocalizations {
       'reason_spam': 'Spam or advertising',
       'reason_abusive_language': 'Abusive language or behavior',
       'reason_inappropriate_images': 'Inappropriate images',
+      'no_future_plans_user':
+          "This user hasn't created future plans yet...",
+      'follow_to_view_future_plans':
+          'You must follow this account to view their future plans',
+      'no_results': 'No results',
     },
   };
 
@@ -663,6 +673,9 @@ class AppLocalizations {
   String get inAPlan => _t('in_a_plan');
   String get totalParticipantsText => _t('total_participants');
   String get gatheredSoFar => _t('gathered_so_far');
+  String get noFuturePlansUser => _t('no_future_plans_user');
+  String get followToViewFuturePlans => _t('follow_to_view_future_plans');
+  String get noResults => _t('no_results');
   String get sendMessage => _t('send_message');
   String get follow => _t('follow');
   String get followingStatus => _t('following_status');

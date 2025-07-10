@@ -8,6 +8,7 @@ import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../users_managing/user_info_check.dart';
 import '../../main/colors.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla de seguidores/seguidos.
 /// Se muestra como un modal a pantalla casi completa (deja libre el 10 % superior)
@@ -175,7 +176,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar datos: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context).error}: $e')),
         );
       }
       setState(() => _loading = false);
@@ -221,7 +222,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
         const SizedBox(height: 12),
         // Título principal dinámico
         Text(
-          _showFollowers ? 'Seguidores' : 'Seguidos',
+          _showFollowers
+              ? AppLocalizations.of(context).followers
+              : AppLocalizations.of(context).following,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
@@ -230,13 +233,13 @@ class _FollowingScreenState extends State<FollowingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _TabButton(
-              label: 'Seguidores',
+              label: AppLocalizations.of(context).followers,
               selected: _showFollowers,
               onTap: () => _switchTab(true),
             ),
             const SizedBox(width: 16),
             _TabButton(
-              label: 'Seguidos',
+              label: AppLocalizations.of(context).following,
               selected: !_showFollowers,
               onTap: () => _switchTab(false),
             ),
@@ -249,7 +252,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
           child: TextField(
             controller: _searchCtl,
             decoration: InputDecoration(
-              hintText: 'Buscar…',
+              hintText: '${AppLocalizations.of(context).search}…',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -265,7 +268,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _filtered.isEmpty
-                  ? const Center(child: Text('Sin resultados'))
+                  ? Center(child: Text(AppLocalizations.of(context).noResults))
                   : ListView.separated(
                       itemCount: _filtered.length,
                       separatorBuilder: (_, __) => const _ThinDivider(),
