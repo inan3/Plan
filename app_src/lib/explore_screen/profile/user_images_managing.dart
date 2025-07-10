@@ -88,7 +88,7 @@ class UserImagesManaging {
         final t = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.only(bottom: 0),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -240,7 +240,7 @@ class UserImagesManaging {
         final t = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.only(bottom: 0),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -395,7 +395,7 @@ class UserImagesManaging {
         final t = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.only(bottom: 0),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
