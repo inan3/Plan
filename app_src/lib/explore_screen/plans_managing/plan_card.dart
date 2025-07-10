@@ -874,10 +874,10 @@ class PlanCardState extends State<PlanCard> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          "Participantes",
-                          style: TextStyle(
+                          AppLocalizations.of(context).participantsTitle,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -933,9 +933,9 @@ class PlanCardState extends State<PlanCard> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                child: const Text(
-                                  'ASISTE',
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context).attends,
+                                  style: const TextStyle(
                                     color: AppColors.blue,
                                     fontWeight: FontWeight.bold,
                                   ),
