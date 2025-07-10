@@ -252,6 +252,29 @@ class AppLocalizations {
       'camera': 'Cámara',
       'gallery': 'Galería',
       'no_results': 'Sin resultados',
+      'create_account': 'Crea tu cuenta',
+      'continue_with_google': 'Continuar con Google',
+      'email_hint': 'Correo electrónico',
+      'uppercase': 'Mayúscula',
+      'number': 'Número',
+      'repeat_password': 'Repetir contraseña',
+      'by_continuing_prefix': 'Al continuar, confirmo que he leído y acepto los ',
+      'comma_the': ', la ',
+      'and_cookies': ' y de ',
+      'terms_and_conditions': 'Términos y Condiciones',
+      'privacy_policy': 'Política de Privacidad',
+      'cookies': 'Cookies',
+      'register': 'Registrarse',
+      'already_have_account': '¿Ya tienes una cuenta? Inicia sesión',
+      'password_mismatch': 'Las contraseñas no coinciden',
+      'email_already_registered':
+          'Este correo ya está registrado. Inicia sesión para continuar.',
+      'incorrect_password': 'Contraseña incorrecta.',
+      'registration_error': 'Error al iniciar registro:',
+      'introduce_your': 'Introduce tu',
+      'then_press_register': 'y después pulsa en "Registrarse".',
+      'and_word': ' y ',
+      'email_word': 'correo',
     },
     'en': {
       'settings': 'Settings',
@@ -500,6 +523,29 @@ class AppLocalizations {
       'camera': 'Camera',
       'gallery': 'Gallery',
       'no_results': 'No results',
+      'create_account': 'Create your account',
+      'continue_with_google': 'Continue with Google',
+      'email_hint': 'Email',
+      'uppercase': 'Uppercase',
+      'number': 'Number',
+      'repeat_password': 'Repeat password',
+      'by_continuing_prefix': 'By continuing, I confirm that I have read and accept the ',
+      'comma_the': ', the ',
+      'and_cookies': ' and ',
+      'terms_and_conditions': 'Terms and Conditions',
+      'privacy_policy': 'Privacy Policy',
+      'cookies': 'Cookies',
+      'register': 'Register',
+      'already_have_account': 'Already have an account? Sign in',
+      'password_mismatch': 'Passwords do not match',
+      'email_already_registered':
+          'This email is already registered. Log in to continue.',
+      'incorrect_password': 'Incorrect password.',
+      'registration_error': 'Error starting registration:',
+      'introduce_your': 'Enter your',
+      'then_press_register': 'and then press "Register".',
+      'and_word': ' and ',
+      'email_word': 'email',
     },
   };
 
@@ -721,6 +767,28 @@ class AppLocalizations {
   String get choosePhotoSource => _t('choose_photo_source');
   String get camera => _t('camera');
   String get gallery => _t('gallery');
+  String get createAccount => _t('create_account');
+  String get continueWithGoogle => _t('continue_with_google');
+  String get emailHint => _t('email_hint');
+  String get uppercase => _t('uppercase');
+  String get number => _t('number');
+  String get repeatPassword => _t('repeat_password');
+  String get byContinuingPrefix => _t('by_continuing_prefix');
+  String get commaThe => _t('comma_the');
+  String get andCookies => _t('and_cookies');
+  String get termsAndConditions => _t('terms_and_conditions');
+  String get privacyPolicy => _t('privacy_policy');
+  String get cookies => _t('cookies');
+  String get register => _t('register');
+  String get alreadyHaveAccount => _t('already_have_account');
+  String get passwordMismatch => _t('password_mismatch');
+  String get emailAlreadyRegistered => _t('email_already_registered');
+  String get incorrectPassword => _t('incorrect_password');
+  String get registrationError => _t('registration_error');
+  String get introduceYour => _t('introduce_your');
+  String get thenPressRegister => _t('then_press_register');
+  String get andWord => _t('and_word');
+  String get emailWord => _t('email_word');
   String get noResults => _t('no_results');
   String get sendMessage => _t('send_message');
   String get follow => _t('follow');

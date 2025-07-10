@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dating_app/main/colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'register_with_google.dart';
 import 'verification_provider.dart';
 import 'email_verification_screen.dart';
@@ -54,12 +55,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showPopup(String message) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text(
-          'Atención',
-          style: TextStyle(color: AppColors.blue),
+        title: Text(
+          t.attention,
+          style: const TextStyle(color: AppColors.blue),
         ),
         content: Text(
           message,
@@ -68,9 +70,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: AppColors.blue),
+            child: Text(
+              t.ok,
+              style: const TextStyle(color: AppColors.blue),
             ),
           ),
         ],
@@ -117,11 +119,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
+      final t = AppLocalizations.of(context);
       final missing = <String>[];
-      if (emailController.text.trim().isEmpty) missing.add('correo');
-      if (passwordController.text.trim().isEmpty) missing.add('contraseña');
+      if (emailController.text.trim().isEmpty) missing.add(t.emailWord);
+      if (passwordController.text.trim().isEmpty) missing.add(t.password);
       final msg =
-          'Introduce tu ${missing.join(' y ')} y después pulsa en "Registrarse".';
+          '${t.introduceYour} ${missing.join(t.andWord)} ${t.thenPressRegister}';
       _showPopup(msg);
       return;
     }
@@ -182,24 +185,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
           await FirebaseAuth.instance.signOut();
           LocationUpdateService.dispose();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Este correo ya está registrado. Inicia sesión para continuar.'),
+            SnackBar(
+              content: Text(t.emailAlreadyRegistered),
             ),
           );
         } on FirebaseAuthException {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Contraseña incorrecta.')),
+            SnackBar(content: Text(t.incorrectPassword)),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al iniciar registro: ${e.message}')),
+          SnackBar(content: Text('${t.registrationError} ${e.message}')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al iniciar registro: $e')),
+        SnackBar(content: Text('${t.registrationError} $e')),
       );
     } finally {
       setState(() => isLoading = false);
@@ -209,6 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     const Color backgroundColor = AppColors.background;
 
     return WillPopScope(
@@ -237,7 +240,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // Título
                     Text(
-                      'Crea tu cuenta',
+                      t.createAccount,
                       style: GoogleFonts.roboto(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -265,7 +268,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: 24,
                         ),
                         label: Text(
-                          'Continuar con Google',
+                          t.continueWithGoogle,
                           style: GoogleFonts.roboto(
                             fontSize: 18,
                             color: Colors.white,
@@ -287,7 +290,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // Separador
                     Text(
-                      '- o -',
+                      t.orSeparator,
                       style: GoogleFonts.roboto(
                         fontSize: 18,
                         color: Colors.black,
@@ -313,7 +316,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
-                          hintText: 'Correo electrónico',
+                          hintText: t.emailHint,
                           hintStyle: GoogleFonts.roboto(
                             fontSize: 16,
                             color: Colors.grey,
@@ -346,7 +349,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: passwordController,
                         obscureText: !_showPassword,
                         decoration: InputDecoration(
-                          hintText: 'Contraseña',
+                          hintText: t.password,
                           hintStyle: GoogleFonts.roboto(
                             fontSize: 16,
                             color: Colors.grey,
@@ -375,12 +378,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         children: [
                           _buildRequirement(
                             ok: _hasUppercase,
-                            text: 'Mayúscula',
+                            text: t.uppercase,
                           ),
                           const SizedBox(width: 8),
                           _buildRequirement(
                             ok: _hasNumber,
-                            text: 'Número',
+                            text: t.number,
                           ),
                         ],
                       ),
@@ -405,7 +408,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: confirmController,
                         obscureText: !_showConfirm,
                         decoration: InputDecoration(
-                          hintText: 'Repetir contraseña',
+                          hintText: t.repeatPassword,
                           hintStyle: GoogleFonts.roboto(
                             fontSize: 16,
                             color: Colors.grey,
@@ -439,11 +442,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             decoration: TextDecoration.none,
                           ),
                           children: [
-                            const TextSpan(
-                                text:
-                                    'Al continuar, confirmo que he leído y acepto los '),
+                            TextSpan(text: t.byContinuingPrefix),
                             TextSpan(
-                              text: 'Términos y Condiciones',
+                              text: t.termsAndConditions,
                               style: const TextStyle(color: Colors.blue),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => launchUrl(
@@ -452,9 +453,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       mode: LaunchMode.externalApplication,
                                     ),
                             ),
-                            const TextSpan(text: ', la '),
+                            TextSpan(text: t.commaThe),
                             TextSpan(
-                              text: 'Política de Privacidad',
+                              text: t.privacyPolicy,
                               style: const TextStyle(color: Colors.blue),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => launchUrl(
@@ -463,9 +464,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       mode: LaunchMode.externalApplication,
                                     ),
                             ),
-                            const TextSpan(text: ' y de '),
+                            TextSpan(text: t.andCookies),
                             TextSpan(
-                              text: 'Cookies',
+                              text: t.cookies,
                               style: const TextStyle(color: Colors.blue),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => launchUrl(
@@ -490,7 +491,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? null
                             : () {
                                 if (!_match) {
-                                  _showPopup('Las contraseñas no coinciden');
+                                  _showPopup(t.passwordMismatch);
                                 } else {
                                   _register();
                                 }
@@ -506,7 +507,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           elevation: 10,
                         ),
                         child: Text(
-                          'Registrarse',
+                          t.register,
                           style: GoogleFonts.roboto(
                             fontSize: 20,
                             color: Colors.white,
@@ -525,9 +526,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         );
                       },
-                      child: const Text(
-                        '¿Ya tienes una cuenta? Inicia sesión',
-                        style: TextStyle(
+                      child: Text(
+                        t.alreadyHaveAccount,
+                        style: const TextStyle(
                           color: Colors.black,
                           decoration: TextDecoration.underline,
                         ),
