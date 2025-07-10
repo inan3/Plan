@@ -413,42 +413,40 @@ class UserImagesManaging {
                       );
                       if (result != null) {
                         onLoading(true);
-                  for (var file in result.files) {
-                    if (file.path != null) {
-                      await _uploadAdditionalImage(
-                        context,
-                        File(file.path!),
-                        currentPhotos,
-                        onNewPhotoUrls: onNewPhotoUrls,
-                      );
-                    }
-                  }
-                  onLoading(false);
-                }
-              },
-            ),
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                  title: Text(t.takePhoto),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    final pickedFile =
-                        await _imagePicker.pickImage(source: ImageSource.camera);
-                    if (pickedFile != null) {
-                      onLoading(true);
-                      await _uploadAdditionalImage(
-                        context,
-                        File(pickedFile.path),
-                        currentPhotos,
-                        onNewPhotoUrls: onNewPhotoUrls,
-                      );
-                      onLoading(false);
-                    }
-                  },
-                ),
-              ],
+                        for (var file in result.files) {
+                          if (file.path != null) {
+                            await _uploadAdditionalImage(
+                              context,
+                              File(file.path!),
+                              currentPhotos,
+                              onNewPhotoUrls: onNewPhotoUrls,
+                            );
+                          }
+                        }
+                        onLoading(false);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                    title: Text(t.takePhoto),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final pickedFile = await _imagePicker.pickImage(source: ImageSource.camera);
+                      if (pickedFile != null) {
+                        onLoading(true);
+                        await _uploadAdditionalImage(
+                          context,
+                          File(pickedFile.path),
+                          currentPhotos,
+                          onNewPhotoUrls: onNewPhotoUrls,
+                        );
+                        onLoading(false);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         );

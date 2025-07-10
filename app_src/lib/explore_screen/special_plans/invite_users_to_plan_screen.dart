@@ -1352,7 +1352,8 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
               child: Wrap(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.photo_library, color: Colors.blue),
+                    leading:
+                        const Icon(Icons.photo_library, color: Colors.blue),
                     title: Text(t.pickFromGallery),
                     onTap: () {
                       Navigator.pop(context);
@@ -1375,127 +1376,125 @@ class _NewPlanInviteContentState extends State<_NewPlanInviteContent> {
       },
     );
   }
-  }
+}
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      final originalData = await pickedFile.readAsBytes();
-      final croppedData = await Navigator.push<Uint8List>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ImageCropperScreen(imageData: originalData),
-        ),
-      );
-      if (croppedData != null) {
-        setState(() {
-          _selectedCroppedImage = croppedData;
-          _selectedOriginalImage = originalData;
-        });
-      }
+Future<void> _pickImage(ImageSource source) async {
+  final picker = ImagePicker();
+  final pickedFile = await picker.pickImage(source: source);
+  if (pickedFile != null) {
+    final originalData = await pickedFile.readAsBytes();
+    final croppedData = await Navigator.push<Uint8List>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ImageCropperScreen(imageData: originalData),
+      ),
+    );
+    if (croppedData != null) {
+      setState(() {
+        _selectedCroppedImage = croppedData;
+        _selectedOriginalImage = originalData;
+      });
     }
   }
+}
 
-  // -------------------------- AL CREAR EL PLAN ("Finish") ---------------------------
-  // ----------------------------------------------------------------------------------
-  Future<void> _onFinishPlan() async {
-    if (_selectedPlan == null &&
-        (_customPlan == null || _customPlan!.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta elegir tipo de plan.")),
+// -------------------------- AL CREAR EL PLAN ("Finish") ---------------------------
+// ----------------------------------------------------------------------------------
+Future<void> _onFinishPlan() async {
+  if (_selectedPlan == null && (_customPlan == null || _customPlan!.isEmpty)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Falta elegir tipo de plan.")),
+    );
+    return;
+  }
+  if (_startDate == null || _startTime == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Falta elegir la fecha/hora del plan.")),
+    );
+    return;
+  }
+  if (_location == null || _location!.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Falta elegir ubicación del plan.")),
+    );
+    return;
+  }
+  if (_planDescription == null || _planDescription!.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Falta la breve descripción del plan.")),
+    );
+    return;
+  }
+
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) return;
+
+  try {
+    // Armamos la fecha/hora con lo seleccionado
+    DateTime dateTime = DateTime(
+      _startDate!.year,
+      _startDate!.month,
+      _startDate!.day,
+      _startTime!.hour,
+      _startTime!.minute,
+    );
+
+    final planDoc = FirebaseFirestore.instance.collection('plans').doc();
+    final planId = planDoc.id;
+
+    String? uploadedCropped;
+    String? uploadedOriginal;
+    if (_selectedCroppedImage != null) {
+      uploadedCropped = await uploadImageToFirebase(
+        _selectedCroppedImage!,
+        'plan_backgrounds/${planId}_cropped.png',
       );
-      return;
-    }
-    if (_startDate == null || _startTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta elegir la fecha/hora del plan.")),
-      );
-      return;
-    }
-    if (_location == null || _location!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta elegir ubicación del plan.")),
-      );
-      return;
-    }
-    if (_planDescription == null || _planDescription!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Falta la breve descripción del plan.")),
-      );
-      return;
-    }
-
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-
-    try {
-      // Armamos la fecha/hora con lo seleccionado
-      DateTime dateTime = DateTime(
-        _startDate!.year,
-        _startDate!.month,
-        _startDate!.day,
-        _startTime!.hour,
-        _startTime!.minute,
-      );
-
-      final planDoc = FirebaseFirestore.instance.collection('plans').doc();
-      final planId = planDoc.id;
-
-      String? uploadedCropped;
-      String? uploadedOriginal;
-      if (_selectedCroppedImage != null) {
-        uploadedCropped = await uploadImageToFirebase(
-          _selectedCroppedImage!,
-          'plan_backgrounds/${planId}_cropped.png',
-        );
-        uploadedOriginal = await uploadImageToFirebase(
-          _selectedOriginalImage!,
-          'plan_backgrounds/${planId}_original.png',
-        );
-      }
-
-      final dataToSave = {
-        "id": planId,
-        "createdBy": currentUser.uid,
-        "type": _customPlan?.isNotEmpty == true ? _customPlan : _selectedPlan,
-        "description": _planDescription ?? '',
-        "location": _location ?? '',
-        "latitude": _latitude ?? 0.0,
-        "longitude": _longitude ?? 0.0,
-        "start_timestamp": Timestamp.fromDate(dateTime),
-        "createdAt": DateTime.now().toIso8601String(),
-        "privateInvite": true,
-        "invitedUsers": [widget.invitedUserId],
-        "likes": 0,
-        "views": 0,
-        "viewedBy": [],
-        "special_plan": 1,
-        "backgroundImage": uploadedCropped ?? '',
-        "images": uploadedCropped != null ? [uploadedCropped] : [],
-        "originalImages": uploadedOriginal != null ? [uploadedOriginal] : [],
-      };
-
-      await planDoc.set(dataToSave);
-
-      // Enviamos notificación
-      await _sendInvitationNotification(
-        senderUid: currentUser.uid,
-        receiverUid: widget.invitedUserId,
-        planId: planId,
-        planType: (dataToSave["type"] ?? "Plan").toString(),
-        specialPlan: 1,
-      );
-
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("¡Plan creado! Has invitado al usuario.")),
-      );
-    } catch (err) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al crear el plan: $err")),
+      uploadedOriginal = await uploadImageToFirebase(
+        _selectedOriginalImage!,
+        'plan_backgrounds/${planId}_original.png',
       );
     }
+
+    final dataToSave = {
+      "id": planId,
+      "createdBy": currentUser.uid,
+      "type": _customPlan?.isNotEmpty == true ? _customPlan : _selectedPlan,
+      "description": _planDescription ?? '',
+      "location": _location ?? '',
+      "latitude": _latitude ?? 0.0,
+      "longitude": _longitude ?? 0.0,
+      "start_timestamp": Timestamp.fromDate(dateTime),
+      "createdAt": DateTime.now().toIso8601String(),
+      "privateInvite": true,
+      "invitedUsers": [widget.invitedUserId],
+      "likes": 0,
+      "views": 0,
+      "viewedBy": [],
+      "special_plan": 1,
+      "backgroundImage": uploadedCropped ?? '',
+      "images": uploadedCropped != null ? [uploadedCropped] : [],
+      "originalImages": uploadedOriginal != null ? [uploadedOriginal] : [],
+    };
+
+    await planDoc.set(dataToSave);
+
+    // Enviamos notificación
+    await _sendInvitationNotification(
+      senderUid: currentUser.uid,
+      receiverUid: widget.invitedUserId,
+      planId: planId,
+      planType: (dataToSave["type"] ?? "Plan").toString(),
+      specialPlan: 1,
+    );
+
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("¡Plan creado! Has invitado al usuario.")),
+    );
+  } catch (err) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error al crear el plan: $err")),
+    );
   }
 }
 

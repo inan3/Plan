@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import '../../l10n/app_localizations.dart';
 // Importación para "reverse geocoding"
 import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates, Placemark;
 import '../../explore_screen/profile/user_images_managing.dart';
