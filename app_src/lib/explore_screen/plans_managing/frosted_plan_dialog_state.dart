@@ -827,7 +827,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           ),
         ),
       ],
-    );
+    )
+  );
   }
 
   Widget _buildMessageItem(Map<String, dynamic> data) {
