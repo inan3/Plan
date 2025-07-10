@@ -58,7 +58,7 @@ class PrivilegeLevelDetails extends StatefulWidget {
 }
 
 class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
-  String _privilegeInfo = "Cargando nivel de privilegios...";
+  String _privilegeInfo = '';
 
   // Estadísticas Firestore
   int _totalCreatedPlans = 0;
@@ -73,6 +73,21 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   ];
 
   String _privilegeLevel = "Básico";
+
+  String _localizedLevel(String level) {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
+        return 'Premium';
+      case 'golden':
+        return 'Golden';
+      case 'vip':
+        return 'VIP';
+      default:
+        return isEn ? 'Basic' : 'Básico';
+    }
+  }
 
   String get _privilegeIcon {
     final normalized = _privilegeLevel.toLowerCase().replaceAll('á', 'a');
@@ -91,6 +106,9 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
   @override
   void initState() {
     super.initState();
+    _privilegeInfo = Localizations.localeOf(context).languageCode == 'en'
+        ? 'Loading privilege level...'
+        : 'Cargando nivel de privilegios...';
     _loadPrivilegeInfo();
   }
 
@@ -125,7 +143,7 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
             (updatedData['privilegeLevel'] ?? 'Básico').toString();
 
         setState(() {
-          _privilegeInfo = _privilegeLevel;
+          _privilegeInfo = _localizedLevel(_privilegeLevel);
         });
       } else {
         setState(() {
@@ -348,7 +366,12 @@ class _PrivilegeLevelDetailsState extends State<PrivilegeLevelDetails> {
       "assets/icono-usuario-golden.png",
       "assets/icono-usuario-vip.png",
     ];
-    final iconNames = ["Básico", "Premium", "Golden", "VIP"];
+    final iconNames = [
+      _localizedLevel('Básico'),
+      'Premium',
+      'Golden',
+      'VIP'
+    ];
 
     Widget arrow =
         const Icon(Icons.arrow_forward, color: Colors.grey, size: 20);

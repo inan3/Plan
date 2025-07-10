@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/plan_model.dart';
 import '../plans_managing/plan_card.dart';
+import '../../l10n/app_localizations.dart';
 
 class FuturePlansScreen extends StatefulWidget {
   final String userId;
@@ -121,8 +122,8 @@ class _FuturePlansScreenState extends State<FuturePlansScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text('Planes futuros',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.of(context).futurePlans,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           const Divider(height: 1),
 
@@ -142,10 +143,10 @@ class _FuturePlansScreenState extends State<FuturePlansScreen> {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (!pSnap.hasData || pSnap.data!.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          'Este usuario no ha creado planes futuros aún...',
-                          style: TextStyle(fontSize: 16),
+                          AppLocalizations.of(context).noFuturePlansUser,
+                          style: const TextStyle(fontSize: 16),
                         ),
                       );
                     }
@@ -213,13 +214,14 @@ class _FuturePlansScreenState extends State<FuturePlansScreen> {
                                               color: Colors.white,
                                             ),
                                             const SizedBox(height: 12),
-                                            const Padding(
-                                              padding: EdgeInsets.symmetric(
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(
                                                   horizontal: 24),
                                               child: Text(
-                                                'Debes seguir a esta cuenta para ver sus planes futuros',
+                                                AppLocalizations.of(context)
+                                                    .followToViewFuturePlans,
                                                 textAlign: TextAlign.center,
-                                                style: TextStyle(
+                                                style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 15,
                                                   fontWeight: FontWeight.w500,
