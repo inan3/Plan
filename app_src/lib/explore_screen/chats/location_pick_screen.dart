@@ -181,7 +181,7 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Elegir ubicación"),
-        backgroundColor: AppColors.blue,
+        backgroundColor: AppColors.white,
         actions: [
           IconButton(
             onPressed: _onConfirmLocation,
@@ -269,7 +269,8 @@ class _LocationPickScreenState extends State<LocationPickScreen> {
                 icon: const Icon(Icons.check),
                 label: const Text("Confirmar ubicación"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.blue,
+                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.planColor,
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
