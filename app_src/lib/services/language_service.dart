@@ -7,7 +7,14 @@ class LanguageService {
 
   static Future<void> loadLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final code = prefs.getString('languageCode') ?? 'es';
+    String code;
+    if (prefs.containsKey('languageCode')) {
+      code = prefs.getString('languageCode') ?? 'es';
+    } else {
+      final systemCode =
+          WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+      code = systemCode.startsWith('es') ? 'es' : 'en';
+    }
     locale.value = Locale(code);
   }
 
