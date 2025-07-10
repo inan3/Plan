@@ -8,7 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
 import '../plans_managing/firebase_services.dart';
-import '../l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import 'users_grid_helpers.dart';
 import '../plans_managing/plan_card.dart';
 import '../special_plans/invite_users_to_plan_screen.dart';
