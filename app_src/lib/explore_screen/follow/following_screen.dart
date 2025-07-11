@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart' as new_frosted;
 import '../users_managing/user_info_check.dart';
+import '../users_managing/user_activity_status.dart';
 import '../../main/colors.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -157,9 +158,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
           _UserItem(
             uid: relatedUid,
             name: data['name'] ?? 'Usuario',
-            age: (data['age']?.toString() ?? '').isNotEmpty
-                ? data['age'].toString()
-                : null,
+            privilegeLevel: (data['privilegeLevel'] ?? 'Básico').toString(),
             photoUrl: data['photoUrl'] ?? '',
             upcomingPlanId: planInfo?.id,
             upcomingPlanName: planInfo?.name,
@@ -280,8 +279,18 @@ class _FollowingScreenState extends State<FollowingScreen> {
                                 ? u.photoUrl
                                 : 'https://via.placeholder.com/150'),
                           ),
-                          title: Text(u.name),
-                          subtitle: u.age != null ? Text('${u.age} años') : null,
+                          title: Row(
+                            children: [
+                              Expanded(child: Text(u.name)),
+                              const SizedBox(width: 4),
+                              Image.asset(
+                                _getPrivilegeIcon(u.privilegeLevel),
+                                width: 14,
+                                height: 14,
+                              ),
+                            ],
+                          ),
+                          subtitle: UserActivityStatus(userId: u.uid),
                           trailing: u.upcomingPlanId != null
                               ? InkWell(
                                   onTap: () => _onPlanTap(u.upcomingPlanId!),
@@ -357,8 +366,8 @@ class _FollowingScreenState extends State<FollowingScreen> {
         res.add({
           'uid': uid,
           'name': d['name'] ?? 'Usuario',
-          'age': d['age']?.toString() ?? '',
           'photoUrl': d['photoUrl'] ?? '',
+          'privilegeLevel': (d['privilegeLevel'] ?? 'Básico').toString(),
           'isCreator': uid == plan.createdBy,
         });
       }
@@ -413,7 +422,7 @@ class _ThinDivider extends StatelessWidget {
 class _UserItem {
   final String uid;
   final String name;
-  final String? age;
+  final String privilegeLevel;
   final String photoUrl;
   final String? upcomingPlanId;
   final String? upcomingPlanName;
@@ -422,7 +431,7 @@ class _UserItem {
   _UserItem({
     required this.uid,
     required this.name,
-    required this.age,
+    required this.privilegeLevel,
     required this.photoUrl,
     this.upcomingPlanId,
     this.upcomingPlanName,
@@ -436,4 +445,18 @@ class _PlanInfo {
   final int additional;
 
   _PlanInfo({required this.id, required this.name, required this.additional});
+}
+
+String _getPrivilegeIcon(String level) {
+  final normalized = level.toLowerCase().replaceAll('á', 'a');
+  switch (normalized) {
+    case 'premium':
+      return 'assets/icono-usuario-premium.png';
+    case 'golden':
+      return 'assets/icono-usuario-golden.png';
+    case 'vip':
+      return 'assets/icono-usuario-vip.png';
+    default:
+      return 'assets/icono-usuario-basico.png';
+  }
 }
