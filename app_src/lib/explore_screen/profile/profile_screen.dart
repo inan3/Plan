@@ -129,8 +129,8 @@ class ProfileScreenState extends State<ProfileScreen> {
         participants.add({
           'uid': uid,
           'name': uData['name'] ?? 'Sin nombre',
-          'age': uData['age']?.toString() ?? '',
           'photoUrl': uData['photoUrl'] ?? uData['profilePic'] ?? '',
+          'privilegeLevel': (uData['privilegeLevel'] ?? 'Básico').toString(),
           'isCreator': (p.createdBy == uid),
         });
       }

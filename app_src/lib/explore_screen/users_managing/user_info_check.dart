@@ -1179,8 +1179,8 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         res.add({
           'uid': uid,
           'name': d['name'] ?? 'Usuario',
-          'age': d['age']?.toString() ?? '',
           'photoUrl': d['photoUrl'] ?? '',
+          'privilegeLevel': (d['privilegeLevel'] ?? 'Básico').toString(),
           'isCreator': uid == plan.createdBy,
         });
       }

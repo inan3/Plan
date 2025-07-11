@@ -704,12 +704,12 @@ class PlanCardState extends State<PlanCard> {
     if (count == 1) {
       final p = participants[0];
       final pic = p['photoUrl'] ?? '';
-      String name = p['name'] ?? 'Usuario';
-      final age = p['age']?.toString() ?? '';
+      final name = p['name'] ?? 'Usuario';
+      final uid = p['uid']?.toString() ?? '';
+      final level = p['privilegeLevel']?.toString() ?? 'Básico';
 
       const int maxChars = 14;
-      String displayText = '$name, $age';
-      displayText = _truncate(displayText, maxChars);
+      final truncated = _truncate(name, maxChars);
 
       return GestureDetector(
         onTap: () => _showParticipantsModal(participants),
@@ -728,12 +728,29 @@ class PlanCardState extends State<PlanCard> {
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  displayText,
-                  style: const TextStyle(color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          truncated,
+                          style: const TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Image.asset(
+                        _getPrivilegeIcon(level),
+                        width: 14,
+                        height: 14,
+                      ),
+                    ],
+                  ),
+                  if (uid.isNotEmpty) UserActivityStatus(userId: uid),
+                ],
               ),
             ],
           ),
@@ -892,7 +909,6 @@ class PlanCardState extends State<PlanCard> {
                       final p = participants[i];
                       final pic = p['photoUrl'] ?? '';
                       final name = p['name'] ?? 'Usuario';
-                      final age = p['age']?.toString() ?? '';
                       final uid = p['uid']?.toString() ?? '';
 
                       final bool isCheckedIn = checkedInUsers.contains(uid);
@@ -908,13 +924,30 @@ class PlanCardState extends State<PlanCard> {
                               pic.isNotEmpty ? NetworkImage(pic) : null,
                           backgroundColor: Colors.blueGrey[400],
                         ),
-                        title: Text(
-                          '$name, $age',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Image.asset(
+                              _getPrivilegeIcon(
+                                  p['privilegeLevel']?.toString() ?? 'Básico'),
+                              width: 14,
+                              height: 14,
+                            ),
+                          ],
                         ),
+                        subtitle: uid.isNotEmpty
+                            ? UserActivityStatus(userId: uid)
+                            : null,
                         trailing: (widget.plan.special_plan != 1 && isCheckedIn)
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
