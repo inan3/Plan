@@ -7,7 +7,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:io';
 import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -595,13 +598,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        final shareUrl =
-                            'https://plansocialapp.es/plan?planId=${plan.id}';
-                        final shareText =
-                            '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
-                        Share.share(shareText);
-                      },
+                      onPressed: () => _sharePlanWithImage(plan),
                       icon: const Icon(Icons.share, color: Colors.white),
                       label: Text(
                         t.shareWithOtherApps,
@@ -628,6 +625,35 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         );
       },
     );
+  }
+
+  //--------------------------------------------------------------------------
+  // Comparte el plan junto con su imagen
+  //--------------------------------------------------------------------------
+  Future<void> _sharePlanWithImage(PlanModel plan) async {
+    final shareUrl = 'https://plansocialapp.es/plan?planId=${plan.id}';
+    final shareText =
+        '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
+
+    final imageUrl = plan.backgroundImage ??
+        ((plan.images != null && plan.images!.isNotEmpty)
+            ? plan.images!.first
+            : null);
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(imageUrl));
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/shared_plan.jpg');
+        await file.writeAsBytes(response.bodyBytes);
+        await Share.shareXFiles([XFile(file.path)], text: shareText);
+        return;
+      } catch (_) {
+        // Si la descarga falla, se comparte solo el texto
+      }
+    }
+
+    await Share.share(shareText);
   }
 
   Widget _buildActionButtonsRow(PlanModel plan) {
