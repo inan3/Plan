@@ -169,8 +169,13 @@ class _MyAppState extends State<MyApp> {
     }, onError: (_) {});
   }
 
+
   Future<void> _handleUri(Uri uri) async {
-    if (uri.path == '/plan') {
+    final bool isPlanLink =
+        (uri.scheme == 'https' && uri.host == 'plansocialapp.es' && uri.path == '/plan') ||
+        (uri.scheme == 'plansocialapp' && uri.path == '/plan');
+
+    if (isPlanLink) {
       final planId = uri.queryParameters['planId'];
       if (planId != null && planId.isNotEmpty) {
         final user = FirebaseAuth.instance.currentUser;
