@@ -353,7 +353,7 @@ class UserImagesManaging {
         builder: (_) => _FullScreenImagePage(
           initialIndex: initialIndex,
           images: coverImages,
-          titleAppBar: "Tu colección de fotos",
+          titleAppBar: AppLocalizations.of(context).photoCollection,
           isProfile: false,
           onCoverImagesUpdated: onImagesUpdated,
           onProfileChanged: onProfileUpdated,
@@ -505,7 +505,7 @@ class UserImagesManaging {
         builder: (_) => _FullScreenImagePage(
           images: photos,
           initialIndex: initialIndex,
-          titleAppBar: "Tu colección de fotos",
+          titleAppBar: AppLocalizations.of(context).photoCollection,
           isAdditional: true,
           onAdditionalUpdated: onNewList,
           onProfileChanged: onProfileUpdated,
@@ -895,34 +895,42 @@ class _FrostedPopup extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.zero,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Fondo borroso
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-            child: Container(color: Colors.black54),
-          ),
-          // Cuadro de opciones
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.4,
-            left: 24, //  <--  nuevo: margen izquierdo
-            right: 24, //  <--  nuevo: margen derecho
-            child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              child: ConstrainedBox(
-                // da un ancho máximo cómodo
-                constraints: const BoxConstraints(maxWidth: 360),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: child,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).pop(),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Fondo borroso
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                child: Container(color: Colors.black54),
+              ),
+            ),
+            // Cuadro de opciones
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.4,
+              left: 24,
+              right: 24,
+              child: GestureDetector(
+                onTap: () {},
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: child,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
