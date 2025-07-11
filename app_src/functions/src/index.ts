@@ -28,7 +28,7 @@ interface WrittenEvent<T = DocumentSnapshot> {
 
 initializeApp();
 
-const titles: Record<string, string> = {
+const titlesEs: Record<string, string> = {
   join_request: "Solicitud de unión",
   invitation: "Invitación a un plan",
   invitation_accepted: "Invitación aceptada",
@@ -46,6 +46,26 @@ const titles: Record<string, string> = {
   special_plan_deleted: "Plan especial eliminado",
   special_plan_left: "Salida de plan especial",
   plan_checkin_started: "Check-in iniciado",
+};
+
+const titlesEn: Record<string, string> = {
+  join_request: "Join request",
+  invitation: "Plan invitation",
+  invitation_accepted: "Invitation accepted",
+  invitation_rejected: "Invitation rejected",
+  join_accepted: "Request accepted",
+  join_rejected: "Request rejected",
+  follow_request: "Follow request",
+  follow_accepted: "Follow accepted",
+  follow_rejected: "Follow rejected",
+  new_plan_published: "New plan published",
+  plan_chat_message: "New comment",
+  welcome: "Welcome to Plan",
+  plan_left: "Participant left",
+  removed_from_plan: "Removed from a plan",
+  special_plan_deleted: "Special plan deleted",
+  special_plan_left: "Left special plan",
+  plan_checkin_started: "Check-in started",
 };
 
 const vision = new ImageAnnotatorClient();
@@ -78,6 +98,7 @@ export const sendPushOnNotification = onDocumentCreated(
     const receiverRef = db.doc(`users/${n.receiverId}`);
     const recvSnap = await receiverRef.get();
     const recvTokens: string[] = recvSnap.get("tokens") ?? [];
+    const lang: string = recvSnap.get("languageCode") ?? "es";
     if (recvTokens.length === 0) return;
 
     const sendSnap = await db.doc(`users/${n.senderId}`).get();
@@ -88,16 +109,25 @@ export const sendPushOnNotification = onDocumentCreated(
     );
     if (tokens.length === 0) tokens = recvTokens;
 
+    const titles = lang.startsWith("en") ? titlesEn : titlesEs;
     const notif = {
-      title: titles[n.type] ?? "Notificación",
-      body:
-        n.type === "special_plan_deleted" ?
-          `${n.senderName} ha eliminado el plan especial` :
-          n.type === "special_plan_left" ?
-            `${n.senderName} ha decidido abandonar el plan especial` :
-            n.senderName ?
-              `${n.senderName} • ${n.planType ?? ""}` :
-              "Abre la app para más detalles",
+      title:
+        titles[n.type] ?? (lang.startsWith("en") ? "Notification" : "Notificación"),
+      body: lang.startsWith("en")
+        ? n.type === "special_plan_deleted"
+          ? `${n.senderName} has deleted the special plan`
+          : n.type === "special_plan_left"
+            ? `${n.senderName} has decided to leave the special plan`
+            : n.senderName
+              ? `${n.senderName} • ${n.planType ?? ""}`
+              : "Open the app for more details"
+        : n.type === "special_plan_deleted"
+          ? `${n.senderName} ha eliminado el plan especial`
+          : n.type === "special_plan_left"
+            ? `${n.senderName} ha decidido abandonar el plan especial`
+            : n.senderName
+              ? `${n.senderName} • ${n.planType ?? ""}`
+              : "Abre la app para más detalles",
     };
 
     const resp = await getMessaging().sendEachForMulticast({
@@ -152,6 +182,7 @@ export const sendPushOnMessage = onDocumentCreated(
     const receiverRef = db.doc(`users/${m.receiverId}`);
     const recvSnap = await receiverRef.get();
     const recvTokens: string[] = recvSnap.get("tokens") ?? [];
+    const lang: string = recvSnap.get("languageCode") ?? "es";
     if (recvTokens.length === 0) return;
 
     const senderSnap = await db.doc(`users/${m.senderId}`).get();
@@ -166,8 +197,10 @@ export const sendPushOnMessage = onDocumentCreated(
     const resp = await getMessaging().sendEachForMulticast({
       tokens,
       notification: {
-        title: "Nuevo mensaje",
-        body: `Tienes un mensaje de ${senderName}`,
+        title: lang.startsWith("en") ? "New message" : "Nuevo mensaje",
+        body: lang.startsWith("en")
+          ? `You have a message from ${senderName}`
+          : `Tienes un mensaje de ${senderName}`,
       },
       android: {notification: {channelId: "plan_high"}},
       data: {
@@ -331,16 +364,22 @@ export const createWelcomeNotification = onDocumentCreated(
     if (!data) return;
 
     const db = getFirestore();
+    const lang: string = data.languageCode ?? "es";
     await db.collection("notifications").add({
       type: "welcome",
       receiverId: userId,
       senderId: "system",
       senderName: "Plan",
       senderProfilePic: "",
-      message:
-        "El equipo de Plan te da la bienvenida a la app que te conecta " +
-        "con nuevas experiencias y personas. ¡Comienza a explorar y a " +
-        "crear momentos inolvidables!",
+      message: lang.startsWith("en")
+        ?
+            "The Plan team welcomes you to the app that connects you with new " +
+            "experiences and people. Start exploring and creating unforgettable " +
+            "moments!"
+        :
+            "El equipo de Plan te da la bienvenida a la app que te conecta " +
+            "con nuevas experiencias y personas. ¡Comienza a explorar y a " +
+            "crear momentos inolvidables!",
       timestamp: FieldValue.serverTimestamp(),
       read: false,
     });
