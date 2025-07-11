@@ -160,7 +160,7 @@ class _MyAppState extends State<MyApp> {
 
   void _initDeepLinks() async {
     try {
-      _initialUri = await _appLinks.getInitialAppLink();
+      _initialUri = await _appLinks.getInitialLink();
       if (_initialUri != null) _handleUri(_initialUri!);
     } catch (_) {}
 
