@@ -72,14 +72,14 @@ class PlanShareSheetState extends State<PlanShareSheet> {
       _followers = await _fetchUsersData(followerUids);
       _following = await _fetchUsersData(followedUids);
       setState(() {});
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<List<Map<String, dynamic>>> _fetchUsersData(List<String> uids) async {
     final List<Map<String, dynamic>> usersData = [];
     for (String uid in uids) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
         usersData.add({
@@ -96,11 +96,12 @@ class PlanShareSheetState extends State<PlanShareSheet> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final String shareUrl = 'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
+    final String shareUrl =
+        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String shareText =
-        '$shareUrl\n\n¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc';
+        '¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc \n\n$shareUrl';
 
     return Container(
       decoration: BoxDecoration(
@@ -154,7 +155,8 @@ class PlanShareSheetState extends State<PlanShareSheet> {
                         onTap: () => Navigator.pop(context),
                         child: Text(
                           t.cancel,
-                          style: const TextStyle(color: Colors.red, fontSize: 16),
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 16),
                         ),
                       ),
                       const Spacer(),
@@ -182,7 +184,8 @@ class PlanShareSheetState extends State<PlanShareSheet> {
                     decoration: InputDecoration(
                       hintText: t.searchUserHint,
                       hintStyle: const TextStyle(color: Colors.white60),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white60),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.white60),
                       filled: true,
                       fillColor: Colors.white10,
                       border: OutlineInputBorder(
@@ -316,12 +319,12 @@ class PlanShareSheetState extends State<PlanShareSheet> {
   // Comparte el plan con imagen descargada (si la hay)
   //--------------------------------------------------------------------------
   Future<void> _sharePlanWithImage() async {
-    final String shareUrl =
-        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
+    final String shareUrl =
+        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String shareText =
-        '$shareUrl\n\n¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc';
+        '¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc \n\n$shareUrl';
 
     final imageUrl = widget.plan.backgroundImage ??
         ((widget.plan.images != null && widget.plan.images!.isNotEmpty)
@@ -353,7 +356,8 @@ class PlanShareSheetState extends State<PlanShareSheet> {
       return;
     }
 
-    final String shareUrl = 'https://plansocialapp.es/plan?planId=${widget.plan.id}';
+    final String shareUrl =
+        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String planId = widget.plan.id;
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
