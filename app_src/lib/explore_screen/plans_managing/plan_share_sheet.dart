@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/plan_model.dart';
 import '../users_grid/users_grid_helpers.dart'; // Para funciones de ayuda si hiciera falta
 import '../../main/colors.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Muestra un bottom sheet para compartir el plan con seguidores/seguidos,
 /// y también la opción de compartir con otras apps.
@@ -91,6 +92,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final String shareUrl = 'https://plan-social-app.web.app/plan?planId=${widget.plan.id}';
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
@@ -115,21 +117,22 @@ class PlanShareSheetState extends State<PlanShareSheet> {
           ),
           const SizedBox(height: 8),
 
-          // Botón “Compartir con otras apps”
+          // Botón "Compartir con otras apps"
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                const Text(
-                  "Compartir con otras apps",
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+            child: ElevatedButton.icon(
+              onPressed: () => Share.share(shareText),
+              icon: const Icon(Icons.share, color: Colors.white),
+              label: Text(
+                t.shareWithOtherApps,
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.planColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.share, color: Colors.white),
-                  onPressed: () => Share.share(shareText),
-                ),
-              ],
+              ),
             ),
           ),
           const Divider(color: Colors.white54),
@@ -146,17 +149,23 @@ class PlanShareSheetState extends State<PlanShareSheet> {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Text(
-                          "Cancelar",
-                          style: TextStyle(color: Colors.red, fontSize: 16),
+                        child: Text(
+                          t.cancel,
+                          style: const TextStyle(color: Colors.red, fontSize: 16),
                         ),
                       ),
                       const Spacer(),
-                      GestureDetector(
-                        onTap: _sendPlanToSelectedUsers,
-                        child: const Text(
-                          "Enviar",
-                          style: TextStyle(color: Colors.green, fontSize: 16),
+                      ElevatedButton(
+                        onPressed: _sendPlanToSelectedUsers,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.planColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: Text(
+                          t.send,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
@@ -168,7 +177,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
                     controller: _searchController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: "Buscar usuario...",
+                      hintText: t.searchUserHint,
                       hintStyle: const TextStyle(color: Colors.white60),
                       prefixIcon: const Icon(Icons.search, color: Colors.white60),
                       filled: true,
@@ -186,7 +195,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Mis seguidores",
+                      t.myFollowers,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
@@ -202,7 +211,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "A quienes sigo",
+                      t.usersIFollow,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
