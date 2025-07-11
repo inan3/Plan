@@ -633,7 +633,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   Future<void> _sharePlanWithImage(PlanModel plan) async {
     final shareUrl = 'https://plansocialapp.es/plan?planId=${plan.id}';
     final shareText =
-        '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
+        '$shareUrl\n\n¡Mira este plan!\nTítulo: ${plan.type}\nDescripción: ${plan.description}';
 
     final imageUrl = plan.backgroundImage ??
         ((plan.images != null && plan.images!.isNotEmpty)

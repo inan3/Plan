@@ -100,7 +100,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
     final String shareText =
-        '¡Mira este plan!\n\nTítulo: $planTitle\nDescripción: $planDesc\n$shareUrl';
+        '$shareUrl\n\n¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc';
 
     return Container(
       decoration: BoxDecoration(
@@ -321,7 +321,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
     final String shareText =
-        '¡Mira este plan!\n\nTítulo: $planTitle\nDescripción: $planDesc\n$shareUrl';
+        '$shareUrl\n\n¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc';
 
     final imageUrl = widget.plan.backgroundImage ??
         ((widget.plan.images != null && widget.plan.images!.isNotEmpty)
