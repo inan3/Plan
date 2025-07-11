@@ -597,7 +597,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         final shareUrl =
-                            'https://plan-social-app.web.app/plan?planId=${plan.id}';
+                            'https://plansocialapp.es/plan?planId=${plan.id}';
                         final shareText =
                             '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
                         Share.share(shareText);

@@ -93,7 +93,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final String shareUrl = 'https://plan-social-app.web.app/plan?planId=${widget.plan.id}';
+    final String shareUrl = 'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
     final String shareText =
@@ -318,7 +318,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
       return;
     }
 
-    final String shareUrl = 'https://plan-social-app.web.app/plan?planId=${widget.plan.id}';
+    final String shareUrl = 'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String planId = widget.plan.id;
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;

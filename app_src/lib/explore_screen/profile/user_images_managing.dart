@@ -739,8 +739,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-fondo.svg',
                     width: 24, height: 24),
-                title:
-                    Text(AppLocalizations.of(context).setAsBackgroundImage),
+                title: Text(AppLocalizations.of(context).setAsBackground),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _setAsCoverBackground();
@@ -760,7 +759,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-eliminar.svg',
                     width: 24, height: 24),
-                title: Text(AppLocalizations.of(context).deleteGeneric),
+                title: Text(AppLocalizations.of(context).delete),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _deleteCurrentImage();
@@ -784,7 +783,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/usuario.svg',
                     width: 24, height: 24),
-                title: Text(AppLocalizations.of(context).setAsProfileImage),
+                title: Text(AppLocalizations.of(context).setAsProfilePhoto),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _setAsProfile();
@@ -794,7 +793,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-eliminar.svg',
                     width: 24, height: 24),
-                title: Text(AppLocalizations.of(context).deleteGeneric),
+                title: Text(AppLocalizations.of(context).delete),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _deleteCurrentImage();
