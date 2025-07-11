@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 import '../../models/plan_model.dart';
 import '../users_grid/users_grid_helpers.dart'; // Para funciones de ayuda si hiciera falta
@@ -121,7 +124,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ElevatedButton.icon(
-              onPressed: () => Share.share(shareText),
+              onPressed: _sharePlanWithImage,
               icon: const Icon(Icons.share, color: Colors.white),
               label: Text(
                 t.shareWithOtherApps,
@@ -307,6 +310,38 @@ class PlanShareSheetState extends State<PlanShareSheet> {
         );
       }).toList(),
     );
+  }
+
+  //--------------------------------------------------------------------------
+  // Comparte el plan con imagen descargada (si la hay)
+  //--------------------------------------------------------------------------
+  Future<void> _sharePlanWithImage() async {
+    final String shareUrl =
+        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
+    final String planTitle = widget.plan.type;
+    final String planDesc = widget.plan.description;
+    final String shareText =
+        '¡Mira este plan!\n\nTítulo: $planTitle\nDescripción: $planDesc\n$shareUrl';
+
+    final imageUrl = widget.plan.backgroundImage ??
+        ((widget.plan.images != null && widget.plan.images!.isNotEmpty)
+            ? widget.plan.images!.first
+            : null);
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(imageUrl));
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/plan_share.jpg');
+        await file.writeAsBytes(response.bodyBytes);
+        await Share.shareXFiles([XFile(file.path)], text: shareText);
+        return;
+      } catch (_) {
+        // Si falla la descarga, continúa con un share de texto simple
+      }
+    }
+
+    await Share.share(shareText);
   }
 
   //--------------------------------------------------------------------------
