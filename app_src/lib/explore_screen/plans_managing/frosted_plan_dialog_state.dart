@@ -1968,7 +1968,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
     }
 
     final shareUrl =
-        'https://plan-social-app.web.app/plan?planId=${widget.plan.id}';
+        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final planId = widget.plan.id;
     final planTitle = widget.plan.type;
     final planDesc = widget.plan.description;
