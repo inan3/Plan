@@ -18,13 +18,16 @@ import '../../l10n/app_localizations.dart';
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
+  final String? initialPlanId;
 
-  const UserInfoCheck({Key? key, required this.userId}) : super(key: key);
+  const UserInfoCheck({Key? key, required this.userId, this.initialPlanId})
+      : super(key: key);
 
   /// Método estático para abrir el perfil de [userId].
   /// Primero comprueba si el usuario actual está bloqueado.
   /// Si está bloqueado, no navega y muestra un SnackBar.
-  static Future<void> open(BuildContext context, String userId) async {
+  static Future<void> open(BuildContext context, String userId,
+      {String? planId}) async {
     final me = FirebaseAuth.instance.currentUser;
     if (me == null) return;
 
@@ -47,7 +50,8 @@ class UserInfoCheck extends StatefulWidget {
     // Si NO hay bloqueo, abrimos la pantalla
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => UserInfoCheck(userId: userId)),
+      MaterialPageRoute(
+          builder: (_) => UserInfoCheck(userId: userId, initialPlanId: planId)),
     );
   }
 
@@ -80,7 +84,21 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   @override
   void initState() {
     super.initState();
-    _futureInit = _initAllData();
+    _futureInit = _initAllData().then((_) {
+      if (widget.initialPlanId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isPrivate || isFollowing) {
+            FuturePlansScreen.show(
+              context: context,
+              userId: widget.userId,
+              isFollowing: isFollowing,
+              highlightPlanId: widget.initialPlanId,
+              onPlanSelected: (p) => _showFrostedPlanDialog(p),
+            );
+          }
+        });
+      }
+    });
   }
 
   /// Cargamos de Firestore el doc del usuario, más

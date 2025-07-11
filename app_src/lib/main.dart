@@ -32,6 +32,9 @@ import 'start/registration/verification_provider.dart';
 import 'start/registration/local_registration_service.dart';
 
 import 'services/update_service.dart';
+import 'models/plan_model.dart';
+import 'explore_screen/users_managing/user_info_check.dart';
+import 'package:uni_links/uni_links.dart';
 /* ─────────────────────────────────────────────────────────
  *  Handler FCM en background
  * ────────────────────────────────────────────────────────*/
@@ -123,6 +126,8 @@ class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
+  StreamSubscription? _linkSub;
+  Uri? _initialUri;
   String? _lastUid; // detecta cambio de usuario
 
   @override
@@ -140,6 +145,7 @@ class _MyAppState extends State<MyApp> {
       });
     }
 
+    _initDeepLinks();
   }
 
   void _onMedia(List<SharedMediaFile> files) {
@@ -151,11 +157,45 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  void _initDeepLinks() async {
+    try {
+      _initialUri = await getInitialUri();
+      if (_initialUri != null) _handleUri(_initialUri!);
+    } catch (_) {}
+
+    _linkSub = uriLinkStream.listen((uri) {
+      if (uri != null) _handleUri(uri);
+    }, onError: (_) {});
+  }
+
+  Future<void> _handleUri(Uri uri) async {
+    if (uri.path == '/plan') {
+      final planId = uri.queryParameters['planId'];
+      if (planId != null && planId.isNotEmpty) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return;
+        final doc = await FirebaseFirestore.instance
+            .collection('plans')
+            .doc(planId)
+            .get();
+        if (!doc.exists) return;
+        final data = doc.data()!..['id'] = planId;
+        final plan = PlanModel.fromMap(data);
+        UserInfoCheck.open(
+          _navigatorKey.currentContext!,
+          plan.createdBy,
+          planId: planId,
+        );
+      }
+    }
+  }
+
 
 
   @override
   void dispose() {
     _intentSub?.cancel();
+    _linkSub?.cancel();
     super.dispose();
   }
 

@@ -14,12 +14,14 @@ class FuturePlansScreen extends StatefulWidget {
   final String userId;
   final bool isFollowing;
   final void Function(PlanModel plan) onPlanSelected;
+  final String? highlightPlanId;
 
   const FuturePlansScreen({
     Key? key,
     required this.userId,
     required this.isFollowing,
     required this.onPlanSelected,
+    this.highlightPlanId,
   }) : super(key: key);
 
   static Future<void> show({
@@ -27,6 +29,7 @@ class FuturePlansScreen extends StatefulWidget {
     required String userId,
     required bool isFollowing,
     required void Function(PlanModel plan) onPlanSelected,
+    String? highlightPlanId,
   }) async {
     await showModalBottomSheet(
       context: context,
@@ -44,6 +47,7 @@ class FuturePlansScreen extends StatefulWidget {
             userId: userId,
             isFollowing: isFollowing,
             onPlanSelected: onPlanSelected,
+            highlightPlanId: highlightPlanId,
           ),
         );
       },
@@ -55,6 +59,17 @@ class FuturePlansScreen extends StatefulWidget {
 }
 
 class _FuturePlansScreenState extends State<FuturePlansScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _highlightKey = GlobalKey();
+  bool _scrolled = false;
+  void _scrollToHighlighted() {
+    if (_scrolled || widget.highlightPlanId == null) return;
+    final ctx = _highlightKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+      _scrolled = true;
+    }
+  }
 //─────────────────────────── Helpers ───────────────────────────
   Future<Map<String, dynamic>?> _userData() async =>
       (await FirebaseFirestore.instance
@@ -152,7 +167,10 @@ class _FuturePlansScreenState extends State<FuturePlansScreen> {
                     }
 
                     final plans = pSnap.data!;
+                    WidgetsBinding.instance
+                        .addPostFrameCallback((_) => _scrollToHighlighted());
                     return ListView.separated(
+                      controller: _scrollController,
                       itemCount: plans.length,
                       separatorBuilder: (_, __) =>
                           Divider(color: Colors.grey[300], height: 1),
@@ -175,12 +193,16 @@ class _FuturePlansScreenState extends State<FuturePlansScreen> {
                                 'solo para mis seguidores') &&
                             !widget.isFollowing;
 
-                        if (!locked) return card;
+                        final container = plan.id == widget.highlightPlanId
+                            ? Container(key: _highlightKey, child: card)
+                            : card;
+
+                        if (!locked) return container;
 
                         // ────────── Tarjeta bloqueada ──────────
                         return Stack(
                           children: [
-                            IgnorePointer(child: card),
+                            IgnorePointer(child: container),
 
                             // RepaintBoundary evita parpadeos al hacer scroll
                             Positioned.fill(
