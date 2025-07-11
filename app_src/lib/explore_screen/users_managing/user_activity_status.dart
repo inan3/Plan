@@ -124,6 +124,9 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
   @override
   Widget build(BuildContext context) {
     if (!_showStatus) return const SizedBox.shrink();
+    // Detecta si el widget fue invocado desde FollowingScreen para forzar color negro
+    final bool forceBlack = (widget.key is ValueKey && (widget.key as ValueKey).value.toString().startsWith('black_'));
+    final textColor = forceBlack ? Colors.black : Colors.white;
     if (_isOnline) {
       // Usuario conectado
       return Row(
@@ -133,7 +136,7 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
           const SizedBox(width: 4),
           Text(
             AppLocalizations.of(context).online,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: TextStyle(color: textColor, fontSize: 12),
           ),
         ],
       );
@@ -143,11 +146,11 @@ class _UserActivityStatusState extends State<UserActivityStatus> {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildDot(color: Colors.white),
+          _buildDot(color: textColor),
           const SizedBox(width: 4),
           Text(
             info,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: TextStyle(color: textColor, fontSize: 12),
           ),
         ],
       );

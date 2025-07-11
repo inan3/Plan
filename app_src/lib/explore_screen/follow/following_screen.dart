@@ -280,9 +280,10 @@ class _FollowingScreenState extends State<FollowingScreen> {
                                 : 'https://via.placeholder.com/150'),
                           ),
                           title: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Expanded(child: Text(u.name)),
-                              const SizedBox(width: 4),
+                              Text(u.name),
+                              const SizedBox(width: 2),
                               Image.asset(
                                 _getPrivilegeIcon(u.privilegeLevel),
                                 width: 14,
@@ -290,7 +291,11 @@ class _FollowingScreenState extends State<FollowingScreen> {
                               ),
                             ],
                           ),
-                          subtitle: UserActivityStatus(userId: u.uid),
+                          subtitle: UserActivityStatus(
+                            userId: u.uid,
+                            // Forzamos color negro en este contexto
+                            key: ValueKey('black_${u.uid}'),
+                          ),
                           trailing: u.upcomingPlanId != null
                               ? InkWell(
                                   onTap: () => _onPlanTap(u.upcomingPlanId!),
