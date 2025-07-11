@@ -644,7 +644,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       try {
         final response = await http.get(Uri.parse(imageUrl));
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/shared_plan.jpg');
+        final file = File('${tempDir.path}/plan_share.jpg');
         await file.writeAsBytes(response.bodyBytes);
         await Share.shareXFiles([XFile(file.path)], text: shareText);
         return;
