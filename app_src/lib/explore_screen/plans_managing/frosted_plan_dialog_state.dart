@@ -125,9 +125,6 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     } catch (e) {}
   }
 
-  String _buildAppLink(String planId) {
-    return 'plansocialapp:/plan?planId=$planId';
-  }
 
   Future<void> _checkIfLiked() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -2186,6 +2183,10 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
       }).toList(),
     );
   }
+}
+
+String _buildAppLink(String planId) {
+  return 'plansocialapp:/plan?planId=$planId';
 }
 
 String _getPrivilegeIcon(String level) {
