@@ -125,6 +125,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     } catch (e) {}
   }
 
+  String _buildAppLink(String planId) {
+    return 'plansocialapp:/plan?planId=$planId';
+  }
+
   Future<void> _checkIfLiked() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -631,9 +635,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   // Comparte el plan junto con su imagen
   //--------------------------------------------------------------------------
   Future<void> _sharePlanWithImage(PlanModel plan) async {
-    final shareUrl = 'https://plansocialapp.es/plan?planId=${plan.id}';
+    final shareUrl = _buildAppLink(plan.id);
+    final webLink = 'https://plansocialapp.es/plan?planId=${plan.id}';
     final shareText =
-        '$shareUrl\n\n¡Mira este plan!\nTítulo: ${plan.type}\nDescripción: ${plan.description}';
+        '$shareUrl\n$webLink\n\n¡Mira este plan!\nTítulo: ${plan.type}\nDescripción: ${plan.description}';
 
     final imageUrl = plan.backgroundImage ??
         ((plan.images != null && plan.images!.isNotEmpty)
@@ -1993,8 +1998,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
       return;
     }
 
-    final shareUrl =
-        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
+    final shareUrl = _buildAppLink(widget.plan.id);
     final planId = widget.plan.id;
     final planTitle = widget.plan.type;
     final planDesc = widget.plan.description;

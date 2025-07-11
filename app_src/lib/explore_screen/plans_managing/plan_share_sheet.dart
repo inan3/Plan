@@ -93,15 +93,20 @@ class PlanShareSheetState extends State<PlanShareSheet> {
     return usersData;
   }
 
+
+  String _buildAppLink(String planId) {
+    return 'plansocialapp:/plan?planId=$planId';
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
-    final String shareUrl =
-        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
+    final String appLink = _buildAppLink(widget.plan.id);
+    final String webLink = 'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String shareText =
-        '¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc \n\n$shareUrl';
+        '¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc\n\n$appLink\n$webLink';
 
     return Container(
       decoration: BoxDecoration(
@@ -321,10 +326,10 @@ class PlanShareSheetState extends State<PlanShareSheet> {
   Future<void> _sharePlanWithImage() async {
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
-    final String shareUrl =
-        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
+    final String appLink = _buildAppLink(widget.plan.id);
+    final String webLink = 'https://plansocialapp.es/plan?planId=${widget.plan.id}';
     final String shareText =
-        '¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc \n\n$shareUrl';
+        '¡Mira este plan!\nTítulo: $planTitle\nDescripción: $planDesc\n\n$appLink\n$webLink';
 
     final imageUrl = widget.plan.backgroundImage ??
         ((widget.plan.images != null && widget.plan.images!.isNotEmpty)
@@ -356,8 +361,7 @@ class PlanShareSheetState extends State<PlanShareSheet> {
       return;
     }
 
-    final String shareUrl =
-        'https://plansocialapp.es/plan?planId=${widget.plan.id}';
+    final String shareUrl = _buildAppLink(widget.plan.id);
     final String planId = widget.plan.id;
     final String planTitle = widget.plan.type;
     final String planDesc = widget.plan.description;
