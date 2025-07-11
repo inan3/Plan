@@ -14,6 +14,7 @@ import '../users_managing/user_info_check.dart';
 import '../plans_managing/plan_card.dart'; // <--- Asegúrate de importar tu PlanCard
 import '../plans_managing/firebase_services.dart'; // <--- Para fetchPlanParticipants, si lo tienes
 import '../plans_managing/frosted_plan_dialog_state.dart';
+import '../../l10n/app_localizations.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;

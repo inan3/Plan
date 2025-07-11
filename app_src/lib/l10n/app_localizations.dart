@@ -258,7 +258,6 @@ class AppLocalizations {
       'register': 'Registrarse',
       'no_results': 'Sin resultados',
       'login_title': 'Inicio de sesión',
-      'login': 'Iniciar sesión',
       'email_label': 'Correo electrónico',
       'email_short': 'correo',
       'forgot_password': '¿Olvidaste tu contraseña?',
@@ -526,8 +525,7 @@ class AppLocalizations {
       'welcome_slogan':
           'PLAN is the social platform where common interests come together!',
       'welcome_question': "What about you? What's your PLAN?",
-      'login': 'Log in',
-      'register': 'Register',
+      'register': 'Sign up',
       'no_results': 'No results',
       'login_title': 'Sign in',
       'login': 'Sign in',
@@ -798,7 +796,6 @@ class AppLocalizations {
   String get noMemoriesDay => _t('no_memories_day');
   String get welcomeSlogan => _t('welcome_slogan');
   String get welcomeQuestion => _t('welcome_question');
-  String get login => _t('login');
   String get register => _t('register');
 
   String get reportUserTitle => _t('report_user_title');
