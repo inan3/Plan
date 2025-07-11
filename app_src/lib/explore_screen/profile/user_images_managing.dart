@@ -190,7 +190,7 @@ class UserImagesManaging {
         builder: (_) => _FullScreenImagePage(
           initialIndex: 0,
           images: [imageUrl],
-          titleAppBar: "Tu foto de perfil",
+          titleAppBar: AppLocalizations.of(context).yourProfilePhoto,
           isProfile: true,
           onProfileDeleted: onProfileDeleted,
           onProfileChanged: onProfileChanged,
@@ -698,7 +698,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/usuario.svg',
                     width: 24, height: 24),
-                title: const Text('Cambiar imagen de perfil'),
+                title: Text(AppLocalizations.of(context).changeProfileImage),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await UserImagesManaging.changeProfileImage(
@@ -715,7 +715,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-eliminar.svg',
                     width: 24, height: 24),
-                title: const Text('Eliminar imagen de perfil'),
+                title: Text(AppLocalizations.of(context).deleteProfileImage),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _deleteCurrentImage();
@@ -739,7 +739,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-fondo.svg',
                     width: 24, height: 24),
-                title: const Text('Establecer como imagen de fondo'),
+                title: Text(AppLocalizations.of(context).setAsBackground),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _setAsCoverBackground();
@@ -749,7 +749,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/usuario.svg',
                     width: 24, height: 24),
-                title: const Text('Establecer como imagen de perfil'),
+                title: Text(AppLocalizations.of(context).setAsProfileImage),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _setAsProfile();
@@ -759,7 +759,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-eliminar.svg',
                     width: 24, height: 24),
-                title: const Text('Eliminar'),
+                title: Text(AppLocalizations.of(context).delete),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _deleteCurrentImage();
@@ -783,7 +783,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/usuario.svg',
                     width: 24, height: 24),
-                title: const Text('Establecer como foto de perfil'),
+                title: Text(AppLocalizations.of(context).setAsProfilePhoto),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _setAsProfile();
@@ -793,7 +793,7 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
               ListTile(
                 leading: SvgPicture.asset('assets/icono-eliminar.svg',
                     width: 24, height: 24),
-                title: const Text('Eliminar'),
+                title: Text(AppLocalizations.of(context).delete),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await _deleteCurrentImage();

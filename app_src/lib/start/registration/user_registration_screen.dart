@@ -695,7 +695,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         ),
         const SizedBox(height: 5),
         Text(
-          "Tu foto de perfil",
+          AppLocalizations.of(context).yourProfilePhoto,
           style: TextStyle(
             color: MyColors.AppColors.black,
             fontSize: 16,
