@@ -34,7 +34,7 @@ import 'start/registration/local_registration_service.dart';
 import 'services/update_service.dart';
 import 'models/plan_model.dart';
 import 'explore_screen/users_managing/user_info_check.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 /* ─────────────────────────────────────────────────────────
  *  Handler FCM en background
  * ────────────────────────────────────────────────────────*/
@@ -126,6 +126,7 @@ class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _sharedText;
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
+  final AppLinks _appLinks = AppLinks();
   StreamSubscription? _linkSub;
   Uri? _initialUri;
   String? _lastUid; // detecta cambio de usuario
@@ -159,11 +160,11 @@ class _MyAppState extends State<MyApp> {
 
   void _initDeepLinks() async {
     try {
-      _initialUri = await getInitialUri();
+      _initialUri = await _appLinks.getInitialAppLink();
       if (_initialUri != null) _handleUri(_initialUri!);
     } catch (_) {}
 
-    _linkSub = uriLinkStream.listen((uri) {
+    _linkSub = _appLinks.uriLinkStream.listen((uri) {
       if (uri != null) _handleUri(uri);
     }, onError: (_) {});
   }
