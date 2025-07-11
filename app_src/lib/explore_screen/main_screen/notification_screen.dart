@@ -592,12 +592,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           );
 
                           // Tipo de notificación
+                          final isEn =
+                              AppLocalizations.of(context).locale.languageCode ==
+                                  'en';
                           switch (type) {
                             case 'join_request':
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName se quiere unir a un plan tuyo!",
+                                  isEn
+                                      ? '$senderName wants to join one of your plans!'
+                                      : '¡$senderName se quiere unir a un plan tuyo!'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 onTap: () => _showPlanDetails(context, planId),
@@ -611,7 +616,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName ha aceptado que te unas a su plan!",
+                                  isEn
+                                      ? '$senderName has accepted you to join their plan!'
+                                      : '¡$senderName ha aceptado que te unas a su plan!'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true, // ← Corregido
@@ -627,7 +634,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName ha rechazado tu solicitud para unirte!",
+                                  isEn
+                                      ? '$senderName has rejected your request to join!'
+                                      : '¡$senderName ha rechazado tu solicitud para unirte!'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true, // ← Corregido
@@ -642,8 +651,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             case 'invitation':
                               final int specialPlan = data['specialPlan'] ?? 0;
                               final String message = specialPlan == 1
-                                  ? "$senderName te ha invitado a un plan especial de $planType"
-                                  : "¡$senderName te ha invitado a unirte a este plan!";
+                                  ? (isEn
+                                      ? '$senderName has invited you to a special plan of $planType'
+                                      : '$senderName te ha invitado a un plan especial de $planType')
+                                  : (isEn
+                                      ? '$senderName has invited you to join this plan!'
+                                      : '¡$senderName te ha invitado a unirte a este plan!');
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(message),
@@ -659,7 +672,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName ha aceptado tu invitación!",
+                                  isEn
+                                      ? '$senderName accepted your invitation!'
+                                      : '¡$senderName ha aceptado tu invitación!'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
@@ -675,7 +690,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName ha rechazado tu invitación!",
+                                  isEn
+                                      ? '$senderName rejected your invitation!'
+                                      : '¡$senderName ha rechazado tu invitación!'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
@@ -691,7 +708,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName quiere seguirte!",
+                                  isEn
+                                      ? '$senderName wants to follow you!'
+                                      : '¡$senderName quiere seguirte!'
                                 ),
                                 subtitle: buildSubtitle("Solicitud de Follow"),
                                 onTap: () {
@@ -716,7 +735,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName ha aceptado tu solicitud de seguimiento!",
+                                  isEn
+                                      ? '$senderName accepted your follow request!'
+                                      : '¡$senderName ha aceptado tu solicitud de seguimiento!'
                                 ),
                                 subtitle:
                                     buildSubtitle("Ahora puedes ver su perfil"),
@@ -742,7 +763,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName ha rechazado tu solicitud de seguimiento!",
+                                  isEn
+                                      ? '$senderName rejected your follow request!'
+                                      : '¡$senderName ha rechazado tu solicitud de seguimiento!'
                                 ),
                                 subtitle: buildSubtitle("Perfil privado"),
                                 isThreeLine: true, // ← Corregido
@@ -767,7 +790,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "¡$senderName acaba de publicar un plan. Échale un vistazo!",
+                                  isEn
+                                      ? '$senderName has just published a plan. Check it out!'
+                                      : '¡$senderName acaba de publicar un plan. Échale un vistazo!'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true, // ← Corregido
@@ -783,7 +808,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "$senderName ha hecho un comentario sobre el plan $planType",
+                                  isEn
+                                      ? '$senderName commented on the plan $planType'
+                                      : '$senderName ha hecho un comentario sobre el plan $planType'
                                 ),
                                 subtitle: Text(
                                   timeString,
@@ -805,7 +832,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "$senderName ha decidido abandonar tu plan.",
+                                  isEn
+                                      ? '$senderName has decided to leave your plan.'
+                                      : '$senderName ha decidido abandonar tu plan.'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
@@ -821,7 +850,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "$senderName ha decidido abandonar el plan especial.",
+                                  isEn
+                                      ? '$senderName has decided to leave the special plan.'
+                                      : '$senderName ha decidido abandonar el plan especial.'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
@@ -837,7 +868,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "$senderName ha eliminado el plan especial.",
+                                  isEn
+                                      ? '$senderName has deleted the special plan.'
+                                      : '$senderName ha eliminado el plan especial.'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
@@ -853,7 +886,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  "$senderName te ha eliminado de su plan.",
+                                  isEn
+                                      ? '$senderName removed you from their plan.'
+                                      : '$senderName te ha eliminado de su plan.'
                                 ),
                                 subtitle: buildSubtitle("Plan: $planType"),
                                 isThreeLine: true,
@@ -869,7 +904,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               return ListTile(
                                 leading: leadingAvatar,
                                 title: Text(
-                                  'El organizador del plan $planType ha iniciado el Check-in. Confirma tu asistencia.',
+                                  isEn
+                                      ? 'The organizer of the plan $planType has started the Check-in. Confirm your attendance.'
+                                      : 'El organizador del plan $planType ha iniciado el Check-in. Confirma tu asistencia.',
                                 ),
                                 subtitle: buildSubtitle('Plan: $planType'),
                                 isThreeLine: true,
