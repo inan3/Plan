@@ -139,6 +139,10 @@ class AppLocalizations {
       'share_location': 'Ubicación',
       'share_plan': 'Plan',
       'share_photo': 'Foto',
+      'share_with_other_apps': 'Compartir con otras apps',
+      'search_user_hint': 'Buscar usuario...',
+      'my_followers': 'Mis seguidores',
+      'users_i_follow': 'A quienes sigo',
       'user_no_plans': 'Este usuario no ha creado planes aún...',
       'invite_to_plan': 'Invítale a un Plan',
       'join': 'Unirse',
@@ -413,6 +417,10 @@ class AppLocalizations {
       'share_location': 'Location',
       'share_plan': 'Plan',
       'share_photo': 'Photo',
+      'share_with_other_apps': 'Share with other apps',
+      'search_user_hint': 'Search user...',
+      'my_followers': 'My followers',
+      'users_i_follow': 'Users I follow',
       'user_no_plans': "This user hasn't created any plans yet...",
       'invite_to_plan': 'Invite to a Plan',
       'join': 'Join',
@@ -692,6 +700,10 @@ class AppLocalizations {
   String get shareLocation => _t('share_location');
   String get sharePlan => _t('share_plan');
   String get sharePhoto => _t('share_photo');
+  String get shareWithOtherApps => _t('share_with_other_apps');
+  String get searchUserHint => _t('search_user_hint');
+  String get myFollowers => _t('my_followers');
+  String get usersIFollow => _t('users_i_follow');
   String get userNoPlans => _t('user_no_plans');
   String get inviteToPlan => _t('invite_to_plan');
   String get join => _t('join');

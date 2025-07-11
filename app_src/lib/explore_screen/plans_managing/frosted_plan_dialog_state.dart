@@ -565,6 +565,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
+        final t = AppLocalizations.of(context);
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.5,
@@ -593,24 +594,25 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      children: [
-                        const Text(
-                          "Compartir con otras apps",
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final shareUrl =
+                            'https://plan-social-app.web.app/plan?planId=${plan.id}';
+                        final shareText =
+                            '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
+                        Share.share(shareText);
+                      },
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      label: Text(
+                        t.shareWithOtherApps,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.planColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.share, color: Colors.white),
-                          onPressed: () {
-                            final shareUrl =
-                                'https://plan-social-app.web.app/plan?planId=${plan.id}';
-                            final shareText =
-                                '¡Mira este plan!\n\nTítulo: ${plan.type}\nDescripción: ${plan.description}\n$shareUrl';
-                            Share.share(shareText);
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                   Expanded(
@@ -1996,6 +1998,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Column(
       children: [
         Padding(
@@ -2004,17 +2007,23 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Text(
-                  "Cancelar",
-                  style: TextStyle(color: Colors.red, fontSize: 16),
+                child: Text(
+                  t.cancel,
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
                 ),
               ),
               const Spacer(),
-              GestureDetector(
-                onTap: _sendPlanToSelectedUsers,
-                child: const Text(
-                  "Enviar",
-                  style: TextStyle(color: Colors.green, fontSize: 16),
+              ElevatedButton(
+                onPressed: _sendPlanToSelectedUsers,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.planColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  t.send,
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ],
@@ -2026,7 +2035,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             controller: _searchController,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: "Buscar usuario...",
+              hintText: t.searchUserHint,
               hintStyle: const TextStyle(color: Colors.white60),
               prefixIcon: const Icon(Icons.search, color: Colors.white60),
               filled: true,
@@ -2048,9 +2057,9 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 6),
-                const Text(
-                  "Mis seguidores",
-                  style: TextStyle(
+                Text(
+                  t.myFollowers,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -2059,9 +2068,9 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
                 const SizedBox(height: 6),
                 _buildUserList(_filterUsers(_followers)),
                 const SizedBox(height: 12),
-                const Text(
-                  "A quienes sigo",
-                  style: TextStyle(
+                Text(
+                  t.usersIFollow,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
