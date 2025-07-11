@@ -258,6 +258,13 @@ class AppLocalizations {
       'choose_photo_source': 'Elige desde dónde obtener la foto',
       'camera': 'Cámara',
       'gallery': 'Galería',
+      'your_profile_photo': 'Tu foto de perfil',
+      'change_profile_image': 'Cambiar imagen de perfil',
+      'delete_profile_image': 'Eliminar imagen de perfil',
+      'set_as_background': 'Establecer como imagen de fondo',
+      'set_as_profile_image': 'Establecer como imagen de perfil',
+      'set_as_profile_photo': 'Establecer como foto de perfil',
+      'delete': 'Eliminar',
       'welcome_slogan':
           '¡PLAN es la plataforma social donde los intereses comunes se fusionan!',
       'welcome_question': '¿Y tú? ¿Qué PLAN propones?',
@@ -536,6 +543,13 @@ class AppLocalizations {
       'choose_photo_source': 'Choose where to get the photo',
       'camera': 'Camera',
       'gallery': 'Gallery',
+      'your_profile_photo': 'Your profile photo',
+      'change_profile_image': 'Change profile image',
+      'delete_profile_image': 'Delete profile image',
+      'set_as_background': 'Set as background image',
+      'set_as_profile_image': 'Set as profile image',
+      'set_as_profile_photo': 'Set as profile photo',
+      'delete': 'Delete',
       'welcome_slogan':
           'PLAN is the social platform where common interests come together!',
       'welcome_question': "What about you? What's your PLAN?",
@@ -784,6 +798,13 @@ class AppLocalizations {
   String get choosePhotoSource => _t('choose_photo_source');
   String get camera => _t('camera');
   String get gallery => _t('gallery');
+  String get yourProfilePhoto => _t('your_profile_photo');
+  String get changeProfileImage => _t('change_profile_image');
+  String get deleteProfileImage => _t('delete_profile_image');
+  String get setAsBackground => _t('set_as_background');
+  String get setAsProfileImage => _t('set_as_profile_image');
+  String get setAsProfilePhoto => _t('set_as_profile_photo');
+  String get delete => _t('delete');
   String get noResults => _t('no_results');
   String get loginTitle => _t('login_title');
   String get login => _t('login');

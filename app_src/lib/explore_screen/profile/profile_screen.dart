@@ -112,6 +112,24 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _handleAvatarTap() {
+    final hasPhoto = profileImageUrl != null && profileImageUrl!.isNotEmpty;
+    if (hasPhoto) {
+      UserImagesManaging.openProfileImageFullScreen(
+        context,
+        profileImageUrl!,
+        onProfileDeleted: () => setState(() => profileImageUrl = ''),
+        onProfileChanged: (newUrl) => setState(() => profileImageUrl = newUrl),
+      );
+    } else {
+      UserImagesManaging.changeProfileImage(
+        context,
+        onProfileUpdated: (newUrl) => setState(() => profileImageUrl = newUrl),
+        onLoading: (val) => setState(() => _isLoading = val),
+      );
+    }
+  }
+
   // ---------------------- PLANES ----------------------
 
   Future<List<Map<String, dynamic>>> _fetchParticipants(PlanModel p) async {
@@ -263,14 +281,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   InkWell(
-                    onTap: () => UserImagesManaging.openProfileImageFullScreen(
-                      context,
-                      profileImageUrl ?? '',
-                      onProfileDeleted: () =>
-                          setState(() => profileImageUrl = ''),
-                      onProfileChanged: (newUrl) =>
-                          setState(() => profileImageUrl = newUrl),
-                    ),
+                    onTap: _handleAvatarTap,
                     customBorder: const CircleBorder(),
                     child: CircleAvatar(
                       radius: 45,
@@ -311,13 +322,7 @@ class ProfileScreenState extends State<ProfileScreen> {
             clipBehavior: Clip.none,
             children: [
               InkWell(
-                onTap: () => UserImagesManaging.openProfileImageFullScreen(
-                  context,
-                  profileImageUrl ?? '',
-                  onProfileDeleted: () => setState(() => profileImageUrl = ''),
-                  onProfileChanged: (newUrl) =>
-                      setState(() => profileImageUrl = newUrl),
-                ),
+                onTap: _handleAvatarTap,
                 customBorder: const CircleBorder(),
                 child: CircleAvatar(
                   radius: 45,
