@@ -96,6 +96,13 @@ class AppLocalizations {
       'pick_from_gallery': 'Seleccionar de la galería',
       'take_photo': 'Hacer una foto',
       'only_one_image': 'Solo se permite subir una imagen.',
+      'photo_collection': 'Tu colección de fotos',
+      'your_profile_photo': 'Tu foto de perfil',
+      'change_profile_image': 'Cambiar imagen de perfil',
+      'delete_profile_image': 'Eliminar imagen de perfil',
+      'set_as_background_image': 'Establecer como imagen de fondo',
+      'set_as_profile_image': 'Establecer como imagen de perfil',
+      'delete_generic': 'Eliminar',
       'attention': 'Atención',
       'ok': 'OK',
       'meeting_point': 'Punto de encuentro para el Plan',
@@ -374,6 +381,13 @@ class AppLocalizations {
       'pick_from_gallery': 'Select from gallery',
       'take_photo': 'Take a photo',
       'only_one_image': 'Only one image is allowed.',
+      'photo_collection': 'Your photo collection',
+      'your_profile_photo': 'Your profile photo',
+      'change_profile_image': 'Change profile image',
+      'delete_profile_image': 'Delete profile image',
+      'set_as_background_image': 'Set as background image',
+      'set_as_profile_image': 'Set as profile image',
+      'delete_generic': 'Delete',
       'attention': 'Attention',
       'ok': 'OK',
       'meeting_point': 'Meeting point for the Plan',
@@ -657,6 +671,13 @@ class AppLocalizations {
   String get pickFromGallery => _t('pick_from_gallery');
   String get takePhoto => _t('take_photo');
   String get onlyOneImage => _t('only_one_image');
+  String get photoCollection => _t('photo_collection');
+  String get yourProfilePhoto => _t('your_profile_photo');
+  String get changeProfileImage => _t('change_profile_image');
+  String get deleteProfileImage => _t('delete_profile_image');
+  String get setAsBackgroundImage => _t('set_as_background_image');
+  String get setAsProfileImage => _t('set_as_profile_image');
+  String get deleteGeneric => _t('delete_generic');
   String get attention => _t('attention');
   String get ok => _t('ok');
   String get meetingPoint => _t('meeting_point');
