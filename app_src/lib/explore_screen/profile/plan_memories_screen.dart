@@ -274,7 +274,7 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
           borderRadius: BorderRadius.circular(24),
         ),
         icon: const Icon(Icons.camera_alt),
-        label: const Text("Añadir"),
+        label: Text(t.add),
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
@@ -366,12 +366,13 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
 
   /// Cuadrícula de imágenes (sin selección múltiple)
   Widget _buildMemoriesGrid() {
+    final t = AppLocalizations.of(context);
     if (_memories.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Text(
-          "Añade fotos para rememorar este plan.",
-          style: TextStyle(color: Colors.black54),
+          t.addPhotosToRememberPlan,
+          style: const TextStyle(color: Colors.black54),
           textAlign: TextAlign.center,
         ),
       );

@@ -198,6 +198,9 @@ class AppLocalizations {
           'Este perfil es privado. Debes seguirle y ser aceptado para ver sus memorias.',
       'plan_and_memories': 'Plan y Memorias',
       'no_memories_day': 'No hay memorias para este día.',
+      'add_photos_to_remember_plan':
+          'Añade fotos para rememorar este plan.',
+      'add': 'Añadir',
       'plan_id_label': 'ID del Plan',
       'age_restriction_label': 'Restricción de edad',
       'ends_at_label': 'Finaliza',
@@ -469,6 +472,9 @@ class AppLocalizations {
           'This profile is private. You must follow and be accepted to view their memories.',
       'plan_and_memories': 'Plan and Memories',
       'no_memories_day': 'No memories for this day.',
+      'add_photos_to_remember_plan':
+          'Add photos to remember this plan.',
+      'add': 'Add',
       'plan_id_label': 'Plan ID',
       'age_restriction_label': 'Age restriction',
       'ends_at_label': 'Ends',
@@ -794,6 +800,8 @@ class AppLocalizations {
   String get privateProfileMemories => _t('private_profile_memories');
   String get planAndMemories => _t('plan_and_memories');
   String get noMemoriesDay => _t('no_memories_day');
+  String get addPhotosToRememberPlan => _t('add_photos_to_remember_plan');
+  String get add => _t('add');
   String get welcomeSlogan => _t('welcome_slogan');
   String get welcomeQuestion => _t('welcome_question');
   String get register => _t('register');
