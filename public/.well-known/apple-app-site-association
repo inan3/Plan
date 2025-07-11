@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appID": "ABCD1234.com.company.plan",
+        "paths": ["/plan*"]
+      }
+    ]
+  }
+}

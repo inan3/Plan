@@ -351,11 +351,12 @@
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Profile;
-		};
-		249021D4217E4FDB00AE95B9 /* Profile */ = {
+                               VALIDATE_PRODUCT = YES;
+                               CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+                       };
+                       name = Profile;
+               };
+               249021D4217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -371,10 +372,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.datingApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Profile;
+                               SWIFT_VERSION = 5.0;
+                               VERSIONING_SYSTEM = "apple-generic";
+                               CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+                       };
+                       name = Profile;
 		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -550,13 +552,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.datingApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Debug;
-		};
-		97C147071CF9000F007C117D /* Release */ = {
+                               SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+                               SWIFT_VERSION = 5.0;
+                               VERSIONING_SYSTEM = "apple-generic";
+                               CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+                       };
+                       name = Debug;
+               };
+               97C147071CF9000F007C117D /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -572,10 +575,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.datingApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Release;
+                               SWIFT_VERSION = 5.0;
+                               VERSIONING_SYSTEM = "apple-generic";
+                               CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+                       };
+                       name = Release;
 		};
 /* End XCBuildConfiguration section */
 
