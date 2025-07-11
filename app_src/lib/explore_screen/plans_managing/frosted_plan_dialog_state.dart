@@ -13,6 +13,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
+import '../users_managing/user_activity_status.dart';
 import 'attendance_managing.dart';
 import '../../main/colors.dart';
 import '../profile/profile_screen.dart';
@@ -1018,14 +1019,11 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     if (count == 1) {
       final p = filtered[0];
       final pic = p['photoUrl'] ?? '';
-      String name = p['name'] ?? 'Usuario';
-      final age = p['age']?.toString() ?? '';
+      final name = p['name'] ?? 'Usuario';
+      final uid = p['uid']?.toString() ?? '';
+      final level = p['privilegeLevel']?.toString() ?? 'Básico';
 
-      String displayText = '$name, $age';
-      if (displayText.length > 10) {
-        final cut = math.min(displayText.length, 14);
-        displayText = '${displayText.substring(0, cut)}...';
-      }
+      String displayText = _truncate(name, 14);
 
       return GestureDetector(
         onTap: () async {
@@ -1047,12 +1045,29 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  displayText,
-                  style: const TextStyle(color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          displayText,
+                          style: const TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Image.asset(
+                        _getPrivilegeIcon(level),
+                        width: 14,
+                        height: 14,
+                      ),
+                    ],
+                  ),
+                  if (uid.isNotEmpty) UserActivityStatus(userId: uid),
+                ],
               ),
             ],
           ),
@@ -1201,8 +1216,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                       final p = participants[i];
                       final pic = p['photoUrl'] ?? '';
                       final name = p['name'] ?? 'Usuario';
-                      final age = p['age']?.toString() ?? '';
                       final uid = p['uid']?.toString() ?? '';
+                      final level = p['privilegeLevel']?.toString() ?? 'Básico';
                       final bool isCheckedIn = checkedInUsers.contains(uid);
 
                       final tile = ListTile(
@@ -1216,13 +1231,28 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                               pic.isNotEmpty ? NetworkImage(pic) : null,
                           backgroundColor: Colors.blueGrey[400],
                         ),
-                        title: Text(
-                          '$name, $age',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Image.asset(
+                              _getPrivilegeIcon(level),
+                              width: 14,
+                              height: 14,
+                            ),
+                          ],
                         ),
+                        subtitle:
+                            uid.isNotEmpty ? UserActivityStatus(userId: uid) : null,
                         trailing: (widget.plan.special_plan != 1 && isCheckedIn)
                             ? Container(
                                 padding: const EdgeInsets.symmetric(
@@ -1492,7 +1522,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             child: GestureDetector(
               onTap: _openCreator,
               child: Text(
-                age.isNotEmpty ? '$name, $age' : name,
+                name,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -2086,7 +2116,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
               backgroundImage: (photo.isNotEmpty) ? NetworkImage(photo) : null,
             ),
             title: Text(
-              "$name, $age",
+              name,
               style: const TextStyle(color: Colors.white),
             ),
             trailing: GestureDetector(
@@ -2117,6 +2147,25 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
       }).toList(),
     );
   }
+}
+
+String _getPrivilegeIcon(String level) {
+  final normalized = level.toLowerCase().replaceAll('á', 'a');
+  switch (normalized) {
+    case 'premium':
+      return 'assets/icono-usuario-premium.png';
+    case 'golden':
+      return 'assets/icono-usuario-golden.png';
+    case 'vip':
+      return 'assets/icono-usuario-vip.png';
+    default:
+      return 'assets/icono-usuario-basico.png';
+  }
+}
+
+String _truncate(String text, int maxChars) {
+  if (text.length <= maxChars) return text;
+  return text.substring(0, math.min(maxChars, text.length)) + '…';
 }
 
 class FullScreenGalleryPage extends StatefulWidget {
