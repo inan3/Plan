@@ -40,6 +40,18 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
   final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
   int _pressedIndex = -1;
 
+  Future<int> _countExistingPlans(List<String> planIds) async {
+    int validCount = 0;
+    for (final id in planIds) {
+      final doc = await FirebaseFirestore.instance
+          .collection('plans')
+          .doc(id)
+          .get();
+      if (doc.exists) validCount++;
+    }
+    return validCount;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -400,66 +412,123 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
     return StreamBuilder(
       stream: stream,
       builder: (context, AsyncSnapshot snapshot) {
-        int count = 0;
-        if (snapshot.hasData) {
-          if (index == 2) {
-            final data = (snapshot.data as DocumentSnapshot?)?.data()
-                as Map<String, dynamic>?;
-            count = (data?['favourites'] as List<dynamic>?)?.length ?? 0;
-          } else {
+        if (index == 2 && snapshot.hasData) {
+          final data = (snapshot.data as DocumentSnapshot?)?.data()
+              as Map<String, dynamic>?;
+          final favIds =
+              (data?['favourites'] as List<dynamic>?)?.cast<String>() ?? [];
+          return FutureBuilder<int>(
+            future: _countExistingPlans(favIds),
+            builder: (context, favSnap) {
+              final count = favSnap.data ?? 0;
+              final bool isPressed = _pressedIndex == index;
+              return GestureDetector(
+                  onTapDown: (_) => setState(() => _pressedIndex = index),
+                  onTapUp: (_) => setState(() => _pressedIndex = -1),
+                  onTapCancel: () => setState(() => _pressedIndex = -1),
+                  child: ListTile(
+                    dense: true,
+                    leading: icon is String
+                        ? SvgPicture.asset(
+                            icon,
+                            width: 28,
+                            height: 28,
+                            color: isPressed ? AppColors.planColor : iconColor,
+                            colorBlendMode: BlendMode.srcIn,
+                          )
+                        : Icon(icon,
+                            color: isPressed ? AppColors.planColor : iconColor,
+                            size: 24),
+                    title: Text(
+                      title,
+                      style: GoogleFonts.roboto(
+                        color: isPressed ? AppColors.planColor : textColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                    trailing: count > 0
+                        ? Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: AppColors.planColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : const SizedBox(),
+                    onTap: () {
+                      toggleMenu();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => destination),
+                      );
+                    },
+                  ));
+            },
+          );
+        } else {
+          int count = 0;
+          if (snapshot.hasData) {
             count = (snapshot.data as QuerySnapshot?)?.docs.length ?? 0;
           }
-        }
-        final bool isPressed = _pressedIndex == index;
-        return GestureDetector(
-            onTapDown: (_) => setState(() => _pressedIndex = index),
-            onTapUp: (_) => setState(() => _pressedIndex = -1),
-            onTapCancel: () => setState(() => _pressedIndex = -1),
-            child: ListTile(
-              dense: true,
-              leading: icon is String
-                  ? SvgPicture.asset(
-                      icon,
-                      width: 28,
-                      height: 28,
-                      color: isPressed ? AppColors.planColor : iconColor,
-                      colorBlendMode: BlendMode.srcIn,
-                    )
-                  : Icon(icon,
-                      color: isPressed ? AppColors.planColor : iconColor,
-                      size: 24),
-              title: Text(
-                title,
-                style: GoogleFonts.roboto(
-                  color: isPressed ? AppColors.planColor : textColor,
-                  fontSize: 16,
+          final bool isPressed = _pressedIndex == index;
+          return GestureDetector(
+              onTapDown: (_) => setState(() => _pressedIndex = index),
+              onTapUp: (_) => setState(() => _pressedIndex = -1),
+              onTapCancel: () => setState(() => _pressedIndex = -1),
+              child: ListTile(
+                dense: true,
+                leading: icon is String
+                    ? SvgPicture.asset(
+                        icon,
+                        width: 28,
+                        height: 28,
+                        color: isPressed ? AppColors.planColor : iconColor,
+                        colorBlendMode: BlendMode.srcIn,
+                      )
+                    : Icon(icon,
+                        color: isPressed ? AppColors.planColor : iconColor,
+                        size: 24),
+                title: Text(
+                  title,
+                  style: GoogleFonts.roboto(
+                    color: isPressed ? AppColors.planColor : textColor,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              trailing: count > 0
-                  ? Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: AppColors.planColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                trailing: count > 0
+                    ? Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: AppColors.planColor,
+                          shape: BoxShape.circle,
                         ),
-                      ),
-                    )
-                  : const SizedBox(),
-              onTap: () {
-                toggleMenu();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => destination),
-                );
-              },
-            ));
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : const SizedBox(),
+                onTap: () {
+                  toggleMenu();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => destination),
+                  );
+                },
+              ));
+        }
       },
     );
   }
