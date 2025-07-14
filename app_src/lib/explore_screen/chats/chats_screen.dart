@@ -605,7 +605,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
       children: _searchResults.map((user) {
         final name = user['name'] ?? 'Desconocido';
         final photoUrl = user['photoUrl'] ?? '';
-        final age = user['age'] ?? '';
         final level = user['privilegeLevel'] ?? 'Básico';
         final isPrivate = user['profile_privacy'] == 1;
 
@@ -617,7 +616,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           ),
           title: Row(
             children: [
-              Expanded(
+              Flexible(
                 child: Text(
                   name,
                   style: const TextStyle(color: Colors.white),
@@ -635,10 +634,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "${AppLocalizations.of(context).age}: $age",
-                style: const TextStyle(color: Colors.white70),
-              ),
               UserActivityStatus(userId: user['id'] as String),
             ],
           ),
@@ -708,7 +703,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
                   final followerName = uData['name']?.toString() ?? 'Sin nombre';
                   final followerPhoto = uData['photoUrl']?.toString() ?? '';
-                  final followerAge = uData['age']?.toString() ?? '';
                   final level = uData['privilegeLevel'] ?? 'Básico';
                   final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
@@ -721,7 +715,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     ),
                     title: Row(
                       children: [
-                        Expanded(
+                        Flexible(
                           child: Text(
                             followerName,
                             style: const TextStyle(color: Colors.white),
@@ -739,10 +733,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "${AppLocalizations.of(context).age}: $followerAge",
-                          style: const TextStyle(color: Colors.white70),
-                        ),
                         UserActivityStatus(userId: followerId),
                       ],
                     ),
@@ -817,7 +807,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
                   final followingName = uData['name']?.toString() ?? 'Sin nombre';
                   final followingPhoto = uData['photoUrl']?.toString() ?? '';
-                  final followingAge = uData['age']?.toString() ?? '';
                   final level = uData['privilegeLevel'] ?? 'Básico';
                   final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
@@ -830,7 +819,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     ),
                     title: Row(
                       children: [
-                        Expanded(
+                        Flexible(
                           child: Text(
                             followingName,
                             style: const TextStyle(color: Colors.white),
@@ -848,10 +837,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "${AppLocalizations.of(context).age}: $followingAge",
-                          style: const TextStyle(color: Colors.white70),
-                        ),
                         UserActivityStatus(userId: followingId),
                       ],
                     ),
