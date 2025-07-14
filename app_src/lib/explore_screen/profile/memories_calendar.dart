@@ -220,7 +220,6 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
       final bool isCreator = plan.createdBy == currentUid;
       final bool isInvited = plan.invitedUsers?.contains(currentUid) ?? false;
 
-      // Si es un plan privado y no eres creador ni invitado, mostramos aviso
       if (plan.special_plan == 1 && !(isCreator || isInvited)) {
         _showAccessDeniedPopup();
         return;

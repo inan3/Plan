@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../users_managing/user_activity_status.dart';
 import 'chat_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -426,6 +428,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           maxChildSize: 0.9,
           expand: false,
           builder: (BuildContext context, ScrollController scrollController) {
+            final t = AppLocalizations.of(context);
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -462,10 +465,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Center(
+                    Center(
                       child: Text(
-                        "¿Con quién contactar?",
-                        style: TextStyle(
+                        t.whoToContact,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -479,7 +482,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         controller: _searchController,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: "Buscar usuario...",
+                          hintText: t.searchUserHint,
                           hintStyle: const TextStyle(color: Colors.white70),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.search, color: Colors.white),
@@ -517,13 +520,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         padding: EdgeInsets.zero,
                         children: [
                           if (_isSearching) _buildSearchResults(),
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8,
                             ),
                             child: Text(
-                              "Mis seguidores",
+                              t.myFollowers,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -532,13 +535,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
                             ),
                           ),
                           _buildFollowersList(),
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8,
                             ),
                             child: Text(
-                              "A quienes sigo",
+                              t.usersIFollow,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -590,11 +593,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   Widget _buildSearchResults() {
     if (_searchResults.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Text(
-          "El nombre de usuario especificado no existe",
-          style: TextStyle(color: Colors.white),
+          AppLocalizations.of(context).usernameNotFound,
+          style: const TextStyle(color: Colors.white),
         ),
       );
     }
@@ -603,6 +606,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         final name = user['name'] ?? 'Desconocido';
         final photoUrl = user['photoUrl'] ?? '';
         final age = user['age'] ?? '';
+        final level = user['privilegeLevel'] ?? 'Básico';
         final isPrivate = user['profile_privacy'] == 1;
 
         return ListTile(
@@ -611,13 +615,32 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 (photoUrl.isNotEmpty) ? NetworkImage(photoUrl) : null,
             backgroundColor: Colors.grey[300],
           ),
-          title: Text(
-            name,
-            style: const TextStyle(color: Colors.white),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Image.asset(
+                _getPrivilegeIcon(level),
+                width: 14,
+                height: 14,
+              ),
+            ],
           ),
-          subtitle: Text(
-            "Edad: $age",
-            style: const TextStyle(color: Colors.white70),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "${AppLocalizations.of(context).age}: $age",
+                style: const TextStyle(color: Colors.white70),
+              ),
+              UserActivityStatus(userId: user['id'] as String),
+            ],
           ),
           onTap: () => _openChatWithUser(
             user['id'].toString(),
@@ -641,11 +664,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.data!.docs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
-              "Aún no tienes seguidores.",
-              style: TextStyle(color: Colors.white70),
+              AppLocalizations.of(context).noFollowersYet,
+              style: const TextStyle(color: Colors.white70),
             ),
           );
         }
@@ -686,6 +709,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   final followerName = uData['name']?.toString() ?? 'Sin nombre';
                   final followerPhoto = uData['photoUrl']?.toString() ?? '';
                   final followerAge = uData['age']?.toString() ?? '';
+                  final level = uData['privilegeLevel'] ?? 'Básico';
                   final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
@@ -695,13 +719,32 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           : null,
                       backgroundColor: Colors.grey[300],
                     ),
-                    title: Text(
-                      followerName,
-                      style: const TextStyle(color: Colors.white),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            followerName,
+                            style: const TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Image.asset(
+                          _getPrivilegeIcon(level),
+                          width: 14,
+                          height: 14,
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      "Edad: $followerAge",
-                      style: const TextStyle(color: Colors.white70),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${AppLocalizations.of(context).age}: $followerAge",
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        UserActivityStatus(userId: followerId),
+                      ],
                     ),
                     onTap: () => _openChatWithUser(
                       followerId,
@@ -730,11 +773,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.data!.docs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
-              "Aún no sigues a nadie.",
-              style: TextStyle(color: Colors.white70),
+              AppLocalizations.of(context).notFollowingAnyone,
+              style: const TextStyle(color: Colors.white70),
             ),
           );
         }
@@ -775,6 +818,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   final followingName = uData['name']?.toString() ?? 'Sin nombre';
                   final followingPhoto = uData['photoUrl']?.toString() ?? '';
                   final followingAge = uData['age']?.toString() ?? '';
+                  final level = uData['privilegeLevel'] ?? 'Básico';
                   final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
@@ -784,13 +828,32 @@ class _ChatsScreenState extends State<ChatsScreen> {
                           : null,
                       backgroundColor: Colors.grey[300],
                     ),
-                    title: Text(
-                      followingName,
-                      style: const TextStyle(color: Colors.white),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            followingName,
+                            style: const TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Image.asset(
+                          _getPrivilegeIcon(level),
+                          width: 14,
+                          height: 14,
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      "Edad: $followingAge",
-                      style: const TextStyle(color: Colors.white70),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${AppLocalizations.of(context).age}: $followingAge",
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        UserActivityStatus(userId: followingId),
+                      ],
                     ),
                     onTap: () => _openChatWithUser(
                       followingId,
@@ -857,5 +920,19 @@ class _ChatsScreenState extends State<ChatsScreen> {
         ),
       ),
     );
+  }
+
+  String _getPrivilegeIcon(String level) {
+    final normalized = level.toLowerCase().replaceAll('á', 'a');
+    switch (normalized) {
+      case 'premium':
+        return 'assets/icono-usuario-premium.png';
+      case 'golden':
+        return 'assets/icono-usuario-golden.png';
+      case 'vip':
+        return 'assets/icono-usuario-vip.png';
+      default:
+        return 'assets/icono-usuario-basico.png';
+    }
   }
 }

@@ -1190,7 +1190,8 @@ class PlanCardState extends State<PlanCard> {
           );
         }
         _participants = snap.data ?? [];
-        final totalP = _participants.length;
+        // Contamos solo los participantes reales (sin incluir al creador)
+        final totalP = widget.plan.participants?.length ?? 0;
         final maxP = plan.maxParticipants ?? 0;
         final bool isFull = (maxP > 0 && totalP >= maxP);
 
