@@ -69,6 +69,10 @@ service cloud.firestore {
         && request.auth.uid == resource.data.blockerId;
     }
 
+		match /locations/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
     function isPlanCreator(planId) {
       return request.auth != null
         && get(/databases/$(database)/documents/plans/$(planId)).data.createdBy ==
@@ -94,6 +98,12 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+		
+		match /appFailures/{docId} {
+  allow create: if request.auth != null;
+  allow read, update, delete: if request.auth.token.admin == true; // o la condición que prefieras
+}
+
   }
 }
    
