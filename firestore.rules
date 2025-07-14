@@ -69,8 +69,11 @@ service cloud.firestore {
         && request.auth.uid == resource.data.blockerId;
     }
 
-		match /locations/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+        match /locations/{uid} {
+      // Los usuarios autenticados pueden leer las ubicaciones de los demás
+      allow read: if request.auth != null && request.auth.uid != uid;
+      // Solo el propietario del documento puede escribir en su ubicación
+      allow write: if request.auth != null && request.auth.uid == uid;
     }
 
     function isPlanCreator(planId) {
