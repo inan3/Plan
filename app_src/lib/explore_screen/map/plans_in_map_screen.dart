@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:geoflutterfire_plus/geoflutterfire_plus.dart' as geofire;
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import '../../main/colors.dart';
@@ -215,7 +215,7 @@ class PlansInMapScreen {
     double radiusKm = 5,
     Map<String, dynamic>? filters,
   }) async {
-    final geo = geofire.GeoFlutterFire();
+    final geo = GeoFlutterFire();
     final centerPoint =
         geo.point(latitude: center.latitude, longitude: center.longitude);
     final docs = await geo
