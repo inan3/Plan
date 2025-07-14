@@ -1,13 +1,22 @@
 [
-    {
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.company.plan",
-        "sha256_cert_fingerprints": [
-          "22:21:F9:86:E0:58:02:8E:11:37:F6:2F:31:83:40:C7:1C:4B:34:13:6C:DE:8C:EF:27:0F:28:C3:85:FB:B9:5D"
-        ]
-      }
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.company.plan",
+      "sha256_cert_fingerprints": [
+        "22:21:F9:86:E0:58:02:8E:11:37:F6:2F:31:83:40:C7:1C:4B:34:13:6C:DE:8C:EF:27:0F:28:C3:85:FB:B9:5D"
+      ]
     }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.company.plan",
+      "sha256_cert_fingerprints": [
+        "19:D1:94:17:5F:C3:23:FB:46:D3:88:2D:F6:EC:C7:B8:21:99:37:6C:31:80:42:58:CF:FF:5F:F2:56:D3:5F:E6"
+      ]
+    }
+  }
 ]
-

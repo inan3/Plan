@@ -112,22 +112,23 @@ export const sendPushOnNotification = onDocumentCreated(
     const titles = lang.startsWith("en") ? titlesEn : titlesEs;
     const notif = {
       title:
-        titles[n.type] ?? (lang.startsWith("en") ? "Notification" : "Notificación"),
-      body: lang.startsWith("en")
-        ? n.type === "special_plan_deleted"
-          ? `${n.senderName} has deleted the special plan`
-          : n.type === "special_plan_left"
-            ? `${n.senderName} has decided to leave the special plan`
-            : n.senderName
-              ? `${n.senderName} • ${n.planType ?? ""}`
-              : "Open the app for more details"
-        : n.type === "special_plan_deleted"
-          ? `${n.senderName} ha eliminado el plan especial`
-          : n.type === "special_plan_left"
-            ? `${n.senderName} ha decidido abandonar el plan especial`
-            : n.senderName
-              ? `${n.senderName} • ${n.planType ?? ""}`
-              : "Abre la app para más detalles",
+        titles[n.type] ?? (lang.startsWith("en") ? "Notification" :
+          "Notificación"),
+      body: lang.startsWith("en") ?
+        n.type === "special_plan_deleted" ?
+          `${n.senderName} has deleted the special plan` :
+          n.type === "special_plan_left" ?
+            `${n.senderName} has decided to leave the special plan` :
+            n.senderName ?
+              `${n.senderName} • ${n.planType ?? ""}` :
+              "Open the app for more details" :
+        n.type === "special_plan_deleted" ?
+          `${n.senderName} ha eliminado el plan especial` :
+          n.type === "special_plan_left" ?
+            `${n.senderName} ha decidido abandonar el plan especial` :
+            n.senderName ?
+              `${n.senderName} • ${n.planType ?? ""}` :
+              "Abre la app para más detalles",
     };
 
     const resp = await getMessaging().sendEachForMulticast({
@@ -198,9 +199,9 @@ export const sendPushOnMessage = onDocumentCreated(
       tokens,
       notification: {
         title: lang.startsWith("en") ? "New message" : "Nuevo mensaje",
-        body: lang.startsWith("en")
-          ? `You have a message from ${senderName}`
-          : `Tienes un mensaje de ${senderName}`,
+        body: lang.startsWith("en") ?
+          `You have a message from ${senderName}` :
+          `Tienes un mensaje de ${senderName}`,
       },
       android: {notification: {channelId: "plan_high"}},
       data: {
@@ -371,13 +372,12 @@ export const createWelcomeNotification = onDocumentCreated(
       senderId: "system",
       senderName: "Plan",
       senderProfilePic: "",
-      message: lang.startsWith("en")
-        ?
-            "The Plan team welcomes you to the app that connects you with new " +
-            "experiences and people. Start exploring and creating unforgettable " +
-            "moments!"
-        :
-            "El equipo de Plan te da la bienvenida a la app que te conecta " +
+      message: lang.startsWith("en") ?
+        "The Plan team welcomes you to the app that connects " +
+         "you with new experiences and people." +
+          "Start exploring and creating unforgettable " +
+          "moments!" :
+        "El equipo de Plan te da la bienvenida a la app que te conecta " +
             "con nuevas experiencias y personas. ¡Comienza a explorar y a " +
             "crear momentos inolvidables!",
       timestamp: FieldValue.serverTimestamp(),
