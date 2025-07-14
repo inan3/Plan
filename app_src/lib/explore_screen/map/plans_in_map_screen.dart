@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import '../../main/colors.dart';
@@ -210,9 +211,17 @@ class PlansInMapScreen {
 
   Future<Set<Marker>> loadUsersWithoutPlansMarkers(
     BuildContext context, {
+    required LatLng center,
+    double radiusKm = 5,
     Map<String, dynamic>? filters,
   }) async {
-    final qs = await FirebaseFirestore.instance.collection('users').get();
+    final geo = GeoFlutterFire();
+    final centerPoint =
+        geo.point(latitude: center.latitude, longitude: center.longitude);
+    final docs = await geo
+        .collection(collectionRef: FirebaseFirestore.instance.collection('locations'))
+        .within(center: centerPoint, radius: radiusKm, field: 'position')
+        .first;
     final Set<Marker> markers = {};
     final bool onlyFollowed = filters?['onlyFollowed'] == true;
     final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -227,15 +236,17 @@ class PlansInMapScreen {
         if (fid != null) followedUids.add(fid);
       }
     }
-    for (var doc in qs.docs) {
-      final data = doc.data() as Map<String, dynamic>?;
+    for (var locDoc in docs) {
+      final data = locDoc.data() as Map<String, dynamic>?;
       if (data == null) continue;
-      final uid = data['uid'] ?? '';
+      final uid = locDoc.id;
       if (uid.isEmpty) continue;
       if (_userIdsWithActivePlan.contains(uid)) continue;
       if (onlyFollowed && !followedUids.contains(uid)) continue;
-      final lat = data['latitude']?.toDouble();
-      final lng = data['longitude']?.toDouble();
+      final geoData = data['position'] as Map<String, dynamic>?;
+      final GeoPoint? gp = geoData?['geopoint'];
+      final lat = gp?.latitude;
+      final lng = gp?.longitude;
       if (lat == null || lng == null) continue;
       if (lat == 0.0 || lng == 0.0) continue;
       final photoUrl = data['photoUrl'] as String? ?? '';

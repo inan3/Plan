@@ -3,11 +3,16 @@ import 'package:flutter/widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
 /// Servicio que actualiza la ubicación del usuario cuando la app
 /// entra en primer plano. Mantiene la última posición al salir.
 class LocationUpdateService with WidgetsBindingObserver {
   LocationUpdateService._(this._uid);
+
+  final GeoFlutterFire _geo = GeoFlutterFire();
+  final CollectionReference _locRef =
+      FirebaseFirestore.instance.collection('locations');
 
   static LocationUpdateService? _instance;
   final String _uid;
@@ -51,6 +56,17 @@ class LocationUpdateService with WidgetsBindingObserver {
     final position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
+
+    final point =
+        _geo.point(latitude: position.latitude, longitude: position.longitude);
+
+    await _locRef.doc(_uid).set({
+      'position': point.data,
+      'accuracy': position.accuracy,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'expireAt': DateTime.now().add(const Duration(hours: 8)),
+    });
+
     await FirebaseFirestore.instance.doc('users/$_uid').update({
       'latitude': position.latitude,
       'longitude': position.longitude,
