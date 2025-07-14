@@ -99,9 +99,18 @@ class MapScreenState extends State<MapScreen> {
     Set<Marker> markers = {...planMarkers};
     final bool onlyPlans = filters?['onlyPlans'] == true;
     if (!onlyPlans) {
-      final userMarkers =
-          await plansLoader.loadUsersWithoutPlansMarkers(context, filters: filters);
-      markers.addAll(userMarkers);
+      LatLng? center;
+      if (_currentPosition != null) {
+        center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      }
+      if (center != null) {
+        final userMarkers = await plansLoader.loadUsersWithoutPlansMarkers(
+          context,
+          center: center,
+          filters: filters,
+        );
+        markers.addAll(userMarkers);
+      }
     }
     _allMarkers = markers.toList();
     _updateVisibleMarkers(_currentZoom);
