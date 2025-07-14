@@ -925,8 +925,9 @@ class PlanCardState extends State<PlanCard> {
                           backgroundColor: Colors.blueGrey[400],
                         ),
                         title: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 name,
                                 style: const TextStyle(
