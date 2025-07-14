@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../users_managing/user_activity_status.dart';
+import '../../services/language_service.dart';
 import 'chat_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -95,13 +96,43 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  /// Convierte un Timestamp a string "HH:mm"
+  /// Formatea un [Timestamp] para mostrar la hora o la fecha.
+  ///
+  /// - Si el mensaje es de hoy, se muestra la hora en formato HH:mm.
+  /// - Si es exactamente de ayer, se muestra la palabra "ayer".
+  /// - Si es de días anteriores, se muestra la fecha en formato
+  ///   DD/MM/YYYY para español y MM/DD/YYYY para inglés. El resto
+  ///   de idiomas usan DD/MM/YYYY. Los días y meses no llevan
+  ///   ceros a la izquierda.
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return "";
     final date = timestamp.toDate();
-    final hh = date.hour.toString().padLeft(2, '0');
-    final mm = date.minute.toString().padLeft(2, '0');
-    return "$hh:$mm";
+    final now = DateTime.now();
+
+    final diffDays = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(date.year, date.month, date.day))
+        .inDays;
+
+    if (diffDays == 0) {
+      final hh = date.hour.toString().padLeft(2, '0');
+      final mm = date.minute.toString().padLeft(2, '0');
+      return "$hh:$mm";
+    }
+
+    if (diffDays == 1) {
+      return "ayer";
+    }
+
+    final lang = LanguageService.locale.value.languageCode;
+    final day = date.day;
+    final month = date.month;
+    final year = date.year;
+
+    if (lang == 'en') {
+      return "$month/$day/$year";
+    }
+
+    return "$day/$month/$year";
   }
 
   /// Construye el preview del último mensaje
