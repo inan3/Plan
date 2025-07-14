@@ -150,6 +150,10 @@ class AppLocalizations {
       'search_user_hint': 'Buscar usuario...',
       'my_followers': 'Mis seguidores',
       'users_i_follow': 'A quienes sigo',
+      'who_to_contact': '¿Con quién contactar?',
+      'username_not_found': 'El nombre de usuario especificado no existe',
+      'no_followers_yet': 'Aún no tienes seguidores.',
+      'not_following_anyone': 'Aún no sigues a nadie.',
       'user_no_plans': 'Este usuario no ha creado planes aún...',
       'invite_to_plan': 'Invítale a un Plan',
       'join': 'Unirse',
@@ -438,6 +442,10 @@ class AppLocalizations {
       'search_user_hint': 'Search user...',
       'my_followers': 'My followers',
       'users_i_follow': 'Users I follow',
+      'who_to_contact': 'Who to contact?',
+      'username_not_found': 'The specified username does not exist',
+      'no_followers_yet': 'You have no followers yet.',
+      'not_following_anyone': 'You are not following anyone yet.',
       'user_no_plans': "This user hasn't created any plans yet...",
       'invite_to_plan': 'Invite to a Plan',
       'join': 'Join',
@@ -731,6 +739,10 @@ class AppLocalizations {
   String get searchUserHint => _t('search_user_hint');
   String get myFollowers => _t('my_followers');
   String get usersIFollow => _t('users_i_follow');
+  String get whoToContact => _t('who_to_contact');
+  String get usernameNotFound => _t('username_not_found');
+  String get noFollowersYet => _t('no_followers_yet');
+  String get notFollowingAnyone => _t('not_following_anyone');
   String get userNoPlans => _t('user_no_plans');
   String get inviteToPlan => _t('invite_to_plan');
   String get join => _t('join');
