@@ -57,11 +57,17 @@ class LocationUpdateService with WidgetsBindingObserver {
     final geoPoint =
         GeoFirePoint(GeoPoint(position.latitude, position.longitude));
 
+    // Obtener la foto de perfil del usuario para almacenarla junto a la ubicación
+    final uDoc =
+        await FirebaseFirestore.instance.collection('users').doc(_uid).get();
+    final photoUrl = (uDoc.data() as Map<String, dynamic>?)?['photoUrl'];
+
     await _locRef.doc(_uid).set({
       'position': geoPoint.data,
       'accuracy': position.accuracy,
       'updatedAt': FieldValue.serverTimestamp(),
       'expireAt': DateTime.now().add(const Duration(hours: 8)),
+      if (photoUrl != null) 'photoUrl': photoUrl,
     });
 
     await FirebaseFirestore.instance.doc('users/$_uid').update({
