@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/language_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../main/colors.dart';
 import '../../models/plan_model.dart';
 import 'plan_memories_screen.dart'; // Asegúrate de importar tu pantalla de memorias
@@ -123,6 +124,7 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
       visibility: original.visibility,
       iconAsset: original.iconAsset,
       participants: original.participants,
+      invitedUsers: original.invitedUsers,
       likes: original.likes,
       special_plan: original.special_plan,
       images: original.images,
@@ -141,6 +143,48 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
   void _nextMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+    });
+  }
+
+  /// Muestra un popup temporal indicando que el plan es privado
+  void _showAccessDeniedPopup() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'denied',
+      barrierColor: Colors.black54,
+      pageBuilder: (ctx, a1, a2) {
+        return GestureDetector(
+          onTap: () => Navigator.of(ctx).pop(),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Align(
+              alignment: Alignment.center,
+              child: GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Este plan es especial y solo el creador lo puede ver.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
     });
   }
 
@@ -171,6 +215,16 @@ class _MemoriesCalendarState extends State<MemoriesCalendar> {
     } else {
       // Tomamos el primer plan de ese día (o podrías mostrar lista)
       final PlanModel plan = dayPlans.first;
+
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      final bool isCreator = plan.createdBy == currentUid;
+      final bool isInvited = plan.invitedUsers?.contains(currentUid) ?? false;
+
+      // Si es un plan privado y no eres creador ni invitado, mostramos aviso
+      if (plan.special_plan == 1 && !(isCreator || isInvited)) {
+        _showAccessDeniedPopup();
+        return;
+      }
 
       // En lugar de callback o popup => abrimos la nueva pantalla:
       Navigator.push(
