@@ -1221,10 +1221,10 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          "Participantes",
-                          style: TextStyle(
+                          AppLocalizations.of(context).participantsTitle,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1262,8 +1262,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                           backgroundColor: Colors.blueGrey[400],
                         ),
                         title: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 name,
                                 style: const TextStyle(
@@ -1291,9 +1292,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                child: const Text(
-                                  'ASISTE',
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context).attends,
+                                  style: const TextStyle(
                                     color: AppColors.planColor,
                                     fontWeight: FontWeight.bold,
                                   ),
