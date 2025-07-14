@@ -55,7 +55,7 @@ class ExploreScreenState extends State<ExploreScreen> {
   RangeValues selectedAgeRange = const RangeValues(18, 40);
   double selectedDistance = 50;
 
-  final Map<String, double> currentLocation = {'lat': 41.3851, 'lng': 2.1734};
+  final Map<String, double> currentLocation = {'lat': 0.0, 'lng': 0.0};
 
   Map<String, dynamic> appliedFilters = {};
 
@@ -80,10 +80,10 @@ class ExploreScreenState extends State<ExploreScreen> {
       _currentUser = FirebaseAuth.instance.currentUser;
       if (_currentUser == null) {
         final user = await FirebaseAuth.instance.authStateChanges().first;
-        _currentUser = user;
+      _currentUser = user;
       }
       if (_currentUser == null) return;
-
+      await _loadCurrentLocation();
       setState(() {});
 
       final prefs = await SharedPreferences.getInstance();
@@ -142,6 +142,24 @@ class ExploreScreenState extends State<ExploreScreen> {
             math.sin(dLng / 2);
     double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadius * c;
+  }
+
+  Future<void> _loadCurrentLocation() async {
+    if (_currentUser == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUser!.uid)
+        .get();
+    final data = doc.data();
+    if (data == null) return;
+    final double? lat = double.tryParse(data['latitude']?.toString() ?? '');
+    final double? lng = double.tryParse(data['longitude']?.toString() ?? '');
+    if (lat != null && lng != null) {
+      setState(() {
+        currentLocation['lat'] = lat;
+        currentLocation['lng'] = lng;
+      });
+    }
   }
 
   double _deg2rad(double deg) => deg * (math.pi / 180);
