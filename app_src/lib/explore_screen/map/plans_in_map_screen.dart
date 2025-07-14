@@ -212,7 +212,9 @@ class PlansInMapScreen {
     Map<String, dynamic>? filters,
   }) async {
     // 1) Punto central
-    final centerPoint = GeoFirePoint(center.latitude, center.longitude);
+    final centerPoint = GeoFirePoint(
+      GeoPoint(center.latitude, center.longitude),
+    );
 
     // 2) Colección geoespacial
     final geoCol = GeoCollectionReference<Map<String, dynamic>>(
