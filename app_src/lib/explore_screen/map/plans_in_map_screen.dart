@@ -3,14 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../models/plan_model.dart';
-
 import '../users_managing/user_info_check.dart';
+
 class _MarkerData {
   final BitmapDescriptor icon;
   final Offset anchor;
@@ -27,7 +28,8 @@ class PlansInMapScreen {
     BuildContext context, {
     Map<String, dynamic>? filters,
   }) async {
-    Query query = FirebaseFirestore.instance.collection('plans').orderBy('createdAt');
+    Query query =
+        FirebaseFirestore.instance.collection('plans').orderBy('createdAt');
     if (_lastCreatedAt != null) {
       query = query.startAfter([_lastCreatedAt]);
     }
@@ -35,7 +37,7 @@ class PlansInMapScreen {
     final qs = await query.get();
     final now = DateTime.now();
 
-    // Identificamos a qué usuarios sigue el usuario actual
+    // Usuarios seguidos
     final User? currentUser = FirebaseAuth.instance.currentUser;
     final Set<String> followedUids = {};
     final bool onlyFollowed = filters?['onlyFollowed'] == true;
@@ -49,6 +51,7 @@ class PlansInMapScreen {
         if (fid != null) followedUids.add(fid);
       }
     }
+
     for (var doc in qs.docs) {
       final data = doc.data() as Map<String, dynamic>?;
       if (data == null) continue;
@@ -67,6 +70,7 @@ class PlansInMapScreen {
       } else {
         if (!startDate.isAfter(now)) continue;
       }
+
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
       final type = data['type'] as String?;
@@ -77,14 +81,12 @@ class PlansInMapScreen {
         continue;
       }
       final String visibility = data['visibility']?.toString() ?? 'Público';
-      if (visibility.toLowerCase() == 'privado') {
-        continue;
-      }
+      if (visibility.toLowerCase() == 'privado') continue;
       if (visibility.toLowerCase() == 'solo para mis seguidores') {
-        if (currentUser == null || !followedUids.contains(uid)) {
-          continue;
-        }
+        if (currentUser == null || !followedUids.contains(uid)) continue;
       }
+
+      // Filtros de búsqueda y tipo
       if (filters != null) {
         final List<String> selected =
             (filters['selectedPlans'] as List<dynamic>?)
@@ -93,17 +95,14 @@ class PlansInMapScreen {
                 [];
         final String searchText =
             (filters['planBusqueda'] ?? '').toString().toLowerCase();
-
         if (selected.isNotEmpty) {
-          if (!selected.contains(type.toLowerCase())) {
-            continue;
-          }
+          if (!selected.contains(type.toLowerCase())) continue;
         } else if (searchText.isNotEmpty) {
-          if (!type.toLowerCase().contains(searchText)) {
-            continue;
-          }
+          if (!type.toLowerCase().contains(searchText)) continue;
         }
       }
+
+      // Icono y marcador
       final photoUrl = await _getUserProfilePhoto(uid);
       if (photoUrl == null) continue;
       final pos = LatLng(lat, lng);
@@ -124,8 +123,7 @@ class PlansInMapScreen {
             transitionDuration: const Duration(milliseconds: 300),
             pageBuilder: (context, animation, secondaryAnimation) {
               final size = MediaQuery.of(context).size;
-              final plan = PlanModel.fromMap(data)
-                ..creatorProfilePic = photoUrl;
+              final plan = PlanModel.fromMap(data)..creatorProfilePic = photoUrl;
               return Align(
                 alignment: Alignment.center,
                 child: Material(
@@ -141,17 +139,16 @@ class PlansInMapScreen {
                 ),
               );
             },
-            transitionBuilder: (context, anim1, anim2, child) {
-              return FadeTransition(
-                opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
-                child: child,
-              );
-            },
+            transitionBuilder: (context, anim1, anim2, child) => FadeTransition(
+              opacity: CurvedAnimation(parent: anim1, curve: Curves.easeOut),
+              child: child,
+            ),
           );
         },
       );
       _planMarkerCache[doc.id] = marker;
       _planDataCache[doc.id] = data;
+
       final String? createdAt = data['createdAt'] as String?;
       if (createdAt != null) {
         if (_lastCreatedAt == null || createdAt.compareTo(_lastCreatedAt!) > 0) {
@@ -159,6 +156,8 @@ class PlansInMapScreen {
         }
       }
     }
+
+    // Filtra y devuelve marcadores válidos
     final Set<Marker> result = {};
     _planMarkerCache.forEach((id, marker) {
       final data = _planDataCache[id];
@@ -174,10 +173,9 @@ class PlansInMapScreen {
           return;
         }
       } else {
-        if (startDate == null || !startDate.isAfter(now)) {
-          return;
-        }
+        if (startDate == null || !startDate.isAfter(now)) return;
       }
+
       if (filters != null) {
         final List<String> selected =
             (filters['selectedPlans'] as List<dynamic>?)
@@ -188,9 +186,7 @@ class PlansInMapScreen {
             (filters['planBusqueda'] ?? '').toString().toLowerCase();
         final String type = data['type']?.toString() ?? '';
         final String visibility = data['visibility']?.toString() ?? 'Público';
-        if (onlyFollowed && !followedUids.contains(data['createdBy'])) {
-          return;
-        }
+        if (onlyFollowed && !followedUids.contains(data['createdBy'])) return;
         if (selected.isNotEmpty) {
           if (!selected.contains(type.toLowerCase())) return;
         } else if (searchText.isNotEmpty) {
@@ -198,21 +194,45 @@ class PlansInMapScreen {
         }
         if (visibility.toLowerCase() == 'privado') return;
         if (visibility.toLowerCase() == 'solo para mis seguidores') {
-          if (currentUser == null || !followedUids.contains(data['createdBy'])) {
-            return;
-          }
+          if (currentUser == null ||
+              !followedUids.contains(data['createdBy'])) return;
         }
       }
+
       result.add(marker);
     });
     return result;
   }
 
+  // --- SECCIÓN ACTUALIZADA ---
   Future<Set<Marker>> loadUsersWithoutPlansMarkers(
     BuildContext context, {
+    required LatLng center,
+    double radiusKm = 5,
     Map<String, dynamic>? filters,
   }) async {
-    final qs = await FirebaseFirestore.instance.collection('users').get();
+    // 1) Punto central
+    final centerPoint = GeoFirePoint(
+      GeoPoint(center.latitude, center.longitude),
+    );
+
+    // 2) Colección geoespacial
+    final geoCol = GeoCollectionReference<Map<String, dynamic>>(
+      FirebaseFirestore.instance.collection('locations'),
+    );
+
+    // 3) Consulta por radio
+    final docs = await geoCol
+        .subscribeWithin(
+          center: centerPoint,
+          radiusInKm: radiusKm,
+          field: 'position',
+          geopointFrom: (data) =>
+              (data['position'] as Map<String, dynamic>)['geopoint']
+                  as GeoPoint,
+        )
+        .first;
+
     final Set<Marker> markers = {};
     final bool onlyFollowed = filters?['onlyFollowed'] == true;
     final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -227,17 +247,22 @@ class PlansInMapScreen {
         if (fid != null) followedUids.add(fid);
       }
     }
-    for (var doc in qs.docs) {
-      final data = doc.data() as Map<String, dynamic>?;
+
+    for (var locDoc in docs) {
+      final data = locDoc.data() as Map<String, dynamic>?;
       if (data == null) continue;
-      final uid = data['uid'] ?? '';
+      final uid = locDoc.id;
       if (uid.isEmpty) continue;
       if (_userIdsWithActivePlan.contains(uid)) continue;
       if (onlyFollowed && !followedUids.contains(uid)) continue;
-      final lat = data['latitude']?.toDouble();
-      final lng = data['longitude']?.toDouble();
+
+      final geoData = data['position'] as Map<String, dynamic>?;
+      final GeoPoint? gp = geoData?['geopoint'];
+      final lat = gp?.latitude;
+      final lng = gp?.longitude;
       if (lat == null || lng == null) continue;
       if (lat == 0.0 || lng == 0.0) continue;
+
       final photoUrl = data['photoUrl'] as String? ?? '';
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
@@ -254,49 +279,48 @@ class PlansInMapScreen {
     return markers;
   }
 
+  // -----------------------------------------------------------------
+
   Future<List<Map<String, dynamic>>> _fetchPlanParticipants(PlanModel plan) async {
-  final List<Map<String, dynamic>> parts = [];
-  final doc = await FirebaseFirestore.instance.collection('plans').doc(plan.id).get();
-  if (!doc.exists) return parts;
-  final data = doc.data() as Map<String, dynamic>;
-  final creatorId = data['createdBy'];
+    final List<Map<String, dynamic>> parts = [];
+    final doc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(plan.id)
+        .get();
+    if (!doc.exists) return parts;
+    final data = doc.data() as Map<String, dynamic>;
+    final creatorId = data['createdBy'];
 
-  // No añadimos al creador en 'parts'
-  // (Si no quieres que aparezca el propio creador entre los participantes, 
-  //   entonces no agregues el bloque de creador aquí)
-
-  final rawParts = data['participants'];
-  if (rawParts is List) {
-    for (final uid in rawParts) {
-      if (uid is String && uid != creatorId) {
-        final uDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .get();
-        if (uDoc.exists) {
-          final uData = uDoc.data() as Map<String, dynamic>;
-          parts.add({
-            'uid': uid,
-            'isCreator': false,
-            'photoUrl': uData['photoUrl'] ?? '',
-            'name': uData['name'] ?? 'Usuario',
-            'age': (uData['age'] ?? '').toString(),
-          });
+    final rawParts = data['participants'];
+    if (rawParts is List) {
+      for (final uid in rawParts) {
+        if (uid is String && uid != creatorId) {
+          final uDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .get();
+          if (uDoc.exists) {
+            final uData = uDoc.data() as Map<String, dynamic>;
+            parts.add({
+              'uid': uid,
+              'isCreator': false,
+              'photoUrl': uData['photoUrl'] ?? '',
+              'name': uData['name'] ?? 'Usuario',
+              'age': (uData['age'] ?? '').toString(),
+            });
+          }
         }
       }
     }
+    return parts;
   }
-  return parts;
-}
-
 
   Future<String?> _getUserProfilePhoto(String userId) async {
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(userId).get();
     if (!doc.exists) return null;
     final data = doc.data() as Map<String, dynamic>?;
-    if (data == null) return null;
-    return data['photoUrl'] as String?;
+    return data?['photoUrl'] as String?;
   }
 
   Future<Uint8List> _downloadImageAsBytes(String url) async {
@@ -312,13 +336,11 @@ class PlansInMapScreen {
   }) async {
     try {
       final bytes = await _downloadImageAsBytes(photoUrl);
-      final codec = await ui.instantiateImageCodec(bytes,
-          targetWidth: 256, targetHeight: 256);
+      final codec =
+          await ui.instantiateImageCodec(bytes, targetWidth: 256, targetHeight: 256);
       final frame = await codec.getNextFrame();
       final avatar = frame.image;
-      // Ajustamos las dimensiones del marcador para que el avatar no se
-      // vea comprimido verticalmente en el mapa. Se incrementa la zona
-      // destinada al avatar y su radio para mejorar la proporción final.
+
       const double mw = 140,
           padding = 4,
           fs = 20,
@@ -390,14 +412,13 @@ class PlansInMapScreen {
       final icon = BitmapDescriptor.fromBytes(pngBytes);
       return _MarkerData(icon, Offset(0.5, cy / mh));
     } catch (_) {
-      return const _MarkerData(BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
+      return const _MarkerData(
+          BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
     }
   }
 
   Future<_MarkerData> _buildNoPlanMarker(String photoUrl) async {
     try {
-      // Aumentamos el tamaño base del marcador de usuario sin plan para que la
-      // imagen no se muestre achatada en vertical.
       const double sz = 120, r = 45;
       Uint8List? bytes;
       if (photoUrl.isNotEmpty) {
@@ -405,8 +426,8 @@ class PlansInMapScreen {
       }
       ui.Image? av;
       if (bytes != null) {
-        final codec = await ui.instantiateImageCodec(bytes,
-            targetWidth: 256, targetHeight: 256);
+        final codec =
+            await ui.instantiateImageCodec(bytes, targetWidth: 256, targetHeight: 256);
         final frame = await codec.getNextFrame();
         av = frame.image;
       }
@@ -446,7 +467,8 @@ class PlansInMapScreen {
       final icon = BitmapDescriptor.fromBytes(pngBytes);
       return _MarkerData(icon, const Offset(0.5, 0.5));
     } catch (_) {
-      return const _MarkerData(BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
+      return const _MarkerData(
+          BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
     }
   }
 }

@@ -30,6 +30,7 @@ class MapScreenState extends State<MapScreen> {
   Position? _currentPosition;
   bool _locationPermissionGranted = false;
   double _currentZoom = 14.0;
+  LatLng? _cameraCenter;
   List<dynamic> _predictions = [];
   List<Marker> _allMarkers = [];
   Set<Marker> _markers = {};
@@ -88,20 +89,33 @@ class MapScreenState extends State<MapScreen> {
           ),
         );
       }
-      await _loadMarkers(filters: _appliedFilters);
+      await _loadMarkers(filters: _appliedFilters, center: _cameraCenter);
     }
   }
 
-  Future<void> _loadMarkers({Map<String, dynamic>? filters}) async {
+  Future<void> _loadMarkers({Map<String, dynamic>? filters, LatLng? center}) async {
     final plansLoader = PlansInMapScreen();
     final planMarkers =
         await plansLoader.loadPlansMarkers(context, filters: filters);
     Set<Marker> markers = {...planMarkers};
     final bool onlyPlans = filters?['onlyPlans'] == true;
     if (!onlyPlans) {
-      final userMarkers =
-          await plansLoader.loadUsersWithoutPlansMarkers(context, filters: filters);
-      markers.addAll(userMarkers);
+      LatLng? queryCenter = center;
+      if (queryCenter == null && _cameraCenter != null) {
+        queryCenter = _cameraCenter;
+      }
+      if (queryCenter == null && _currentPosition != null) {
+        queryCenter =
+            LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      }
+      if (queryCenter != null) {
+        final userMarkers = await plansLoader.loadUsersWithoutPlansMarkers(
+          context,
+          center: queryCenter,
+          filters: filters,
+        );
+        markers.addAll(userMarkers);
+      }
     }
     _allMarkers = markers.toList();
     _updateVisibleMarkers(_currentZoom);
@@ -234,7 +248,7 @@ class MapScreenState extends State<MapScreen> {
       setState(() {
         _appliedFilters = result;
       });
-      await _loadMarkers(filters: _appliedFilters);
+      await _loadMarkers(filters: _appliedFilters, center: _cameraCenter);
     }
   }
 
@@ -265,9 +279,10 @@ class MapScreenState extends State<MapScreen> {
             },
             onCameraMove: (pos) {
               _currentZoom = pos.zoom;
+              _cameraCenter = pos.target;
             },
             onCameraIdle: () {
-              _updateVisibleMarkers(_currentZoom);
+              _loadMarkers(filters: _appliedFilters, center: _cameraCenter);
             },
             myLocationEnabled: _locationPermissionGranted,
           ),
