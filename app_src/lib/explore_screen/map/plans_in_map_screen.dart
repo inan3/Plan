@@ -22,11 +22,13 @@ class PlansInMapScreen {
   final Set<String> _userIdsWithActivePlan = {};
   final Map<String, Marker> _planMarkerCache = {};
   final Map<String, Map<String, dynamic>> _planDataCache = {};
+  final Map<String, _MarkerData> _iconCache = {};
   String? _lastCreatedAt;
 
   Future<Set<Marker>> loadPlansMarkers(
     BuildContext context, {
     Map<String, dynamic>? filters,
+    void Function(Marker)? onMarker,
   }) async {
     Query query =
         FirebaseFirestore.instance.collection('plans').orderBy('createdAt');
@@ -148,6 +150,7 @@ class PlansInMapScreen {
       );
       _planMarkerCache[doc.id] = marker;
       _planDataCache[doc.id] = data;
+      if (onMarker != null) onMarker(marker);
 
       final String? createdAt = data['createdAt'] as String?;
       if (createdAt != null) {
@@ -210,6 +213,7 @@ class PlansInMapScreen {
     required LatLng center,
     double radiusKm = 5,
     Map<String, dynamic>? filters,
+    void Function(Marker)? onMarker,
   }) async {
     // 1) Punto central
     final centerPoint = GeoFirePoint(
@@ -266,15 +270,15 @@ class PlansInMapScreen {
       final photoUrl = data['photoUrl'] as String? ?? '';
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
-      markers.add(
-        Marker(
-          markerId: MarkerId('noPlanUser_$uid'),
-          position: pos,
-          icon: iconData.icon,
-          anchor: iconData.anchor,
-          onTap: () => UserInfoCheck.open(context, uid),
-        ),
+      final marker = Marker(
+        markerId: MarkerId('noPlanUser_$uid'),
+        position: pos,
+        icon: iconData.icon,
+        anchor: iconData.anchor,
+        onTap: () => UserInfoCheck.open(context, uid),
       );
+      markers.add(marker);
+      if (onMarker != null) onMarker(marker);
     }
     return markers;
   }
@@ -334,6 +338,12 @@ class PlansInMapScreen {
     String planType, {
     bool showText = true,
   }) async {
+    final key = 'plan:'
+        '$photoUrl:'
+        '$planType:'
+        '$showText';
+    final cached = _iconCache[key];
+    if (cached != null) return cached;
     try {
       final bytes = await _downloadImageAsBytes(photoUrl);
       final codec =
@@ -410,7 +420,9 @@ class PlansInMapScreen {
       final bd = await img.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = bd!.buffer.asUint8List();
       final icon = BitmapDescriptor.fromBytes(pngBytes);
-      return _MarkerData(icon, Offset(0.5, cy / mh));
+      final data = _MarkerData(icon, Offset(0.5, cy / mh));
+      _iconCache[key] = data;
+      return data;
     } catch (_) {
       return const _MarkerData(
           BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
@@ -418,6 +430,9 @@ class PlansInMapScreen {
   }
 
   Future<_MarkerData> _buildNoPlanMarker(String photoUrl) async {
+    final key = 'user:' + photoUrl;
+    final cached = _iconCache[key];
+    if (cached != null) return cached;
     try {
       const double sz = 120, r = 45;
       Uint8List? bytes;
@@ -465,7 +480,9 @@ class PlansInMapScreen {
       final bd = await img.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = bd!.buffer.asUint8List();
       final icon = BitmapDescriptor.fromBytes(pngBytes);
-      return _MarkerData(icon, const Offset(0.5, 0.5));
+      final data = _MarkerData(icon, const Offset(0.5, 0.5));
+      _iconCache[key] = data;
+      return data;
     } catch (_) {
       return const _MarkerData(
           BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));

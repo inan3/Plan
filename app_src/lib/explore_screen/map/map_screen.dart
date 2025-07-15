@@ -95,9 +95,17 @@ class MapScreenState extends State<MapScreen> {
 
   Future<void> _loadMarkers({Map<String, dynamic>? filters, LatLng? center}) async {
     final plansLoader = PlansInMapScreen();
-    final planMarkers =
-        await plansLoader.loadPlansMarkers(context, filters: filters);
-    Set<Marker> markers = {...planMarkers};
+    _allMarkers.clear();
+    _updateVisibleMarkers(_currentZoom);
+    await plansLoader.loadPlansMarkers(
+      context,
+      filters: filters,
+      onMarker: (m) {
+        _allMarkers.add(m);
+        _updateVisibleMarkers(_currentZoom);
+      },
+    );
+    Set<Marker> markers = {..._allMarkers};
     final bool onlyPlans = filters?['onlyPlans'] == true;
     if (!onlyPlans) {
       LatLng? queryCenter = center;
@@ -109,12 +117,16 @@ class MapScreenState extends State<MapScreen> {
             LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       }
       if (queryCenter != null) {
-        final userMarkers = await plansLoader.loadUsersWithoutPlansMarkers(
+        await plansLoader.loadUsersWithoutPlansMarkers(
           context,
           center: queryCenter,
           filters: filters,
+          onMarker: (m) {
+            _allMarkers.add(m);
+            _updateVisibleMarkers(_currentZoom);
+          },
         );
-        markers.addAll(userMarkers);
+        markers = {..._allMarkers};
       }
     }
     _allMarkers = markers.toList();
