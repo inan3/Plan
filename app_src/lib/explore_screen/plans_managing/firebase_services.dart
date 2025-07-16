@@ -43,18 +43,24 @@ Future<List<Map<String, dynamic>>> fetchPlanParticipants(PlanModel plan) async {
   final planData = planDoc.data()!;
   final participantsList = List<String>.from(planData['participants'] ?? []);
 
-  for (String userId in participantsList) {
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    if (userDoc.exists && userDoc.data() != null) {
-      final uData = userDoc.data()!;
-      participants.add({
-        'uid': userId,
-        'name': uData['name'] ?? 'Sin nombre',
-        'age': uData['age']?.toString() ?? '',
-        'photoUrl': uData['photoUrl'] ?? '',
-        'isCreator': (plan.createdBy == userId),
-      });
-    }
+  final futures = participantsList.map((userId) async {
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    if (!userDoc.exists || userDoc.data() == null) return null;
+
+    final uData = userDoc.data()!;
+    return {
+      'uid': userId,
+      'name': uData['name'] ?? 'Sin nombre',
+      'age': uData['age']?.toString() ?? '',
+      'photoUrl': uData['photoUrl'] ?? '',
+      'isCreator': (plan.createdBy == userId),
+    };
+  });
+
+  final results = await Future.wait(futures);
+  for (final r in results) {
+    if (r != null) participants.add(r);
   }
   return participants;
 }
