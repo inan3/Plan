@@ -6,6 +6,8 @@ import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 import '../../main/colors.dart';
+import '../users_managing/block_utils.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Representa un resultado de búsqueda (usuario o plan).
@@ -195,6 +197,12 @@ class _SearcherState extends State<Searcher> {
             additionalPlans: additional,
           ),
         );
+      }
+
+      final current = FirebaseAuth.instance.currentUser;
+      if (current != null) {
+        final blockedIds = await fetchBlockedIds(current.uid);
+        finalResults.removeWhere((r) => r.isUser && blockedIds.contains(r.id));
       }
 
       if (mounted && _lastQuery == cleanedQuery) {
