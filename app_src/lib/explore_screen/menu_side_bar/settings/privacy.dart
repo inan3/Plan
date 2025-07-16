@@ -188,15 +188,16 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
             Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const BlockedUsersScreen()),
-                  );
-                },
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const BlockedUsersScreen()),
+                    );
+                    _loadPrivacy();
+                  },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 12.0),
