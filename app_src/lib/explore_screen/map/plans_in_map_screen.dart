@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:collection';
 import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
@@ -21,7 +22,26 @@ class PlansInMapScreen {
   final Set<String> _userIdsWithActivePlan = {};
   final Map<String, Marker> _planMarkerCache = {};
   final Map<String, Map<String, dynamic>> _planDataCache = {};
+  final LinkedHashMap<String, BitmapDescriptor> _descriptorCache =
+      LinkedHashMap();
+  static const int _cacheLimit = 50;
   String? _lastCreatedAt;
+  DocumentSnapshot? _lastUserDoc;
+
+  BitmapDescriptor? _getFromCache(String key) {
+    final value = _descriptorCache.remove(key);
+    if (value != null) {
+      _descriptorCache[key] = value;
+    }
+    return value;
+  }
+
+  void _addToCache(String key, BitmapDescriptor descriptor) {
+    if (_descriptorCache.length >= _cacheLimit) {
+      _descriptorCache.remove(_descriptorCache.keys.first);
+    }
+    _descriptorCache[key] = descriptor;
+  }
 
   Future<Set<Marker>> loadPlansMarkers(
     BuildContext context, {
@@ -49,40 +69,40 @@ class PlansInMapScreen {
         if (fid != null) followedUids.add(fid);
       }
     }
-    for (var doc in qs.docs) {
+    final tasks = qs.docs.map((doc) async {
       final data = doc.data() as Map<String, dynamic>?;
-      if (data == null) continue;
+      if (data == null) return null;
       final sp = data['special_plan'] ?? 0;
-      if (sp != 0) continue;
+      if (sp != 0) return null;
       final startTs = data['start_timestamp'];
-      if (startTs == null) continue;
+      if (startTs == null) return null;
       final startDate = (startTs as Timestamp).toDate();
       final DateTime? filterDate = filters?['planDate'];
       if (filterDate != null) {
         if (startDate.year != filterDate.year ||
             startDate.month != filterDate.month ||
             startDate.day != filterDate.day) {
-          continue;
+          return null;
         }
       } else {
-        if (!startDate.isAfter(now)) continue;
+        if (!startDate.isAfter(now)) return null;
       }
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
       final type = data['type'] as String?;
       final uid = data['createdBy'] as String?;
-      if (lat == null || lng == null || type == null || uid == null) continue;
-      if (lat == 0.0 || lng == 0.0) continue;
+      if (lat == null || lng == null || type == null || uid == null) return null;
+      if (lat == 0.0 || lng == 0.0) return null;
       if (onlyFollowed && !followedUids.contains(uid)) {
-        continue;
+        return null;
       }
       final String visibility = data['visibility']?.toString() ?? 'Público';
       if (visibility.toLowerCase() == 'privado') {
-        continue;
+        return null;
       }
       if (visibility.toLowerCase() == 'solo para mis seguidores') {
         if (currentUser == null || !followedUids.contains(uid)) {
-          continue;
+          return null;
         }
       }
       if (filters != null) {
@@ -96,16 +116,16 @@ class PlansInMapScreen {
 
         if (selected.isNotEmpty) {
           if (!selected.contains(type.toLowerCase())) {
-            continue;
+            return null;
           }
         } else if (searchText.isNotEmpty) {
           if (!type.toLowerCase().contains(searchText)) {
-            continue;
+            return null;
           }
         }
       }
       final photoUrl = await _getUserProfilePhoto(uid);
-      if (photoUrl == null) continue;
+      if (photoUrl == null) return null;
       final pos = LatLng(lat, lng);
       final _MarkerData iconData =
           await _buildPlanMarker(photoUrl, type, showText: true);
@@ -157,6 +177,13 @@ class PlansInMapScreen {
         if (_lastCreatedAt == null || createdAt.compareTo(_lastCreatedAt!) > 0) {
           _lastCreatedAt = createdAt;
         }
+      }
+      return marker;
+    });
+    final markersList = await Future.wait(tasks);
+    for (final m in markersList) {
+      if (m != null) {
+        // already stored in caches above
       }
     }
     final Set<Marker> result = {};
@@ -210,9 +237,22 @@ class PlansInMapScreen {
 
   Future<Set<Marker>> loadUsersWithoutPlansMarkers(
     BuildContext context, {
+    required LatLngBounds bounds,
     Map<String, dynamic>? filters,
   }) async {
-    final qs = await FirebaseFirestore.instance.collection('users').get();
+    Query query = FirebaseFirestore.instance
+        .collection('users')
+        .where('hasActivePlan', isEqualTo: false)
+        .where('latitude', isGreaterThanOrEqualTo: bounds.southwest.latitude, isLessThanOrEqualTo: bounds.northeast.latitude)
+        .where('longitude', isGreaterThanOrEqualTo: bounds.southwest.longitude, isLessThanOrEqualTo: bounds.northeast.longitude)
+        .limit(50);
+    if (_lastUserDoc != null) {
+      query = query.startAfterDocument(_lastUserDoc!);
+    }
+    final qs = await query.get();
+    if (qs.docs.isNotEmpty) {
+      _lastUserDoc = qs.docs.last;
+    }
     final Set<Marker> markers = {};
     final bool onlyFollowed = filters?['onlyFollowed'] == true;
     final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -227,30 +267,30 @@ class PlansInMapScreen {
         if (fid != null) followedUids.add(fid);
       }
     }
-    for (var doc in qs.docs) {
+    final tasks = qs.docs.map((doc) async {
       final data = doc.data() as Map<String, dynamic>?;
-      if (data == null) continue;
+      if (data == null) return null;
       final uid = data['uid'] ?? '';
-      if (uid.isEmpty) continue;
-      if (_userIdsWithActivePlan.contains(uid)) continue;
-      if (onlyFollowed && !followedUids.contains(uid)) continue;
+      if (uid.isEmpty) return null;
+      if (_userIdsWithActivePlan.contains(uid)) return null;
+      if (onlyFollowed && !followedUids.contains(uid)) return null;
       final lat = data['latitude']?.toDouble();
       final lng = data['longitude']?.toDouble();
-      if (lat == null || lng == null) continue;
-      if (lat == 0.0 || lng == 0.0) continue;
+      if (lat == null || lng == null) return null;
+      if (lat == 0.0 || lng == 0.0) return null;
       final photoUrl = data['photoUrl'] as String? ?? '';
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
-      markers.add(
-        Marker(
-          markerId: MarkerId('noPlanUser_$uid'),
-          position: pos,
-          icon: iconData.icon,
-          anchor: iconData.anchor,
-          onTap: () => UserInfoCheck.open(context, uid),
-        ),
+      return Marker(
+        markerId: MarkerId('noPlanUser_$uid'),
+        position: pos,
+        icon: iconData.icon,
+        anchor: iconData.anchor,
+        onTap: () => UserInfoCheck.open(context, uid),
       );
-    }
+    });
+    final built = await Future.wait(tasks);
+    markers.addAll(built.whereType<Marker>());
     return markers;
   }
 
@@ -311,6 +351,11 @@ class PlansInMapScreen {
     bool showText = true,
   }) async {
     try {
+      final cacheKey = 'plan:' + photoUrl + ':' + planType;
+      final cached = _getFromCache(cacheKey);
+      if (cached != null) {
+        return _MarkerData(cached, const Offset(0.5, 1.0));
+      }
       final bytes = await _downloadImageAsBytes(photoUrl);
       final codec = await ui.instantiateImageCodec(bytes,
           targetWidth: 256, targetHeight: 256);
@@ -388,6 +433,7 @@ class PlansInMapScreen {
       final bd = await img.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = bd!.buffer.asUint8List();
       final icon = BitmapDescriptor.fromBytes(pngBytes);
+      _addToCache(cacheKey, icon);
       return _MarkerData(icon, Offset(0.5, cy / mh));
     } catch (_) {
       return const _MarkerData(BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
@@ -399,6 +445,11 @@ class PlansInMapScreen {
       // Aumentamos el tamaño base del marcador de usuario sin plan para que la
       // imagen no se muestre achatada en vertical.
       const double sz = 120, r = 45;
+      final cacheKey = 'user:' + photoUrl;
+      final cached = _getFromCache(cacheKey);
+      if (cached != null) {
+        return _MarkerData(cached, const Offset(0.5, 0.5));
+      }
       Uint8List? bytes;
       if (photoUrl.isNotEmpty) {
         bytes = await _downloadImageAsBytes(photoUrl);
@@ -444,6 +495,7 @@ class PlansInMapScreen {
       final bd = await img.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = bd!.buffer.asUint8List();
       final icon = BitmapDescriptor.fromBytes(pngBytes);
+      _addToCache(cacheKey, icon);
       return _MarkerData(icon, const Offset(0.5, 0.5));
     } catch (_) {
       return const _MarkerData(BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));

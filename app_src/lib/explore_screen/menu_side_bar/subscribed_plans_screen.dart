@@ -153,6 +153,8 @@ class SubscribedPlansScreen extends StatelessWidget {
                     'invitedUsers': FieldValue.arrayRemove([userId])
                   });
 
+                  await PlanModel.updateUserHasActivePlan(userId);
+
                   try {
                     final userDoc = await FirebaseFirestore.instance
                         .collection('users')

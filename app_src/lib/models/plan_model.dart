@@ -348,6 +348,8 @@ class PlanModel {
       'total_created_plans': FieldValue.increment(1),
     });
 
+    await updateUserHasActivePlan(user.uid);
+
     return plan;
   }
 
@@ -405,5 +407,45 @@ class PlanModel {
     };
 
     await docRef.update(updates);
+
+    await updateUserHasActivePlan(user.uid);
+  }
+
+  static Future<void> updateUserHasActivePlan(String uid) async {
+    final now = DateTime.now();
+    bool active = false;
+
+    final createdSnap = await FirebaseFirestore.instance
+        .collection('plans')
+        .where('createdBy', isEqualTo: uid)
+        .where('special_plan', isEqualTo: 0)
+        .get();
+    for (final d in createdSnap.docs) {
+      final ts = d.data()['start_timestamp'] as Timestamp?;
+      if (ts != null && ts.toDate().isAfter(now)) {
+        active = true;
+        break;
+      }
+    }
+
+    if (!active) {
+      final joinedSnap = await FirebaseFirestore.instance
+          .collection('plans')
+          .where('participants', arrayContains: uid)
+          .where('special_plan', isEqualTo: 0)
+          .get();
+      for (final d in joinedSnap.docs) {
+        final ts = d.data()['start_timestamp'] as Timestamp?;
+        if (ts != null && ts.toDate().isAfter(now)) {
+          active = true;
+          break;
+        }
+      }
+    }
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .update({'hasActivePlan': active});
   }
 }
