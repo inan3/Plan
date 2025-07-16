@@ -29,6 +29,7 @@ import 'local_registration_service.dart';
 import '../../services/fcm_token_service.dart';
 import 'register_screen.dart';
 import '../../services/language_service.dart';
+import '../../models/plan_model.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({
@@ -349,6 +350,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
         'coverPhotos': coverPhotoUrls,
         'latitude': latitude,
         'longitude': longitude,
+        'hasActivePlan': false,
         'languageCode': LanguageService.locale.value.languageCode,
         'privilegeLevel': 'Básico',
         'profile_privacy': 0,
@@ -370,6 +372,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
           .collection('users')
           .doc(user.uid)
           .set(userData);
+
+      await PlanModel.updateUserHasActivePlan(user.uid);
 
       // Guardamos token de notificaciones
       await FcmTokenService.register(user);

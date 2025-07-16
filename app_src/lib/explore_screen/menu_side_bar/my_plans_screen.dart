@@ -325,6 +325,8 @@ Widget _buildPlanTile(BuildContext context, PlanModel plan) {
                       .doc(plan.id)
                       .delete();
 
+                  await PlanModel.updateUserHasActivePlan(currentUser.uid);
+
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Plan ${plan.type} eliminado.')),
