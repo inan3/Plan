@@ -34,9 +34,11 @@ class MapScreenState extends State<MapScreen> {
   List<Marker> _allMarkers = [];
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
-  Map<String, dynamic> _appliedFilters = {};
+  Map<String, dynamic> _appliedFilters = {'onlyPlans': false};
   Future<void>? _loadFuture;
   final PlansInMapScreen _plansLoader = PlansInMapScreen();
+  LatLng? _lastQueryCenter;
+  static const double _reloadThresholdKm = 5.0;
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(41.3851, 2.1734),
@@ -97,6 +99,12 @@ class MapScreenState extends State<MapScreen> {
   Future<void> _loadMarkersInternal({Map<String, dynamic>? filters}) async {
     final controller = await _controller.future;
     final bounds = await controller.getVisibleRegion();
+    final centerLat =
+        (bounds.northeast.latitude + bounds.southwest.latitude) / 2;
+    final centerLng =
+        (bounds.northeast.longitude + bounds.southwest.longitude) / 2;
+    _lastQueryCenter = LatLng(centerLat, centerLng);
+
     final planMarkers =
         await _plansLoader.loadPlansMarkers(context, filters: filters);
     Set<Marker> markers = {...planMarkers};
@@ -179,6 +187,20 @@ class MapScreenState extends State<MapScreen> {
     });
     return _MarkerOverlapResult(markers: finalMarkers, polylines: finalPolylines);
   }
+
+  double _distanceKm(LatLng a, LatLng b) {
+    const earthRadius = 6371;
+    final dLat = _deg2rad(b.latitude - a.latitude);
+    final dLng = _deg2rad(b.longitude - a.longitude);
+    final sa = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_deg2rad(a.latitude)) *
+            math.cos(_deg2rad(b.latitude)) *
+            math.sin(dLng / 2) * math.sin(dLng / 2);
+    final c = 2 * math.atan2(math.sqrt(sa), math.sqrt(1 - sa));
+    return earthRadius * c;
+  }
+
+  double _deg2rad(double deg) => deg * (math.pi / 180);
 
   Future<void> _fetchAddressPredictions(String input) async {
     if (input.isEmpty) {
@@ -288,8 +310,19 @@ class MapScreenState extends State<MapScreen> {
                 onCameraMove: (pos) {
                   _currentZoom = pos.zoom;
                 },
-                onCameraIdle: () {
-                  _updateVisibleMarkers(_currentZoom);
+                onCameraIdle: () async {
+                  final c = await _controller.future;
+                  final bounds = await c.getVisibleRegion();
+                  final center = LatLng(
+                    (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+                    (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+                  );
+                  if (_lastQueryCenter == null ||
+                      _distanceKm(center, _lastQueryCenter!) > _reloadThresholdKm) {
+                    _loadMarkers(filters: _appliedFilters);
+                  } else {
+                    _updateVisibleMarkers(_currentZoom);
+                  }
                 },
                 myLocationEnabled: _locationPermissionGranted,
               );
