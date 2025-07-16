@@ -36,6 +36,7 @@ class MapScreenState extends State<MapScreen> {
   Set<Polyline> _polylines = {};
   Map<String, dynamic> _appliedFilters = {};
   Future<void>? _loadFuture;
+  final PlansInMapScreen _plansLoader = PlansInMapScreen();
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(41.3851, 2.1734),
@@ -94,11 +95,10 @@ class MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _loadMarkersInternal({Map<String, dynamic>? filters}) async {
-    final plansLoader = PlansInMapScreen();
     final controller = await _controller.future;
     final bounds = await controller.getVisibleRegion();
     final planMarkers =
-        await plansLoader.loadPlansMarkers(context, filters: filters);
+        await _plansLoader.loadPlansMarkers(context, filters: filters);
     Set<Marker> markers = {...planMarkers};
 
     // When the user selects "Todo" we should display both plan markers and
@@ -108,7 +108,7 @@ class MapScreenState extends State<MapScreen> {
     final bool showOnlyPlans = filters?['onlyPlans'] == true;
 
     if (!showOnlyPlans) {
-      final userMarkers = await plansLoader.loadUsersWithoutPlansMarkers(
+      final userMarkers = await _plansLoader.loadUsersWithoutPlansMarkers(
         context,
         bounds: bounds,
         filters: filters,
