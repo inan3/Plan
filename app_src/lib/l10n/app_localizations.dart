@@ -26,6 +26,10 @@ class AppLocalizations {
       'delete_question': '¿Estás seguro de que quieres eliminar tu perfil?',
       'cancel': 'Cancelar',
       'accept': 'Aceptar',
+      'yes': 'Sí',
+      'no': 'No',
+      'blocked_users': 'Usuarios bloqueados',
+      'unblock_question': '¿Desbloquear a este usuario?',
       'delete_success': 'Tu cuenta se ha eliminado correctamente.',
       'reauth_required': 'Reautenticación requerida',
       'reauth_explanation': 'Por cuestiones de seguridad debes introducir tus credenciales de inicio de sesión para eliminar tu cuenta definitivamente',
@@ -318,6 +322,10 @@ class AppLocalizations {
       'delete_question': 'Are you sure you want to delete your profile?',
       'cancel': 'Cancel',
       'accept': 'Accept',
+      'yes': 'Yes',
+      'no': 'No',
+      'blocked_users': 'Blocked users',
+      'unblock_question': 'Unblock this user?',
       'delete_success': 'Your account has been deleted successfully.',
       'reauth_required': 'Reauthentication required',
       'reauth_explanation': 'For security reasons you must enter your login credentials to permanently delete your account',
@@ -616,6 +624,10 @@ class AppLocalizations {
   String get deleteQuestion => _t('delete_question');
   String get cancel => _t('cancel');
   String get accept => _t('accept');
+  String get yes => _t('yes');
+  String get no => _t('no');
+  String get blockedUsers => _t('blocked_users');
+  String get unblockQuestion => _t('unblock_question');
   String get deleteSuccess => _t('delete_success');
   String get reauthRequired => _t('reauth_required');
   String get reauthExplanation => _t('reauth_explanation');

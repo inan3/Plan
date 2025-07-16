@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../users_managing/blocked_users_screen.dart';
 
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({Key? key}) : super(key: key);
@@ -173,6 +174,36 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                       inactiveThumbColor: Colors.white,
                     ),
                   ],
+                ),
+            ),
+          ),
+            const SizedBox(height: 24),
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const BlockedUsersScreen()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          t.blockedUsers,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
                 ),
               ),
             ),

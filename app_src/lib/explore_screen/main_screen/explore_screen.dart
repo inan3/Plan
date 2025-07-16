@@ -16,6 +16,7 @@ import '../chats/chats_screen.dart';
 import '../map/map_screen.dart';
 import '../profile/profile_screen.dart';
 import 'notification_screen.dart';
+import '../users_managing/block_utils.dart';
 import 'package:dating_app/plan_creation/new_plan_creation_screen.dart';
 import 'searcher.dart';
 import '../../tutorial/quick_start_guide.dart';
@@ -357,6 +358,12 @@ class ExploreScreenState extends State<ExploreScreen> {
       validUsers = validUsers.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return data['uid']?.toString() != _currentUser!.uid;
+      }).toList();
+
+      final blockedIds = await fetchBlockedIds(_currentUser!.uid);
+      validUsers = validUsers.where((doc) {
+        final uid = (doc.data() as Map<String, dynamic>)['uid']?.toString();
+        return uid != null && !blockedIds.contains(uid);
       }).toList();
     }
 
