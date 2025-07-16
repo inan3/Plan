@@ -421,7 +421,7 @@ class PlanModel {
         .where('special_plan', isEqualTo: 0)
         .get();
     for (final d in createdSnap.docs) {
-      final ts = d.data()['start_timestamp'] as Timestamp?;
+      final ts = d.data()['finish_timestamp'] as Timestamp?;
       if (ts != null && ts.toDate().isAfter(now)) {
         active = true;
         break;
@@ -435,7 +435,7 @@ class PlanModel {
           .where('special_plan', isEqualTo: 0)
           .get();
       for (final d in joinedSnap.docs) {
-        final ts = d.data()['start_timestamp'] as Timestamp?;
+        final ts = d.data()['finish_timestamp'] as Timestamp?;
         if (ts != null && ts.toDate().isAfter(now)) {
           active = true;
           break;
