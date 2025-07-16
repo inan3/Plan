@@ -16,6 +16,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   bool _isVisibilityPublic = true;
   bool _isActivityPublic = true;
   bool _loading = true;
+  int _blockedCount = 0;
 
   @override
   void initState() {
@@ -36,11 +37,17 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
       final data = snap.data();
       final isPublic = (data?['profile_privacy'] ?? 0) == 0;
       final activityPublic = data?['activityStatusPublic'];
+      final blockedSnap = await FirebaseFirestore.instance
+          .collection('blocked_users')
+          .where('blockerId', isEqualTo: uid)
+          .get();
+      final blockedCount = blockedSnap.docs.length;
       if (mounted) {
         setState(() {
           _isVisibilityPublic = isPublic;
           _isActivityPublic =
               activityPublic is bool ? activityPublic : true;
+          _blockedCount = blockedCount;
           _loading = false;
         });
       }
@@ -181,15 +188,16 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
             Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const BlockedUsersScreen()),
-                  );
-                },
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const BlockedUsersScreen()),
+                    );
+                    _loadPrivacy();
+                  },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 12.0),
@@ -201,6 +209,17 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
+                      if (_blockedCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4.0),
+                          child: Text(
+                            '$_blockedCount',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
                       const Icon(Icons.chevron_right),
                     ],
                   ),
