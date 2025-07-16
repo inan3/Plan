@@ -6,6 +6,7 @@ import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
 import '../../main/colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Representa un resultado de búsqueda (usuario o plan).
 class SearchResultItem {
@@ -309,7 +310,7 @@ class _SearcherState extends State<Searcher> {
                       leading: CircleAvatar(
                         radius: 20,
                         backgroundImage: (item.avatarUrl.isNotEmpty)
-                            ? NetworkImage(item.avatarUrl)
+                            ? CachedNetworkImageProvider(item.avatarUrl)
                             : null,
                         backgroundColor: Colors.grey[300],
                       ),

@@ -12,6 +12,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 import '../../l10n/app_localizations.dart';
 
 class UserImagesManaging {
@@ -828,9 +830,12 @@ class _FullScreenImagePageState extends State<_FullScreenImagePage> {
                   child: Container(
                     color: Colors.white,
                     child: InteractiveViewer(
-                      child: Image.network(
-                        images[i],
+                      child: CachedNetworkImage(
+                        imageUrl: images[i],
                         fit: BoxFit.contain,
+                        placeholder: (_, __) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (_, __, ___) => const Icon(Icons.error),
                       ),
                     ),
                   ),

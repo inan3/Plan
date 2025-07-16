@@ -18,6 +18,8 @@ import '../profile/user_images_managing.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../main/colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 import '../../models/plan_model.dart';
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../users_managing/user_info_check.dart';
@@ -332,7 +334,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                         CircleAvatar(
                           radius: 16,
                           backgroundImage: widget.chatPartnerPhoto != null
-                              ? NetworkImage(widget.chatPartnerPhoto!)
+                              ? CachedNetworkImageProvider(widget.chatPartnerPhoto!)
                               : null,
                           backgroundColor: Colors.grey[300],
                         ),
@@ -1171,7 +1173,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   ),
                   image: planImage.isNotEmpty
                       ? DecorationImage(
-                          image: NetworkImage(planImage),
+                          image: CachedNetworkImageProvider(planImage),
                           fit: BoxFit.cover,
                         )
                       : null,
@@ -1277,7 +1279,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     final Completer<Size> completer = Completer();
 
     final ImageStream imageStream =
-        NetworkImage(imageUrl).resolve(const ImageConfiguration());
+        CachedNetworkImageProvider(imageUrl).resolve(const ImageConfiguration());
     late ImageStreamListener listener;
 
     listener = ImageStreamListener((ImageInfo info, bool _) {
@@ -1383,9 +1385,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     child: SizedBox(
                       width: displayWidth,
                       height: displayHeight,
-                      child: Image.network(
-                        imageUrl,
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
                         fit: BoxFit.fill,
+                        placeholder: (_, __) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (_, __, ___) => const Icon(Icons.error),
                       ),
                     ),
                   ),

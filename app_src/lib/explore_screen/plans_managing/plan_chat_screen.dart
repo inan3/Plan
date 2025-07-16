@@ -7,6 +7,7 @@ import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
 import '../../l10n/app_localizations.dart';
 import '../../main/colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PlanChatScreen extends StatefulWidget {
   final PlanModel plan;
@@ -57,7 +58,8 @@ class _PlanChatScreenState extends State<PlanChatScreen> {
       },
       child: CircleAvatar(
         radius: 20,
-        backgroundImage: senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+        backgroundImage:
+            senderPic.isNotEmpty ? CachedNetworkImageProvider(senderPic) : null,
         backgroundColor: Colors.blueGrey[100],
       ),
     );

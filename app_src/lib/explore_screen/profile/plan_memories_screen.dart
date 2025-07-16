@@ -11,6 +11,8 @@ import '../../l10n/app_localizations.dart';
 
 import '../plans_managing/plan_card.dart';
 import '../../models/plan_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 // Importa nuestra hoja de compartir imágenes (análogo a tu PlanShareSheet)
 import 'image_share_sheet.dart';
@@ -393,9 +395,12 @@ class _PlanMemoriesScreenState extends State<PlanMemoriesScreen> {
           final imageUrl = _memories[index];
           return GestureDetector(
             onTap: () => _openPhotoViewer(index),
-            child: Image.network(
-              imageUrl,
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
               fit: BoxFit.cover,
+              placeholder: (_, __) =>
+                  const Center(child: CircularProgressIndicator()),
+              errorWidget: (_, __, ___) => buildPlaceholder(),
             ),
           );
         },
@@ -442,9 +447,12 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
       ),
       body: Center(
         child: InteractiveViewer(
-          child: Image.network(
-            widget.imageUrl,
+          child: CachedNetworkImage(
+            imageUrl: widget.imageUrl,
             fit: BoxFit.contain,
+            placeholder: (_, __) =>
+                const Center(child: CircularProgressIndicator()),
+            errorWidget: (_, __, ___) => const Icon(Icons.error),
           ),
         ),
       ),

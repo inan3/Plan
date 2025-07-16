@@ -15,6 +15,7 @@ import '../plans_managing/plan_card.dart'; // <--- Asegúrate de importar tu Pla
 import '../plans_managing/firebase_services.dart'; // <--- Para fetchPlanParticipants, si lo tienes
 import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../l10n/app_localizations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String currentUserId;
@@ -585,8 +586,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             child: CircleAvatar(
                               radius: 25,
                               backgroundImage: senderPhoto.isNotEmpty
-                                  ? NetworkImage(senderPhoto)
-                                  : const NetworkImage(
+                                  ? CachedNetworkImageProvider(senderPhoto)
+                                  : CachedNetworkImageProvider(
                                       'https://cdn-icons-png.flaticon.com/512/847/847969.png',
                                     ),
                             ),
@@ -1028,7 +1029,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final url = data['photoUrl'] ?? '';
       return CircleAvatar(
         radius: 20,
-        backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+        backgroundImage: url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
       );
     }
 

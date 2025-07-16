@@ -15,6 +15,7 @@ import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
 import '../../l10n/app_localizations.dart';
 import 'plan_chat_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
@@ -441,7 +442,8 @@ class PlanCardState extends State<PlanCard> {
       },
       child: CircleAvatar(
         radius: 20,
-        backgroundImage: senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+        backgroundImage:
+            senderPic.isNotEmpty ? CachedNetworkImageProvider(senderPic) : null,
         backgroundColor: Colors.blueGrey[100],
       ),
     );
@@ -724,7 +726,8 @@ class PlanCardState extends State<PlanCard> {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+                backgroundImage:
+                    pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
@@ -785,7 +788,8 @@ class PlanCardState extends State<PlanCard> {
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage:
+                      pic1.isNotEmpty ? CachedNetworkImageProvider(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -793,7 +797,8 @@ class PlanCardState extends State<PlanCard> {
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage:
+                      pic2.isNotEmpty ? CachedNetworkImageProvider(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -921,7 +926,7 @@ class PlanCardState extends State<PlanCard> {
                         leading: CircleAvatar(
                           radius: 22,
                           backgroundImage:
-                              pic.isNotEmpty ? NetworkImage(pic) : null,
+                              pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
                           backgroundColor: Colors.blueGrey[400],
                         ),
                         title: Row(
@@ -1251,11 +1256,12 @@ class PlanCardState extends State<PlanCard> {
                             borderRadius: BorderRadius.circular(16),
                             child: AspectRatio(
                               aspectRatio: 16 / 13,
-                              child: Image.network(
-                                plan.backgroundImage!,
+                              child: CachedNetworkImage(
+                                imageUrl: plan.backgroundImage!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    buildPlaceholder(),
+                                placeholder: (_, __) => const Center(
+                                    child: CircularProgressIndicator()),
+                                errorWidget: (_, __, ___) => buildPlaceholder(),
                               ),
                             ),
                           )

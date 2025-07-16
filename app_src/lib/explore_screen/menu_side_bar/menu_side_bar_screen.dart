@@ -14,6 +14,7 @@ import 'favourites_screen.dart';
 import 'settings/settings_screen.dart';
 import 'close_session_screen.dart';
 import 'subscribed_plans_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
@@ -305,7 +306,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundImage: NetworkImage(profileImageUrl),
+                          backgroundImage: CachedNetworkImageProvider(profileImageUrl),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -329,7 +330,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: NetworkImage(profileImageUrl),
+                        backgroundImage: CachedNetworkImageProvider(profileImageUrl),
                         backgroundColor: Colors.grey.shade200,
                         onBackgroundImageError: (_, __) => const Icon(
                           Icons.person,

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../main/colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageShareSheet extends StatefulWidget {
   final String imageUrl;
@@ -242,7 +243,7 @@ class _ImageShareSheetState extends State<ImageShareSheet> {
             leading: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.blueGrey,
-              backgroundImage: (photo.isNotEmpty) ? NetworkImage(photo) : null,
+              backgroundImage: (photo.isNotEmpty) ? CachedNetworkImageProvider(photo) : null,
             ),
             title: Text(
               age.isNotEmpty ? "$name, $age" : name,
