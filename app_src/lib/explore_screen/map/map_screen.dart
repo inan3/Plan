@@ -282,6 +282,7 @@ class MapScreenState extends State<MapScreen> {
                         ),
                       ),
                     );
+                    _loadMarkers(filters: _appliedFilters);
                   }
                 },
                 onCameraMove: (pos) {
