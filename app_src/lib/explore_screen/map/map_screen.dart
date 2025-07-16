@@ -35,6 +35,7 @@ class MapScreenState extends State<MapScreen> {
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   Map<String, dynamic> _appliedFilters = {};
+  Future<void>? _loadFuture;
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(41.3851, 2.1734),
@@ -88,23 +89,34 @@ class MapScreenState extends State<MapScreen> {
           ),
         );
       }
-      await _loadMarkers(filters: _appliedFilters);
+      _loadMarkers(filters: _appliedFilters);
     }
   }
 
-  Future<void> _loadMarkers({Map<String, dynamic>? filters}) async {
+  Future<void> _loadMarkersInternal({Map<String, dynamic>? filters}) async {
     final plansLoader = PlansInMapScreen();
+    final controller = await _controller.future;
+    final bounds = await controller.getVisibleRegion();
     final planMarkers =
         await plansLoader.loadPlansMarkers(context, filters: filters);
     Set<Marker> markers = {...planMarkers};
     final bool onlyPlans = filters?['onlyPlans'] == true;
     if (!onlyPlans) {
-      final userMarkers =
-          await plansLoader.loadUsersWithoutPlansMarkers(context, filters: filters);
+      final userMarkers = await plansLoader.loadUsersWithoutPlansMarkers(
+        context,
+        bounds: bounds,
+        filters: filters,
+      );
       markers.addAll(userMarkers);
     }
     _allMarkers = markers.toList();
     _updateVisibleMarkers(_currentZoom);
+  }
+
+  void _loadMarkers({Map<String, dynamic>? filters}) {
+    setState(() {
+      _loadFuture = _loadMarkersInternal(filters: filters);
+    });
   }
 
   void _updateVisibleMarkers(double zoom) {
@@ -234,7 +246,7 @@ class MapScreenState extends State<MapScreen> {
       setState(() {
         _appliedFilters = result;
       });
-      await _loadMarkers(filters: _appliedFilters);
+      _loadMarkers(filters: _appliedFilters);
     }
   }
 
@@ -243,33 +255,38 @@ class MapScreenState extends State<MapScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: _initialPosition,
-            markers: _markers,
-            polylines: _polylines,
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-            onMapCreated: (c) {
-              _controller.complete(c);
-              if (_currentPosition != null) {
-                c.animateCamera(
-                  CameraUpdate.newCameraPosition(
-                    CameraPosition(
-                      target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                      zoom: 14.0,
-                    ),
-                  ),
-                );
-              }
+          FutureBuilder(
+            future: _loadFuture,
+            builder: (context, snapshot) {
+              return GoogleMap(
+                mapType: MapType.normal,
+                initialCameraPosition: _initialPosition,
+                markers: _markers,
+                polylines: _polylines,
+                zoomControlsEnabled: false,
+                myLocationButtonEnabled: false,
+                onMapCreated: (c) {
+                  _controller.complete(c);
+                  if (_currentPosition != null) {
+                    c.animateCamera(
+                      CameraUpdate.newCameraPosition(
+                        CameraPosition(
+                          target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                          zoom: 14.0,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                onCameraMove: (pos) {
+                  _currentZoom = pos.zoom;
+                },
+                onCameraIdle: () {
+                  _updateVisibleMarkers(_currentZoom);
+                },
+                myLocationEnabled: _locationPermissionGranted,
+              );
             },
-            onCameraMove: (pos) {
-              _currentZoom = pos.zoom;
-            },
-            onCameraIdle: () {
-              _updateVisibleMarkers(_currentZoom);
-            },
-            myLocationEnabled: _locationPermissionGranted,
           ),
           Positioned(
             top: 50,
