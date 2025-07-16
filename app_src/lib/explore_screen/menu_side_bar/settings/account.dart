@@ -411,8 +411,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     if (_isCheckingUsername || _isUsernameAvailable == false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Por favor, elige otro nombre de usuario')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t.usernameUnavailable)));
       _usernameController.text = _originalUsername;
       _usernameController.selection =
           TextSelection.collapsed(offset: _originalUsername.length);
