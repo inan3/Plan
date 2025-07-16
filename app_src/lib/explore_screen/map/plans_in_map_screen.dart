@@ -30,6 +30,10 @@ class PlansInMapScreen {
   String? _lastCreatedAt;
   DocumentSnapshot? _lastUserDoc;
 
+  void resetUserPagination() {
+    _lastUserDoc = null;
+  }
+
   BitmapDescriptor? _getFromCache(String key) {
     final value = _descriptorCache.remove(key);
     if (value != null) {
@@ -351,9 +355,9 @@ class PlansInMapScreen {
   }
 
   Future<Uint8List> _downloadImageAsBytes(String url) async {
-  final file = await DefaultCacheManager().getSingleFile(url);
-  return await file.readAsBytes();
-}
+    final file = await DefaultCacheManager().getSingleFile(url);
+    return await file.readAsBytes();
+  }
 
   Future<_MarkerData> _buildPlanMarker(
     String photoUrl,

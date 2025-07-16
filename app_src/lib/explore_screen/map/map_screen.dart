@@ -185,7 +185,8 @@ class MapScreenState extends State<MapScreen> {
         }
       }
     });
-    return _MarkerOverlapResult(markers: finalMarkers, polylines: finalPolylines);
+    return _MarkerOverlapResult(
+        markers: finalMarkers, polylines: finalPolylines);
   }
 
   double _distanceKm(LatLng a, LatLng b) {
@@ -195,7 +196,8 @@ class MapScreenState extends State<MapScreen> {
     final sa = math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_deg2rad(a.latitude)) *
             math.cos(_deg2rad(b.latitude)) *
-            math.sin(dLng / 2) * math.sin(dLng / 2);
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
     final c = 2 * math.atan2(math.sqrt(sa), math.sqrt(1 - sa));
     return earthRadius * c;
   }
@@ -299,7 +301,8 @@ class MapScreenState extends State<MapScreen> {
                     c.animateCamera(
                       CameraUpdate.newCameraPosition(
                         CameraPosition(
-                          target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                          target: LatLng(_currentPosition!.latitude,
+                              _currentPosition!.longitude),
                           zoom: 14.0,
                         ),
                       ),
@@ -315,10 +318,13 @@ class MapScreenState extends State<MapScreen> {
                   final bounds = await c.getVisibleRegion();
                   final center = LatLng(
                     (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
-                    (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+                    (bounds.northeast.longitude + bounds.southwest.longitude) /
+                        2,
                   );
                   if (_lastQueryCenter == null ||
-                      _distanceKm(center, _lastQueryCenter!) > _reloadThresholdKm) {
+                      _distanceKm(center, _lastQueryCenter!) >
+                          _reloadThresholdKm) {
+                    _plansLoader.resetUserPagination();
                     _loadMarkers(filters: _appliedFilters);
                   } else {
                     _updateVisibleMarkers(_currentZoom);
@@ -355,8 +361,8 @@ class MapScreenState extends State<MapScreen> {
                                 const Icon(Icons.search, color: Colors.grey),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
-                                    icon:
-                                        const Icon(Icons.clear, color: Colors.grey),
+                                    icon: const Icon(Icons.clear,
+                                        color: Colors.grey),
                                     onPressed: () {
                                       setState(() {
                                         _searchController.clear();
