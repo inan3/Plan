@@ -42,7 +42,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
   List<dynamic> _regionPredictions = [];
 
   bool locationAllowed = false;
-  RangeValues edadRange = const RangeValues(18, 60);
+  RangeValues edadRange = const RangeValues(18, 80);
   int generoSeleccionado = 2;
   DateTime? _selectedDate;
 
