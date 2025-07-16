@@ -1718,6 +1718,12 @@ class __NewPlanPopupContentState extends State<_NewPlanPopupContent> {
           originalImages: uploadedOriginalImages,
           videoUrl: null,
         );
+
+        // Actualizar el estado de planes activos del usuario
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await PlanModel.updateUserHasActivePlan(user.uid);
+        }
       }
 
       // Regresar y cerrar el popup
