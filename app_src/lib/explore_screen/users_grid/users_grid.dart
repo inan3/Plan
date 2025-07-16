@@ -17,6 +17,7 @@ import '../chats/chat_screen.dart';
 
 // Importa nuestro widget que usa RTDB:
 import '../users_managing/user_activity_status.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class UsersGrid extends StatefulWidget {
   final void Function(dynamic userDoc)? onUserTap;
@@ -72,19 +73,33 @@ class _UsersGridState extends State<UsersGrid> {
     final List<Map<String, dynamic>> tempUsers = [];
     final Map<String, List<PlanModel>> tempPlans = {};
 
-    for (final u in batch) {
+    final futures = batch.map((u) async {
       final baseData = u is QueryDocumentSnapshot
           ? (u.data() as Map<String, dynamic>)
           : u as Map<String, dynamic>;
       final uid = baseData['uid']?.toString();
-      if (uid == null) continue;
+      if (uid == null) return null;
 
-      final doc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final liveData = doc.data() as Map<String, dynamic>? ?? {};
-      tempUsers.add({...baseData, ...liveData});
+      final userDocFuture =
+          FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final plansFuture = fetchUserPlans(uid);
 
-      tempPlans[uid] = await fetchUserPlans(uid);
+      final userDoc = await userDocFuture;
+      final liveData = userDoc.data() as Map<String, dynamic>? ?? {};
+      final plans = await plansFuture;
+
+      return {
+        'user': {...baseData, ...liveData},
+        'uid': uid,
+        'plans': plans,
+      };
+    });
+
+    final results = await Future.wait(futures);
+    for (final r in results) {
+      if (r == null) continue;
+      tempUsers.add(r['user'] as Map<String, dynamic>);
+      tempPlans[r['uid'] as String] = (r['plans'] as List<PlanModel>);
     }
 
     if (!mounted) return;
@@ -293,20 +308,24 @@ class _UsersGridState extends State<UsersGrid> {
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
               child: (coverPhotoUrl != null && coverPhotoUrl.isNotEmpty)
-                  ? Image.network(
-                      coverPhotoUrl,
+                  ? CachedNetworkImage(
+                      imageUrl: coverPhotoUrl,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
-                      errorBuilder: (_, __, ___) => buildPlaceholder(),
+                      placeholder: (_, __) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (_, __, ___) => buildPlaceholder(),
                     )
                   : (fallbackPhotoUrl != null && fallbackPhotoUrl.isNotEmpty)
-                      ? Image.network(
-                          fallbackPhotoUrl,
+                      ? CachedNetworkImage(
+                          imageUrl: fallbackPhotoUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (_, __, ___) => buildPlaceholder(),
+                          placeholder: (_, __) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (_, __, ___) => buildPlaceholder(),
                         )
                       : buildPlaceholder(),
             ),

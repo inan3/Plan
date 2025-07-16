@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:math' as math;
 
 /// Placeholder genérico para cuando falle el loading de una imagen.
@@ -22,7 +23,7 @@ Widget buildProfileAvatar(String? photoUrl) {
   if (photoUrl != null && photoUrl.isNotEmpty) {
     return CircleAvatar(
       radius: 20,
-      backgroundImage: NetworkImage(photoUrl),
+      backgroundImage: CachedNetworkImageProvider(photoUrl),
     );
   } else {
     return const CircleAvatar(
