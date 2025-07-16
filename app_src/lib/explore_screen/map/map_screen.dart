@@ -100,8 +100,14 @@ class MapScreenState extends State<MapScreen> {
     final planMarkers =
         await plansLoader.loadPlansMarkers(context, filters: filters);
     Set<Marker> markers = {...planMarkers};
-    final bool onlyPlans = filters?['onlyPlans'] == true;
-    if (!onlyPlans) {
+
+    // When the user selects "Todo" we should display both plan markers and
+    // markers for users without an active plan. The filter stores this choice
+    // using the `onlyPlans` boolean (true => show only plans). If it is not
+    // true, we load additional user markers.
+    final bool showOnlyPlans = filters?['onlyPlans'] == true;
+
+    if (!showOnlyPlans) {
       final userMarkers = await plansLoader.loadUsersWithoutPlansMarkers(
         context,
         bounds: bounds,
