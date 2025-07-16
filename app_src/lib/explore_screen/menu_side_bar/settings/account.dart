@@ -1,9 +1,13 @@
 // account.dart
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../../../main/colors.dart' as MyColors;
 import '../../../start/welcome_screen.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -313,13 +317,67 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _ageController = TextEditingController();
+  Timer? _usernameDebounce;
+  bool? _isUsernameAvailable;
+  bool _isCheckingUsername = false;
+  List<String> _usernameSuggestions = [];
+  String _originalUsername = '';
   bool _loading = true;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
+    _usernameController.addListener(_onUsernameChanged);
     _load();
+  }
+
+  void _onUsernameChanged() {
+    final text = _usernameController.text.trim();
+    _usernameDebounce?.cancel();
+    _usernameDebounce = Timer(const Duration(milliseconds: 500), () {
+      _checkUsernameAvailability(text);
+    });
+  }
+
+  Future<void> _checkUsernameAvailability(String username) async {
+    if (username.isEmpty) {
+      setState(() {
+        _isUsernameAvailable = null;
+        _usernameSuggestions = [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isCheckingUsername = true;
+    });
+
+    final user = FirebaseAuth.instance.currentUser;
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('user_name', isEqualTo: username)
+        .get();
+
+    bool available = snap.docs.isEmpty;
+    if (!available && snap.docs.length == 1 && snap.docs.first.id == user?.uid) {
+      available = true;
+    }
+
+    List<String> suggestions = [];
+    if (!available) {
+      for (int i = 0; i < 3; i++) {
+        suggestions.add('$username${Random().nextInt(1000)}');
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isUsernameAvailable = available;
+        _usernameSuggestions = suggestions;
+        _isCheckingUsername = false;
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -333,7 +391,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (data != null) {
         _nameController.text = data['name'] ?? '';
         _usernameController.text = data['user_name'] ?? '';
+        _originalUsername = _usernameController.text;
         _ageController.text = (data['age'] ?? '').toString();
+        await _checkUsernameAvailability(_usernameController.text.trim());
       }
     }
     if (mounted) setState(() => _loading = false);
@@ -350,6 +410,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    if (_isCheckingUsername || _isUsernameAvailable == false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor, elige otro nombre de usuario')));
+      _usernameController.text = _originalUsername;
+      _usernameController.selection =
+          TextSelection.collapsed(offset: _originalUsername.length);
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     setState(() => _saving = true);
@@ -362,6 +431,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'age': age,
       });
       if (mounted) {
+        _originalUsername = username;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(t.profileUpdated)));
         Navigator.of(context).pop();
@@ -397,8 +467,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             TextField(
               controller: _usernameController,
-              decoration: InputDecoration(labelText: t.username),
+              decoration: InputDecoration(
+                labelText: t.username,
+                suffixIcon: _isCheckingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : _isUsernameAvailable == null
+                        ? null
+                        : Icon(
+                            _isUsernameAvailable! ? Icons.check : Icons.close,
+                            color:
+                                _isUsernameAvailable! ? Colors.green : Colors.red,
+                          ),
+              ),
             ),
+            if (_usernameSuggestions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 8,
+                  children: _usernameSuggestions.map((s) {
+                    return InkWell(
+                      onTap: () {
+                        _usernameController.text = s;
+                        _usernameController.selection =
+                            TextSelection.collapsed(offset: s.length);
+                        _checkUsernameAvailability(s);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: MyColors.AppColors.lightLilac,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: MyColors.AppColors.greyBorder),
+                        ),
+                        child: Text(
+                          s,
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             TextField(
               controller: _ageController,
               keyboardType: TextInputType.number,
@@ -421,6 +536,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameDebounce?.cancel();
+    _usernameController.removeListener(_onUsernameChanged);
     _usernameController.dispose();
     _ageController.dispose();
     super.dispose();
