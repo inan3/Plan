@@ -10,6 +10,7 @@ import '../users_managing/user_info_check.dart';
 import '../users_managing/user_activity_status.dart';
 import '../../main/colors.dart';
 import '../../l10n/app_localizations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Pantalla de seguidores/seguidos.
 /// Se muestra como un modal a pantalla casi completa (deja libre el 10 % superior)
@@ -275,9 +276,10 @@ class _FollowingScreenState extends State<FollowingScreen> {
                         final u = _filtered[idx];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundImage: NetworkImage(u.photoUrl.isNotEmpty
-                                ? u.photoUrl
-                                : 'https://via.placeholder.com/150'),
+                            backgroundImage: CachedNetworkImageProvider(
+                                u.photoUrl.isNotEmpty
+                                    ? u.photoUrl
+                                    : 'https://via.placeholder.com/150'),
                           ),
                           title: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,

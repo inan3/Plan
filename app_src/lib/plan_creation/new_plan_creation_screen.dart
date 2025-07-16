@@ -15,6 +15,8 @@ import 'meeting_location_screen.dart';
 import '../utils/plans_list.dart';
 import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../explore_screen/users_grid/users_grid_helpers.dart';
 
 /// Función auxiliar para convertir un SVG en BitmapDescriptor aplicando un color.
 Future<BitmapDescriptor> getCustomSvgMarker(
@@ -2156,7 +2158,13 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
           final imageUrl = widget.originalImages[index];
           return InteractiveViewer(
             child: Center(
-              child: Image.network(imageUrl, fit: BoxFit.contain),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (_, __) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (_, __, ___) => const Icon(Icons.error),
+              ),
             ),
           );
         },

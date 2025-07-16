@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:screen_protector/screen_protector.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Función para navegar a la vista de la imagen completa.
 void openFullImage(BuildContext context, String imageUrl) {
@@ -102,7 +103,12 @@ class _FullImageViewerScreenState extends State<FullImageViewerScreen> {
             child: GestureDetector(
               onTap: () => Navigator.pop(context), // Cierra al hacer tap
               child: InteractiveViewer(
-                child: Image.network(widget.imageUrl),
+                child: CachedNetworkImage(
+                  imageUrl: widget.imageUrl,
+                  placeholder: (_, __) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorWidget: (_, __, ___) => const Icon(Icons.error),
+                ),
               ),
             ),
           ),

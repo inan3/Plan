@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../l10n/app_localizations.dart';
 import '../users_managing/user_activity_status.dart';
 import 'chat_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatsScreen extends StatefulWidget {
   final String? sharedText;
@@ -349,7 +350,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundImage: (userPhoto.isNotEmpty)
-                              ? NetworkImage(userPhoto)
+                              ? CachedNetworkImageProvider(userPhoto)
                               : null,
                           backgroundColor: Colors.grey[300],
                         ),
@@ -611,7 +612,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         return ListTile(
           leading: CircleAvatar(
             backgroundImage:
-                (photoUrl.isNotEmpty) ? NetworkImage(photoUrl) : null,
+                (photoUrl.isNotEmpty) ? CachedNetworkImageProvider(photoUrl) : null,
             backgroundColor: Colors.grey[300],
           ),
           title: Row(
@@ -709,7 +710,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundImage: (followerPhoto.isNotEmpty)
-                          ? NetworkImage(followerPhoto)
+                          ? CachedNetworkImageProvider(followerPhoto)
                           : null,
                       backgroundColor: Colors.grey[300],
                     ),
@@ -813,7 +814,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundImage: (followingPhoto.isNotEmpty)
-                          ? NetworkImage(followingPhoto)
+                          ? CachedNetworkImageProvider(followingPhoto)
                           : null,
                       backgroundColor: Colors.grey[300],
                     ),

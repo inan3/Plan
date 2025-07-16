@@ -10,6 +10,7 @@ import '../../models/plan_model.dart';
 import '../users_grid/users_grid_helpers.dart'; // Para funciones de ayuda si hiciera falta
 import '../../main/colors.dart';
 import '../../l10n/app_localizations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Muestra un bottom sheet para compartir el plan con seguidores/seguidos,
 /// y también la opción de compartir con otras apps.
@@ -280,7 +281,8 @@ class PlanShareSheetState extends State<PlanShareSheet> {
             leading: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.blueGrey,
-              backgroundImage: (photo.isNotEmpty) ? NetworkImage(photo) : null,
+              backgroundImage:
+                  (photo.isNotEmpty) ? CachedNetworkImageProvider(photo) : null,
             ),
             title: Text(
               "$name, $age",

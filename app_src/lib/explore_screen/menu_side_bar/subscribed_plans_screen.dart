@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/plan_model.dart';
 import '../../main/colors.dart';
@@ -209,7 +210,7 @@ class SubscribedPlansScreen extends StatelessWidget {
       final url = data['photoUrl'] ?? '';
       return CircleAvatar(
         radius: 20,
-        backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+        backgroundImage: url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
       );
     }
 

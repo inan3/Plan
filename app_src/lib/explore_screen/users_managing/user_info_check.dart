@@ -15,6 +15,8 @@ import '../follow/following_screen.dart';
 import '../future_plans/future_plans.dart';
 import 'report_and_block_user.dart'; // Import para Reportar/Bloquear
 import '../../l10n/app_localizations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 class UserInfoCheck extends StatefulWidget {
   final String userId;
@@ -363,7 +365,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
         width: double.infinity,
         color: Colors.grey[300],
         child: hasCover
-            ? Image.network(_coverImageUrl!, fit: BoxFit.cover)
+            ? CachedNetworkImage(
+                imageUrl: _coverImageUrl!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (_, __, ___) => buildPlaceholder(),
+              )
             : Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -402,7 +410,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                   backgroundColor: Colors.white,
                   child: CircleAvatar(
                     radius: 42,
-                    backgroundImage: NetworkImage(avatarUrl),
+                    backgroundImage: CachedNetworkImageProvider(avatarUrl),
                   ),
                 ),
               ),
@@ -433,7 +441,13 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             children: [
               Center(
                 child: InteractiveViewer(
-                  child: Image.network(imageUrl, fit: BoxFit.contain),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (_, __, ___) => const Icon(Icons.error),
+                  ),
                 ),
               ),
               Positioned(

@@ -20,6 +20,8 @@ import '../../l10n/app_localizations.dart';
 import 'user_images_managing.dart';
 import '../users_managing/presence_service.dart';
 import '../../services/location_update_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -222,11 +224,14 @@ class ProfileScreenState extends State<ProfileScreen> {
                 onProfileUpdated: (url) =>
                     setState(() => profileImageUrl = url),
               ),
-              child: Image.network(
-                coverImages[index],
+              child: CachedNetworkImage(
+                imageUrl: coverImages[index],
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: 300,
+                placeholder: (_, __) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (_, __, ___) => buildPlaceholder(),
               ),
             ),
           ),
@@ -352,7 +357,8 @@ class ProfileScreenState extends State<ProfileScreen> {
     return CircleAvatar(
       radius: 42,
       backgroundColor: hasPhoto ? Colors.transparent : Colors.grey[300],
-      backgroundImage: hasPhoto ? NetworkImage(profileImageUrl!) : null,
+      backgroundImage:
+          hasPhoto ? CachedNetworkImageProvider(profileImageUrl!) : null,
       child: hasPhoto
           ? null
           : const Icon(Icons.person, size: 42, color: Colors.white70),

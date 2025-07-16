@@ -879,7 +879,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       },
       child: CircleAvatar(
         radius: 20,
-        backgroundImage: senderPic.isNotEmpty ? NetworkImage(senderPic) : null,
+        backgroundImage:
+            senderPic.isNotEmpty ? CachedNetworkImageProvider(senderPic) : null,
         backgroundColor: Colors.blueGrey[100],
       ),
     );
@@ -1071,7 +1072,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundImage: pic.isNotEmpty ? NetworkImage(pic) : null,
+                backgroundImage:
+                    pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
                 backgroundColor: Colors.blueGrey[400],
               ),
               const SizedBox(width: 8),
@@ -1132,7 +1134,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 left: 0,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic1.isNotEmpty ? NetworkImage(pic1) : null,
+                  backgroundImage:
+                      pic1.isNotEmpty ? CachedNetworkImageProvider(pic1) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -1140,7 +1143,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 left: overlapOffset,
                 child: CircleAvatar(
                   radius: avatarSize / 2,
-                  backgroundImage: pic2.isNotEmpty ? NetworkImage(pic2) : null,
+                  backgroundImage:
+                      pic2.isNotEmpty ? CachedNetworkImageProvider(pic2) : null,
                   backgroundColor: Colors.blueGrey[400],
                 ),
               ),
@@ -1258,7 +1262,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         leading: CircleAvatar(
                           radius: 22,
                           backgroundImage:
-                              pic.isNotEmpty ? NetworkImage(pic) : null,
+                              pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
                           backgroundColor: Colors.blueGrey[400],
                         ),
                         title: Row(
@@ -1394,7 +1398,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 child: Container(
                   decoration: BoxDecoration(
                     image: DecorationImage(
-                      image: NetworkImage(imageUrl),
+                      image: CachedNetworkImageProvider(imageUrl),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -2150,7 +2154,8 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.blueGrey,
-              backgroundImage: (photo.isNotEmpty) ? NetworkImage(photo) : null,
+              backgroundImage:
+                  (photo.isNotEmpty) ? CachedNetworkImageProvider(photo) : null,
             ),
             title: Text(
               name,
@@ -2244,7 +2249,13 @@ class _FullScreenGalleryPageState extends State<FullScreenGalleryPage> {
             itemBuilder: (context, index) {
               final url = widget.images[index];
               return Center(
-                child: Image.network(url, fit: BoxFit.contain),
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorWidget: (_, __, ___) => const Icon(Icons.error),
+                ),
               );
             },
           ),
