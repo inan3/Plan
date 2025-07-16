@@ -273,7 +273,7 @@ class _ExploreScreenFilterDialogState extends State<ExploreScreenFilterDialog>
       _customPlan = null;
       regionBusqueda = '';
       _regionController.clear();
-      edadRange = const RangeValues(18, 60);
+      edadRange = const RangeValues(18, 80);
       _selectedDate = null;
       _onlyFollowed = false;
       _onlyPlans = false;

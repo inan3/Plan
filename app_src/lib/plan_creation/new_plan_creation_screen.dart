@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../main/colors.dart';
 import '../models/plan_model.dart';
 import 'image_cropper_screen.dart';
@@ -17,6 +19,7 @@ import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../explore_screen/users_grid/users_grid_helpers.dart';
+
 
 /// Función auxiliar para convertir un SVG en BitmapDescriptor aplicando un color.
 Future<BitmapDescriptor> getCustomSvgMarker(
