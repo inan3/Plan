@@ -405,7 +405,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             children: [
               InkWell(
                 onTap:
-                    avatarUrl == null ? null : () => _showFullImage(avatarUrl),
+                    avatarUrl == null ? null : () => _showFullImage(avatarUrl!),
                 customBorder: const CircleBorder(),
                 child: CircleAvatar(
                   radius: 45,
