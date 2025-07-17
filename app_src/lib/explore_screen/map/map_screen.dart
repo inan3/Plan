@@ -147,47 +147,15 @@ class MapScreenState extends State<MapScreen> {
     final limited = _allMarkers.length > maxToShow
         ? _allMarkers.sublist(0, maxToShow)
         : _allMarkers;
-    final adjusted = _distributeOverlappingMarkers(limited);
+    // Evitamos redistribuir los marcadores para que permanezcan fijos al hacer
+    // zoom. Simplemente convertimos la lista limitada en un conjunto y
+    // limpiamos las polilíneas.
     setState(() {
-      _markers = adjusted.markers;
-      _polylines = adjusted.polylines;
+      _markers = limited.toSet();
+      _polylines = {};
     });
   }
 
-  _MarkerOverlapResult _distributeOverlappingMarkers(List<Marker> markers) {
-    final Map<LatLng, List<Marker>> grouped = {};
-    for (var m in markers) {
-      grouped.putIfAbsent(m.position, () => []).add(m);
-    }
-    final Set<Marker> finalMarkers = {};
-    final Set<Polyline> finalPolylines = {};
-    grouped.forEach((pos, group) {
-      if (group.length == 1) {
-        finalMarkers.add(group.first);
-      } else {
-        final n = group.length;
-        const radius = 0.00005;
-        for (int i = 0; i < n; i++) {
-          final angle = (2 * math.pi / n) * i;
-          final latOffset = pos.latitude + radius * math.cos(angle);
-          final lngOffset = pos.longitude + radius * math.sin(angle);
-          final offsetPos = LatLng(latOffset, lngOffset);
-          final newM = group[i].copyWith(positionParam: offsetPos);
-          finalMarkers.add(newM);
-          finalPolylines.add(
-            Polyline(
-              polylineId: PolylineId('${group[i].markerId.value}_$i'),
-              points: [pos, offsetPos],
-              color: Colors.white,
-              width: 2,
-            ),
-          );
-        }
-      }
-    });
-    return _MarkerOverlapResult(
-        markers: finalMarkers, polylines: finalPolylines);
-  }
 
   double _distanceKm(LatLng a, LatLng b) {
     const earthRadius = 6371;
@@ -439,11 +407,3 @@ class MapScreenState extends State<MapScreen> {
   }
 }
 
-class _MarkerOverlapResult {
-  final Set<Marker> markers;
-  final Set<Polyline> polylines;
-  _MarkerOverlapResult({
-    required this.markers,
-    required this.polylines,
-  });
-}
