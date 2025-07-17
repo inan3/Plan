@@ -935,6 +935,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     chatPartnerId: widget.userId,
                     chatPartnerName: userName,
                     chatPartnerPhoto: _profileImageUrl ?? '',
+                    chatPartnerCover: _coverImageUrl ?? '',
                   ),
                 ),
               );

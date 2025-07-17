@@ -66,6 +66,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       chatPartnerId: destUserId,
                       chatPartnerName: "Contacto Ejemplo",
                       chatPartnerPhoto: "",
+                      chatPartnerCover: "",
                     ),
                   ),
                 );
@@ -292,6 +293,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
                 final userName = userData['name']?.toString() ?? 'Usuario';
                 final userPhoto = userData['photoUrl']?.toString() ?? '';
+                final coverUrl = userData['coverPhotoUrl']?.toString() ?? '';
 
                 // Contar no leídos de otherUserId -> currentUserId
                 return FutureBuilder<QuerySnapshot>(
@@ -348,11 +350,9 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       onDismissed: (_) => _deleteChat(otherUserId),
 
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: (userPhoto.isNotEmpty)
-                              ? CachedNetworkImageProvider(userPhoto)
-                              : null,
-                          backgroundColor: Colors.grey[300],
+                        leading: buildProfileAvatar(
+                          userPhoto,
+                          coverUrl: coverUrl,
                         ),
                         title: Text(
                           userName,
@@ -399,6 +399,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                                 chatPartnerId: otherUserId,
                                 chatPartnerName: userName,
                                 chatPartnerPhoto: userPhoto,
+                                chatPartnerCover: coverUrl,
                               ),
                             ),
                           );
@@ -576,6 +577,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           'id': doc.id,
           'name': data['name'] ?? '',
           'photoUrl': data['photoUrl'] ?? '',
+          'coverPhotoUrl': data['coverPhotoUrl'] ?? '',
           'age': data['age']?.toString() ?? '',
           'profile_privacy': data['profile_privacy'] ?? 0,
         };
@@ -606,14 +608,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
       children: _searchResults.map((user) {
         final name = user['name'] ?? 'Desconocido';
         final photoUrl = user['photoUrl'] ?? '';
+        final coverUrl = user['coverPhotoUrl'] ?? '';
         final level = user['privilegeLevel'] ?? 'Básico';
         final isPrivate = user['profile_privacy'] == 1;
 
         return ListTile(
-          leading: CircleAvatar(
-            backgroundImage:
-                (photoUrl.isNotEmpty) ? CachedNetworkImageProvider(photoUrl) : null,
-            backgroundColor: Colors.grey[300],
+          leading: buildProfileAvatar(
+            photoUrl,
+            coverUrl: coverUrl,
           ),
           title: Row(
             children: [
@@ -642,6 +644,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
             user['id'].toString(),
             name,
             photoUrl,
+            coverUrl,
             isPrivate,
           ),
         );
@@ -704,15 +707,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
                   final followerName = uData['name']?.toString() ?? 'Sin nombre';
                   final followerPhoto = uData['photoUrl']?.toString() ?? '';
+                  final followerCover = uData['coverPhotoUrl']?.toString() ?? '';
                   final level = uData['privilegeLevel'] ?? 'Básico';
                   final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: (followerPhoto.isNotEmpty)
-                          ? CachedNetworkImageProvider(followerPhoto)
-                          : null,
-                      backgroundColor: Colors.grey[300],
+                    leading: buildProfileAvatar(
+                      followerPhoto,
+                      coverUrl: followerCover,
                     ),
                     title: Row(
                       children: [
@@ -741,6 +743,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       followerId,
                       followerName,
                       followerPhoto,
+                      followerCover,
                       isPrivate,
                     ),
                   );
@@ -808,15 +811,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
                   final followingName = uData['name']?.toString() ?? 'Sin nombre';
                   final followingPhoto = uData['photoUrl']?.toString() ?? '';
+                  final followingCover = uData['coverPhotoUrl']?.toString() ?? '';
                   final level = uData['privilegeLevel'] ?? 'Básico';
                   final isPrivate = (uData['profile_privacy'] ?? 0) == 1;
 
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: (followingPhoto.isNotEmpty)
-                          ? CachedNetworkImageProvider(followingPhoto)
-                          : null,
-                      backgroundColor: Colors.grey[300],
+                    leading: buildProfileAvatar(
+                      followingPhoto,
+                      coverUrl: followingCover,
                     ),
                     title: Row(
                       children: [
@@ -845,6 +847,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       followingId,
                       followingName,
                       followingPhoto,
+                      followingCover,
                       isPrivate,
                     ),
                   );
@@ -862,6 +865,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     String userId,
     String name,
     String photoUrl,
+    String coverUrl,
     bool isUserPrivate,
   ) async {
     if (isUserPrivate) {
@@ -903,6 +907,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           chatPartnerId: userId,
           chatPartnerName: name,
           chatPartnerPhoto: photoUrl,
+          chatPartnerCover: coverUrl,
         ),
       ),
     );
