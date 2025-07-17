@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:collection';
-import 'package:vector_graphics/vector_graphics.dart' as vg;
+import 'package:flutter_svg/flutter_svg.dart' as svg;
 import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
