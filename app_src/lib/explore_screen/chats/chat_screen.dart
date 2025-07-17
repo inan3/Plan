@@ -713,6 +713,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                 ),
                 child: GestureDetector(
                   onLongPress: () {
+                    bool canEdit = false;
+                    final ts = data['timestamp'];
+                    if (data['senderId'] == currentUserId && ts is Timestamp) {
+                      final sent = ts.toDate();
+                      canEdit = DateTime.now().difference(sent).inMinutes < 5;
+                    }
                     showMessageOptionsDialog(
                       context,
                       {
@@ -723,6 +729,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                         'senderName': isMe ? 'Tú' : widget.chatPartnerName,
                         'timestamp': data['timestamp'],
                       },
+                      canEdit: canEdit,
                       onEdit: () {
                         startEditing({
                           'docId': item.id,
