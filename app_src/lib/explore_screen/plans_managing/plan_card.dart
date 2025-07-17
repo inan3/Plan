@@ -16,6 +16,7 @@ import 'frosted_plan_dialog_state.dart';
 import '../../l10n/app_localizations.dart';
 import 'plan_chat_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../utils/join_state.dart';
 
 // Importamos el widget de estado de actividad:
 import '../users_managing/user_activity_status.dart';
@@ -41,7 +42,6 @@ class PlanCard extends StatefulWidget {
   State<PlanCard> createState() => PlanCardState();
 }
 
-enum JoinState { none, requested, rejoin }
 
 class PlanCardState extends State<PlanCard> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
@@ -69,6 +69,7 @@ class PlanCardState extends State<PlanCard> {
 
     _checkIfLiked();
     _checkIfPendingJoinRequest();
+    _checkIfParticipant();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -115,6 +116,21 @@ class PlanCardState extends State<PlanCard> {
         _joinState = JoinState.requested;
         _pendingNotificationId = q.docs.first.id;
       });
+    }
+  }
+
+  Future<void> _checkIfParticipant() async {
+    if (_currentUser == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(widget.plan.id)
+        .get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>;
+      final uids = List<String>.from(data['participants'] ?? []);
+      if (uids.contains(_currentUser!.uid)) {
+        setState(() => _joinState = JoinState.participating);
+      }
     }
   }
 
@@ -165,6 +181,10 @@ class PlanCardState extends State<PlanCard> {
   Future<void> _onJoinTap() async {
     if (_currentUser == null) return;
     final plan = widget.plan;
+
+    if (_joinState == JoinState.participating) {
+      return;
+    }
 
     // Si ya participas
     if (plan.participants?.contains(_currentUser!.uid) ?? false) {
@@ -288,6 +308,39 @@ class PlanCardState extends State<PlanCard> {
     } catch (e) {}
 
     // La notificación y el push serán generados por Cloud Functions
+  }
+
+  void _confirmLeavePlan() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('¿Quieres abandonar este plan?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                Navigator.pop(context);
+                final uid = _currentUser?.uid;
+                if (uid == null) return;
+                await _removeParticipant(uid);
+                await PlanModel.updateUserHasActivePlan(uid);
+                setState(() => _joinState = JoinState.none);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Has abandonado el plan ${widget.plan.type}.')),
+                );
+              },
+              child: const Text('Sí'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1036,6 +1089,27 @@ class PlanCardState extends State<PlanCard> {
     final int pCount = plan.participants?.length ?? 0;
     final int maxP = plan.maxParticipants ?? 0;
     final bool isFull = (maxP > 0 && pCount >= maxP);
+
+    if (_joinState == JoinState.participating) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Container(
+            color: Colors.black.withOpacity(0.2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Text(
+              AppLocalizations.of(context).participatingPlan,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     if (isFull) {
       // Cupo completo => texto
       return ClipRRect(
@@ -1065,6 +1139,9 @@ class PlanCardState extends State<PlanCard> {
           break;
         case JoinState.requested:
           buttonText = AppLocalizations.of(context).joinRequested;
+          break;
+        case JoinState.participating:
+          buttonText = AppLocalizations.of(context).participatingPlan;
           break;
         case JoinState.rejoin:
           buttonText = AppLocalizations.of(context).join;
@@ -1104,6 +1181,29 @@ class PlanCardState extends State<PlanCard> {
         ),
       );
     }
+  }
+
+  Widget _buildLeaveButton() {
+    return GestureDetector(
+      onTap: _confirmLeavePlan,
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.exit_to_app,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1195,6 +1295,17 @@ class PlanCardState extends State<PlanCard> {
           );
         }
         _participants = snap.data ?? [];
+        if (_currentUser != null) {
+          final isPart =
+              _participants.any((p) => p['uid'] == _currentUser!.uid);
+          if (isPart && _joinState != JoinState.participating) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() => _joinState = JoinState.participating);
+              }
+            });
+          }
+        }
         // Contamos solo los participantes reales (sin incluir al creador)
         final totalP = widget.plan.participants?.length ?? 0;
         final maxP = plan.maxParticipants ?? 0;
@@ -1247,7 +1358,9 @@ class PlanCardState extends State<PlanCard> {
                           ),
                         ),
                         const Spacer(),
-                        _buildJoinFrosted(),
+                        _joinState == JoinState.participating
+                            ? _buildLeaveButton()
+                            : _buildJoinFrosted(),
                       ],
                     ),
                   ),

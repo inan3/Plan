@@ -163,6 +163,7 @@ class AppLocalizations {
       'invite_to_plan': 'Invítale a un Plan',
       'join': 'Unirse',
       'join_requested': 'Unión solicitada',
+      'participating_plan': 'Participas en este plan',
       'full_capacity': 'Cupo completo',
       'participants': 'participantes',
       'participants_title': 'Participantes',
@@ -460,6 +461,7 @@ class AppLocalizations {
       'invite_to_plan': 'Invite to a Plan',
       'join': 'Join',
       'join_requested': 'Join requested',
+      'participating_plan': 'You are participating in this plan',
       'full_capacity': 'Full capacity',
       'participants': 'participants',
       'participants_title': 'Participants',
@@ -767,6 +769,7 @@ class AppLocalizations {
   String get participantsTitle => _t('participants_title');
   String get attends => _t('attends');
   String get joinNow => _t('join_now');
+  String get participatingPlan => _t('participating_plan');
   String get planChat => _t('plan_chat');
   String get locationUnavailable => _t('location_unavailable');
   String get additionalInfo => _t('additional_info');
