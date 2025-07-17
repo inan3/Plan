@@ -313,31 +313,37 @@ class ExploreScreenState extends State<ExploreScreen> {
 
   Future<List<String>> _fetchUserIdsWithPlans(
       List<String> planFilters, DateTime? dateFilter) async {
-    QuerySnapshot snapshot =
+    final snapshot =
         await FirebaseFirestore.instance.collection('plans').get();
     final now = DateTime.now();
-    Set<String> uids = {};
-    for (var doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final Timestamp? ts = data['start_timestamp'];
-      if (ts == null) continue;
-      final startDate = ts.toDate();
+    final Set<String> uids = {};
 
+    for (final doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+
+      // Solo consideramos planes públicos y no especiales
+      if ((data['visibility'] ?? 'Público') != 'Público') continue;
+      if ((data['special_plan'] ?? 0) != 0) continue;
+
+      final Timestamp? finishTs = data['finish_timestamp'];
+      if (finishTs == null || !finishTs.toDate().isAfter(now)) continue;
+
+      final Timestamp? startTs = data['start_timestamp'];
+      final startDate = startTs?.toDate();
       if (dateFilter != null) {
-        if (startDate.year != dateFilter.year ||
+        if (startDate == null ||
+            startDate.year != dateFilter.year ||
             startDate.month != dateFilter.month ||
             startDate.day != dateFilter.day) {
           continue;
         }
-      } else {
-        if (!startDate.isAfter(now)) continue;
       }
 
       if (planFilters.isEmpty) {
         uids.add(data['createdBy'].toString());
       } else {
         final String planType = data['type']?.toString().toLowerCase() ?? '';
-        for (var filter in planFilters) {
+        for (final filter in planFilters) {
           if (planType.contains(filter.toLowerCase().trim())) {
             uids.add(data['createdBy'].toString());
             break;
@@ -345,6 +351,7 @@ class ExploreScreenState extends State<ExploreScreen> {
         }
       }
     }
+
     return uids.toList();
   }
 
