@@ -33,7 +33,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class ProfileScreenState extends State<ProfileScreen> {
-  final String placeholderImageUrl = "https://via.placeholder.com/150";
+  final String placeholderImageUrl = 'assets/usuario.svg';
 
   // Foto de perfil
   String? profileImageUrl;
