@@ -9,6 +9,7 @@ import '../../main/colors.dart';
 import '../users_managing/block_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 /// Representa un resultado de búsqueda (usuario o plan).
 class SearchResultItem {
@@ -315,12 +316,9 @@ class _SearcherState extends State<Searcher> {
                     Widget tile = ListTile(
                       dense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      leading: CircleAvatar(
+                      leading: buildProfileAvatar(
+                        item.avatarUrl,
                         radius: 20,
-                        backgroundImage: (item.avatarUrl.isNotEmpty)
-                            ? CachedNetworkImageProvider(item.avatarUrl)
-                            : null,
-                        backgroundColor: Colors.grey[300],
                       ),
                       title: Text(
                         item.title,

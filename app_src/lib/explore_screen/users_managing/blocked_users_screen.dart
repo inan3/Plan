@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 import 'user_activity_status.dart';
 import '../../l10n/app_localizations.dart';
@@ -164,10 +165,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                   itemBuilder: (_, idx) {
                     final u = _users[idx];
                     return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: u.photoUrl.isNotEmpty
-                            ? CachedNetworkImageProvider(u.photoUrl)
-                            : null,
+                      leading: buildProfileAvatar(
+                        u.photoUrl,
+                        radius: 20,
                       ),
                       title: Row(
                         children: [
