@@ -370,14 +370,13 @@ class PlansInMapScreen {
       {int width = 256, int height = 256}) async {
     if (!url.startsWith('http')) {
       if (url.endsWith('.svg')) {
-        final String svgString = await rootBundle.loadString(url);
-        final svg.DrawableRoot svgDrawableRoot =
-            await svg.fromSvgString(svgString, url);
-        final ui.Picture picture =
-            svgDrawableRoot.toPicture(size: Size(width.toDouble(), height.toDouble()));
-        final ui.Image image = await picture.toImage(width, height);
-        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-        return bytes!.buffer.asUint8List();
+        final svgString = await rootBundle.loadString(url);
+        final loader = svg.SvgStringLoader(svgString);
+        final pictureInfo = await svg.vg.loadPicture(loader, null);
+        final picture = pictureInfo.picture;
+        final image = await picture.toImage(width, height);
+        final bd = await image.toByteData(format: ui.ImageByteFormat.png);
+        return bd!.buffer.asUint8List();
       }
       final data = await rootBundle.load(url);
       return data.buffer.asUint8List();
@@ -400,8 +399,8 @@ class PlansInMapScreen {
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 1.0));
       }
-      final bytes = await _downloadImageAsBytes(finalUrl,
-          width: 256, height: 256);
+      final bytes =
+          await _downloadImageAsBytes(finalUrl, width: 256, height: 256);
       final codec = await ui.instantiateImageCodec(bytes,
           targetWidth: 256, targetHeight: 256);
       final frame = await codec.getNextFrame();
@@ -500,8 +499,7 @@ class PlansInMapScreen {
       }
       Uint8List? bytes;
       if (finalUrl.isNotEmpty) {
-        bytes = await _downloadImageAsBytes(finalUrl,
-            width: 64, height: 64);
+        bytes = await _downloadImageAsBytes(finalUrl, width: 64, height: 64);
       }
       ui.Image? av;
       if (bytes != null) {
