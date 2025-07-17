@@ -20,6 +20,7 @@ import '../users_managing/user_activity_status.dart';
 import 'attendance_managing.dart';
 import '../../main/colors.dart';
 import '../profile/profile_screen.dart';
+import '../../utils/join_state.dart';
 
 class FrostedPlanDialog extends StatefulWidget {
   final PlanModel plan;
@@ -47,6 +48,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
   String? _creatorPhotoUrl;
   bool _liked = false;
   int _likeCount = 0;
+  JoinState _joinState = JoinState.none;
+  String? _pendingNotificationId;
 
   late PageController _pageController;
   int _currentPageIndex = 0;
@@ -78,6 +81,8 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     _likeCount = widget.plan.likes;
     _creatorPhotoUrl = widget.plan.creatorProfilePic;
     _checkIfLiked();
+    _checkIfPendingJoinRequest();
+    _checkIfParticipant();
     _fetchCreatorInfo();
     _pageController = PageController();
     _incrementViewCount();
@@ -138,6 +143,45 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final favourites = data['favourites'] as List<dynamic>? ?? [];
     if (favourites.contains(widget.plan.id)) {
       setState(() => _liked = true);
+    }
+  }
+
+  Future<void> _checkIfPendingJoinRequest() async {
+    if (_currentUser == null) return;
+
+    if (widget.plan.participants?.contains(_currentUser!.uid) ?? false) {
+      return;
+    }
+
+    final q = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('type', isEqualTo: 'join_request')
+        .where('senderId', isEqualTo: _currentUser!.uid)
+        .where('receiverId', isEqualTo: widget.plan.createdBy)
+        .where('planId', isEqualTo: widget.plan.id)
+        .limit(1)
+        .get();
+
+    if (q.docs.isNotEmpty) {
+      setState(() {
+        _joinState = JoinState.requested;
+        _pendingNotificationId = q.docs.first.id;
+      });
+    }
+  }
+
+  Future<void> _checkIfParticipant() async {
+    if (_currentUser == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('plans')
+        .doc(widget.plan.id)
+        .get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>;
+      final uids = List<String>.from(data['participants'] ?? []);
+      if (uids.contains(_currentUser!.uid)) {
+        setState(() => _joinState = JoinState.participating);
+      }
     }
   }
 
@@ -678,6 +722,23 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     final maxP = plan.maxParticipants ?? 0;
     final bool isFull = (maxP > 0 && pCount >= maxP);
 
+    if (_joinState == JoinState.participating) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Text(
+            AppLocalizations.of(context).participatingPlan,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        ),
+      );
+    }
+
     if (isFull) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(30),
@@ -698,42 +759,24 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
       );
     }
 
+    String buttonText;
+    switch (_joinState) {
+      case JoinState.none:
+        buttonText = AppLocalizations.of(context).joinNow;
+        break;
+      case JoinState.requested:
+        buttonText = AppLocalizations.of(context).joinRequested;
+        break;
+      case JoinState.rejoin:
+        buttonText = AppLocalizations.of(context).joinNow;
+        break;
+      case JoinState.participating:
+        buttonText = AppLocalizations.of(context).participatingPlan;
+        break;
+    }
+
     return GestureDetector(
-      onTap: () async {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return;
-        if (plan.createdBy == user.uid) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No puedes unirte a tu propio plan')),
-          );
-          return;
-        }
-        if (plan.participants?.contains(user.uid) ?? false) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Ya estás suscrito a este plan!')),
-          );
-          return;
-        }
-        if (maxP > 0 && pCount >= maxP) {
-          return;
-        }
-
-        final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
-        await FirebaseFirestore.instance.collection('notifications').add({
-          'type': 'join_request',
-          'receiverId': plan.createdBy,
-          'senderId': user.uid,
-          'planId': plan.id,
-          'planType': planType,
-          'timestamp': FieldValue.serverTimestamp(),
-          'read': false,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('¡Tu solicitud de unión se ha enviado!')),
-        );
-      },
+      onTap: _onJoinTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: Container(
@@ -753,7 +796,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               ),
               const SizedBox(width: 6),
               Text(
-                AppLocalizations.of(context).joinNow,
+                buttonText,
                 style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
             ],
@@ -1037,6 +1080,106 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
     } catch (e) {}
 
     // La notificación y el push serán generados por Cloud Functions
+  }
+
+  Future<void> _createJoinRequest() async {
+    if (_currentUser == null) return;
+
+    final plan = widget.plan;
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUser!.uid)
+        .get();
+
+    String senderName = 'Usuario';
+    String senderPhoto = '';
+    if (userDoc.exists && userDoc.data() != null) {
+      final udata = userDoc.data()!;
+      senderName = udata['name'] ?? senderName;
+      senderPhoto = udata['photoUrl'] ?? senderPhoto;
+    }
+
+    final planType = plan.type.isNotEmpty ? plan.type : 'Plan';
+    final docRef =
+        await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'join_request',
+      'receiverId': plan.createdBy,
+      'senderId': _currentUser!.uid,
+      'senderName': senderName,
+      'senderProfilePic': senderPhoto,
+      'planId': plan.id,
+      'planType': planType,
+      'timestamp': FieldValue.serverTimestamp(),
+      'read': false,
+    });
+
+    _pendingNotificationId = docRef.id;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('¡Tu solicitud de unión se ha enviado!')),
+    );
+  }
+
+  Future<void> _cancelJoinRequest() async {
+    try {
+      if (_pendingNotificationId != null) {
+        await FirebaseFirestore.instance
+            .collection('notifications')
+            .doc(_pendingNotificationId!)
+            .delete();
+
+        _pendingNotificationId = null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Has cancelado tu solicitud de unión.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cancelar solicitud: $e')),
+      );
+    }
+  }
+
+  Future<void> _onJoinTap() async {
+    if (_currentUser == null) return;
+    final plan = widget.plan;
+
+    if (_joinState == JoinState.participating) {
+      return;
+    }
+
+    if (plan.participants?.contains(_currentUser!.uid) ?? false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('¡Ya estás suscrito a este plan!')),
+      );
+      return;
+    }
+
+    if (plan.createdBy == _currentUser!.uid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No puedes unirte a tu propio plan')),
+      );
+      return;
+    }
+
+    final int pCount = plan.participants?.length ?? 0;
+    final int maxP = plan.maxParticipants ?? 0;
+    if (maxP > 0 && pCount >= maxP) {
+      return;
+    }
+
+    if (_joinState == JoinState.requested) {
+      await _cancelJoinRequest();
+      setState(() {
+        _joinState = JoinState.rejoin;
+      });
+    } else {
+      await _createJoinRequest();
+      setState(() {
+        _joinState = JoinState.requested;
+      });
+    }
   }
 
   Widget _buildParticipantsCorner(List<Map<String, dynamic>> participants) {
@@ -1614,6 +1757,17 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
               final allParts = (snapshot.data ?? [])
                   .where((p) => p['uid'] != plan.createdBy)
                   .toList();
+              if (_currentUser != null) {
+                final isPart =
+                    allParts.any((p) => p['uid'] == _currentUser!.uid);
+                if (isPart && _joinState != JoinState.participating) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() => _joinState = JoinState.participating);
+                    }
+                  });
+                }
+              }
 
               return Stack(
                 children: [
