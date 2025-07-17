@@ -6,8 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:collection';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter_svg/flutter_svg.dart' as svg;
+import 'package:vector_graphics/vector_graphics.dart' as vg;
 import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
@@ -371,11 +370,13 @@ class PlansInMapScreen {
       {int width = 256, int height = 256}) async {
     if (!url.startsWith('http')) {
       if (url.endsWith('.svg')) {
-        final svgString = await rootBundle.loadString(url);
-        final drawableRoot = await svg.fromSvgString(svgString, url);
-        final picture =
-            drawableRoot.toPicture(size: ui.Size(width.toDouble(), height.toDouble()));
-        final image = await picture.toImage(width, height);
+        final String svgString = await rootBundle.loadString(url);
+        final vg.PictureInfo pictureInfo = await vg.loadPicture(
+          vg.SvgStringLoader(svgString),
+          null,
+        );
+        final ui.Picture picture = pictureInfo.picture;
+        final ui.Image image = await picture.toImage(width, height);
         final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
         return bytes!.buffer.asUint8List();
       }
