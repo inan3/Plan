@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
@@ -877,12 +878,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           UserInfoCheck.open(context, senderId);
         }
       },
-      child: CircleAvatar(
-        radius: 20,
-        backgroundImage:
-            senderPic.isNotEmpty ? CachedNetworkImageProvider(senderPic) : null,
-        backgroundColor: Colors.blueGrey[100],
-      ),
+      child: buildProfileAvatar(senderPic, radius: 20),
     );
 
     final nameWidget = GestureDetector(
@@ -1070,12 +1066,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundImage:
-                    pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
-                backgroundColor: Colors.blueGrey[400],
-              ),
+              buildProfileAvatar(pic, radius: 16),
               const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1132,20 +1123,16 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             children: [
               Positioned(
                 left: 0,
-                child: CircleAvatar(
+                child: buildProfileAvatar(
+                  pic1,
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic1.isNotEmpty ? CachedNetworkImageProvider(pic1) : null,
-                  backgroundColor: Colors.blueGrey[400],
                 ),
               ),
               Positioned(
                 left: overlapOffset,
-                child: CircleAvatar(
+                child: buildProfileAvatar(
+                  pic2,
                   radius: avatarSize / 2,
-                  backgroundImage:
-                      pic2.isNotEmpty ? CachedNetworkImageProvider(pic2) : null,
-                  backgroundColor: Colors.blueGrey[400],
                 ),
               ),
               if (hasExtras)
@@ -1259,11 +1246,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                           if (uid.isEmpty || uid == _currentUser?.uid) return;
                           UserInfoCheck.open(context, uid);
                         },
-                        leading: CircleAvatar(
+                        leading: buildProfileAvatar(
+                          pic,
                           radius: 22,
-                          backgroundImage:
-                              pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
-                          backgroundColor: Colors.blueGrey[400],
                         ),
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1531,25 +1516,9 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
         children: [
           GestureDetector(
             onTap: _openCreator,
-            child: CircleAvatar(
+            child: buildProfileAvatar(
+              _creatorPhotoUrl,
               radius: 20,
-              backgroundColor: Colors.blueGrey[400],
-              child: ClipOval(
-                child: (_creatorPhotoUrl?.isNotEmpty ?? false)
-                    ? CachedNetworkImage(
-                        imageUrl: _creatorPhotoUrl!,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2)),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.person, color: Colors.white),
-                      )
-                    : const Icon(Icons.person, color: Colors.white),
-              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -2152,10 +2121,9 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.blueGrey,
-              backgroundImage:
-                  (photo.isNotEmpty) ? CachedNetworkImageProvider(photo) : null,
+            leading: buildProfileAvatar(
+              photo,
+              radius: 20,
             ),
             title: Text(
               name,

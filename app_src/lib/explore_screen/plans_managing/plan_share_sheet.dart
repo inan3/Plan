@@ -278,11 +278,9 @@ class PlanShareSheetState extends State<PlanShareSheet> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: ListTile(
-            leading: CircleAvatar(
+            leading: buildProfileAvatar(
+              photo,
               radius: 20,
-              backgroundColor: Colors.blueGrey,
-              backgroundImage:
-                  (photo.isNotEmpty) ? CachedNetworkImageProvider(photo) : null,
             ),
             title: Text(
               "$name, $age",
