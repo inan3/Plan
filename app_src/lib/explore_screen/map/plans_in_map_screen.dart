@@ -371,11 +371,10 @@ class PlansInMapScreen {
     if (!url.startsWith('http')) {
       if (url.endsWith('.svg')) {
         final String svgString = await rootBundle.loadString(url);
-        final vg.PictureInfo pictureInfo = await vg.loadPicture(
-          vg.SvgStringLoader(svgString),
-          null,
-        );
-        final ui.Picture picture = pictureInfo.picture;
+        final svg.DrawableRoot svgDrawableRoot =
+            await svg.fromSvgString(svgString, url);
+        final ui.Picture picture =
+            svgDrawableRoot.toPicture(size: Size(width.toDouble(), height.toDouble()));
         final ui.Image image = await picture.toImage(width, height);
         final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
         return bytes!.buffer.asUint8List();
