@@ -12,6 +12,7 @@ import '../plans_managing/frosted_plan_dialog_state.dart';
 import '../../models/plan_model.dart';
 
 import '../users_managing/user_info_check.dart';
+import '../profile/user_images_managing.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class _MarkerData {
@@ -292,7 +293,11 @@ class PlansInMapScreen {
       if (lng < bounds.southwest.longitude || lng > bounds.northeast.longitude)
         continue;
 
-      final photoUrl = data['photoUrl'] as String? ?? '';
+      String photoUrl = data['photoUrl']?.toString() ?? '';
+      if (photoUrl.isEmpty) {
+        final cover = data['coverPhotoUrl']?.toString() ?? '';
+        photoUrl = cover.isNotEmpty ? cover : UserImagesManaging.placeholderImageUrl;
+      }
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
       markers.add(
@@ -351,7 +356,12 @@ class PlansInMapScreen {
     if (!doc.exists) return null;
     final data = doc.data() as Map<String, dynamic>?;
     if (data == null) return null;
-    return data['photoUrl'] as String?;
+    final photo = data['photoUrl']?.toString();
+    if (photo != null && photo.isNotEmpty) return photo;
+    final cover = data['coverPhotoUrl']?.toString();
+    return (cover != null && cover.isNotEmpty)
+        ? cover
+        : UserImagesManaging.placeholderImageUrl;
   }
 
   Future<Uint8List> _downloadImageAsBytes(String url) async {
@@ -365,12 +375,15 @@ class PlansInMapScreen {
     bool showText = true,
   }) async {
     try {
-      final cacheKey = 'plan:' + photoUrl + ':' + planType;
+      final String finalUrl = photoUrl.isNotEmpty
+          ? photoUrl
+          : UserImagesManaging.placeholderImageUrl;
+      final cacheKey = 'plan:' + finalUrl + ':' + planType;
       final cached = _getFromCache(cacheKey);
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 1.0));
       }
-      final bytes = await _downloadImageAsBytes(photoUrl);
+      final bytes = await _downloadImageAsBytes(finalUrl);
       final codec = await ui.instantiateImageCodec(bytes,
           targetWidth: 256, targetHeight: 256);
       final frame = await codec.getNextFrame();
@@ -454,14 +467,17 @@ class PlansInMapScreen {
       // Aumentamos el tamaño base del marcador de usuario sin plan para que la
       // imagen no se muestre achatada en vertical.
       const double sz = 120, r = 45;
-      final cacheKey = 'user:' + photoUrl;
+      final String finalUrl = photoUrl.isNotEmpty
+          ? photoUrl
+          : UserImagesManaging.placeholderImageUrl;
+      final cacheKey = 'user:' + finalUrl;
       final cached = _getFromCache(cacheKey);
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 0.5));
       }
       Uint8List? bytes;
-      if (photoUrl.isNotEmpty) {
-        bytes = await _downloadImageAsBytes(photoUrl);
+      if (finalUrl.isNotEmpty) {
+        bytes = await _downloadImageAsBytes(finalUrl);
       }
       ui.Image? av;
       if (bytes != null) {
