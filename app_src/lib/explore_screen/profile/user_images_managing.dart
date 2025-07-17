@@ -18,7 +18,7 @@ import '../../l10n/app_localizations.dart';
 
 class UserImagesManaging {
   static final ImagePicker _imagePicker = ImagePicker();
-  static const placeholderImageUrl = "https://via.placeholder.com/150";
+  static const placeholderImageUrl = 'assets/usuario.svg';
 
   static Future<bool> checkExplicit(File image) async {
     try {
