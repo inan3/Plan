@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:collection';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_svg/flutter_svg.dart' as svg;
 import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
@@ -365,13 +367,23 @@ class PlansInMapScreen {
         : UserImagesManaging.placeholderImageUrl;
   }
 
-  Future<Uint8List> _downloadImageAsBytes(String url) async {
-    if (url.startsWith('http')) {
-      final file = await DefaultCacheManager().getSingleFile(url);
-      return await file.readAsBytes();
+  Future<Uint8List> _downloadImageAsBytes(String url,
+      {int width = 256, int height = 256}) async {
+    if (!url.startsWith('http')) {
+      if (url.endsWith('.svg')) {
+        final svgString = await rootBundle.loadString(url);
+        final drawableRoot = await svg.fromSvgString(svgString, url);
+        final picture =
+            drawableRoot.toPicture(size: ui.Size(width.toDouble(), height.toDouble()));
+        final image = await picture.toImage(width, height);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        return bytes!.buffer.asUint8List();
+      }
+      final data = await rootBundle.load(url);
+      return data.buffer.asUint8List();
     }
-    final byteData = await rootBundle.load(url);
-    return byteData.buffer.asUint8List();
+    final file = await DefaultCacheManager().getSingleFile(url);
+    return await file.readAsBytes();
   }
 
   Future<_MarkerData> _buildPlanMarker(
@@ -388,7 +400,8 @@ class PlansInMapScreen {
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 1.0));
       }
-      final bytes = await _downloadImageAsBytes(finalUrl);
+      final bytes = await _downloadImageAsBytes(finalUrl,
+          width: 256, height: 256);
       final codec = await ui.instantiateImageCodec(bytes,
           targetWidth: 256, targetHeight: 256);
       final frame = await codec.getNextFrame();
@@ -487,7 +500,8 @@ class PlansInMapScreen {
       }
       Uint8List? bytes;
       if (finalUrl.isNotEmpty) {
-        bytes = await _downloadImageAsBytes(finalUrl);
+        bytes = await _downloadImageAsBytes(finalUrl,
+            width: 64, height: 64);
       }
       ui.Image? av;
       if (bytes != null) {
