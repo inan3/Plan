@@ -14,6 +14,7 @@ import '../users_managing/user_info_check.dart';
 import '../plans_managing/plan_card.dart'; // <--- Asegúrate de importar tu PlanCard
 import '../plans_managing/firebase_services.dart'; // <--- Para fetchPlanParticipants, si lo tienes
 import '../plans_managing/frosted_plan_dialog_state.dart';
+import '../users_grid/users_grid_helpers.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -583,13 +584,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                               );
                             },
-                            child: CircleAvatar(
+                            child: buildProfileAvatar(
+                              senderPhoto,
                               radius: 25,
-                              backgroundImage: senderPhoto.isNotEmpty
-                                  ? CachedNetworkImageProvider(senderPhoto)
-                                  : CachedNetworkImageProvider(
-                                      'https://cdn-icons-png.flaticon.com/512/847/847969.png',
-                                    ),
                             ),
                           );
 
@@ -1027,9 +1024,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     Widget buildAvatar(Map<String, dynamic> data) {
       final url = data['photoUrl'] ?? '';
-      return CircleAvatar(
+      return buildProfileAvatar(
+        url,
         radius: 20,
-        backgroundImage: url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
       );
     }
 
