@@ -22,7 +22,8 @@ Widget buildPlaceholder() {
 /// Avatar circular a partir de la foto de perfil. Si no existe, se intenta
 /// utilizar la imagen de fondo como alternativa. Si tampoco hay imagen de
 /// fondo, se muestra un placeholder con silueta.
-Widget buildProfileAvatar(String? photoUrl, {String? coverUrl}) {
+Widget buildProfileAvatar(String? photoUrl,
+    {String? coverUrl, double radius = 20}) {
   String? finalUrl;
   if (photoUrl != null && photoUrl.isNotEmpty) {
     finalUrl = photoUrl;
@@ -32,14 +33,15 @@ Widget buildProfileAvatar(String? photoUrl, {String? coverUrl}) {
 
   if (finalUrl != null) {
     return CircleAvatar(
-      radius: 20,
+      radius: radius,
       backgroundImage: CachedNetworkImageProvider(finalUrl),
     );
   } else {
     return CircleAvatar(
-      radius: 20,
+      radius: radius,
       backgroundColor: Colors.grey[200],
-      child: SvgPicture.asset('assets/usuario.svg', width: 20, height: 20),
+      child: SvgPicture.asset('assets/usuario.svg',
+          width: radius, height: radius),
     );
   }
 }

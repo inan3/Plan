@@ -221,6 +221,7 @@ class _UsersGridState extends State<UsersGrid> {
           chatPartnerId: userId,
           chatPartnerName: userData['name'] ?? 'Usuario',
           chatPartnerPhoto: userData['photoUrl'] ?? '',
+          chatPartnerCover: userData['coverPhotoUrl'] ?? '',
         ),
       ),
     );
