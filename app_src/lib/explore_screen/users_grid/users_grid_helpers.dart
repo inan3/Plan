@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:math' as math;
 
 /// Placeholder genérico para cuando falle el loading de una imagen.
@@ -18,18 +19,27 @@ Widget buildPlaceholder() {
   );
 }
 
-/// Avatar circular dado un `photoUrl`. Si está vacío o nulo, muestra un ícono.
-Widget buildProfileAvatar(String? photoUrl) {
+/// Avatar circular a partir de la foto de perfil. Si no existe, se intenta
+/// utilizar la imagen de fondo como alternativa. Si tampoco hay imagen de
+/// fondo, se muestra un placeholder con silueta.
+Widget buildProfileAvatar(String? photoUrl, {String? coverUrl}) {
+  String? finalUrl;
   if (photoUrl != null && photoUrl.isNotEmpty) {
+    finalUrl = photoUrl;
+  } else if (coverUrl != null && coverUrl.isNotEmpty) {
+    finalUrl = coverUrl;
+  }
+
+  if (finalUrl != null) {
     return CircleAvatar(
       radius: 20,
-      backgroundImage: CachedNetworkImageProvider(photoUrl),
+      backgroundImage: CachedNetworkImageProvider(finalUrl),
     );
   } else {
-    return const CircleAvatar(
+    return CircleAvatar(
       radius: 20,
-      backgroundColor: Colors.grey,
-      child: Icon(Icons.person, color: Colors.white),
+      backgroundColor: Colors.grey[200],
+      child: SvgPicture.asset('assets/usuario.svg', width: 20, height: 20),
     );
   }
 }

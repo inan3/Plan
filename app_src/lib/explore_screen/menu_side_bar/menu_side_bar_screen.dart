@@ -274,7 +274,8 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     .doc(currentUserId)
                     .get(),
                 builder: (context, snapshot) {
-                  String profileImageUrl = "https://via.placeholder.com/150";
+                  String profileImageUrl = '';
+                  String coverUrl = '';
                   String userName = "Cargando...";
 
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -306,7 +307,9 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundImage: CachedNetworkImageProvider(profileImageUrl),
+                          backgroundColor: Colors.grey.shade200,
+                          child: SvgPicture.asset('assets/usuario.svg',
+                              width: 50, height: 50),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -321,22 +324,27 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                     );
                   }
 
-                  final userData =
-                      snapshot.data!.data() as Map<String, dynamic>?;
-                  profileImageUrl = userData?['photoUrl'] ?? profileImageUrl;
+                  final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                  profileImageUrl = userData?['photoUrl'] ?? '';
+                  coverUrl = userData?['coverPhotoUrl'] ?? '';
                   userName = userData?['name'] ?? "Usuario";
+
+                  final String? finalUrl = profileImageUrl.isNotEmpty
+                      ? profileImageUrl
+                      : (coverUrl.isNotEmpty ? coverUrl : null);
 
                   return Column(
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: CachedNetworkImageProvider(profileImageUrl),
+                        backgroundImage: finalUrl != null
+                            ? CachedNetworkImageProvider(finalUrl)
+                            : null,
                         backgroundColor: Colors.grey.shade200,
-                        onBackgroundImageError: (_, __) => const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
-                        ),
+                        child: finalUrl == null
+                            ? SvgPicture.asset('assets/usuario.svg',
+                                width: 50, height: 50)
+                            : null,
                       ),
                       const SizedBox(height: 8),
                       Text(
