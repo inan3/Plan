@@ -683,55 +683,55 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               bool isMe = data['senderId'] == currentUserId;
               final String? type = data['type'] as String?;
 
-              // Responder deslizando: derecha para mensajes recibidos,
-              // izquierda para mensajes propios
-              return GestureDetector(
-                onHorizontalDragUpdate: (details) {
-                  if (!isMe && details.delta.dx > 15) {
-                    startReplyingTo({
-                      'docId': item.id,
-                      'type': type ?? 'text',
-                      'text': data['text'] ?? '',
-                      'senderId': data['senderId'],
-                      'senderName': widget.chatPartnerName,
-                    });
-                  } else if (isMe && details.delta.dx < -15) {
-                    startReplyingTo({
-                      'docId': item.id,
-                      'type': type ?? 'text',
-                      'text': data['text'] ?? '',
-                      'senderId': data['senderId'],
-                      'senderName': 'Tú',
-                    });
-                  }
+              // Responder deslizando siempre hacia la derecha, con animación
+              return Dismissible(
+                key: ValueKey('msg_${item.id}'),
+                direction: DismissDirection.startToEnd,
+                confirmDismiss: (direction) async {
+                  startReplyingTo({
+                    'docId': item.id,
+                    'type': type ?? 'text',
+                    'text': data['text'] ?? '',
+                    'senderId': data['senderId'],
+                    'senderName': isMe ? 'Tú' : widget.chatPartnerName,
+                  });
+                  return false; // No eliminar el widget
                 },
-                onLongPress: () {
-                  showMessageOptionsDialog(
-                    context,
-                    {
-                      'docId': item.id,
-                      'type': type ?? 'text',
-                      'text': data['text'] ?? '',
-                      'senderId': data['senderId'],
-                      'senderName': isMe ? 'Tú' : widget.chatPartnerName,
-                      'timestamp': data['timestamp'],
-                    },
-                    onDelete: () async {
-                      final docId = item.id;
-                      try {
-                        await FirebaseFirestore.instance
-                            .collection('messages')
-                            .doc(docId)
-                            .update({
-                          'type': 'deleted',
-                          'text': 'El mensaje original ha sido eliminado.',
-                        });
-                      } catch (e) {
-                      }
-                    },
-                  );
-                },
-                child: _buildBubbleByType(data, isMe),
+                background: Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 20),
+                  color: Colors.transparent,
+                  child: const Icon(Icons.reply, color: Colors.grey),
+                ),
+                child: GestureDetector(
+                  onLongPress: () {
+                    showMessageOptionsDialog(
+                      context,
+                      {
+                        'docId': item.id,
+                        'type': type ?? 'text',
+                        'text': data['text'] ?? '',
+                        'senderId': data['senderId'],
+                        'senderName': isMe ? 'Tú' : widget.chatPartnerName,
+                        'timestamp': data['timestamp'],
+                      },
+                      onDelete: () async {
+                        final docId = item.id;
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('messages')
+                              .doc(docId)
+                              .update({
+                            'type': 'deleted',
+                            'text': 'El mensaje original ha sido eliminado.',
+                          });
+                        } catch (e) {
+                        }
+                      },
+                    );
+                  },
+                  child: _buildBubbleByType(data, isMe),
+                ),
               );
             }
             return const SizedBox.shrink();
