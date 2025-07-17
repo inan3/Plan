@@ -297,8 +297,7 @@ class PlansInMapScreen {
       String photoUrl = data['photoUrl']?.toString() ?? '';
       if (photoUrl.isEmpty) {
         final cover = data['coverPhotoUrl']?.toString() ?? '';
-        photoUrl =
-            cover.isNotEmpty ? cover : UserImagesManaging.placeholderImageUrl;
+        photoUrl = cover;
       }
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
@@ -363,7 +362,7 @@ class PlansInMapScreen {
     final cover = data['coverPhotoUrl']?.toString();
     return (cover != null && cover.isNotEmpty)
         ? cover
-        : UserImagesManaging.placeholderImageUrl;
+        : '';
   }
 
   Future<Uint8List> _downloadImageAsBytes(String url,
@@ -391,20 +390,23 @@ class PlansInMapScreen {
     bool showText = true,
   }) async {
     try {
-      final String finalUrl = photoUrl.isNotEmpty
-          ? photoUrl
-          : UserImagesManaging.placeholderImageUrl;
-      final cacheKey = 'plan:' + finalUrl + ':' + planType;
+      final String finalUrl = photoUrl;
+      final cacheKey = 'plan:' + (finalUrl.isNotEmpty ? finalUrl : 'noimage') + ':' + planType;
       final cached = _getFromCache(cacheKey);
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 1.0));
       }
-      final bytes =
-          await _downloadImageAsBytes(finalUrl, width: 256, height: 256);
-      final codec = await ui.instantiateImageCodec(bytes,
-          targetWidth: 256, targetHeight: 256);
-      final frame = await codec.getNextFrame();
-      final avatar = frame.image;
+      Uint8List? bytes;
+      if (finalUrl.isNotEmpty) {
+        bytes = await _downloadImageAsBytes(finalUrl, width: 256, height: 256);
+      }
+      ui.Image? avatar;
+      if (bytes != null) {
+        final codec = await ui.instantiateImageCodec(bytes,
+            targetWidth: 256, targetHeight: 256);
+        final frame = await codec.getNextFrame();
+        avatar = frame.image;
+      }
       // Ajustamos las dimensiones del marcador para que el avatar no se
       // vea comprimido verticalmente en el mapa. Se incrementa la zona
       // destinada al avatar y su radio para mejorar la proporción final.
@@ -449,15 +451,20 @@ class PlansInMapScreen {
         ..addOval(Rect.fromCircle(center: center, radius: cr));
       canvas.save();
       canvas.clipPath(clipPath);
-      final imgRect =
-          Rect.fromCenter(center: center, width: cr * 2, height: cr * 2 + 10);
-      paintImage(
-        canvas: canvas,
-        rect: imgRect,
-        image: avatar,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.high,
-      );
+      if (avatar != null) {
+        final imgRect =
+            Rect.fromCenter(center: center, width: cr * 2, height: cr * 2 + 10);
+        paintImage(
+          canvas: canvas,
+          rect: imgRect,
+          image: avatar,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+        );
+      } else {
+        canvas.drawCircle(
+            center, cr, Paint()..color = const Color(0xFFE0E0E0));
+      }
       canvas.restore();
       canvas.drawCircle(
           center,
@@ -474,10 +481,8 @@ class PlansInMapScreen {
       _addToCache(cacheKey, icon);
       return _MarkerData(icon, Offset(0.5, cy / mh));
     } catch (_) {
-      if (photoUrl != UserImagesManaging.placeholderImageUrl) {
-        return _buildPlanMarker(
-            UserImagesManaging.placeholderImageUrl, planType,
-            showText: showText);
+      if (photoUrl.isNotEmpty) {
+        return _buildPlanMarker('', planType, showText: showText);
       }
       return const _MarkerData(
           BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
@@ -489,10 +494,8 @@ class PlansInMapScreen {
       // Aumentamos el tamaño base del marcador de usuario sin plan para que la
       // imagen no se muestre achatada en vertical.
       const double sz = 120, r = 45;
-      final String finalUrl = photoUrl.isNotEmpty
-          ? photoUrl
-          : UserImagesManaging.placeholderImageUrl;
-      final cacheKey = 'user:' + finalUrl;
+      final String finalUrl = photoUrl;
+      final cacheKey = 'user:' + (finalUrl.isNotEmpty ? finalUrl : 'noimage');
       final cached = _getFromCache(cacheKey);
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 0.5));
@@ -545,8 +548,8 @@ class PlansInMapScreen {
       _addToCache(cacheKey, icon);
       return _MarkerData(icon, const Offset(0.5, 0.5));
     } catch (_) {
-      if (photoUrl != UserImagesManaging.placeholderImageUrl) {
-        return _buildNoPlanMarker(UserImagesManaging.placeholderImageUrl);
+      if (photoUrl.isNotEmpty) {
+        return _buildNoPlanMarker('');
       }
       // Si por algún motivo no se puede cargar la imagen de usuario ni el
       // placeholder, generamos un marcador básico en forma de círculo gris
