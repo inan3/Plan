@@ -1022,7 +1022,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     bool isRead = data['isRead'] ?? false;
 
     final bubbleColor =
-        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+        isMe ? const Color.fromARGB(255, 248, 223, 205) : AppColors.planColor;
     final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     final bubble = Align(
