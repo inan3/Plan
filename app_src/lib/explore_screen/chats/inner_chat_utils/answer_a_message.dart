@@ -155,6 +155,7 @@ mixin AnswerAMessageMixin<T extends StatefulWidget> on State<T> {
   void showMessageOptionsDialog(
     BuildContext context,
     Map<String, dynamic> messageData, {
+    VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) {
     showDialog(
@@ -169,6 +170,7 @@ mixin AnswerAMessageMixin<T extends StatefulWidget> on State<T> {
           child: _buildFrostedDialogOptions(
             context,
             messageData,
+            onEdit: onEdit,
             onDelete: onDelete,
           ),
         );
@@ -179,6 +181,7 @@ mixin AnswerAMessageMixin<T extends StatefulWidget> on State<T> {
   Widget _buildFrostedDialogOptions(
     BuildContext context,
     Map<String, dynamic> messageData, {
+    VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) {
     return ClipRRect(
@@ -202,6 +205,17 @@ mixin AnswerAMessageMixin<T extends StatefulWidget> on State<T> {
               // Bocadillo para ver el mensaje con su hora y nombre
               _buildMessageBubbleForDialog(messageData),
 
+              Divider(color: Colors.black.withOpacity(0.4), height: 1),
+
+              // Botón "Editar"
+              _buildOptionRow(
+                iconPath: 'assets/icono-escribir.svg',
+                label: 'Editar',
+                onTap: () {
+                  Navigator.pop(context);
+                  if (onEdit != null) onEdit();
+                },
+              ),
               Divider(color: Colors.black.withOpacity(0.4), height: 1),
 
               // Botón "Responder"

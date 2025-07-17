@@ -78,6 +78,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
   bool _partnerActivityPublic = true;
 
+  // Edición de mensajes
+  bool _isEditing = false;
+  Map<String, dynamic>? _editingMessage;
+
   // Carga futuro con icono de marcador (para ubicaciones)
   late Future<BitmapDescriptor> _markerIconFuture;
 
@@ -281,8 +285,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             _buildChatHeader(context),
             Expanded(child: _buildMessagesList()),
 
-            // Vista previa si estamos respondiendo a algo
-            if (isReplying)
+            // Vista previa al editar o responder
+            if (_isEditing)
+              buildEditPreview(
+                onCancelEdit: cancelEditing,
+              )
+            else if (isReplying)
               buildReplyPreview(
                 onCancelReply: () {
                   cancelReply();
@@ -715,6 +723,12 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                         'senderName': isMe ? 'Tú' : widget.chatPartnerName,
                         'timestamp': data['timestamp'],
                       },
+                      onEdit: () {
+                        startEditing({
+                          'docId': item.id,
+                          'text': data['text'] ?? '',
+                        });
+                      },
                       onDelete: () async {
                         final docId = item.id;
                         try {
@@ -818,7 +832,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
     final bubbleColor = isMe
         ? const Color(0xFFF9E4D5)
-        : const Color.fromARGB(255, 247, 237, 250);
+        : AppColors.planColor;
 
     Widget bubbleContent = Container(
       constraints: BoxConstraints(
@@ -849,6 +863,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             mainAxisAlignment:
                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
+              if (data['edited'] == true)
+                const Text(
+                  'Editado ',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               Text(
                 DateFormat('HH:mm').format(messageTime),
                 style: const TextStyle(color: Colors.black54, fontSize: 12),
@@ -884,7 +907,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     bool isRead = data['isRead'] ?? false;
 
     final bubbleColor =
-        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+        isMe ? const Color(0xFFF9E4D5) : AppColors.planColor;
 
     Widget bubbleContent = Container(
       constraints: BoxConstraints(
@@ -931,6 +954,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
             mainAxisAlignment:
                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
+              if (data['edited'] == true)
+                const Text(
+                  'Editado ',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               Text(
                 DateFormat('HH:mm').format(messageTime),
                 style: const TextStyle(color: Colors.black54, fontSize: 12),
@@ -1111,6 +1143,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                   mainAxisAlignment:
                       isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                   children: [
+                    if (data['edited'] == true)
+                      const Text(
+                        'Editado ',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     Text(
                       DateFormat('HH:mm').format(messageTime),
                       style:
@@ -1157,7 +1198,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     bool isRead = data['isRead'] ?? false;
 
     final bubbleColor =
-        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+        isMe ? const Color(0xFFF9E4D5) : AppColors.planColor;
     final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     final bubble = Align(
@@ -1259,6 +1300,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     mainAxisAlignment:
                         isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                     children: [
+                      if (data['edited'] == true)
+                        const Text(
+                          'Editado ',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       Text(
                         DateFormat('HH:mm').format(messageTime),
                         style: const TextStyle(
@@ -1330,7 +1380,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     final replyTo = data['replyTo'] as Map<String, dynamic>?;
 
     final bubbleColor =
-        isMe ? const Color(0xFFF9E4D5) : const Color(0xFFEBD6F2);
+        isMe ? const Color(0xFFF9E4D5) : AppColors.planColor;
 
     final bubble = Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -1420,6 +1470,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     mainAxisAlignment:
                         isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                     children: [
+                      if (data['edited'] == true)
+                        const Text(
+                          'Editado ',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       Text(
                         DateFormat('HH:mm').format(messageTime),
                         style: const TextStyle(
@@ -1533,6 +1592,67 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     }
 
     return participants;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Edición de mensajes
+  void startEditing(Map<String, dynamic> messageData) {
+    setState(() {
+      _isEditing = true;
+      _editingMessage = messageData;
+      _messageController.text = messageData['text'] ?? '';
+      cancelReply();
+    });
+  }
+
+  void cancelEditing() {
+    setState(() {
+      _isEditing = false;
+      _editingMessage = null;
+      _messageController.clear();
+    });
+  }
+
+  Widget buildEditPreview({VoidCallback? onCancelEdit}) {
+    final original = _editingMessage?['text'] ?? '';
+    return Container(
+      width: double.infinity,
+      color: Colors.grey[300],
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: onCancelEdit ?? cancelEditing,
+            child: const Padding(
+              padding: EdgeInsets.only(right: 8.0, top: 2.0),
+              child: Icon(Icons.close, color: Colors.black54),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Editando mensaje',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  original,
+                  style: const TextStyle(color: Colors.black87),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Input inferior: escribir y enviar
@@ -1879,6 +1999,37 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
   void _sendMessage() async {
     String messageText = _messageController.text.trim();
     if (messageText.isEmpty) return;
+
+    // Si estamos editando un mensaje existente
+    if (_isEditing && _editingMessage != null) {
+      final editId = _editingMessage!['docId'];
+      try {
+        await FirebaseFirestore.instance
+            .collection('messages')
+            .doc(editId)
+            .update({
+          'text': messageText,
+          'timestamp': FieldValue.serverTimestamp(),
+          'edited': true,
+        });
+
+        _messageController.clear();
+        setState(() {
+          _isEditing = false;
+          _editingMessage = null;
+        });
+
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(
+              _scrollController.position.maxScrollExtent,
+            );
+          }
+        });
+      } catch (e) {
+      }
+      return;
+    }
 
     // Verificar si me han bloqueado
     final docId = '${widget.chatPartnerId}_$currentUserId';
