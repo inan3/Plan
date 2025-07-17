@@ -832,7 +832,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
     final bubbleColor = isMe
         ? const Color(0xFFF9E4D5)
-        : AppColors.planColor;
+        : const Color.fromARGB(255, 158, 207, 243);
 
     Widget bubbleContent = Container(
       constraints: BoxConstraints(
