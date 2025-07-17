@@ -457,6 +457,11 @@ class PlansInMapScreen {
       _addToCache(cacheKey, icon);
       return _MarkerData(icon, Offset(0.5, cy / mh));
     } catch (_) {
+      if (photoUrl != UserImagesManaging.placeholderImageUrl) {
+        return _buildPlanMarker(
+            UserImagesManaging.placeholderImageUrl, planType,
+            showText: showText);
+      }
       return const _MarkerData(
           BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
     }
@@ -523,6 +528,9 @@ class PlansInMapScreen {
       _addToCache(cacheKey, icon);
       return _MarkerData(icon, const Offset(0.5, 0.5));
     } catch (_) {
+      if (photoUrl != UserImagesManaging.placeholderImageUrl) {
+        return _buildNoPlanMarker(UserImagesManaging.placeholderImageUrl);
+      }
       return const _MarkerData(
           BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
     }
