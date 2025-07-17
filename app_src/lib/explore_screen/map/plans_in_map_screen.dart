@@ -551,8 +551,19 @@ class PlansInMapScreen {
       if (photoUrl != UserImagesManaging.placeholderImageUrl) {
         return _buildNoPlanMarker(UserImagesManaging.placeholderImageUrl);
       }
-      return const _MarkerData(
-          BitmapDescriptor.defaultMarker, Offset(0.5, 1.0));
+      // Si por algún motivo no se puede cargar la imagen de usuario ni el
+      // placeholder, generamos un marcador básico en forma de círculo gris
+      // en lugar del marcador rojo por defecto.
+      const double sz = 120, r = 45;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final center = Offset(sz / 2, sz / 2);
+      canvas.drawCircle(center, r, Paint()..color = const Color(0xFFE0E0E0));
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(sz.toInt(), sz.toInt());
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final icon = BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
+      return _MarkerData(icon, const Offset(0.5, 0.5));
     }
   }
 }
