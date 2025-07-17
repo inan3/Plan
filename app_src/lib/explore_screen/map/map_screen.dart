@@ -123,7 +123,8 @@ class MapScreenState extends State<MapScreen> {
       );
       markers.addAll(userMarkers);
     }
-    _allMarkers = markers.toList();
+    _allMarkers = markers.toList()
+      ..sort((a, b) => a.markerId.value.compareTo(b.markerId.value));
     _updateVisibleMarkers(_currentZoom);
   }
 
