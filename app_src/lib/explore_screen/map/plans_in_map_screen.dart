@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -296,7 +296,8 @@ class PlansInMapScreen {
       String photoUrl = data['photoUrl']?.toString() ?? '';
       if (photoUrl.isEmpty) {
         final cover = data['coverPhotoUrl']?.toString() ?? '';
-        photoUrl = cover.isNotEmpty ? cover : UserImagesManaging.placeholderImageUrl;
+        photoUrl =
+            cover.isNotEmpty ? cover : UserImagesManaging.placeholderImageUrl;
       }
       final pos = LatLng(lat, lng);
       final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
@@ -365,8 +366,12 @@ class PlansInMapScreen {
   }
 
   Future<Uint8List> _downloadImageAsBytes(String url) async {
-    final file = await DefaultCacheManager().getSingleFile(url);
-    return await file.readAsBytes();
+    if (url.startsWith('http')) {
+      final file = await DefaultCacheManager().getSingleFile(url);
+      return await file.readAsBytes();
+    }
+    final byteData = await rootBundle.load(url);
+    return byteData.buffer.asUint8List();
   }
 
   Future<_MarkerData> _buildPlanMarker(
