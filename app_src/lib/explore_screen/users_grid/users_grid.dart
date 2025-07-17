@@ -350,7 +350,10 @@ class _UsersGridState extends State<UsersGrid> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          buildProfileAvatar(fallbackPhotoUrl),
+                          buildProfileAvatar(
+                            fallbackPhotoUrl,
+                            coverUrl: coverPhotoUrl,
+                          ),
                           const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

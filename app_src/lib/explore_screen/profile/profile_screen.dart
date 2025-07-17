@@ -353,15 +353,20 @@ class ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInnerAvatar() {
     final bool hasPhoto =
         profileImageUrl != null && profileImageUrl!.isNotEmpty;
+    final String? coverUrl =
+        coverImages.isNotEmpty ? coverImages.first : null;
+    final String? finalUrl = hasPhoto
+        ? profileImageUrl!
+        : (coverUrl != null && coverUrl.isNotEmpty ? coverUrl : null);
 
     return CircleAvatar(
       radius: 42,
-      backgroundColor: hasPhoto ? Colors.transparent : Colors.grey[300],
+      backgroundColor: finalUrl != null ? Colors.transparent : Colors.grey[300],
       backgroundImage:
-          hasPhoto ? CachedNetworkImageProvider(profileImageUrl!) : null,
-      child: hasPhoto
+          finalUrl != null ? CachedNetworkImageProvider(finalUrl) : null,
+      child: finalUrl != null
           ? null
-          : const Icon(Icons.person, size: 42, color: Colors.white70),
+          : SvgPicture.asset('assets/usuario.svg', width: 42, height: 42),
     );
   }
 

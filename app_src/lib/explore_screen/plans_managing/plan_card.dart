@@ -611,7 +611,7 @@ class PlanCardState extends State<PlanCard> {
   // ─────────────────────────────────────────────────────────────
   // Bloque de "creador" (avatar + nombre + actividad)
   // ─────────────────────────────────────────────────────────────
-  Widget _buildCreatorFrosted(String name, String? photoUrl) {
+  Widget _buildCreatorFrosted(String name, String? photoUrl, {String? coverUrl}) {
     final creatorUid = widget.plan.createdBy;
     final bool showActivity = widget.userData['activityStatusPublic'] != false;
 
@@ -626,7 +626,7 @@ class PlanCardState extends State<PlanCard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Avatar
-              buildProfileAvatar(photoUrl),
+              buildProfileAvatar(photoUrl, coverUrl: coverUrl),
               const SizedBox(width: 8),
 
               // Nombre y estado de actividad
@@ -1240,7 +1240,11 @@ class PlanCardState extends State<PlanCard> {
                               if (mounted) setState(() {});
                             }
                           },
-                          child: _buildCreatorFrosted(name, fallbackPhotoUrl),
+                          child: _buildCreatorFrosted(
+                            name,
+                            fallbackPhotoUrl,
+                            coverUrl: widget.userData['coverPhotoUrl']?.toString(),
+                          ),
                         ),
                         const Spacer(),
                         _buildJoinFrosted(),

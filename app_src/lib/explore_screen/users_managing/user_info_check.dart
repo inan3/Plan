@@ -388,9 +388,12 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
   }
 
   Widget _buildAvatarAndName(String userName) {
-    final avatarUrl = (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
-        ? _profileImageUrl!
-        : 'https://via.placeholder.com/150';
+    String? avatarUrl;
+    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      avatarUrl = _profileImageUrl!;
+    } else if (_coverImageUrl != null && _coverImageUrl!.isNotEmpty) {
+      avatarUrl = _coverImageUrl!;
+    }
 
     return Column(
       children: [
@@ -401,16 +404,21 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
             clipBehavior: Clip.none,
             children: [
               InkWell(
-                onTap: avatarUrl.contains('placeholder')
-                    ? null
-                    : () => _showFullImage(avatarUrl),
+                onTap:
+                    avatarUrl == null ? null : () => _showFullImage(avatarUrl),
                 customBorder: const CircleBorder(),
                 child: CircleAvatar(
                   radius: 45,
                   backgroundColor: Colors.white,
                   child: CircleAvatar(
                     radius: 42,
-                    backgroundImage: CachedNetworkImageProvider(avatarUrl),
+                    backgroundImage:
+                        avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
+                    backgroundColor: Colors.grey[300],
+                    child: avatarUrl == null
+                        ? SvgPicture.asset('assets/usuario.svg',
+                            width: 42, height: 42)
+                        : null,
                   ),
                 ),
               ),
