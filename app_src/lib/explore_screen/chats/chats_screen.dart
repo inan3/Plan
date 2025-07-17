@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../users_managing/user_activity_status.dart';
 import 'chat_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 class ChatsScreen extends StatefulWidget {
   final String? sharedText;
