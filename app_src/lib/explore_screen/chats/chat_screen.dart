@@ -267,8 +267,15 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
     return Scaffold(
       backgroundColor: backgroundColor,
       body: SafeArea(
-        child: Column(
-          children: [
+        child: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/fondo-chat.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Column(
+            children: [
             _buildChatHeader(context),
             Expanded(child: _buildMessagesList()),
 
@@ -282,6 +289,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
 
             _buildMessageInput(),
           ],
+          ),
         ),
       ),
     );
@@ -675,16 +683,25 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
               bool isMe = data['senderId'] == currentUserId;
               final String? type = data['type'] as String?;
 
-              // Swipe a la derecha => responder
+              // Responder deslizando: derecha para mensajes recibidos,
+              // izquierda para mensajes propios
               return GestureDetector(
                 onHorizontalDragUpdate: (details) {
-                  if (details.delta.dx > 15) {
+                  if (!isMe && details.delta.dx > 15) {
                     startReplyingTo({
                       'docId': item.id,
                       'type': type ?? 'text',
                       'text': data['text'] ?? '',
                       'senderId': data['senderId'],
-                      'senderName': isMe ? 'Tú' : widget.chatPartnerName,
+                      'senderName': widget.chatPartnerName,
+                    });
+                  } else if (isMe && details.delta.dx < -15) {
+                    startReplyingTo({
+                      'docId': item.id,
+                      'type': type ?? 'text',
+                      'text': data['text'] ?? '',
+                      'senderId': data['senderId'],
+                      'senderName': 'Tú',
                     });
                   }
                 },
