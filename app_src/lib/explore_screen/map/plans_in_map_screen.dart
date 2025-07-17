@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:collection';
-import 'package:flutter_svg/flutter_svg.dart' as svg;
 import '../../main/colors.dart';
 
 import '../plans_managing/frosted_plan_dialog_state.dart';
@@ -368,15 +367,6 @@ class PlansInMapScreen {
   Future<Uint8List> _downloadImageAsBytes(String url,
       {int width = 256, int height = 256}) async {
     if (!url.startsWith('http')) {
-      if (url.endsWith('.svg')) {
-        final svgString = await rootBundle.loadString(url);
-        final loader = svg.SvgStringLoader(svgString);
-        final pictureInfo = await svg.vg.loadPicture(loader, null);
-        final picture = pictureInfo.picture;
-        final image = await picture.toImage(width, height);
-        final bd = await image.toByteData(format: ui.ImageByteFormat.png);
-        return bd!.buffer.asUint8List();
-      }
       final data = await rootBundle.load(url);
       return data.buffer.asUint8List();
     }
