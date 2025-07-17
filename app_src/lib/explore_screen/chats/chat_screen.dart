@@ -40,6 +40,7 @@ class ChatScreen extends StatefulWidget {
   final String chatPartnerId;
   final String chatPartnerName;
   final String? chatPartnerPhoto;
+  final String? chatPartnerCover;
 
   /// Ya no vamos a usar [deletedAt] a nivel de constructor,
   /// porque ahora usaremos las fechas guardadas en userDoc.
@@ -50,6 +51,7 @@ class ChatScreen extends StatefulWidget {
     required this.chatPartnerId,
     required this.chatPartnerName,
     this.chatPartnerPhoto,
+    this.chatPartnerCover,
     this.deletedAt,
   }) : super(key: key);
 
@@ -339,12 +341,10 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                     },
                     child: Row(
                       children: [
-                        CircleAvatar(
+                        buildProfileAvatar(
+                          widget.chatPartnerPhoto,
+                          coverUrl: widget.chatPartnerCover,
                           radius: 16,
-                          backgroundImage: widget.chatPartnerPhoto != null
-                              ? CachedNetworkImageProvider(widget.chatPartnerPhoto!)
-                              : null,
-                          backgroundColor: Colors.grey[300],
                         ),
                         const SizedBox(width: 8),
                         Expanded(
