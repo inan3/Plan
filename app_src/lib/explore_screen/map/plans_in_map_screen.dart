@@ -531,7 +531,9 @@ class PlansInMapScreen {
         );
       } else {
         canvas.drawCircle(center, r, Paint()..color = avatarColor(name));
-        final initials = await getInitials(name);
+        // Evitamos usar la versión con caché para asegurar
+        // que cada marcador muestre las iniciales correctas.
+        final initials = getInitialsSync(name);
         final tp = TextPainter(
           text: TextSpan(
             text: initials,
