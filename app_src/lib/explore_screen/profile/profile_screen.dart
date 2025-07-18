@@ -367,10 +367,18 @@ class ProfileScreenState extends State<ProfileScreen> {
           finalUrl != null ? CachedNetworkImageProvider(finalUrl) : null,
       child: finalUrl != null
           ? null
-          : Text(
-              getInitials(name),
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 32),
+          : FutureBuilder<String>(
+              future: getInitials(name),
+              builder: (context, snapshot) {
+                final initials = snapshot.data ?? getInitialsSync(name);
+                return Text(
+                  initials,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 32),
+                );
+              },
             ),
     );
   }

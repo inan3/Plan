@@ -513,7 +513,7 @@ class PlanCardState extends State<PlanCard> {
             senderPic.isNotEmpty ? Colors.blueGrey[100] : avatarColor(senderName),
         child: senderPic.isEmpty
             ? Text(
-                getInitials(senderName),
+                getInitialsSync(senderName),
                 style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold),
               )
@@ -806,7 +806,7 @@ class PlanCardState extends State<PlanCard> {
                     pic.isNotEmpty ? Colors.blueGrey[400] : avatarColor(name),
                 child: pic.isEmpty
                     ? Text(
-                        getInitials(name),
+                        getInitialsSync(name),
                         style: const TextStyle(
                             color: Colors.white, fontWeight: FontWeight.bold),
                       )
@@ -876,7 +876,7 @@ class PlanCardState extends State<PlanCard> {
                       pic1.isNotEmpty ? Colors.blueGrey[400] : avatarColor(p1['name'] ?? ''),
                   child: pic1.isEmpty
                       ? Text(
-                          getInitials(p1['name'] ?? ''),
+                          getInitialsSync(p1['name'] ?? ''),
                           style: const TextStyle(
                               color: Colors.white, fontWeight: FontWeight.bold),
                         )
@@ -893,7 +893,7 @@ class PlanCardState extends State<PlanCard> {
                       pic2.isNotEmpty ? Colors.blueGrey[400] : avatarColor(p2['name'] ?? ''),
                   child: pic2.isEmpty
                       ? Text(
-                          getInitials(p2['name'] ?? ''),
+                          getInitialsSync(p2['name'] ?? ''),
                           style: const TextStyle(
                               color: Colors.white, fontWeight: FontWeight.bold),
                         )
@@ -1029,7 +1029,7 @@ class PlanCardState extends State<PlanCard> {
                               pic.isNotEmpty ? Colors.blueGrey[400] : avatarColor(name),
                           child: pic.isEmpty
                               ? Text(
-                                  getInitials(name),
+                                  getInitialsSync(name),
                                   style: const TextStyle(
                                       color: Colors.white, fontWeight: FontWeight.bold),
                                 )

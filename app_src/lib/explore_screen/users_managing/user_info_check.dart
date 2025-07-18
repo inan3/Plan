@@ -419,7 +419,7 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                         : avatarColor(userName),
                     child: avatarUrl == null
                         ? Text(
-                            getInitials(userName),
+                            getInitialsSync(userName),
                             style: const TextStyle(
                                 color: Colors.white, fontWeight: FontWeight.bold),
                           )

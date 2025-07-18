@@ -310,7 +310,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                           radius: 50,
                           backgroundColor: avatarColor(userName),
                           child: Text(
-                            getInitials(userName),
+                            getInitialsSync(userName),
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -351,7 +351,7 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                             : avatarColor(userName),
                         child: finalUrl == null
                             ? Text(
-                                getInitials(userName),
+                                getInitialsSync(userName),
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
