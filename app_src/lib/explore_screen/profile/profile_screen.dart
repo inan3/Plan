@@ -82,7 +82,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchProfileImage() async {
     final url = await UserImagesManaging.fetchProfileImage(context);
     if (!mounted) return;
-    if (url.isNotEmpty) {
+    if (url != null && url.isNotEmpty) {
       try {
         await precacheImage(CachedNetworkImageProvider(url), context);
       } catch (_) {}
