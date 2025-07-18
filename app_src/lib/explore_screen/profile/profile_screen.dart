@@ -82,12 +82,24 @@ class ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchProfileImage() async {
     final url = await UserImagesManaging.fetchProfileImage(context);
     if (!mounted) return;
+    if (url != null && url.isNotEmpty) {
+      try {
+        await precacheImage(CachedNetworkImageProvider(url), context);
+      } catch (_) {}
+    }
     setState(() => profileImageUrl = url);
   }
 
   Future<void> _fetchCoverImages() async {
     final covers = await UserImagesManaging.fetchCoverImages(context);
     if (!mounted) return;
+    for (final url in covers) {
+      if (url.isNotEmpty) {
+        try {
+          await precacheImage(CachedNetworkImageProvider(url), context);
+        } catch (_) {}
+      }
+    }
     setState(() => coverImages = covers);
   }
 
