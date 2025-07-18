@@ -3,6 +3,44 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:math' as math;
 
+/// Obtiene las iniciales a partir del [nombre]. Si contiene una sola palabra
+/// se toma la primera letra; si tiene dos o más, se utilizan las dos primeras
+/// iniciales.
+String getInitials(String nombre) {
+  final trimmed = nombre.trim();
+  if (trimmed.isEmpty) return '';
+  final partes = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (partes.isEmpty) return '';
+  if (partes.length == 1) {
+    final palabra = partes.first;
+    return palabra.isNotEmpty ? palabra.substring(0, 1).toUpperCase() : '';
+  }
+  return (partes[0][0] + partes[1][0]).toUpperCase();
+}
+
+/// Genera un color de fondo a partir del [nombre] para que cada usuario tenga
+/// un color consistente.
+Color avatarColor(String nombre) {
+  final idx = nombre.hashCode.abs() % Colors.primaries.length;
+  return Colors.primaries[idx];
+}
+
+/// Construye un avatar mostrando las iniciales cuando no hay foto disponible.
+Widget buildInitialsAvatar(String nombre, double radius) {
+  return CircleAvatar(
+    radius: radius,
+    backgroundColor: avatarColor(nombre),
+    child: Text(
+      getInitials(nombre),
+      style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: radius * 0.8,
+      ),
+    ),
+  );
+}
+
 /// Placeholder genérico para cuando falle el loading de una imagen.
 Widget buildPlaceholder() {
   return SizedBox(
@@ -23,7 +61,7 @@ Widget buildPlaceholder() {
 /// utilizar la imagen de fondo como alternativa. Si tampoco hay imagen de
 /// fondo, se muestra un placeholder con silueta.
 Widget buildProfileAvatar(String? photoUrl,
-    {String? coverUrl, double radius = 20}) {
+    {String? coverUrl, double radius = 20, String? userName}) {
   String? finalUrl;
   if (photoUrl != null && photoUrl.isNotEmpty) {
     finalUrl = photoUrl;
@@ -36,6 +74,8 @@ Widget buildProfileAvatar(String? photoUrl,
       radius: radius,
       backgroundImage: CachedNetworkImageProvider(finalUrl),
     );
+  } else if (userName != null && userName.trim().isNotEmpty) {
+    return buildInitialsAvatar(userName, radius);
   } else {
     return CircleAvatar(
       radius: radius,
