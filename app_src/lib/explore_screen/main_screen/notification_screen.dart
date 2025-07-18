@@ -495,8 +495,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               data['planType'] ?? data['planName'] ?? 'Plan';
                           final planId = data['planId'] ?? '';
                           final senderId = data['senderId'] ?? '';
-                          final senderPhoto = data['senderProfilePic'] ?? '';
-                          final senderName = data['senderName'] ?? '';
+                          final senderPhoto =
+                              data['senderProfilePic'] ?? data['requesterProfilePic'] ?? '';
+                          final senderName =
+                              data['senderName'] ?? data['requesterName'] ?? '';
                           final type = data['type'] as String? ?? '';
                           final timestamp = data['timestamp'];
                           final timeString = _formatTimestamp(timestamp);
@@ -587,6 +589,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             child: buildProfileAvatar(
                               senderPhoto,
                               radius: 25,
+                              userName: senderName,
                             ),
                           );
 

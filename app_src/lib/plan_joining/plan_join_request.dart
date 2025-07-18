@@ -123,8 +123,8 @@ class JoinPlanRequestScreen {
           .get();
 
       final userData = userDoc.data() ?? {};
-      final String requesterName = userData['name'] ?? 'Sin nombre';
-      final String requesterProfilePic = userData['photoUrl'] ?? '';
+      final String senderName = userData['name'] ?? 'Sin nombre';
+      final String senderProfilePic = userData['photoUrl'] ?? '';
 
       // 5) Crear la notificación "join_request"
       await FirebaseFirestore.instance.collection('notifications').add({
@@ -133,8 +133,8 @@ class JoinPlanRequestScreen {
         'senderId': currentUser.uid,   // Quién envía la solicitud
         'planId': planId,
         'planName': planName,
-        'requesterName': requesterName,
-        'requesterProfilePic': requesterProfilePic,
+        'senderName': senderName,
+        'senderProfilePic': senderProfilePic,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
