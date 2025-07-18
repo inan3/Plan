@@ -14,6 +14,7 @@ import 'plan_share_sheet.dart';
 import '../users_managing/user_info_check.dart';
 import 'frosted_plan_dialog_state.dart';
 import '../../l10n/app_localizations.dart';
+import 'join_state.dart';
 import 'plan_chat_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -41,7 +42,6 @@ class PlanCard extends StatefulWidget {
   State<PlanCard> createState() => PlanCardState();
 }
 
-enum JoinState { none, requested, rejoin }
 
 class PlanCardState extends State<PlanCard> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
@@ -96,8 +96,9 @@ class PlanCardState extends State<PlanCard> {
   Future<void> _checkIfPendingJoinRequest() async {
     if (_currentUser == null) return;
 
-    // Si ya es participante, no necesitamos join_request
+    // Si ya es participante
     if (widget.plan.participants?.contains(_currentUser!.uid) ?? false) {
+      setState(() => _joinState = JoinState.joined);
       return;
     }
 
@@ -115,6 +116,19 @@ class PlanCardState extends State<PlanCard> {
         _joinState = JoinState.requested;
         _pendingNotificationId = q.docs.first.id;
       });
+      return;
+    }
+
+    final rejected = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('type', isEqualTo: 'join_rejected')
+        .where('receiverId', isEqualTo: _currentUser!.uid)
+        .where('planId', isEqualTo: widget.plan.id)
+        .limit(1)
+        .get();
+
+    if (rejected.docs.isNotEmpty) {
+      setState(() => _joinState = JoinState.rejected);
     }
   }
 
@@ -166,11 +180,25 @@ class PlanCardState extends State<PlanCard> {
     if (_currentUser == null) return;
     final plan = widget.plan;
 
-    // Si ya participas
-    if (plan.participants?.contains(_currentUser!.uid) ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ya eres participante de este plan.')),
-      );
+    if (_joinState == JoinState.joined) {
+      final confirm = await showDialog<bool>(
+            context: context,
+            builder: (c) => AlertDialog(
+                  title: const Text('¿Abandonar este plan?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(c, false),
+                        child: const Text('No')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(c, true),
+                        child: const Text('Sí')),
+                  ],
+                )) ??
+          false;
+      if (confirm) {
+        await _leavePlan();
+        setState(() => _joinState = JoinState.none);
+      }
       return;
     }
 
@@ -191,17 +219,11 @@ class PlanCardState extends State<PlanCard> {
 
     // Alternar join_request
     if (_joinState == JoinState.requested) {
-      // Cancelamos la solicitud anterior
       await _cancelJoinRequest();
-      setState(() {
-        _joinState = JoinState.rejoin;
-      });
+      setState(() => _joinState = JoinState.none);
     } else {
-      // Creamos solicitud de unión
       await _createJoinRequest();
-      setState(() {
-        _joinState = JoinState.requested;
-      });
+      setState(() => _joinState = JoinState.requested);
     }
   }
 
@@ -261,6 +283,49 @@ class PlanCardState extends State<PlanCard> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al cancelar solicitud: $e')),
+      );
+    }
+  }
+
+  Future<void> _leavePlan() async {
+    if (_currentUser == null) return;
+    final uid = _currentUser!.uid;
+    try {
+      final subs = await FirebaseFirestore.instance
+          .collection('subscriptions')
+          .where('userId', isEqualTo: uid)
+          .where('id', isEqualTo: widget.plan.id)
+          .get();
+      for (final d in subs.docs) {
+        await d.reference.delete();
+      }
+      await FirebaseFirestore.instance.collection('plans').doc(widget.plan.id).update({
+        'participants': FieldValue.arrayRemove([uid]),
+        'invitedUsers': FieldValue.arrayRemove([uid])
+      });
+      await PlanModel.updateUserHasActivePlan(uid);
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        final leaverName = userDoc.data()?['name'] ?? 'Usuario';
+        final leaverPhoto = userDoc.data()?['photoUrl'] ?? '';
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'special_plan_left',
+          'receiverId': widget.plan.createdBy,
+          'senderId': uid,
+          'senderName': leaverName,
+          'senderProfilePic': leaverPhoto,
+          'planId': widget.plan.id,
+          'planType': widget.plan.type,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+      } catch (_) {}
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Has abandonado el plan ${widget.plan.type}.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al abandonar el plan.')),
       );
     }
   }
@@ -1077,7 +1142,7 @@ class PlanCardState extends State<PlanCard> {
     final int pCount = plan.participants?.length ?? 0;
     final int maxP = plan.maxParticipants ?? 0;
     final bool isFull = (maxP > 0 && pCount >= maxP);
-    if (isFull) {
+    if (isFull && _joinState != JoinState.joined) {
       // Cupo completo => texto
       return ClipRRect(
         borderRadius: BorderRadius.circular(30),
@@ -1100,15 +1165,33 @@ class PlanCardState extends State<PlanCard> {
     } else {
       // Botón normal
       String buttonText;
+      Widget iconWidget;
       switch (_joinState) {
         case JoinState.none:
           buttonText = AppLocalizations.of(context).join;
+          iconWidget = SvgPicture.asset(
+            'assets/union.svg',
+            width: 20,
+            height: 20,
+            color: Colors.white,
+          );
           break;
         case JoinState.requested:
           buttonText = AppLocalizations.of(context).joinRequested;
+          iconWidget = SvgPicture.asset(
+            'assets/union.svg',
+            width: 20,
+            height: 20,
+            color: Colors.white,
+          );
           break;
-        case JoinState.rejoin:
-          buttonText = AppLocalizations.of(context).join;
+        case JoinState.joined:
+          buttonText = AppLocalizations.of(context).leavePlan;
+          iconWidget = const Icon(Icons.exit_to_app, color: Colors.white, size: 20);
+          break;
+        case JoinState.rejected:
+          buttonText = AppLocalizations.of(context).joinRejected;
+          iconWidget = const Icon(Icons.close, color: Colors.white, size: 20);
           break;
       }
       return GestureDetector(
@@ -1123,12 +1206,7 @@ class PlanCardState extends State<PlanCard> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SvgPicture.asset(
-                    'assets/union.svg',
-                    width: 20,
-                    height: 20,
-                    color: Colors.white,
-                  ),
+                  iconWidget,
                   const SizedBox(width: 6),
                   Text(
                     buttonText,

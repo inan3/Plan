@@ -163,6 +163,8 @@ class AppLocalizations {
       'invite_to_plan': 'Invítale a un Plan',
       'join': 'Unirse',
       'join_requested': 'Unión solicitada',
+      'join_rejected': 'Rechazada',
+      'leave_plan': 'Abandonar',
       'full_capacity': 'Cupo completo',
       'participants': 'participantes',
       'participants_title': 'Participantes',
@@ -460,6 +462,8 @@ class AppLocalizations {
       'invite_to_plan': 'Invite to a Plan',
       'join': 'Join',
       'join_requested': 'Join requested',
+      'join_rejected': 'Rejected',
+      'leave_plan': 'Leave',
       'full_capacity': 'Full capacity',
       'participants': 'participants',
       'participants_title': 'Participants',
@@ -762,6 +766,8 @@ class AppLocalizations {
   String get inviteToPlan => _t('invite_to_plan');
   String get join => _t('join');
   String get joinRequested => _t('join_requested');
+  String get joinRejected => _t('join_rejected');
+  String get leavePlan => _t('leave_plan');
   String get fullCapacity => _t('full_capacity');
   String get participants => _t('participants');
   String get participantsTitle => _t('participants_title');
