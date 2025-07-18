@@ -14,6 +14,7 @@ import '../../models/plan_model.dart';
 import '../users_managing/user_info_check.dart';
 import '../profile/user_images_managing.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 class _MarkerData {
   final BitmapDescriptor icon;
@@ -294,12 +295,13 @@ class PlansInMapScreen {
         continue;
 
       String photoUrl = data['photoUrl']?.toString() ?? '';
+      final String name = data['name']?.toString() ?? '';
       if (photoUrl.isEmpty) {
         final cover = data['coverPhotoUrl']?.toString() ?? '';
         photoUrl = cover;
       }
       final pos = LatLng(lat, lng);
-      final _MarkerData iconData = await _buildNoPlanMarker(photoUrl);
+      final _MarkerData iconData = await _buildNoPlanMarker(photoUrl, name);
       markers.add(
         Marker(
           markerId: MarkerId('noPlanUser_$uid'),
@@ -479,7 +481,7 @@ class PlansInMapScreen {
     }
   }
 
-  Future<_MarkerData> _buildNoPlanMarker(String photoUrl) async {
+  Future<_MarkerData> _buildNoPlanMarker(String photoUrl, String name) async {
     try {
       // Aumentamos el tamaño base del marcador de usuario sin plan para que la
       // imagen no se muestre achatada en vertical.
@@ -528,7 +530,19 @@ class PlansInMapScreen {
             ..strokeWidth = 3,
         );
       } else {
-        canvas.drawCircle(center, r, Paint()..color = const Color(0xFFE0E0E0));
+        canvas.drawCircle(center, r, Paint()..color = avatarColor(name));
+        final tp = TextPainter(
+          text: TextSpan(
+            text: getInitials(name),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        tp.layout();
+        tp.paint(
+            canvas,
+            Offset(center.dx - tp.width / 2, center.dy - tp.height / 2));
       }
       final pic = rec.endRecording();
       final img = await pic.toImage(sz.toInt(), sz.toInt());
@@ -539,7 +553,7 @@ class PlansInMapScreen {
       return _MarkerData(icon, const Offset(0.5, 0.5));
     } catch (_) {
       if (photoUrl.isNotEmpty) {
-        return _buildNoPlanMarker('');
+        return _buildNoPlanMarker('', name);
       }
       // Si por algún motivo no se puede cargar la imagen de usuario ni el
       // placeholder, generamos un marcador básico en forma de círculo gris

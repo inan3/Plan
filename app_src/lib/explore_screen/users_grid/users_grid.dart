@@ -354,6 +354,7 @@ class _UsersGridState extends State<UsersGrid> {
                           buildProfileAvatar(
                             fallbackPhotoUrl,
                             coverUrl: coverPhotoUrl,
+                            userName: name,
                           ),
                           const SizedBox(width: 8),
                           Column(

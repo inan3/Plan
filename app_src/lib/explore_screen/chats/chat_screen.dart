@@ -353,6 +353,7 @@ class _ChatScreenState extends State<ChatScreen> with AnswerAMessageMixin {
                           widget.chatPartnerPhoto,
                           coverUrl: widget.chatPartnerCover,
                           radius: 16,
+                          userName: widget.chatPartnerName,
                         ),
                         const SizedBox(width: 8),
                         Expanded(

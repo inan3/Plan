@@ -15,6 +15,7 @@ import 'settings/settings_screen.dart';
 import 'close_session_screen.dart';
 import 'subscribed_plans_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../users_grid/users_grid_helpers.dart';
 
 class MainSideBarScreen extends StatefulWidget {
   final ValueChanged<bool>? onMenuToggled;
@@ -307,9 +308,14 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundColor: Colors.grey.shade200,
-                          child: SvgPicture.asset('assets/usuario.svg',
-                              width: 50, height: 50),
+                          backgroundColor: avatarColor(userName),
+                          child: Text(
+                            getInitials(userName),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -340,10 +346,17 @@ class MainSideBarScreenState extends State<MainSideBarScreen> {
                         backgroundImage: finalUrl != null
                             ? CachedNetworkImageProvider(finalUrl)
                             : null,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: finalUrl != null
+                            ? Colors.grey.shade200
+                            : avatarColor(userName),
                         child: finalUrl == null
-                            ? SvgPicture.asset('assets/usuario.svg',
-                                width: 50, height: 50)
+                            ? Text(
+                                getInitials(userName),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 30),
+                              )
                             : null,
                       ),
                       const SizedBox(height: 8),

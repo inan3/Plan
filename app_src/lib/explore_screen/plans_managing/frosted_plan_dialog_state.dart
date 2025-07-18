@@ -878,7 +878,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           UserInfoCheck.open(context, senderId);
         }
       },
-      child: buildProfileAvatar(senderPic, radius: 20),
+      child: buildProfileAvatar(senderPic, radius: 20, userName: senderName),
     );
 
     final nameWidget = GestureDetector(
@@ -1066,7 +1066,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              buildProfileAvatar(pic, radius: 16),
+              buildProfileAvatar(pic, radius: 16, userName: name),
               const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1126,6 +1126,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 child: buildProfileAvatar(
                   pic1,
                   radius: avatarSize / 2,
+                  userName: p1['name'] ?? '',
                 ),
               ),
               Positioned(
@@ -1133,6 +1134,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                 child: buildProfileAvatar(
                   pic2,
                   radius: avatarSize / 2,
+                  userName: p2['name'] ?? '',
                 ),
               ),
               if (hasExtras)
@@ -1249,6 +1251,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
                         leading: buildProfileAvatar(
                           pic,
                           radius: 22,
+                          userName: name,
                         ),
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1519,6 +1522,7 @@ class _FrostedPlanDialogState extends State<FrostedPlanDialog> {
             child: buildProfileAvatar(
               _creatorPhotoUrl,
               radius: 20,
+              userName: name,
             ),
           ),
           const SizedBox(width: 8),
@@ -2124,6 +2128,7 @@ class _CustomShareDialogContentState extends State<_CustomShareDialogContent> {
             leading: buildProfileAvatar(
               photo,
               radius: 20,
+              userName: name,
             ),
             title: Text(
               name,

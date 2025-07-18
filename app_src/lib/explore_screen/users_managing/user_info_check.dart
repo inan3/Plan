@@ -414,10 +414,15 @@ class _UserInfoCheckState extends State<UserInfoCheck> {
                     radius: 42,
                     backgroundImage:
                         avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor: avatarUrl != null
+                        ? Colors.grey[300]
+                        : avatarColor(userName),
                     child: avatarUrl == null
-                        ? SvgPicture.asset('assets/usuario.svg',
-                            width: 42, height: 42)
+                        ? Text(
+                            getInitials(userName),
+                            style: const TextStyle(
+                                color: Colors.white, fontWeight: FontWeight.bold),
+                          )
                         : null,
                   ),
                 ),

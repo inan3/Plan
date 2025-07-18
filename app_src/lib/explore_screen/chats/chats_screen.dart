@@ -354,6 +354,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         leading: buildProfileAvatar(
                           userPhoto,
                           coverUrl: coverUrl,
+                          userName: userName,
                         ),
                         title: Text(
                           userName,
@@ -617,6 +618,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           leading: buildProfileAvatar(
             photoUrl,
             coverUrl: coverUrl,
+            userName: name,
           ),
           title: Row(
             children: [
@@ -716,6 +718,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     leading: buildProfileAvatar(
                       followerPhoto,
                       coverUrl: followerCover,
+                      userName: followerName,
                     ),
                     title: Row(
                       children: [
@@ -820,6 +823,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                     leading: buildProfileAvatar(
                       followingPhoto,
                       coverUrl: followingCover,
+                      userName: followingName,
                     ),
                     title: Row(
                       children: [

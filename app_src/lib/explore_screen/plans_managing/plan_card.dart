@@ -444,7 +444,15 @@ class PlanCardState extends State<PlanCard> {
         radius: 20,
         backgroundImage:
             senderPic.isNotEmpty ? CachedNetworkImageProvider(senderPic) : null,
-        backgroundColor: Colors.blueGrey[100],
+        backgroundColor:
+            senderPic.isNotEmpty ? Colors.blueGrey[100] : avatarColor(senderName),
+        child: senderPic.isEmpty
+            ? Text(
+                getInitials(senderName),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
+              )
+            : null,
       ),
     );
 
@@ -626,7 +634,8 @@ class PlanCardState extends State<PlanCard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Avatar
-              buildProfileAvatar(photoUrl, coverUrl: coverUrl),
+              buildProfileAvatar(photoUrl,
+                  coverUrl: coverUrl, userName: name),
               const SizedBox(width: 8),
 
               // Nombre y estado de actividad
@@ -728,7 +737,15 @@ class PlanCardState extends State<PlanCard> {
                 radius: 16,
                 backgroundImage:
                     pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
-                backgroundColor: Colors.blueGrey[400],
+                backgroundColor:
+                    pic.isNotEmpty ? Colors.blueGrey[400] : avatarColor(name),
+                child: pic.isEmpty
+                    ? Text(
+                        getInitials(name),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      )
+                    : null,
               ),
               const SizedBox(width: 8),
               Column(
@@ -790,7 +807,15 @@ class PlanCardState extends State<PlanCard> {
                   radius: avatarSize / 2,
                   backgroundImage:
                       pic1.isNotEmpty ? CachedNetworkImageProvider(pic1) : null,
-                  backgroundColor: Colors.blueGrey[400],
+                  backgroundColor:
+                      pic1.isNotEmpty ? Colors.blueGrey[400] : avatarColor(p1['name'] ?? ''),
+                  child: pic1.isEmpty
+                      ? Text(
+                          getInitials(p1['name'] ?? ''),
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        )
+                      : null,
                 ),
               ),
               Positioned(
@@ -799,7 +824,15 @@ class PlanCardState extends State<PlanCard> {
                   radius: avatarSize / 2,
                   backgroundImage:
                       pic2.isNotEmpty ? CachedNetworkImageProvider(pic2) : null,
-                  backgroundColor: Colors.blueGrey[400],
+                  backgroundColor:
+                      pic2.isNotEmpty ? Colors.blueGrey[400] : avatarColor(p2['name'] ?? ''),
+                  child: pic2.isEmpty
+                      ? Text(
+                          getInitials(p2['name'] ?? ''),
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        )
+                      : null,
                 ),
               ),
               if (hasExtras)
@@ -927,7 +960,15 @@ class PlanCardState extends State<PlanCard> {
                           radius: 22,
                           backgroundImage:
                               pic.isNotEmpty ? CachedNetworkImageProvider(pic) : null,
-                          backgroundColor: Colors.blueGrey[400],
+                          backgroundColor:
+                              pic.isNotEmpty ? Colors.blueGrey[400] : avatarColor(name),
+                          child: pic.isEmpty
+                              ? Text(
+                                  getInitials(name),
+                                  style: const TextStyle(
+                                      color: Colors.white, fontWeight: FontWeight.bold),
+                                )
+                              : null,
                         ),
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
