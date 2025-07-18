@@ -1,16 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 
-/// Obtiene las iniciales a partir del [nombre]. Si contiene una sola palabra
-/// se toma la primera letra; si tiene dos o más, se utilizan las dos primeras
-/// iniciales.
-String getInitials(String nombre) {
-  final partes = nombre.trim().split(RegExp(r'\s+'));
+/// Obtiene de forma síncrona hasta dos iniciales del [nombre].
+String getInitialsSync(String nombre) => _computeInitials(nombre);
+
+/// Calcula y cachea hasta dos iniciales del [nombre] utilizando
+/// [SharedPreferences].
+Future<String> getInitials(String nombre) async {
+  final prefs = await SharedPreferences.getInstance();
+  final key = 'initials_${nombre.hashCode}';
+  final cached = prefs.getString(key);
+  if (cached != null) return cached;
+
+  final initials = _computeInitials(nombre);
+  await prefs.setString(key, initials);
+  return initials;
+}
+
+String _computeInitials(String nombre) {
+  final partes =
+      nombre.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
   if (partes.isEmpty) return '';
-  if (partes.length == 1) return partes.first.substring(0, 1).toUpperCase();
-  return (partes[0][0] + partes[1][0]).toUpperCase();
+  if (partes.length == 1) {
+    final palabra = partes.first;
+    return palabra.isNotEmpty ? palabra.substring(0, 1).toUpperCase() : '';
+  }
+  final primera = partes[0].isNotEmpty ? partes[0][0] : '';
+  final segunda = partes[1].isNotEmpty ? partes[1][0] : '';
+  return (primera + segunda).toUpperCase();
 }
 
 /// Genera un color de fondo a partir del [nombre] para que cada usuario tenga
@@ -26,7 +46,7 @@ Widget buildInitialsAvatar(String nombre, double radius) {
     radius: radius,
     backgroundColor: avatarColor(nombre),
     child: Text(
-      getInitials(nombre),
+      getInitialsSync(nombre),
       style: TextStyle(
         color: Colors.white,
         fontWeight: FontWeight.bold,

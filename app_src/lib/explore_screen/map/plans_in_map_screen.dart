@@ -531,9 +531,10 @@ class PlansInMapScreen {
         );
       } else {
         canvas.drawCircle(center, r, Paint()..color = avatarColor(name));
+        final initials = await getInitials(name);
         final tp = TextPainter(
           text: TextSpan(
-            text: getInitials(name),
+            text: initials,
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
           ),
