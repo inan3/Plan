@@ -7,9 +7,14 @@ import 'dart:math' as math;
 /// se toma la primera letra; si tiene dos o más, se utilizan las dos primeras
 /// iniciales.
 String getInitials(String nombre) {
-  final partes = nombre.trim().split(RegExp(r'\s+'));
+  final trimmed = nombre.trim();
+  if (trimmed.isEmpty) return '';
+  final partes = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
   if (partes.isEmpty) return '';
-  if (partes.length == 1) return partes.first.substring(0, 1).toUpperCase();
+  if (partes.length == 1) {
+    final palabra = partes.first;
+    return palabra.isNotEmpty ? palabra.substring(0, 1).toUpperCase() : '';
+  }
   return (partes[0][0] + partes[1][0]).toUpperCase();
 }
 

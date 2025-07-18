@@ -487,7 +487,10 @@ class PlansInMapScreen {
       // imagen no se muestre achatada en vertical.
       const double sz = 120, r = 45;
       final String finalUrl = photoUrl;
-      final cacheKey = 'user:' + (finalUrl.isNotEmpty ? finalUrl : 'noimage');
+      // Incluimos el nombre en el key cuando no hay foto para evitar
+      // que todos los usuarios compartan el mismo marcador en caché.
+      final cacheKey =
+          'user:' + (finalUrl.isNotEmpty ? finalUrl : 'noimage:$name');
       final cached = _getFromCache(cacheKey);
       if (cached != null) {
         return _MarkerData(cached, const Offset(0.5, 0.5));
