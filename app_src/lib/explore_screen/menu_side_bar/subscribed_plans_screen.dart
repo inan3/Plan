@@ -269,19 +269,29 @@ class SubscribedPlansScreen extends StatelessWidget {
           right: 12,
           child: GestureDetector(
             onTap: () => _confirmDeletePlan(context, plan),
-            child: ClipOval(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 7.5, sigmaY: 7.5),
                 child: Container(
-                  width: 40,
-                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.3),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  child: const Icon(
-                    Icons.exit_to_app,
-                    color: Colors.white,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.exit_to_app, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        AppLocalizations.of(context).leavePlan,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13),
+                      ),
+                    ],
                   ),
                 ),
               ),
