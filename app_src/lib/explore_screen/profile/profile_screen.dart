@@ -291,7 +291,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                     child: CircleAvatar(
                       radius: 45,
                       backgroundColor: Colors.white,
-                      child: _buildInnerAvatar(),
+                      child: _buildInnerAvatar(userName),
                     ),
                   ),
                   Positioned(bottom: 0, right: 0, child: _avatarCameraIcon()),
@@ -350,7 +350,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   // NUEVO: avatar interior con foto o icono
-  Widget _buildInnerAvatar() {
+  Widget _buildInnerAvatar([String name = '']) {
     final bool hasPhoto =
         profileImageUrl != null && profileImageUrl!.isNotEmpty;
     final String? coverUrl =
@@ -361,12 +361,17 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return CircleAvatar(
       radius: 42,
-      backgroundColor: finalUrl != null ? Colors.transparent : Colors.grey[300],
+      backgroundColor:
+          finalUrl != null ? Colors.transparent : avatarColor(name),
       backgroundImage:
           finalUrl != null ? CachedNetworkImageProvider(finalUrl) : null,
       child: finalUrl != null
           ? null
-          : SvgPicture.asset('assets/usuario.svg', width: 42, height: 42),
+          : Text(
+              getInitials(name),
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 32),
+            ),
     );
   }
 
