@@ -471,7 +471,9 @@ class PlansInMapScreen {
       final pngBytes = bd!.buffer.asUint8List();
       final icon = BitmapDescriptor.fromBytes(pngBytes);
       _addToCache(cacheKey, icon);
-      return _MarkerData(icon, Offset(0.5, cy / mh));
+      // Usamos la parte inferior del icono como ancla para evitar
+      // desplazamientos aparentes al hacer zoom en el mapa.
+      return _MarkerData(icon, const Offset(0.5, 1.0));
     } catch (_) {
       if (photoUrl.isNotEmpty) {
         return _buildPlanMarker('', planType, showText: showText);
